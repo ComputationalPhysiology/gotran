@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+" A script to check the length of the lines in the code"
+
+__author__ = "Johan Hake (hake.dev@gmail.com)"
+__copyright__ = "Copyright (C) 2010 " + __author__
+__date__ = "2010-12-01 -- 2011-05-15"
+__license__  = "GNU LGPL Version 3.0 or later"
+
+import os
+import shutil
+
+remove_symbols = ["~", "#", ".pyc"]
+
+remove = []
+
+for dirpath, dirnames, filenames in os.walk(os.path.curdir):
+    for filename in filenames:
+        if any(symbol in filename for symbol in remove_symbols):
+            remove.append(os.path.join(dirpath, filename))
+
+if remove:
+    message = "Found %d files that will be removed:"%len(remove)
+    print message
+    print "-"*len(message)
+    for filename in remove:
+        print "  removing:", filename
+        os.unlink(filename)
+else:
+    print "No temp files removed"
+
+remove = []
+
+for dirpath, dirnames, filenames in os.walk(os.path.join(os.path.curdir, "demo")):
+    if "data" in dirnames:
+        remove.append(os.path.join(dirpath, "data"))
+    if "log" in dirnames:
+        remove.append(os.path.join(dirpath, "log"))
+
+if remove:
+    message = "\nFound %d demo data/log directories:"%len(remove)
+    print message
+    print "-"*len(message)
+    for datadir in remove:
+        print "  removing:", datadir
+        shutil.rmtree(datadir)
+else:
+    print "\nNo data or log directories removed\n"
+    

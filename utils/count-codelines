@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+"A script that counts the number of code lines"
+
+__author__ = "Johan Hake (hake.dev@gmail.com)"
+__copyright__ = "Copyright (C) 2010 " + __author__
+__date__ = "2010-11-04 -- 2012-02-23"
+__license__  = "GNU LGPL Version 3.0 or later"
+
+from gotran2.common.commands import get_output
+
+python_files = [f for f in get_output('hg ls -VR').split('\n') if "src" in f and ".py" in f]
+
+code_lines = 0
+blank_lines = 0
+comment_lines = 0
+docstrings = 0
+meta_data = 0
+
+in_docstring= False
+
+for f in python_files:
+    for line in open(f, "r").readlines():
+        line = line.strip()
+        if in_docstring:
+            docstrings +=1
+            if line.endswith('"""'):
+                in_docstring = False
+        elif line.startswith('"""'):
+            docstrings +=1
+            in_docstring = True
+        elif line.startswith('"'):
+            docstrings +=1
+        elif line.startswith("__"):
+            meta_data += 1
+        elif line.startswith("#"):
+            comment_lines += 1
+        elif len(line) == 0:
+            blank_lines += 1
+        else:
+            code_lines+=1
+
+print "### Gotran2 code statistics ###"
+print "Code lines:      ", code_lines
+print "Meta data lines: ", meta_data
+print "Docstring lines: ", docstrings
+print "Blank lines:     ", blank_lines
+print "Comment lines:   ", comment_lines

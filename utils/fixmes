@@ -1,0 +1,27 @@
+#!/usr/bin/env python
+" A script to check the length of the lines in the code"
+
+__author__ = "Johan Hake (hake.dev@gmail.com)"
+__copyright__ = "Copyright (C) 2010 " + __author__
+__date__ = "2010-11-26 -- 2011-05-03"
+__license__  = "GNU LGPL Version 3.0 or later"
+
+
+from gotran2.common.commands import get_output
+
+python_files = [f for f in get_output('bzr ls -VR').split('\n') if "src" in f and ".py" in f]
+
+for f in python_files:
+    fixmes = {}
+    for num, line in enumerate(open(f, "r").readlines()):
+        if "FIXME" in line:
+            fixmes[num] = line
+    
+    display = "In file: '%s':"%f
+    if fixmes:
+        print ""
+        print display
+        print "-"*len(display)
+        for num in sorted(fixmes.keys()):
+            print "%04d: %s"%(num+1, fixmes[num][:-1])
+
