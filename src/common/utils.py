@@ -1,11 +1,14 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2010-09-22 -- 2011-05-26"
+__date__ = "2010-09-22 -- 2012-02-23"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 # System imports
 import time as _time
 import math as _math
+
+# gotran2 imports
+from gotran2.common import *
 
 # Define scalar
 scalar = (int, float)
@@ -60,7 +63,7 @@ def is_iterable(obj):
 def add_iterable(iterable, initial=None):
     from operator import add
     if not is_iterable(iterable):
-        raise TypeError, ""
+        error("expected an iterable")
     if initial is None:
         return reduce(add, iterable)
     return reduce(add, iterable, initial)
@@ -108,7 +111,7 @@ def check_arg(arg, argtype, num=-1, itemtype=None):
                                            "fourth", "fifth", "sixth",\
                                            "seventh", "eigth",\
                                            "ninth"][num])
-    raise TypeError, message
+    error(message)
 
 def check_kwarg(kwarg, name, argtype, itemtype=None):
     "Type check for positional arguments"
@@ -130,11 +133,13 @@ def check_kwarg(kwarg, name, argtype, itemtype=None):
                                                for argt in argtype))
         
     message += " as the '%s' argument"%name
-    raise TypeError, message
+    error(message)
 
 def quote_join(list_of_str):
     assert(isinstance(list_of_str, (tuple, list)))
     assert(all(isinstance(item, str) for item in list_of_str))
     return ", ".join(["'%s'"%item for item in list_of_str])
 
-__all__ = [name for name in globals().keys() if name[0] != "_"]
+__all__ = [_name for _name in globals().keys() if _name[0] != "_"]
+
+del _name

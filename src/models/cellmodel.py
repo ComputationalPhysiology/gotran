@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2012 " + __author__
-__date__ = "2012-02-22 -- 2012-02-23"
+__date__ = "2012-02-22 -- 2012-02-24"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["CellModel", "gccm"]
@@ -48,9 +48,13 @@ class CellModel(object):
 
         # Initialize attributes
         self.name = name
-        self.states = []
-        self.derivatives = []
-        self.parameters = []
+        self.state_symbols = {}
+        self.field_state_symbols = {}
+        self.state_values = {}
+        self.parameter_symbols = {}
+        self.parameter_values = {}
+        self.state_derivatives = {}
+        self.all_variables = []
 
         # Store instance for future lookups
         _all_cellmodels[name] = self
