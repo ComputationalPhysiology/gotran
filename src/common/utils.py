@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2010-09-22 -- 2012-02-23"
+__date__ = "2010-09-22 -- 2012-04-18"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 # System imports
@@ -8,7 +8,7 @@ import time as _time
 import math as _math
 
 # gotran2 imports
-from gotran2.common import *
+from gotran2.common.logger import *
 
 # Define scalar
 scalar = (int, float)

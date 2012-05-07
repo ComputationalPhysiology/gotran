@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2012 " + __author__
-__date__ = "2012-02-22 -- 2012-02-24"
+__date__ = "2012-02-22 -- 2012-04-17"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["CellModel", "gccm"]
