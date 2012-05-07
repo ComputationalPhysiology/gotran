@@ -1,5 +1,7 @@
 # Cell model file for Panfilov
 
+model_arguments(test=False)
+
 # States with initial conditions
 states(e=0.0, g=0.0)
 parameters(v_rest=-85.0,
@@ -19,5 +21,10 @@ E = (e-v_rest)/(v_peak-v_rest)
 eps = eps1 + M1*g/(e+M2)
 
 # Time derivatives
-derivative(e, t, -time_constant*(v_peak-v_rest)*(ga*E*(E-a)*(E-1) + E*g))
-derivative(g, t, 0.25*time_constant*eps*(-g - gs*e*(E-a-1)))
+diff(e, -time_constant*(v_peak-v_rest)*(ga*E*(E-a)*(E-1) + E*g))
+
+if test:
+    diff(g, 0.25*time_constant*eps*(-g - gs*e*(E-a-1)))
+else:
+    diff(g, 0.25*time_constant*eps*(-g - gs*e*(E-a-1)))
+    
