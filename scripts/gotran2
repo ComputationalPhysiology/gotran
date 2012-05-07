@@ -1,0 +1,37 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+__author__ = "Johan Hake (hake.dev@gmail.com)"
+__copyright__ = "Copyright (C) 2010 " + __author__
+__date__ = "2012-05-07 -- 2012-05-07"
+__license__  = "GNU LGPL Version 3.0 or later"
+
+# System imports
+import sys
+import os
+
+# gotran imports
+from gotran2 import load_model
+from gotran2.common import error
+
+def main(modelfile, arguments, **kwargs):
+    """
+    Parse and generate code for the ode file
+    """
+    
+    splitted_modelfile = modelfile.split(".")
+    if len(splitted_modelfile) > 1:
+        if splitted_modelfile[-1] in ["ode"]:
+            modelfile = ".".join(splitted_modelfile[:-1])
+    ode = load_model(modelfile)
+    print "loaded ode just fine!"
+
+if __name__ == "__main__":
+    # FIXME: use argparse for this
+    if len(sys.argv) == 1:
+        error("pass more than 1 argument")
+    if len(sys.argv) == 2:
+        main(sys.argv[-1], None)
+    else:
+        error("not implemented")
+    
