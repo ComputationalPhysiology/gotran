@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2012 " + __author__
-__date__ = "2012-02-22 -- 2012-05-07"
+__date__ = "2012-02-22 -- 2012-05-08"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["ODE", "gco"]
@@ -12,56 +12,34 @@ import sympy as sym
 from gotran2.common import error, check_arg
 from gotran2.models.symbols import *
 
-# Holder for all odes
-_all_odes = {}
-
 # Holder for current ODE
+global _current_ode
 _current_ode = None
 
 class ODE(object):
     """
     Basic class for storying information of an ODE
     """
-    def __new__(cls, name):
-        """
-        Create a Ode instance.
-        """
-        check_arg(name, str, 0)
-
-        # If the Ode already excist just return the instance
-        if name in _all_odes:
-            return _all_odes[name]
-
-        # Create object
-        return object.__new__(cls)
         
     def __init__(self, name):
         """
-        Initialize a Ode
+        Initialize an ODE
+        
+        @type name : str
+        @param name : Name of the ODE
         """
         global _current_ode
+
+        check_arg(name, str, 0)
 
         # Set current Ode
         _current_ode = self
 
-        # Do not reinitialized object if it already excists
-        if name in _all_odes:
-            return
-
         # Initialize attributes
         self.name = name
-        self._states = []
-        self._field_states = []
-        self._parameters = []
-        self._variables = []
-        self._all_symbols = {}
-        self._state_derivatives = {}
 
-        # Add time as a variable
-        self.add_variable("t", 0.0)
-
-        # Store instance for future lookups
-        _all_odes[name] = self
+        # Initialize all variables
+        self.clear()
 
     def add_state(self, name, value):
         """
@@ -180,36 +158,82 @@ class ODE(object):
         """
         check_arg(state, sym.Symbol, 0)
         
-        if not self.is_state(state):
+        if not self.has_state(state):
             error("expected derivative of a declared state or field state")
 
         # Register the derivative
         self.get_symbol(str(state)).diff(expr, dependent)
 
-    def is_state(self, state):
+    def iterstates(self):
+        """
+        Return an iterator over registered states
+        """
+        for state in self._states + self._field_states:
+            yield state
+
+    def has_state(self, state):
         """
         Return True if state is a registered state or field state
         """
         return str(state) in self._states or str(state) in self._field_states
         
-    def is_field_state(self, state):
+    def has_field_state(self, state):
         """
         Return True if state is a registered field state
         """
         return str(state) in self._field_states
         
-    def is_variable(self, param):
+    def has_variable(self, param):
         """
         Return True if state is a registered variable
         """
         return str(param) in self._variables
         
-    def is_parameter(self, state):
+    def has_parameter(self, state):
         """
         Return True if state is a registered parameter
         """
         return str(state) in self._parameters
         
+    def is_complete(self):
+        """
+        Check that the ODE is complete
+        """
+        all_states = [state for state in self.iterstates()]
+
+        if not all_states:
+            return False
+        
+        # FIXME: More thorough test?
+        for state in all_states:
+            if not state.has_diff():
+                return False
+        
+        return True
+
+    def is_empty(self):
+        """
+        Returns True if the ODE is empty
+        """
+        # By default only t is a registered symbol
+        return len(self._all_symbols) == 1
+
+    def clear(self):
+        """
+        Clear any registered symbols
+        """
+
+        # FIXME: Make this a dict of lists
+        self._states = []
+        self._field_states = []
+        self._parameters = []
+        self._variables = []
+        self._all_symbols = {}
+        self._state_derivatives = {}
+
+        # Add time as a variable
+        self.add_variable("t", 0.0)
+
     def _register_symbol(self, symbol):
         """
         Register a symbol to the ODE
@@ -221,6 +245,44 @@ class ODE(object):
 
         # Register the symbol
         self._all_symbols[str(symbol)] = symbol
+
+    def _sort_collected_symbols(self):
+        """
+        Sort the collected symbols after alphabetic order
+        """ 
+        cmp_func = lambda a, b: cmp(a.name, b.name)
+        self._states.sort(cmp_func)
+        self._field_states.sort(cmp_func)
+        self._parameters.sort(cmp_func)
+        self._variables.sort(cmp_func)
+
+    def __eq__(self, other):
+        """
+        x.__eq__(y) <==> x==y
+        """
+        check_arg(other, ODE)
+        
+        # Sort all collected symbols
+        self._sort_collected_symbols()
+        other._sort_collected_symbols()
+
+        # Compare the list of symbols
+        for what in ["_states", "_field_states", "_parameters", "_variables"]:
+            if getattr(self, what) != getattr(other, what):
+                return False
+
+        # Check equal differentiation
+        for state in self.iterstates():
+            if len(state.diff_expr) != len(other.get_symbol(state).diff_expr):
+                return False
+            for dependent, expr in state.diff_expr.items():
+                if dependent not in other.get_symbol(state).diff_expr:
+                    return False
+                if other.get_symbol(state).diff_expr[dependent] != \
+                   state.diff_expr[dependent]:
+                    return False
+        
+        return True
 
     def __str__(self):
         """

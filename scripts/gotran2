@@ -3,7 +3,7 @@
 
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-05-07 -- 2012-05-07"
+__date__ = "2012-05-07 -- 2012-05-08"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 # System imports
@@ -11,19 +11,19 @@ import sys
 import os
 
 # gotran imports
-from gotran2 import load_model
+from gotran2 import load_ode
 from gotran2.common import error
 
-def main(modelfile, arguments, **kwargs):
+def main(odefile, arguments, **kwargs):
     """
     Parse and generate code for the ode file
     """
     
-    splitted_modelfile = modelfile.split(".")
-    if len(splitted_modelfile) > 1:
-        if splitted_modelfile[-1] in ["ode"]:
-            modelfile = ".".join(splitted_modelfile[:-1])
-    ode = load_model(modelfile)
+    splitted_odefile = odefile.split(".")
+    if len(splitted_odefile) > 1:
+        if splitted_odefile[-1] in ["ode"]:
+            odefile = ".".join(splitted_odefile[:-1])
+    ode = load_ode(odefile)
     print "loaded ode just fine!"
 
 if __name__ == "__main__":

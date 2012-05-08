@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-02-22 -- 2012-05-07"
+__date__ = "2012-02-22 -- 2012-05-08"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["t", "states", "field_states", "parameters", "diff", \
@@ -145,7 +145,7 @@ def model_arguments(**kwargs):
         if key not in arguments:
             namespace[key] = value
         else:
-            namespace[key] = load_arguments[key]
+            namespace[key] = arguments[key]
     
 def _add_entities(kwargs, entity):
     """
