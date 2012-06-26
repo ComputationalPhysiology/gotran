@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-02-22 -- 2012-05-08"
+__date__ = "2012-02-22 -- 2012-06-26"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["t", "states", "field_states", "parameters", "diff", \
@@ -12,8 +12,8 @@ import types
 
 # Gotran imports
 from gotran2.common import *
-from gotran2.models.symbols import t
-from gotran2.models.ode import gco
+from gotran2.model.symbols import t
+from gotran2.model.ode import gco
 
 def states(**kwargs):
     """
@@ -161,7 +161,7 @@ def _add_entities(kwargs, entity):
     frame = inspect.currentframe().f_back.f_back
 
     # Get add method
-    add = getattr(ode, "add_{}".format(entity))
+    add = getattr(ode, "add_{0}".format(entity))
     
     # Symbol and value dicts
     for name, value in kwargs.iteritems():
@@ -171,9 +171,9 @@ def _add_entities(kwargs, entity):
         
         # Add symbol to caller frames namespace
         try:
-            debug("Adding {} '{}' to namespace".format(entity, name))
+            debug("Adding {0} '{1}' to namespace".format(entity, name))
             frame.f_globals[name] = sym
         except:
-            error("Not able to add '{}' to namespace".format(name))
+            error("Not able to add '{0}' to namespace".format(name))
 
 

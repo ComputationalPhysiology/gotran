@@ -5,12 +5,12 @@ __license__  = "GNU LGPL Version 3.0 or later"
 
 # Import gotran2 modules
 import common
-import models
+import model
 
 # Import classes and routines from gotran2 modules
 from common import DEBUG, INFO, WARNING, ERROR, CRITICAL, \
      info, debug, warning, error, set_log_level
-from models import *
+from model import *
 
 # Assign the __all__ attribute
 __all__ = [name for name in globals().keys() if name[:1] != "_"]

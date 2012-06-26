@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-02-22 -- 2012-05-07"
+__date__ = "2012-02-22 -- 2012-06-26"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 
@@ -39,7 +39,7 @@ setup(name = "Gotran2",
       """,
       author = __author__.split("(")[0],
       author_email = __author__.split("(")[1][:-1],
-      packages = ["gotran2", "gotran2.common", "gotran2.models"],
+      packages = ["gotran2", "gotran2.common", "gotran2.model"],
       package_dir = {"gotran2": "src"},
       scripts = scripts,
       )

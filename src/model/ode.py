@@ -10,7 +10,7 @@ import sympy as sym
 
 # Gotran imports
 from gotran2.common import error, check_arg
-from gotran2.models.symbols import *
+from gotran2.model.symbols import *
 
 # Holder for current ODE
 global _current_ode
