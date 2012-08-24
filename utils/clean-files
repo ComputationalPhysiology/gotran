@@ -3,7 +3,7 @@
 
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2010-12-01 -- 2012-02-23"
+__date__ = "2010-12-01 -- 2012-08-23"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 import os
@@ -28,6 +28,13 @@ if remove:
 else:
     print "No temp files removed"
 
+if os.path.isdir("build"):
+    message = "\nFound build dir, which will be removed."
+    print message
+    print "-"*len(message)
+    print "  removing: build"
+    shutil.rmtree("build")
+    
 remove = []
 
 for dirpath, dirnames, filenames in os.walk(os.path.join(os.path.curdir, "demo")):

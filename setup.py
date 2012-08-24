@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-02-22 -- 2012-06-26"
+__date__ = "2012-02-22 -- 2012-08-23"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 
@@ -33,13 +33,14 @@ if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
     scripts.extend(batch_files)
 
 setup(name = "Gotran2",
-      version = "{}.{}".format(major, minor),
+      version = "{0}.{1}".format(major, minor),
       description = """
       A declarative language describing ordinary differential equations.
       """,
       author = __author__.split("(")[0],
       author_email = __author__.split("(")[1][:-1],
-      packages = ["gotran2", "gotran2.common", "gotran2.model"],
+      packages = ["gotran2", "gotran2.common", "gotran2.model",
+                  "gotran2.algorithms", "gotran2.codegeneration"],
       package_dir = {"gotran2": "src"},
       scripts = scripts,
       )

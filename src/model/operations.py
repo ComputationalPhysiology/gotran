@@ -1,10 +1,9 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-02-22 -- 2012-06-26"
+__date__ = "2012-02-22 -- 2012-08-24"
 __license__  = "GNU LGPL Version 3.0 or later"
 
-__all__ = ["t", "states", "field_states", "parameters", "diff", \
-           "variables", "model_arguments"]
+__all__ = ["states", "parameters", "diff", "variables", "model_arguments"]
 
 # System imports
 import inspect
@@ -12,7 +11,6 @@ import types
 
 # Gotran imports
 from gotran2.common import *
-from gotran2.model.symbols import t
 from gotran2.model.ode import gco
 
 def states(**kwargs):
@@ -30,28 +28,11 @@ def states(**kwargs):
     if not kwargs:
         error("expected at least one state")
     
+    print kwargs
+
     # Check values and create sympy Symbols
     _add_entities(kwargs, "state")
 
-def field_states(**kwargs):
-    """
-    Add a number of field states to the current ODE
-
-    Example:
-    ========
-
-    >>> ODE("MyOde")
-    >>> field_states(u=0.0, v=1.0)
-    
-    """
-
-    if not kwargs:
-        error("expected at least one state")
-    
-    # Check values and create sympy Symbols
-    _add_entities(kwargs, "field_state")
-
-# FIXME: Add some sort of ParameterDict/TypeChecker semantic
 def parameters(**kwargs):
     """
     Add a number of parameters to the current ODE
@@ -89,7 +70,7 @@ def variables(**kwargs):
     # Check values and create sympy Symbols
     _add_entities(kwargs, "variable")
 
-def diff(state, expr, dependent=t):
+def diff(state, expr):
     """
     Set derivative of a declared state
 
@@ -103,7 +84,7 @@ def diff(state, expr, dependent=t):
     # Get current ode
     ode = gco()
 
-    ode.diff(state, expr, dependent)
+    ode.diff(state, expr)
 
 def model_arguments(**kwargs):
     """
@@ -152,7 +133,7 @@ def _add_entities(kwargs, entity):
     Help function for determine if each entity in the kwargs is unique
     and to check the type of the given default value
     """
-    assert(entity in ["state", "parameter", "field_state", "variable"])
+    assert(entity in ["state", "parameter", "variable"])
 
     # Get current ode
     ode = gco()

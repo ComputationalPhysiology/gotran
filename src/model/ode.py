@@ -1,12 +1,15 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2012 " + __author__
-__date__ = "2012-02-22 -- 2012-05-08"
+__date__ = "2012-02-22 -- 2012-08-24"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["ODE", "gco"]
 
 # System imports
 import sympy as sym
+
+# ModelParameter imports
+from modelparameters.sympytools import ModelSymbol
 
 # Gotran imports
 from gotran2.common import error, check_arg
@@ -25,8 +28,10 @@ class ODE(object):
         """
         Initialize an ODE
         
-        @type name : str
-        @param name : Name of the ODE
+        Arguments
+        ---------
+        name : str
+            The name of the ODE
         """
         global _current_ode
 
@@ -41,14 +46,16 @@ class ODE(object):
         # Initialize all variables
         self.clear()
 
-    def add_state(self, name, value):
+    def add_state(self, name, init):
         """
         Add a state to the ODE
 
-        @type name : str
-        @param name : The name of the state variable
-        @type value : float, int
-        @param value : Initial value of the state
+        Arguments
+        ---------
+        name : str
+            The name of the state variable
+        init : scalar, ScalarParam
+            The initial value of the state
         
         Example:
         ========
@@ -58,42 +65,16 @@ class ODE(object):
         """
         
         # Create the state
-        state = State(self, name, value)
+        state = State(self, name, init)
         
         # Register the state
         self._states.append(state)
-        self._register_symbol(state)
+        self._register_object(state)
 
         # Return the sympy version of the state
         return state.sym
         
-    def add_field_state(self, name, value):
-        """
-        Add a field_state to the ODE
-
-        @type name : str
-        @param name : The name of the field state variable
-        @type value : float, int, numpy array
-        @param value : Initial value of the state
-        
-        Example:
-        ========
-
-        >>> ode = ODE("MyOde")
-        >>> ode.add_field_state("v", 0.0)
-        """
-        
-        # Create the field_state
-        field_state = FieldState(self, name, value)
-        
-        # Register the field_state
-        self._field_states.append(field_state)
-        self._register_symbol(field_state)
-
-        # Return the sympy version of the field state
-        return field_state.sym
-        
-    def add_parameter(self, name, value):
+    def add_parameter(self, name, init):
         """
         Add a parameter to the ODE
 
@@ -110,16 +91,16 @@ class ODE(object):
         """
         
         # Create the parameter
-        parameter = Parameter(self, name, value)
+        parameter = Parameter(self, name, init)
         
         # Register the parameter
         self._parameters.append(parameter)
-        self._register_symbol(parameter)
+        self._register_object(parameter)
 
         # Return the sympy version of the parameter
         return parameter.sym
 
-    def add_variable(self, name, value):
+    def add_variable(self, name, init):
         """
         Add a variable to the ODE
 
@@ -136,70 +117,143 @@ class ODE(object):
         """
         
         # Create the variable
-        variable = Variable(self, name, value)
+        variable = Variable(self, name, init)
         
         # Register the variable
         self._variables.append(variable)
-        self._register_symbol(variable)
+        self._register_object(variable)
 
         # Return the sympy version of the variable
         return variable.sym
 
-    def get_symbol(self, name):
+    def get_object(self, name):
         """
-        Return a registered symbol
+        Return a registered object
         """
-        
-        return self._all_symbols.get(str(name))
 
-    def diff(self, state, expr, dependent=t):
+        check_arg(name, (str, ModelSymbol))
+        if isinstance(name, ModelSymbol):
+            name = name.name
+        
+        return self._all_objects.get(name)
+
+    def diff(self, state, expr):
         """
         Register an expression for a state derivative
         """
-        check_arg(state, sym.Symbol, 0)
+        check_arg(state, ModelSymbol, 0)
         
         if not self.has_state(state):
             error("expected derivative of a declared state or field state")
 
         # Register the derivative
-        self.get_symbol(str(state)).diff(expr, dependent)
+        self.get_object(state.name).diff(expr)
 
-    def iterstates(self):
+    def iter_states(self):
         """
         Return an iterator over registered states
         """
-        for state in self._states + self._field_states:
-            yield state
+        for state in self._all_objects.values():
+            if isinstance(state, State):
+                yield state
+
+    def iter_field_states(self):
+        """
+        Return an iterator over registered field states
+        """
+        for state in self._all_objects.values():
+            if isinstance(state, State) and state.is_field:
+                yield state
+
+    def iter_variables(self):
+        """
+        Return an iterator over registered variables
+        """
+        for variable in self._all_objects.values():
+            if isinstance(variable, Variable):
+                yield variable
+
+    def iter_parameters(self):
+        """
+        Return an iterator over registered parameters
+        """
+        for parameter in self._all_objects.values():
+            if isinstance(parameter, Parameter):
+                yield parameter
 
     def has_state(self, state):
         """
         Return True if state is a registered state or field state
         """
-        return str(state) in self._states or str(state) in self._field_states
+        check_arg(state, (str, ModelSymbol, ODEObject))
+        if isinstance(state, (str, ModelSymbol)):
+            state = self.get_object(state)
+        
+        if not isinstance(state, State):
+            return False
+        
+        return state.ode == self
         
     def has_field_state(self, state):
         """
         Return True if state is a registered field state
         """
-        return str(state) in self._field_states
+        check_arg(state, (str, ModelSymbol, ODEObject))
+        if isinstance(state, (str, ModelSymbol)):
+            state = self.get_object(state)
         
-    def has_variable(self, param):
-        """
-        Return True if state is a registered variable
-        """
-        return str(param) in self._variables
+        if not isinstance(state, State):
+            return False
         
-    def has_parameter(self, state):
+        return state.is_field and state.ode == self
+        
+    def has_variable(self, variable):
+        """
+        Return True if variable is a registered variable
+        """
+        check_arg(variable, (str, ModelSymbol, ODEObject))
+        if isinstance(variable, (str, ModelSymbol)):
+            variable = self.get_object(variable)
+        
+        if not isinstance(Variable):
+            return False
+        
+        return variable.ode == self
+        
+    def has_parameter(self, param):
         """
         Return True if state is a registered parameter
         """
-        return str(state) in self._parameters
+        check_arg(param, (str, ModelSymbol, ODEObject))
+        if isinstance(param, (str, ModelSymbol)):
+            param = self.get_object(param)
+        
+        if not isinstance(Parameter):
+            return False
+        
+        return param.ode == self
+
+    @property
+    def num_states(self):
+        return len([s for s in self.iter_states()])
+        
+    @property
+    def num_field_states(self):
+        return len([s for s in self.iter_field_states()])
+        
+    @property
+    def num_parameters(self):
+        return len([s for s in self.iter_parameters()])
+        
+    @property
+    def num_variables(self):
+        return len([s for s in self.iter_variables()])
         
     def is_complete(self):
         """
         Check that the ODE is complete
         """
-        all_states = [state for state in self.iterstates()]
+        all_states = [state for state in self.iter_states()]
 
         if not all_states:
             return False
@@ -215,12 +269,12 @@ class ODE(object):
         """
         Returns True if the ODE is empty
         """
-        # By default only t is a registered symbol
-        return len(self._all_symbols) == 1
+        # By default only t is a registered object
+        return len(self._all_objects) == 1
 
     def clear(self):
         """
-        Clear any registered symbols
+        Clear any registered objects
         """
 
         # FIXME: Make this a dict of lists
@@ -228,27 +282,28 @@ class ODE(object):
         self._field_states = []
         self._parameters = []
         self._variables = []
-        self._all_symbols = {}
+        self._all_objects = {}
         self._state_derivatives = {}
 
         # Add time as a variable
         self.add_variable("t", 0.0)
+        self.add_variable("dt", 0.1)
 
-    def _register_symbol(self, symbol):
+    def _register_object(self, obj):
         """
-        Register a symbol to the ODE
+        Register an object to the ODE
         """
-        assert(isinstance(symbol, ODESymbol))
+        assert(isinstance(obj, ODEObject))
         
-        # Make symbol available as an attribute
-        setattr(self, str(symbol), symbol.sym)
+        # Make object available as an attribute
+        setattr(self, obj.name, obj.sym)
 
-        # Register the symbol
-        self._all_symbols[str(symbol)] = symbol
+        # Register the object
+        self._all_objects[obj.name] = obj
 
-    def _sort_collected_symbols(self):
+    def _sort_collected_objects(self):
         """
-        Sort the collected symbols after alphabetic order
+        Sort the collected object after alphabetic order
         """ 
         cmp_func = lambda a, b: cmp(a.name, b.name)
         self._states.sort(cmp_func)
@@ -260,25 +315,30 @@ class ODE(object):
         """
         x.__eq__(y) <==> x==y
         """
-        check_arg(other, ODE)
-        
-        # Sort all collected symbols
-        self._sort_collected_symbols()
-        other._sort_collected_symbols()
+        if not isinstance(other, ODE):
+            return False
 
-        # Compare the list of symbols
+        if id(self) == id(other):
+            return True
+        
+        # Sort all collected objects
+        self._sort_collected_objects()
+        other._sort_collected_objects()
+
+        # Compare the list of objects
         for what in ["_states", "_field_states", "_parameters", "_variables"]:
             if getattr(self, what) != getattr(other, what):
                 return False
 
         # Check equal differentiation
-        for state in self.iterstates():
-            if len(state.diff_expr) != len(other.get_symbol(state).diff_expr):
+        # FIXME: Remove dependent
+        for state in self.iter_states():
+            if len(state.diff_expr) != len(other.get_object(state).diff_expr):
                 return False
             for dependent, expr in state.diff_expr.items():
-                if dependent not in other.get_symbol(state).diff_expr:
+                if dependent not in other.get_object(state).diff_expr:
                     return False
-                if other.get_symbol(state).diff_expr[dependent] != \
+                if other.get_object(state).diff_expr[dependent] != \
                    state.diff_expr[dependent]:
                     return False
         
@@ -295,7 +355,7 @@ class ODE(object):
         x.__repr__() <==> repr(x)
         """
         return "{}('{}')".format(self.__class__.__name__, self.name)
-        
+
 # Construct a default Ode
 _current_ode = ODE("Default")
         

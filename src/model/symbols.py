@@ -1,52 +1,100 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2012 " + __author__
-__date__ = "2012-02-22 -- 2012-05-08"
+__date__ = "2012-02-22 -- 2012-08-24"
 __license__  = "GNU LGPL Version 3.0 or later"
 
-__all__ = ["t", "ODESymbol", "Parameter", "State", "FieldState", "Variable"]#
+__all__ = ["ODEObject", "Parameter", "State", "Variable"]#
 #           "DiscreteVariable", "ContinuousVariable", ]
 
 # System imports
-import sympy
 import numpy as np
 
-# Gotran imports
-from gotran2.common import error, check_arg
+# ModelParameters imports
+from modelparameters.sympytools import sp, ModelSymbol
+from modelparameters.parameters import *
 
-# Default time symbol
-t = sympy.Symbol("t")
+from gotran2.common import error, check_arg, scalars
 
-class ODESymbol(object):
+class ODEObject(object):
     """
     Base container class for all symbols
     """
-    def __init__(self, ode, name, value=None):
+    def __init__(self, ode, name, init):
         """
-        Create ODESymbol instance
+        Create ODEObject instance
 
-        @type ode : ODE
-        @param ode : The ode the symbol belongs to
-        @type name : str
-        @param name : The name of the ODESymbol
-        @type value : float, int, None
-        @param value : An optional numeric value of the symbol
+        ode : ODE
+            The ODE the ODEObject belongs to
+        name : str
+            The name of the ODEObject
+        init : scalar, ScalarParam
+            The initial value of this ODEObject
         """
+
         from gotran2.model.ode import ODE
-        check_arg(ode, ODE, 0)
-        check_arg(name, str, 1)
-        self.name = name
+        check_arg(ode, ODE, 0, ODEObject)
+        check_arg(name, str, 1, ODEObject)
+        check_arg(init, scalars + (ScalarParam, list, np.ndarray), 2, ODEObject)
+        
         self.ode = ode
-        self.value = value
-        self.sym = sympy.Symbol(name)
 
-        if ode.get_symbol(name) is not None:
-           error("Name '{}' is already registered in '{}'".format(ode.get_symbol(name), ode))
+        if isinstance(init, ScalarParam):
+
+            # If Param already has a symbol
+            if init.sym != dummy_sym:
+
+                # Re create one without a name
+                init = eval(repr(init).split(", name")[0]+")")
+
+        elif isinstance(init, scalars):
+            init = ScalarParam(init)
+        else:
+            init = ArrayParam(init)
+            
+        # Create a symname based on the name of the ODE
+        init.name = name, "{0}.{1}".format(ode.name, name)
+
+        # Store the Param
+        self._param = init 
+
+        # Store field
+        # FIXME: Is this nesesary
+        self._field = isinstance(init, ArrayParam)
+
+        # Check that there are no object with this name
+        if ode.get_object(name) is not None:
+           error("Name '{0}' is already registered in '{1}'".format(\
+               ode.get_object(name), ode))
+
+    @property
+    def is_field(self):
+        return self._field
+
+    @property
+    def sym(self):
+        return self._param.sym
+
+    @property
+    def name(self):
+        return self._param.name
+
+    @property
+    def param(self):
+        return self._param
+
+    @property
+    def init(self):
+        return self._param.getvalue()
+
+    @init.setter
+    def init(self, value):
+        self._param.setvalue(value)
 
     def __eq__(self, other):
         """
         x.__eq__(y) <==> x==y
         """
-        check_arg(other, (str, ODESymbol, sympy.Symbol))
+        check_arg(other, (str, ODEObject, ModelSymbol))
         return self.name == str(other)
 
     def __str__(self):
@@ -59,139 +107,111 @@ class ODESymbol(object):
         """
         x.__repr__() <==> repr(x)
         """
-        return "{}({})".format(self.__class__.__name__, self._args_str())
+        return "{0}({1})".format(self.__class__.__name__, self._args_str())
 
     def _args_str(self):
         """
         Return a formated str of __init__ arguments
         """
-        return "'{}, '{}'{}'".format(repr(self.ode), self.name, "" \
-                                   if self.value is None else \
-                                   ", value={:f}".format(self.value))
+        return "'{0}, '{1}', {2}{3}{4}'".format(\
+            repr(self.ode), self.name, self.init, self._param._check_arg(),
+            ", field=True" if self._field else "")
 
-class State(ODESymbol):
+class State(ODEObject):
     """
     Container class for a State variable
     """
-    def __init__(self, ode, name, value):
+    def __init__(self, ode, name, init):
         """
         Create a state variable with an assosciated initial value
 
-        @type ode : ODE
-        @param ode : The ode the symbol belongs to
-        @type name : str
-        @param name : The name of the state variable
-        @type value : float, int
-        @param value : Initial value of the state
+        ode : ODE
+            The ODE the State belongs to
+        name : str
+            The name of the State
+        init : scalar, ScalarParam
+            The initial value of this state
         """
         
         # Call super class
-        check_arg(value, (float, int), 1)
-        super(State, self).__init__(ode, name, value)
+        super(State, self).__init__(ode, name, init)
 
         # Add an attribute to register dependencies
-        self.diff_expr = {}
-        self.dependencies = {}
-        self.linear_dependencies = {}
+        self.diff_expr = None
+        self.dependencies = []
+        self.linear_dependencies = []
 
-    def diff(self, expr, dependent=t):
+        # Add previous value symbol
+        self.sym_0 = ModelSymbol("{0}_0".format(name), \
+                                 "{0}.{1}_0".format(ode.name, name))
+
+    def diff(self, expr):
         """
         Register a derivative of the state
         """
-        check_arg(expr, (sympy.Basic, float, int), 0)
-        check_arg(dependent, sympy.Symbol, 1)
+        check_arg(expr, (sp.Basic, scalars), 0)
 
-        if str(dependent) in self.diff_expr:
-            error("derivative of '{0}' is already registered.".format(self))
-
-        self.dependencies[str(dependent)] = []
-        self.linear_dependencies[str(dependent)] = []
-        
         for atom in expr.atoms():
-            if not isinstance(atom, (sympy.Atom, int, float)):
-                error("a derivative must be sympy expressions or scalars")
-            if isinstance(atom, sympy.Symbol):
-                sym = self.ode.get_symbol(atom)
+            if not isinstance(atom, (ModelSymbol, sp.Number, int, float)):
+                type_error("a derivative must be an expressions of "\
+                           "ModelSymbol or scalars")
+                
+            if isinstance(atom, ModelSymbol):
+                sym = self.ode.get_object(atom)
 
                 if sym is None:
-                    error("ODESymbol '{}' is not registered in the ""\
-                    '{}' ODE".format(sym, self.ode))
+                    error("ODEObject '{0}' is not registered in the ""\
+                    '{1}' ODE".format(sym, self.ode))
 
                 # Check dependencies on other states
                 if self.ode.has_state(sym):
-                    self.dependencies[str(dependent)].append(sym)
+                    self.dependencies.append(sym)
                     if atom not in expr.diff(atom).atoms():
-                        self.linear_dependencies[str(dependent)].append(sym)
+                        self.linear_dependencies.append(sym)
 
         # Store expression
-        self.diff_expr[str(dependent)] = expr
+        self.diff_expr = expr
 
-    def has_diff(self, dependent=t):
-        """
-        Return True if differential is registered for dependent
-        """
-        return str(dependent) in self.diff_expr
-        
-
-class FieldState(State):
-    """
-    Container class for a FieldState variable
-    """
-    def __init__(self, ode, name, value):
-        """
-        Create a field state variable with an assosciated initial value
-
-        @type ode : ODE
-        @param ode : The ode the symbol belongs to
-        @type name : str
-        @param name : The name of the field state variable
-        @type value : float, int, numpy array
-        @param value : Initial value of the state
-        """
-        
-        # Call super class
-        check_arg(value, (float, int, np.ndarray), 1)
-        super(FieldState, self).__init__(ode, name, value)
-
-# FIXME: How to integrate a scalar parameter with OptionParameters, aso
-class Parameter(ODESymbol):
+class Parameter(ODEObject):
     """
     Container class for a Parameter
     """
-    def __init__(self, ode, name, value, ):
+    def __init__(self, ode, name, init):
         """
         Create a Parameter with an assosciated initial value
 
-        @type ode : ODE
-        @param ode : The ode the symbol belongs to
-        @type name : str
-        @param name : The name of the parameter
-        @type value : float, int
-        @param value : Initial value of the parameter
+        ode : ODE
+            The ODE the State belongs to
+        name : str
+            The name of the State
+        init : scalar, ScalarParam
+            The initial value of this parameter
         """
         
         # Call super class
-        check_arg(value, (float, int), 1)
-        super(Parameter, self).__init__(ode, name, value)
+        super(Parameter, self).__init__(ode, name, init)
 
-class Variable(ODESymbol):
+class Variable(ODEObject):
     """
     Container class for a Variable
     """
-    def __init__(self, ode, name, value):
+    def __init__(self, ode, name, init):
         """
         Create a variable with an assosciated initial value
 
-        @type ode : ODE
-        @param ode : The ode the symbol belongs to
-        @type name : str
-        @param name : The name of the state variable
-        @type value : float, int
-        @param value : Initial value of the state
+        ode : ODE
+            The ODE the Variable belongs to
+        name : str
+            The name of the variable
+        init : scalar
+            The initial value of this variable
         """
         
         # Call super class
-        check_arg(value, (float, int), 1)
-        super(Variable, self).__init__(ode, name, value)
+        super(Variable, self).__init__(ode, name, init)
+
+        # Add previous value symbol
+        self.sym_0 = ModelSymbol("{0}__0".format(name), \
+                                 "{0}.{1}__0".format(ode.name, name))
 
 

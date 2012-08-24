@@ -1,12 +1,16 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-05-07 -- 2012-05-08"
+__date__ = "2012-05-07 -- 2012-08-25"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["load_ode", "get_load_arguments", "get_load_namespace"]
 
 # System imports
 import os
+import sympy
+
+# modelparameters import
+from modelparameters.parameters import ScalarParam, ArrayParam, ConstParam
 
 # gotran imports
 from gotran2.common import *
@@ -24,8 +28,10 @@ def load_ode(filename, **kwargs):
 
     The method looks for a file with .ode extension.
 
-    @type filename : str
-    @param filename : Name of the ode file to look for
+    Arguments
+    ---------
+    filename : str
+        Name of the ode file to load
     """
 
     global _namespace, _load_arguments
@@ -40,11 +46,18 @@ def load_ode(filename, **kwargs):
     # Create an ODE which will be populated with data when ode file is loaded
     ode = ODE(filename)
 
+    print filename
+
     debug("Loading {}".format(ode))
 
     # Create namespace which the ode file will be executed in
     _namespace = {}
     _namespace.update(operations.__dict__)
+    _namespace.update(sympy.functions.__dict__)
+    _namespace.update(dict(t=ode.t, dt=ode.dt,
+                           ScalarParam=ScalarParam,
+                           ArrayParam=ArrayParam,
+                           ConstParam=ConstParam))
 
     # Execute the file
     if len(filename) < 4 or filename[-4:] != ".ode":
@@ -55,6 +68,14 @@ def load_ode(filename, **kwargs):
     
     execfile(filename, _namespace, {})
 
+    collected_info = []
+    
+    info("Loaded ODE model '{0}' with:".format(ode.name))
+    for what in ["states", "parameters", "variables"]:
+        num = getattr(ode, "num_{0}".format(what))
+        if num:
+            info("{0}: {1}".format(("Num "+what).rjust(15), num))
+    
     return ode
 
 def get_load_arguments():
