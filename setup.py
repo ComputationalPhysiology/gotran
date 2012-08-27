@@ -2,12 +2,14 @@
 # -*- coding: utf-8 -*-
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-02-22 -- 2012-08-23"
+__date__ = "2012-02-22 -- 2012-08-27"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 
 # System imports
 from distutils.core import setup
+from distutils.core import Command
+
 from os.path import join as pjoin
 import glob
 import platform
@@ -32,6 +34,46 @@ if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
         batch_files.append(batch_file)
     scripts.extend(batch_files)
 
+class clean(Command):
+    """
+    Cleans *.pyc so you should get the same copy as is in the VCS.
+    """
+
+    description = "remove build files"
+    user_options = [("all","a","the same")]
+
+    def initialize_options(self):
+        self.all = None
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        import os
+        os.system("utils/clean-files")
+
+class run_tests(Command):
+    """
+    Runs all tests under the modelparameters/ folder
+    """
+
+    description = "run all tests"
+    user_options = []  # distutils complains if this is not here.
+
+    def __init__(self, *args):
+        self.args = args[0] # so we can pass it to other classes
+        Command.__init__(self, *args)
+
+    def initialize_options(self):  # distutils wants this
+        pass
+
+    def finalize_options(self):    # this too
+        pass
+
+    def run(self):
+        import os
+        os.system("python utils/run_tests.py")
+
 setup(name = "Gotran2",
       version = "{0}.{1}".format(major, minor),
       description = """
@@ -43,4 +85,7 @@ setup(name = "Gotran2",
                   "gotran2.algorithms", "gotran2.codegeneration"],
       package_dir = {"gotran2": "src"},
       scripts = scripts,
+      cmdclass    = {'test': run_tests,
+                     'clean': clean,
+                     },
       )
