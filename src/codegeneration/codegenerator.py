@@ -54,7 +54,9 @@ class CodeGenerator(object):
         return prototype
         
     def dy_code(self):
-        pass
+        """
+        Generate code for evaluating state derivatives
+        """
         
 
     def init_code(self):

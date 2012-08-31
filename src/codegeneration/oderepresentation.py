@@ -5,12 +5,30 @@ from gotran2.common import check_arg
 
 def _default_params():
     return ParameterDict(
+
+        # Use state, parameters, and variable names in code (compared to
+        # array with indices)
+        use_names = True,
+
+        # If True, logic for field states are created
         field_states = False,
+
+        # If True, logic for field paramters are created
         field_parameters = False,
+
+        # If True , code for altering variables are created
         use_variables = False,
+
+        # Find sub expressions of only parameters and create a dummy parameter
         parameter_contraction = False,
+
+        # Exchange all parameters with their initial numerical values
         parameter_numerals = False,
-        max_terms = ScalarParam(10, ge=2),
+
+        # Split terms with more than max_terms into several evaluations
+        max_terms = ScalarParam(5, ge=2),
+
+        # Use sympy common sub expression simplifications
         use_cse = False,
         )
 
