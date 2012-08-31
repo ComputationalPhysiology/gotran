@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2011-01-04 -- 2012-02-22"
+__date__ = "2011-01-04 -- 2012-08-31"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["load", "save", "present_time_str"]
@@ -15,7 +15,6 @@ from os.path import isdir, join
 
 # gotran2 imports
 from gotran2.common import *
-from gotran2.common.logger import *
 
 TIME_FORMAT = "%Y.%m.%d-%H.%M.%S"
 

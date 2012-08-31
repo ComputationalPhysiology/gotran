@@ -3,7 +3,7 @@ __copyright__ = "Copyright (C) 2012 " + __author__
 __date__ = "2012-02-22 -- 2012-08-31"
 __license__  = "GNU LGPL Version 3.0 or later"
 
-__all__ = ["ODE", "gco"]
+__all__ = ["ODE"]
 
 # System imports
 import sympy as sym
@@ -15,10 +15,6 @@ from modelparameters.utils import listwrap
 # Gotran imports
 from gotran2.common import error, check_arg, scalars
 from gotran2.model.odeobjects import *
-
-# Holder for current ODE
-global _current_ode
-_current_ode = None
 
 class ODE(object):
     """
@@ -34,12 +30,7 @@ class ODE(object):
         name : str
             The name of the ODE
         """
-        global _current_ode
-
         check_arg(name, str, 0)
-
-        # Set current Ode
-        _current_ode = self
 
         # Initialize attributes
         self.name = name
@@ -489,13 +480,3 @@ class ODE(object):
         """
         return "{}('{}')".format(self.__class__.__name__, self.name)
 
-# Construct a default Ode
-_current_ode = ODE("Default")
-        
-def gco():
-    """
-    Return the current Ode
-    """
-    assert(isinstance(_current_ode, ODE))
-    return _current_ode
-    

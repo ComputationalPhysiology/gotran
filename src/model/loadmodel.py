@@ -3,7 +3,7 @@ __copyright__ = "Copyright (C) 2010 " + __author__
 __date__ = "2012-05-07 -- 2012-08-31"
 __license__  = "GNU LGPL Version 3.0 or later"
 
-__all__ = ["load_ode", "get_load_arguments", "get_load_namespace"]
+__all__ = ["load_ode"]
 
 # System imports
 import os
@@ -15,13 +15,15 @@ from modelparameters.sympytools import sp_namespace
 
 # gotran imports
 from gotran2.common import *
-from ode import ODE
-import operations
+from gotran2.model.ode import ODE
 
-global _namespace, _load_arguments
+# Global variables
+global _namespace, _load_arguments, _current_ode, _comment_num
 
-_load_arguments = None
-_namespace = None
+_load_arguments = {}
+_namespace = {}
+_current_ode = None
+_comment_num = 0
 
 class NamespaceCollector(OrderedDict):
     """
@@ -32,7 +34,7 @@ class NamespaceCollector(OrderedDict):
             print "WARNING", name, "already defined as an intermediate variables"
         OrderedDict.__setitem__(self, name, value)
 
-def load_ode(filename, name=None, **kwargs):
+def load_ode(filename, name=None, collect_intermediates=True, **kwargs):
     """
     Load an ODE from file and return the instance
 
@@ -46,28 +48,38 @@ def load_ode(filename, name=None, **kwargs):
         Set the name of ODE (defaults to filename)
     """
 
-    global _namespace, _load_arguments
+    global _comment_num
 
-    _load_arguments = kwargs
+    # If a Param is provided turn it into its value
+    for key, value in kwargs.items():
+        if isinstance(value, Param):
+            kwargs[key] = value.getvalue()
 
-    # If a TypeCheck is provided turn it into its value
-    #for key, value in kwargs.items():
-    #    if isinstance(value, TypeCheck):
-    #        kwargs[key] = value.get()
+    # Get global variables and reset them
+    namespace = _get_load_namespace()
+    namespace.clear()
+    arguments = _get_load_arguments()
+    arguments.clear()
+    arguments.update(kwargs)
+    _comment_num = 0
 
     # Create an ODE which will be populated with data when ode file is loaded
     ode = ODE(name or filename)
+    _set_load_ode(ode)
 
-    debug("Loading {}".format(ode))
+    debug("Loading {}".format(_current_ode))
 
     # Create namespace which the ode file will be executed in
-    _namespace = sp_namespace.copy()
-    _namespace.update((name, op) for name, op in operations.__dict__.items() \
-                      if name in operations.__all__)
-    _namespace.update(dict(t=ode.t, dt=ode.dt,
-                           ScalarParam=ScalarParam,
-                           ArrayParam=ArrayParam,
-                           ConstParam=ConstParam))
+    namespace.update(sp_namespace)
+    namespace.update(dict(t=ode.t, dt=ode.dt,
+                          ScalarParam=ScalarParam,
+                          ArrayParam=ArrayParam,
+                          ConstParam=ConstParam,
+                          states=_states,
+                          parameters=_parameters,
+                          variables=_variables,
+                          diff=_diff,
+                          model_arguments=_model_arguments))
 
     # Execute the file
     if len(filename) < 4 or filename[-4:] != ".ode":
@@ -76,35 +88,40 @@ def load_ode(filename, name=None, **kwargs):
     if (not os.path.isfile(filename)):
         error("Could not find '{0}'".format(filename))
 
+    # Dict to collect declared intermediates
     collected_names = NamespaceCollector()
 
-    global comment_num
-    comment_num = 0
+    # Counter for indexing global comments
     def comment(comment_str):
-        global comment_num
+        global _comment_num
         check_arg(comment_str, str, context=comment)
-        collected_names["_comment_{0}".format(comment_num)] = comment_str
-        comment_num += 1
+        collected_names["_comment_{0}".format(_comment_num)] = comment_str
+        _comment_num += 1
 
-    _namespace["comment"] = comment
+    namespace["comment"] = comment
 
     # Execute file and collect 
     execfile(filename, _namespace, collected_names)
     for name, item in collected_names.items():
         print name, ":", item
+
     #print global_names.keys()
 
-    collected_info = []
-    
     info("Loaded ODE model '{0}' with:".format(ode.name))
     for what in ["states", "parameters", "variables"]:
         num = getattr(ode, "num_{0}".format(what))
         if num:
             info("{0}: {1}".format(("Num "+what).rjust(15), num))
+
+    # Reset global variables
+    _set_load_ode(None)
+    namespace.clear()
+    arguments.clear()
+    _comment_num = 0
     
     return ode
 
-def get_load_arguments():
+def _get_load_arguments():
     """
     Return the present load_arguments
     """
@@ -112,10 +129,172 @@ def get_load_arguments():
     global _load_arguments
     return _load_arguments
 
-def get_load_namespace():
+def _get_load_namespace():
     """
     Return the present namespace
     """
 
     global _namespace
     return _namespace
+
+def _get_load_ode():
+    """
+    Return the present ODE
+    """
+
+    global _current_ode
+    return _current_ode
+
+def _set_load_ode(ode):
+    """
+    Return the present ODE
+    """
+
+    global _current_ode
+    _current_ode = ode
+
+def _states(comment="", **kwargs):
+    """
+    Add a number of states to the current ODE
+
+    Example
+    -------
+
+    >>> ODE("MyOde")
+    >>> states(e=0.0, g=1.0)
+    """
+
+    if not kwargs:
+        error("expected at least one state")
+    
+    # Check values and create sympy Symbols
+    _add_entities(comment, kwargs, "state")
+
+def _parameters(comment="", **kwargs):
+    """
+    Add a number of parameters to the current ODE
+
+    Example
+    -------
+
+    >>> ODE("MyOde")
+    >>> parameters(v_rest=-85.0,
+                   v_peak=35.0,
+                   time_constant=1.0)
+    """
+    
+    if not kwargs:
+        error("expected at least one state")
+    
+    # Check values and create sympy Symbols
+    _add_entities(comment, kwargs, "parameter")
+    
+def _variables(comment="", **kwargs):
+    """
+    Add a number of variables to the current ODE
+
+    Example
+    -------
+
+    >>> ODE("MyOde")
+    >>> variables(c_out=0.0, c_in=1.0)
+    
+    """
+
+    if not kwargs:
+        error("expected at least one variable")
+    
+    # Check values and create sympy Symbols
+    _add_entities(comment, kwargs, "variable")
+
+def _diff(derivatives, expr):
+    """
+    Set derivative of a declared state
+
+    Arguments
+    ---------
+    derivatives : State, list of States or 0
+        If derivatives is a single state then it is interpreted as an ODE
+        If a list of states (with possible scalar weights) or 0 is
+        given, it is interpreted as a DAE expression.
+    expr : Sympy expression of ModelSymbols
+        The derivative expression
+    """
+    
+    # Get current ode
+    global _current_ode
+
+    _current_ode.diff(derivatives, expr)
+
+def _model_arguments(**kwargs):
+    """
+    Defines arguments that can be altered while the ODE is loaded
+    
+    Example
+    -------
+    
+    In gotran model file:
+
+      >>> ...
+      >>> model_arguments(include_Na=True)
+      >>> if include_Na:
+      >>>     states(Na=1.0)
+      >>> ...
+
+    When the model gets loaded
+    
+      >>> ...
+      >>> load_model("model", include_Na=False)
+      >>> ...
+      
+    """
+
+    # Update namespace with load_arguments and model_arguments
+    arguments = _get_load_arguments()
+    namespace = _get_load_namespace()
+
+    # Check the passed load arguments
+    for key in arguments:
+        if key not in kwargs:
+            error("Name '{0}' is not a model_argument.".format(key))
+
+    # Update the namespace
+    for key, value in kwargs.items():
+        if key not in arguments:
+            namespace[key] = value
+        else:
+            namespace[key] = arguments[key]
+    
+def _add_entities(comment, kwargs, entity):
+    """
+    Help function for determine if each entity in the kwargs is unique
+    and to check the type of the given default value
+    """
+    assert(entity in ["state", "parameter", "variable"])
+
+    # Get current ode
+    ode = _get_load_ode()
+
+    # Get caller frame
+    namespace = _get_load_namespace()
+
+    # Get add method
+    add = getattr(ode, "add_{0}".format(entity))
+    
+    # Symbol and value dicts
+    for name, value in kwargs.iteritems():
+
+        # Add the symbol
+        sym = add(name, value, comment)
+        
+        # Add symbol to caller frames namespace
+        try:
+            debug("Adding {0} '{1}' to namespace".format(entity, name))
+            if name in namespace:
+                warning("Symbol with name: '{0}' already in namespace.".\
+                        format(name))
+            namespace[name] = sym
+        except:
+            error("Not able to add '{0}' to namespace".format(name))
+
+
