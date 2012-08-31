@@ -14,7 +14,7 @@ from modelparameters.utils import listwrap
 
 # Gotran imports
 from gotran2.common import error, check_arg, scalars
-from gotran2.model.symbols import *
+from gotran2.model.odeobjects import *
 
 # Holder for current ODE
 global _current_ode
@@ -47,7 +47,7 @@ class ODE(object):
         # Initialize all variables
         self.clear()
 
-    def add_state(self, name, init):
+    def add_state(self, name, init, comment=""):
         """
         Add a state to the ODE
 
@@ -57,6 +57,8 @@ class ODE(object):
             The name of the state variable
         init : scalar, ScalarParam
             The initial value of the state
+        comment : str (optional)
+            A comment which will follow the state
         
         Example:
         ========
@@ -66,7 +68,7 @@ class ODE(object):
         """
         
         # Create the state
-        state = State(name, init, self.name)
+        state = State(name, init, comment, self.name)
         
         # Register the state
         self._states.append(state)
@@ -75,7 +77,7 @@ class ODE(object):
         # Return the sympy version of the state
         return state.sym
         
-    def add_parameter(self, name, init):
+    def add_parameter(self, name, init, comment=""):
         """
         Add a parameter to the ODE
 
@@ -85,6 +87,8 @@ class ODE(object):
             The name of the parameter
         init : scalar, ScalarParam
             The initial value of this parameter
+        comment : str (optional)
+            A comment which will follow the state
         
         Example:
         ========
@@ -94,7 +98,7 @@ class ODE(object):
         """
         
         # Create the parameter
-        parameter = Parameter(name, init, self.name)
+        parameter = Parameter(name, init, comment, self.name)
         
         # Register the parameter
         self._parameters.append(parameter)
@@ -103,7 +107,7 @@ class ODE(object):
         # Return the sympy version of the parameter
         return parameter.sym
 
-    def add_variable(self, name, init):
+    def add_variable(self, name, init, comment=""):
         """
         Add a variable to the ODE
 
@@ -113,6 +117,8 @@ class ODE(object):
             The name of the variables
         init : scalar, ScalarParam
             The initial value of this parameter
+        comment : str (optional)
+            A comment which will follow the state
         
         Example:
         ========
@@ -122,7 +128,7 @@ class ODE(object):
         """
         
         # Create the variable
-        variable = Variable(name, init, self.name)
+        variable = Variable(name, init, comment, self.name)
         
         # Register the variable
         self._variables.append(variable)
@@ -335,12 +341,15 @@ class ODE(object):
     def num_variables(self):
         return len([s for s in self.iter_variables()])
 
+    @property
     def num_derivative_expr(self):
         return len(self._derivative_expr)
         
+    @property
     def num_algebraic_expr(self):
         return len(self._algebraic_expr)
 
+    @property
     def is_complete(self):
         """
         Check that the ODE is complete
@@ -374,6 +383,11 @@ class ODE(object):
         # Nothing more to check?
         return True
 
+    @property
+    def is_dae(self):
+        return self.is_complete and len(self._algebraic_states) > 0
+
+    @property
     def is_empty(self):
         """
         Returns True if the ODE is empty

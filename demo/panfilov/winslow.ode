@@ -1,0 +1,397 @@
+states("Membrane",
+       V=ScalarParam(-35, ge=-200, le=50))
+states("Na+ current I_Na",
+       m=2.4676e-4, h=0.99869, j=0.99887)
+states("Rapid-activating delayed rectifier K+ current I_Kr",
+       xKr=0.6935)
+states("Slow-activating delayed rectifier K+ current I_Ks",
+       xKs=1.4589e-4)
+states("Transient outward K+ current I_to",
+       xto1=3.742e-5, yto1=1)
+states("Intracellular K fluxes",
+       K_i=159.48)
+states("Intracellular Ca fluxes",
+       Ca_i=8.464e-5, Ca_NSR=0.2620, Ca_ss=1.315e-4, Ca_JSR=0.2616)
+states("RyR Channel",
+       C1_RyR=0.4929, O1_RyR=6.027e-4, O2_RyR=2.882e-9, C2_RyR=0.5065)
+states("L-type Ca Channel", 
+       C0=0.99802, C1=1.9544e-6, C2=0, C3=0, C4=0, Open=0,
+       CCa0=1.9734e-3, CCa1=0, CCa2=0, CCa3=0, CCa4=0, yCa=0.7959)
+states("Ca buffers",
+       LTRPNCa=5.5443e-3, HTRPNCa=136.64e-3)
+
+comment("Constants")
+F       = 96.500
+T       = 310
+R       = 8.314
+RTonF   = R*T/F
+FonRT   = F/(R*T)
+P_scale = 1.0
+
+parameters("Cell geometry parameters",
+           ist=0,
+           C_sc  = 1.00,
+           A_cap = 1.534e-4,
+           V_myo = 25.84e-6,
+           V_JSR = 0.16e-6,
+           V_NSR = 2.1e-6,
+           V_ss  = 1.2e-9,
+           )
+
+parameters("Standard ionic concentrations",
+           K_o  = 4.0,
+           Na_o = 138.0,
+           Ca_o = 2.0,
+           Na_i = 10.0,
+           )
+
+parameters("Membrane current parameters",
+           G_KrMax = 0.0034,
+           G_KsMax = 0.00271,
+           G_toMax = 0.23815,
+           G_tiMax = 2.8,
+           G_KpMax = 0.002216,
+           G_NaMax = 12.8,
+           k_NaCa  = 0.30,
+           K_mNa   = 87.5,
+           K_mCa   = 1.38,
+           K_mK1   = 13.0,
+           k_sat   = 0.2,
+           eta     = 0.35,
+           I_NaKMax= 0.693,
+           K_mNai  = 10.0,
+           K_mKo   = 1.5,
+           I_pCaMax= 0.05,
+           K_mpCa  = 0.00005,
+           G_bCaMax= 0.0003842,
+           G_bNaMax= 0.0031,
+           )
+
+parameters("SR parameters", 
+           v_1     = 1.8,
+           K_fb    = 0.168e-3,
+           K_rb    = 3.29,
+           K_SR    = 1.0,
+           N_fb    = 1.2,
+           N_rb    = 1.0,
+           v_maxf  = 0.813e-4,
+           v_maxr  = 0.318e-3,
+           tau_tr  = 0.5747,
+           tau_xfer= 26.7,
+           kaplus = 0.01215,
+           kaminus= 0.576,
+           kbplus = 0.00405,
+           kbminus= 1.930,
+           kcplus = 0.100,
+           kcminus= 0.0008,
+           ncoop   = 4.0,
+           mcoop   = 3.0,
+           )
+
+parameters("L-type Ca Channel parameters",
+           fL     = 0.3,
+           gL     = 2.0,
+           bL     = 2.0,
+           aL     = 2.0,
+           omega   = 0.01,
+           PCa = P_scale*3.125e-4,
+           PK  = P_scale*5.79e-7,
+           ICahalf= -0.265,
+           )
+
+parameters("Buffering parameters",
+           LTRPNtot   = 70e-3,
+           HTRPNtot   = 140e-3,
+           khtrpn_plus = 20.0,
+           khtrpn_minus= 66.0e-6,
+           kltrpn_plus = 40.0,
+           kltrpn_minus= 0.040,
+           CMDNtot    = 50e-3,
+           CSQNtot    = 15.0,
+           EGTAtot    = 10.0,
+           KmCMDN     = 2.38e-3,
+           KmCSQN     = 0.8,
+           KmEGTA     = 0.15e-3,
+           )
+
+comment("Help variables")
+VFonRT = V*FonRT
+expVFonRT = exp(VFonRT)
+
+comment("I Membrane currents")
+
+comment("Na+ current I_Na")
+
+E_Na = RTonF*log(Na_o/Na_i)
+I_Na = G_NaMax*m**3*h*j*(V-E_Na)
+
+a_h = Conditional(Ge(V, -40), 0, 0.135*exp((80+V)/(-6.8)))
+b_h = Conditional(Ge(V, -40), 1/(0.13*(1+exp((V+10.66)/(-11.1)))), \
+                  3.56*exp(0.079*V)+3.1e5*exp(0.35*V))
+
+a_j = Conditional(Ge(V, -40), 0, (-1.2714e5*exp(0.2444*V)-3.474e-5*exp(-0.04391*V))\
+                  *(V+37.78)/(1+exp(0.311*(V+79.23))))
+b_j = Conditional(Ge(V, -40), 0.3*exp(-2.535e-7*V)/(1+exp(-0.1*(V+32))),
+                  0.1212*exp(-0.01052*V)/(1+exp(-0.1378*(V+40.14))))
+
+#if (abs(V+47.13)<=1e-3)
+#  a_m = 1.0/(0.1-0.005*(V+47.13))
+#else
+#  a_m = 0.32*(V+47.13)/(1-exp(-0.1*(V+47.13)))
+#end
+
+a_m = 0.32*(V+47.13)/(1-exp(-0.1*(V+47.13)))
+b_m = 0.08*exp(-V/11)
+dm = Conditional(Ge(V, -90), a_m*(1-m)-b_m*m, 0)
+
+comment("Rapid-activating delayed rectifier K+ current I_Kr")
+
+k12 = exp(-5.495+0.1691*V)
+k21 = exp(-7.677-0.0128*V)
+xKr_inf = k12/(k12+k21)
+tau_xKr = 1.0/(k12+k21) + 27.0
+dxKr = (xKr_inf-xKr)/tau_xKr
+
+E_k  = RTonF*log(K_o/K_i)
+R_V  = 1/(1+1.4945*exp(0.0446*V))
+f_k  = sqrt(K_o/4)
+
+I_Kr = G_KrMax*f_k*R_V*xKr*(V-E_k)
+
+comment("Slow-activating delayed rectifier K+ current I_Ks")
+xKs_inf = 1.0/(1.0+exp(-(V-24.70)/13.60))
+tau_xKs = 1.0/( 7.19e-5*(V-10.0)/(1.0-exp(-0.1480*(V-10.0))) + 1.31e-4*(V-10.0)/(exp(0.06870*(V-10.0))-1.0))
+dxKs = (xKs_inf-xKs)/tau_xKs
+
+E_Ks = RTonF*log((K_o+0.01833*Na_o)/(K_i+0.01833*Na_i))
+
+I_Ks = G_KsMax*(xKs**2)*(V-E_Ks)
+
+
+comment("Transient outward K+ current I_to")
+alpha_xto1 = 0.04516*exp(0.03577*V)
+beta_xto1  = 0.0989*exp(-0.06237*V)
+a1 = 1.0+0.051335*exp(-(V+33.5)/5.0)
+alpha_yto1 = 0.005415*exp(-(V+33.5)/5.0)/a1
+a1 = 1.0+0.051335*exp((V+33.5)/5.0)
+beta_yto1 = 0.005415*exp((V+33.5)/5.0)/a1
+
+dxto1 = alpha_xto1*(1.e0-xto1)-beta_xto1*xto1
+dyto1 = alpha_yto1*(1.e0-yto1)-beta_yto1*yto1
+
+I_to = G_toMax*xto1*yto1*(V-E_k)
+
+
+comment("Time-Independent K+ current I_ti")
+K_tiUnlim = 1/(2+exp(1.5*(V-E_k)*FonRT))
+
+I_ti = G_tiMax*K_tiUnlim*(K_o/(K_o+K_mK1))*(V-E_k)
+
+comment("Plateau current I_Kp")
+K_p  = 1/(1+exp((7.488-V)/5.98))
+I_Kp = G_KpMax*K_p*(V-E_k)
+
+comment("NCX Current I_NaCa")
+
+I_NaCa = k_NaCa*(5000/(K_mNa**3+Na_o**3))*(1/(K_mCa+Ca_o))*(1/(1+k_sat*exp((eta-1)*V*FonRT)))*(exp(eta*VFonRT)*Na_i**3*Ca_o-exp((eta-1)*VFonRT)*Na_o**3*Ca_i)
+
+
+comment("Na+-K+ pump current I_NaK")
+
+sigma = 1/7*(exp(Na_o/67.3)-1)
+f_NaK = 1/(1+0.1245*exp(-0.1*VFonRT)+0.0365*sigma*exp(-VFonRT))
+
+I_NaK = I_NaKMax*f_NaK*1/(1+(K_mNai/Na_i)**1.5)*K_o/(K_o+K_mKo)
+
+
+comment("Sarcolemmal Ca2+ pump current I_pCa")
+I_pCa = I_pCaMax*Ca_i/(K_mpCa+Ca_i)
+
+comment("Ca2+ background current I_bCa")
+E_Ca  = RTonF/2*log(Ca_o/Ca_i)
+I_bCa = G_bCaMax*(V-E_Ca)
+
+
+comment("Na+ background current I_bNa")
+I_bNa = G_bNaMax*(V-E_Na)
+
+
+comment("II Ca2+ handling mechanisms")
+comment("L-type Ca2+ current I_Ca")
+
+alpha      = 0.4*exp((V+2.0)/10.0)
+beta       = 0.05*exp(-(V+2.0)/13.0)
+alpha_prime = alpha * aL
+beta_prime  = beta/bL
+gamma = 0.10375*Ca_ss
+        
+C0_to_C1 = 4.e0*alpha
+C1_to_C2 = 3.e0*alpha
+C2_to_C3 = 2.e0*alpha
+C3_to_C4 =      alpha
+
+CCa0_to_CCa1 = 4.e0*alpha_prime
+CCa1_to_CCa2 = 3.e0*alpha_prime
+CCa2_to_CCa3 = 2.e0*alpha_prime
+CCa3_to_CCa4 =      alpha_prime
+
+C1_to_C0 =      beta
+C2_to_C1 = 2.e0*beta
+C3_to_C2 = 3.e0*beta
+C4_to_C3 = 4.e0*beta
+
+CCa1_to_CCa0 =      beta_prime
+CCa2_to_CCa1 = 2.e0*beta_prime
+CCa3_to_CCa2 = 3.e0*beta_prime
+CCa4_to_CCa3 = 4.e0*beta_prime
+		
+gamma =   0.10375e0*Ca_ss
+
+C0_to_CCa0 = gamma		
+C1_to_CCa1 = aL*C0_to_CCa0	
+C2_to_CCa2 = aL*C1_to_CCa1	
+C3_to_CCa3 = aL*C2_to_CCa2	
+C4_to_CCa4 = aL*C3_to_CCa3	
+		
+CCa0_to_C0 = omega		
+CCa1_to_C1 = CCa0_to_C0/bL	
+CCa2_to_C2 = CCa1_to_C1/bL	
+CCa3_to_C3 = CCa2_to_C2/bL	
+CCa4_to_C4 = CCa3_to_C3/bL	
+
+a1 = (C0_to_C1+C0_to_CCa0)*C0
+a2 = C1_to_C0*C1 + CCa0_to_C0*CCa0
+dC0 = a2 - a1
+
+a1 = (C1_to_C0+C1_to_C2+C1_to_CCa1)*C1
+a2 = C0_to_C1*C0 + C2_to_C1*C2 + CCa1_to_C1*CCa1
+dC1 = a2 - a1
+
+a1 = (C2_to_C1+C2_to_C3+C2_to_CCa2)*C2
+a2 = C1_to_C2*C1 + C3_to_C2*C3 + CCa2_to_C2*CCa2
+dC2 = a2 - a1
+
+a1 = (C3_to_C2+C3_to_C4+C3_to_CCa3)*C3
+a2 = C2_to_C3*C2 + C4_to_C3*C4 + CCa3_to_C3*CCa3
+dC3 = a2 - a1
+
+a1 = (C4_to_C3+fL+C4_to_CCa4)*C4
+a2 = C3_to_C4*C3 + gL*Open + CCa4_to_C4*CCa4
+dC4 = a2 - a1
+
+dOpen =  fL*C4 - gL*Open
+
+a1 = (CCa0_to_CCa1+CCa0_to_C0)*CCa0
+a2 = CCa1_to_CCa0*CCa1 + C0_to_CCa0*C0
+dCCa0 = a2 - a1
+
+a1 = (CCa1_to_CCa0+CCa1_to_CCa2+CCa1_to_C1)*CCa1
+a2 = CCa0_to_CCa1*CCa0 + CCa2_to_CCa1*CCa2 + C1_to_CCa1*C1
+dCCa1 = a2 - a1
+
+a1 = (CCa2_to_CCa1+CCa2_to_CCa3+CCa2_to_C2)*CCa2
+a2 = CCa1_to_CCa2*CCa1 + CCa3_to_CCa2*CCa3 + C2_to_CCa2*C2
+dCCa2 = a2 - a1
+
+a1 = (CCa3_to_CCa2+CCa3_to_CCa4+CCa3_to_C3)*CCa3
+a2 = CCa2_to_CCa3*CCa2 + CCa4_to_CCa3*CCa4 + C3_to_CCa3*C3
+dCCa3 = a2 - a1
+
+a1 = (CCa4_to_CCa3+CCa4_to_C4)*CCa4
+a2 = CCa3_to_CCa4*CCa3 + C4_to_CCa4*C4
+dCCa4 = a2 - a1
+
+yCa_inf = 0.80/(1.0+exp((V + 12.5)/5.0)) + 0.2
+tau_yCa = 20.0 + 600.0 / (1.0 + exp((V+20.0)/9.50))
+dyCa = (yCa_inf-yCa)/tau_yCa
+
+VFsqonRT=(1000.0*F)*VFonRT
+
+a1 =  1.0e-3*exp(2.0*VFonRT)-Ca_o*0.341 
+a2 =  exp(2.0*VFonRT)-1.0
+ICamax = PCa*4.0*VFsqonRT*(a1/a2)
+I_Ca = ICamax*yCa*Open
+
+PKprime = PK/(1.0+(Min(0.0, ICamax)/ICahalf ))  
+a1 = K_i*exp(VFonRT)-K_o
+a2 = exp(VFonRT)-1.0
+I_CaK = PKprime*Open*yCa*VFsqonRT*(a1/a2)
+
+comment("RyR Channel")
+a1 = (Ca_ss*1000.0)**mcoop
+a2 = (Ca_ss*1000.0)**ncoop
+dC1_RyR = -kaplus*a2*C1_RyR+kaminus*O1_RyR
+dO2_RyR =  kbplus*a1*O1_RyR - kbminus*O2_RyR
+dC2_RyR =  kcplus*O1_RyR - kcminus*C2_RyR 
+dO1_RyR = -(dC1_RyR + dO2_RyR + dC2_RyR)
+
+J_rel = v_1*(O1_RyR+O2_RyR)*(Ca_JSR-Ca_ss)
+
+
+comment("SERCA2a Pump")
+
+f_b = (Ca_i/K_fb)**N_fb
+r_b = (Ca_NSR/K_rb)**N_rb
+
+J_up = K_SR*(v_maxf*f_b-v_maxr*r_b)/(1+f_b+r_b)
+
+comment("Intracellular Ca fluxes")
+
+J_tr = (Ca_NSR-Ca_JSR)/tau_tr
+J_xfer = (Ca_ss-Ca_i)/tau_xfer
+
+
+a1 = kltrpn_minus * LTRPNCa
+dLTRPNCa = kltrpn_plus*Ca_i*(1.0 - LTRPNCa) - a1
+
+a1 = khtrpn_minus * HTRPNCa
+dHTRPNCa = khtrpn_plus*Ca_i*(1.0 - HTRPNCa) - a1
+	
+J_trpn = LTRPNtot*dLTRPNCa+HTRPNtot*dHTRPNCa
+ 
+a1 = CMDNtot*KmCMDN/((Ca_ss+KmCMDN)**2.0)
+#a2 = 0
+beta_ss = 1.e0/(1.0+a1)#+a2) 
+		
+a1 = CSQNtot*KmCSQN/((Ca_JSR+KmCSQN)**2.0)
+beta_JSR = 1.0/(1.0+a1)
+
+a1 = CMDNtot*KmCMDN/((Ca_i+KmCMDN)**2.e0)
+#a2 = 0
+beta_i = 1.0/(1.0+a1)#+a2)
+
+comment("initial stimulating current I_st")
+
+comment("The ODE system")
+
+diff(V      , -(I_Na+I_Ca+I_CaK+I_Kr+I_Ks+I_to+I_ti+I_Kp+I_NaCa+I_NaK+I_pCa+I_bCa+I_bNa+ist))
+diff(m      , dm)
+diff(h      , a_h*(1-h)-b_h*h)
+diff(j      , a_j*(1-j)-b_j*j)
+diff(xKr    , dxKr)
+diff(xKs    , dxKs)
+diff(xto1   , dxto1)
+diff(yto1   , dyto1)
+diff(K_i    , -(I_Kr+I_Ks+I_to+I_ti+I_Kp+I_CaK-2*I_NaK)*A_cap*C_sc/(V_myo*1000*F))
+diff(Ca_i   , beta_i*(J_xfer-J_up-J_trpn-(I_bCa-2*I_NaCa+I_pCa)*A_cap*C_sc/(2*V_myo*1000*F)))
+diff(Ca_NSR , J_up*V_myo/V_NSR-J_tr*V_JSR/V_NSR)
+diff(Ca_ss  , beta_ss*(J_rel*V_JSR/V_ss-J_xfer*V_myo/V_ss-I_Ca*A_cap*C_sc/(2*V_ss*1000*F)))
+diff(Ca_JSR , beta_JSR*(J_tr-J_rel))
+diff(C1_RyR , dC1_RyR)
+diff(O1_RyR , dO1_RyR)
+diff(O2_RyR , dO2_RyR)
+diff(C2_RyR , dC2_RyR)
+diff(C0     , dC0)
+diff(C1     , dC1)
+diff(C2     , dC2)
+diff(C3     , dC3)
+diff(C4     , dC4)
+diff(Open   , dOpen)
+diff(CCa0   , dCCa0)
+diff(CCa1   , dCCa1)
+diff(CCa2   , dCCa2)
+diff(CCa3   , dCCa3)
+diff(CCa4   , dCCa4)
+diff(yCa    , dyCa)
+diff(LTRPNCa, dLTRPNCa)
+diff(HTRPNCa, dHTRPNCa)

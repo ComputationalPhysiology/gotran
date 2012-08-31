@@ -13,7 +13,7 @@ import types
 from gotran2.common import *
 from gotran2.model.ode import gco
 
-def states(**kwargs):
+def states(comment="", **kwargs):
     """
     Add a number of states to the current ODE
 
@@ -22,16 +22,15 @@ def states(**kwargs):
 
     >>> ODE("MyOde")
     >>> states(e=0.0, g=1.0)
-    
     """
 
     if not kwargs:
         error("expected at least one state")
     
     # Check values and create sympy Symbols
-    _add_entities(kwargs, "state")
+    _add_entities(comment, kwargs, "state")
 
-def parameters(**kwargs):
+def parameters(comment="", **kwargs):
     """
     Add a number of parameters to the current ODE
 
@@ -48,9 +47,9 @@ def parameters(**kwargs):
         error("expected at least one state")
     
     # Check values and create sympy Symbols
-    _add_entities(kwargs, "parameter")
+    _add_entities(comment, kwargs, "parameter")
     
-def variables(**kwargs):
+def variables(comment="", **kwargs):
     """
     Add a number of variables to the current ODE
 
@@ -66,7 +65,7 @@ def variables(**kwargs):
         error("expected at least one variable")
     
     # Check values and create sympy Symbols
-    _add_entities(kwargs, "variable")
+    _add_entities(comment, kwargs, "variable")
 
 def diff(derivatives, expr):
     """
@@ -129,7 +128,7 @@ def model_arguments(**kwargs):
         else:
             namespace[key] = arguments[key]
     
-def _add_entities(kwargs, entity):
+def _add_entities(comment, kwargs, entity):
     """
     Help function for determine if each entity in the kwargs is unique
     and to check the type of the given default value
@@ -149,7 +148,7 @@ def _add_entities(kwargs, entity):
     for name, value in kwargs.iteritems():
 
         # Add the symbol
-        sym = add(name, value)
+        sym = add(name, value, comment)
         
         # Add symbol to caller frames namespace
         try:

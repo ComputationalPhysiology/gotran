@@ -7,10 +7,11 @@ __all__ = ["load_ode", "get_load_arguments", "get_load_namespace"]
 
 # System imports
 import os
-import sympy
+from collections import OrderedDict
 
 # modelparameters import
 from modelparameters.parameters import ScalarParam, ArrayParam, ConstParam
+from modelparameters.sympytools import sp_namespace
 
 # gotran imports
 from gotran2.common import *
@@ -21,6 +22,15 @@ global _namespace, _load_arguments
 
 _load_arguments = None
 _namespace = None
+
+class NamespaceCollector(OrderedDict):
+    """
+    Collect executions 
+    """
+    def __setitem__(self, name, value):
+        if name in self:
+            print "WARNING", name, "already defined as an intermediate variables"
+        OrderedDict.__setitem__(self, name, value)
 
 def load_ode(filename, name=None, **kwargs):
     """
@@ -51,9 +61,9 @@ def load_ode(filename, name=None, **kwargs):
     debug("Loading {}".format(ode))
 
     # Create namespace which the ode file will be executed in
-    _namespace = {}
-    _namespace.update(operations.__dict__)
-    _namespace.update(sympy.functions.__dict__)
+    _namespace = sp_namespace.copy()
+    _namespace.update((name, op) for name, op in operations.__dict__.items() \
+                      if name in operations.__all__)
     _namespace.update(dict(t=ode.t, dt=ode.dt,
                            ScalarParam=ScalarParam,
                            ArrayParam=ArrayParam,
@@ -65,8 +75,24 @@ def load_ode(filename, name=None, **kwargs):
     
     if (not os.path.isfile(filename)):
         error("Could not find '{0}'".format(filename))
-    
-    execfile(filename, _namespace, {})
+
+    collected_names = NamespaceCollector()
+
+    global comment_num
+    comment_num = 0
+    def comment(comment_str):
+        global comment_num
+        check_arg(comment_str, str, context=comment)
+        collected_names["_comment_{0}".format(comment_num)] = comment_str
+        comment_num += 1
+
+    _namespace["comment"] = comment
+
+    # Execute file and collect 
+    execfile(filename, _namespace, collected_names)
+    for name, item in collected_names.items():
+        print name, ":", item
+    #print global_names.keys()
 
     collected_info = []
     
