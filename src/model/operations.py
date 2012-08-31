@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-02-22 -- 2012-08-24"
+__date__ = "2012-02-22 -- 2012-08-31"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["states", "parameters", "diff", "variables", "model_arguments"]
@@ -17,8 +17,8 @@ def states(**kwargs):
     """
     Add a number of states to the current ODE
 
-    Example:
-    ========
+    Example
+    -------
 
     >>> ODE("MyOde")
     >>> states(e=0.0, g=1.0)
@@ -28,8 +28,6 @@ def states(**kwargs):
     if not kwargs:
         error("expected at least one state")
     
-    print kwargs
-
     # Check values and create sympy Symbols
     _add_entities(kwargs, "state")
 
@@ -37,8 +35,8 @@ def parameters(**kwargs):
     """
     Add a number of parameters to the current ODE
 
-    Example:
-    ========
+    Example
+    -------
 
     >>> ODE("MyOde")
     >>> parameters(v_rest=-85.0,
@@ -56,8 +54,8 @@ def variables(**kwargs):
     """
     Add a number of variables to the current ODE
 
-    Example:
-    ========
+    Example
+    -------
 
     >>> ODE("MyOde")
     >>> variables(c_out=0.0, c_in=1.0)
@@ -70,28 +68,31 @@ def variables(**kwargs):
     # Check values and create sympy Symbols
     _add_entities(kwargs, "variable")
 
-def diff(state, expr):
+def diff(derivatives, expr):
     """
     Set derivative of a declared state
 
-    @type state : sympy.Symbol
-    @param state : Define the derivate of a state variable
-    @type expr : sympy expression
-    @param expr : The derivative of the state
-
+    Arguments
+    ---------
+    derivatives : State, list of States or 0
+        If derivatives is a single state then it is interpreted as an ODE
+        If a list of states (with possible scalar weights) or 0 is
+        given, it is interpreted as a DAE expression.
+    expr : Sympy expression of ModelSymbols
+        The derivative expression
     """
     
     # Get current ode
     ode = gco()
 
-    ode.diff(state, expr)
+    ode.diff(derivatives, expr)
 
 def model_arguments(**kwargs):
     """
     Defines arguments that can be altered while the ODE is loaded
     
-    Example:
-    ========
+    Example
+    -------
     
     In gotran model file:
 

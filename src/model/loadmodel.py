@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-05-07 -- 2012-08-25"
+__date__ = "2012-05-07 -- 2012-08-31"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["load_ode", "get_load_arguments", "get_load_namespace"]
@@ -22,7 +22,7 @@ global _namespace, _load_arguments
 _load_arguments = None
 _namespace = None
 
-def load_ode(filename, **kwargs):
+def load_ode(filename, name=None, **kwargs):
     """
     Load an ODE from file and return the instance
 
@@ -32,6 +32,8 @@ def load_ode(filename, **kwargs):
     ---------
     filename : str
         Name of the ode file to load
+    name : str (optional)
+        Set the name of ODE (defaults to filename)
     """
 
     global _namespace, _load_arguments
@@ -44,9 +46,7 @@ def load_ode(filename, **kwargs):
     #        kwargs[key] = value.get()
 
     # Create an ODE which will be populated with data when ode file is loaded
-    ode = ODE(filename)
-
-    print filename
+    ode = ODE(name or filename)
 
     debug("Loading {}".format(ode))
 

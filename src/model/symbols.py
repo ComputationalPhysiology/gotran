@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2012 " + __author__
-__date__ = "2012-02-22 -- 2012-08-24"
+__date__ = "2012-02-22 -- 2012-08-30"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["ODEObject", "Parameter", "State", "Variable"]#
@@ -19,25 +19,23 @@ class ODEObject(object):
     """
     Base container class for all symbols
     """
-    def __init__(self, ode, name, init):
+    def __init__(self, name, init, ode_name=""):
         """
         Create ODEObject instance
 
-        ode : ODE
-            The ODE the ODEObject belongs to
+        Arguments
+        ---------
         name : str
             The name of the ODEObject
         init : scalar, ScalarParam
             The initial value of this ODEObject
+        ode_name : str (optional)
+            The name of the ODE the ODEObject belongs to
         """
 
-        from gotran2.model.ode import ODE
-        check_arg(ode, ODE, 0, ODEObject)
-        check_arg(name, str, 1, ODEObject)
-        check_arg(init, scalars + (ScalarParam, list, np.ndarray), 2, ODEObject)
+        check_arg(name, str, 0, ODEObject)
+        check_arg(init, scalars + (ScalarParam, list, np.ndarray), 1, ODEObject)
         
-        self.ode = ode
-
         if isinstance(init, ScalarParam):
 
             # If Param already has a symbol
@@ -52,7 +50,10 @@ class ODEObject(object):
             init = ArrayParam(init)
             
         # Create a symname based on the name of the ODE
-        init.name = name, "{0}.{1}".format(ode.name, name)
+        if ode_name:
+            init.name = name, "{0}.{1}".format(ode_name, name)
+        else:
+            init.name = name
 
         # Store the Param
         self._param = init 
@@ -60,11 +61,6 @@ class ODEObject(object):
         # Store field
         # FIXME: Is this nesesary
         self._field = isinstance(init, ArrayParam)
-
-        # Check that there are no object with this name
-        if ode.get_object(name) is not None:
-           error("Name '{0}' is already registered in '{1}'".format(\
-               ode.get_object(name), ode))
 
     @property
     def is_field(self):
@@ -121,97 +117,78 @@ class State(ODEObject):
     """
     Container class for a State variable
     """
-    def __init__(self, ode, name, init):
+    def __init__(self, name, init, ode_name=""):
         """
         Create a state variable with an assosciated initial value
 
-        ode : ODE
-            The ODE the State belongs to
+        Arguments
+        ---------
         name : str
             The name of the State
         init : scalar, ScalarParam
             The initial value of this state
+        ode_name : str (optional)
+            The name of the ODE the ODEObject belongs to
         """
         
         # Call super class
-        super(State, self).__init__(ode, name, init)
+        super(State, self).__init__(name, init, ode_name)
 
         # Add an attribute to register dependencies
-        self.diff_expr = None
         self.dependencies = []
         self.linear_dependencies = []
 
         # Add previous value symbol
-        self.sym_0 = ModelSymbol("{0}_0".format(name), \
-                                 "{0}.{1}_0".format(ode.name, name))
-
-    def diff(self, expr):
-        """
-        Register a derivative of the state
-        """
-        check_arg(expr, (sp.Basic, scalars), 0)
-
-        for atom in expr.atoms():
-            if not isinstance(atom, (ModelSymbol, sp.Number, int, float)):
-                type_error("a derivative must be an expressions of "\
-                           "ModelSymbol or scalars")
-                
-            if isinstance(atom, ModelSymbol):
-                sym = self.ode.get_object(atom)
-
-                if sym is None:
-                    error("ODEObject '{0}' is not registered in the ""\
-                    '{1}' ODE".format(sym, self.ode))
-
-                # Check dependencies on other states
-                if self.ode.has_state(sym):
-                    self.dependencies.append(sym)
-                    if atom not in expr.diff(atom).atoms():
-                        self.linear_dependencies.append(sym)
-
-        # Store expression
-        self.diff_expr = expr
-
+        if ode_name:
+            self.sym_0 = ModelSymbol("{0}_0".format(name), \
+                                     "{0}.{1}_0".format(ode_name, name))
+        else:
+            self.sym_0 = ModelSymbol("{0}_0".format(name))
+    
 class Parameter(ODEObject):
     """
     Container class for a Parameter
     """
-    def __init__(self, ode, name, init):
+    def __init__(self, name, init, ode_name=""):
         """
         Create a Parameter with an assosciated initial value
 
-        ode : ODE
-            The ODE the State belongs to
+        Arguments
+        ---------
         name : str
             The name of the State
         init : scalar, ScalarParam
             The initial value of this parameter
+        ode_name : str (optional)
+            The name of the ODE the ODEObject belongs to
         """
         
         # Call super class
-        super(Parameter, self).__init__(ode, name, init)
+        super(Parameter, self).__init__(name, init, ode_name)
 
 class Variable(ODEObject):
     """
     Container class for a Variable
     """
-    def __init__(self, ode, name, init):
+    def __init__(self, name, init, ode_name=""):
         """
         Create a variable with an assosciated initial value
 
-        ode : ODE
-            The ODE the Variable belongs to
+        Arguments
+        ---------
         name : str
             The name of the variable
         init : scalar
             The initial value of this variable
+        ode_name : str (optional)
+            The name of the ODE the ODEObject belongs to
         """
         
         # Call super class
-        super(Variable, self).__init__(ode, name, init)
+        super(Variable, self).__init__(name, init, ode_name)
 
         # Add previous value symbol
         self.sym_0 = ModelSymbol("{0}__0".format(name), \
-                                 "{0}.{1}__0".format(ode.name, name))
+                                 "{0}.{1}__0".format(ode_name, name))
 
 

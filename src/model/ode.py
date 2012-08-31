@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2012 " + __author__
-__date__ = "2012-02-22 -- 2012-08-24"
+__date__ = "2012-02-22 -- 2012-08-31"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["ODE", "gco"]
@@ -9,10 +9,11 @@ __all__ = ["ODE", "gco"]
 import sympy as sym
 
 # ModelParameter imports
-from modelparameters.sympytools import ModelSymbol
+from modelparameters.sympytools import ModelSymbol, sp
+from modelparameters.utils import listwrap
 
 # Gotran imports
-from gotran2.common import error, check_arg
+from gotran2.common import error, check_arg, scalars
 from gotran2.model.symbols import *
 
 # Holder for current ODE
@@ -65,7 +66,7 @@ class ODE(object):
         """
         
         # Create the state
-        state = State(self, name, init)
+        state = State(name, init, self.name)
         
         # Register the state
         self._states.append(state)
@@ -78,10 +79,12 @@ class ODE(object):
         """
         Add a parameter to the ODE
 
-        @type name : str
-        @param name : The name of the parameter
-        @type value : float, int
-        @param value : Initial value of the parameter
+        Arguments
+        ---------
+        name : str
+            The name of the parameter
+        init : scalar, ScalarParam
+            The initial value of this parameter
         
         Example:
         ========
@@ -91,7 +94,7 @@ class ODE(object):
         """
         
         # Create the parameter
-        parameter = Parameter(self, name, init)
+        parameter = Parameter(name, init, self.name)
         
         # Register the parameter
         self._parameters.append(parameter)
@@ -104,10 +107,12 @@ class ODE(object):
         """
         Add a variable to the ODE
 
-        @type name : str
-        @param name : The name of the variable
-        @type value : float, int
-        @param value : Initial value of the variable
+        Arguments
+        ---------
+        name : str
+            The name of the variables
+        init : scalar, ScalarParam
+            The initial value of this parameter
         
         Example:
         ========
@@ -117,7 +122,7 @@ class ODE(object):
         """
         
         # Create the variable
-        variable = Variable(self, name, init)
+        variable = Variable(name, init, self.name)
         
         # Register the variable
         self._variables.append(variable)
@@ -137,17 +142,94 @@ class ODE(object):
         
         return self._all_objects.get(name)
 
-    def diff(self, state, expr):
+    def diff(self, derivatives, expr):
         """
-        Register an expression for a state derivative
-        """
-        check_arg(state, ModelSymbol, 0)
-        
-        if not self.has_state(state):
-            error("expected derivative of a declared state or field state")
+        Register an expression for state derivatives
 
-        # Register the derivative
-        self.get_object(state.name).diff(expr)
+        Arguments
+        ---------
+        derivatives : State, list of States or 0
+            If derivatives is a single state then it is interpreted as an ODE
+            If a list of states (with possible scalar weights) or 0 is
+            given, it is interpreted as a DAE expression.
+        expr : Sympy expression of ModelSymbols
+            The derivative expression
+            
+        """
+        check_arg(derivatives, (ModelSymbol, list, int), 0)
+        
+        if isinstance(derivatives, int) and derivatives != 0:
+            type_error("expected either a State, a list of States or 0 "
+                       "as the states arguments")
+
+        derivatives = listwrap(derivatives or [])
+        stripped_derivatives = []
+        
+        for derivative in derivatives:
+            if isinstance(derivative, sp.Mul):
+                if len(derivative.args) != 2 or \
+                       not (derivative.args[0].is_number and \
+                            isinstance(derivative.args[1]), ModelSymbol):
+                    value_error("expected derivatives to be a linearly weighted "\
+                                "State variables.")
+
+                # Grab ModelSymbol
+                derivative = derivative.args[1]
+                
+            elif not isinstance(derivative, ModelSymbol):
+                value_error("expected derivatives to be a linearly weighted "\
+                            "State variables.")
+            
+            if not self.has_state(derivative):
+                error("expected derivatives to be a declared state of this ODE")
+
+            # Register this state as used
+            state = self.get_object(derivative)
+            if state in self._derivative_states:
+                error("A derivative for state '{0}' is already registered.")
+                
+            self._derivative_states.add(state)
+            stripped_derivatives.append(state)
+
+        # Register the derivatives
+        check_arg(expr, (sp.Basic, scalars), 1)
+
+        for atom in expr.atoms():
+            if not isinstance(atom, (ModelSymbol, sp.Number, int, float)):
+                type_error("a derivative must be an expressions of "\
+                           "ModelSymbol or scalars")
+                
+            if not isinstance(atom, ModelSymbol):
+                continue
+
+            # Get corresponding ODEObject
+            sym = self.get_object(atom)
+
+            if sym is None:
+                error("ODEObject '{0}' is not registered in the ""\
+                '{1}' ODE".format(atom, self))
+
+            # If a State
+            if self.has_state(sym):
+
+                # Check dependencies on other states
+                # FIXME: What do we use this for...
+                for derivative in stripped_derivatives:
+                    if derivative not in self._dependencies:
+                        self._dependencies[derivative] = set()
+                    self._dependencies[derivative].add(sym)
+                if len(stripped_derivatives) == 1 and \
+                       atom not in expr.diff(atom).atoms():
+                    if derivative not in self._linear_dependencies:
+                        self._linear_dependencies[derivative] = set()
+                    self._linear_dependencies[derivative].add(sym)
+
+        # Store expressions
+        # No derivatives (algebraic)
+        if not stripped_derivatives:
+            self._algebraic_expr.append(expr)
+        else:
+            self._derivative_expr.append((derivatives, expr))
 
     def iter_states(self):
         """
@@ -188,11 +270,12 @@ class ODE(object):
         check_arg(state, (str, ModelSymbol, ODEObject))
         if isinstance(state, (str, ModelSymbol)):
             state = self.get_object(state)
+            return isinstance(state, State)
         
         if not isinstance(state, State):
             return False
         
-        return state.ode == self
+        return any(state == st for st in self.iter_states())
         
     def has_field_state(self, state):
         """
@@ -201,11 +284,12 @@ class ODE(object):
         check_arg(state, (str, ModelSymbol, ODEObject))
         if isinstance(state, (str, ModelSymbol)):
             state = self.get_object(state)
+            return isinstance(state, State) and state.is_field 
         
         if not isinstance(state, State):
             return False
         
-        return state.is_field and state.ode == self
+        return any(state == st for st in self.iter_field_states())
         
     def has_variable(self, variable):
         """
@@ -214,11 +298,12 @@ class ODE(object):
         check_arg(variable, (str, ModelSymbol, ODEObject))
         if isinstance(variable, (str, ModelSymbol)):
             variable = self.get_object(variable)
+            return isinstance(variable, Variable)
         
         if not isinstance(Variable):
             return False
         
-        return variable.ode == self
+        return any(variable == var for var in self.iter_variables())
         
     def has_parameter(self, param):
         """
@@ -227,11 +312,12 @@ class ODE(object):
         check_arg(param, (str, ModelSymbol, ODEObject))
         if isinstance(param, (str, ModelSymbol)):
             param = self.get_object(param)
+            return isinstance(param, Parameter)
         
-        if not isinstance(Parameter):
+        if not isinstance(param, Parameter):
             return False
         
-        return param.ode == self
+        return any(param == par for par in self.iter_parameters())
 
     @property
     def num_states(self):
@@ -248,21 +334,44 @@ class ODE(object):
     @property
     def num_variables(self):
         return len([s for s in self.iter_variables()])
+
+    def num_derivative_expr(self):
+        return len(self._derivative_expr)
         
+    def num_algebraic_expr(self):
+        return len(self._algebraic_expr)
+
     def is_complete(self):
         """
         Check that the ODE is complete
         """
-        all_states = [state for state in self.iter_states()]
+        states = [state for state in self.iter_states()]
 
-        if not all_states:
+        if not states:
+            return False
+
+        if len(state) > self.num_derivative_expr + self.num_algebraic_expr:
+            # FIXME: Need a better name instead of xpressions...
+            info("The ODE is under determined. The number of States are more "\
+                 "than the number of expressions.")
+            return False
+
+        if len(states) < self.num_derivative_expr + self.num_algebraic_expr:
+            # FIXME: Need a better name instead of xpressions...
+            info("The ODE is over determined. The number of States are less "\
+                 "than the number of expressions.")
             return False
         
-        # FIXME: More thorough test?
-        for state in all_states:
-            if not state.has_diff():
-                return False
-        
+        # Grab algebraic states
+        self._algebraic_states.update(states)
+        self._algebraic_states.difference_update(self._derivative_states)
+
+        # Concistancy check
+        if len(self._algebraic_states)+len(self._derivative_states) != \
+               len(states):
+            return False
+
+        # Nothing more to check?
         return True
 
     def is_empty(self):
@@ -282,8 +391,18 @@ class ODE(object):
         self._field_states = []
         self._parameters = []
         self._variables = []
+
         self._all_objects = {}
-        self._state_derivatives = {}
+        self._derivative_states = set() # FIXME: No need for a set here...
+        self._algebraic_states = set()
+
+        # Collect expressions
+        self._derivative_expr = []
+        self._algebraic_expr = []
+
+        # Analytics (not sure we need these...)
+        self._dependencies = {}
+        self._linear_dependencies = {}
 
         # Add time as a variable
         self.add_variable("t", 0.0)
