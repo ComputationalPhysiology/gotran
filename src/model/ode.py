@@ -1,12 +1,13 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2012 " + __author__
-__date__ = "2012-02-22 -- 2012-08-31"
+__date__ = "2012-02-22 -- 2012-09-01"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["ODE"]
 
 # System imports
 import sympy as sym
+from collections import OrderedDict, deque
 
 # ModelParameter imports
 from modelparameters.sympytools import ModelSymbol, sp
@@ -33,7 +34,7 @@ class ODE(object):
         check_arg(name, str, 0)
 
         # Initialize attributes
-        self.name = name
+        self._name = name
 
         # Initialize all variables
         self.clear()
@@ -62,7 +63,6 @@ class ODE(object):
         state = State(name, init, comment, self.name)
         
         # Register the state
-        self._states.append(state)
         self._register_object(state)
 
         # Return the sympy version of the state
@@ -92,7 +92,6 @@ class ODE(object):
         parameter = Parameter(name, init, comment, self.name)
         
         # Register the parameter
-        self._parameters.append(parameter)
         self._register_object(parameter)
 
         # Return the sympy version of the parameter
@@ -122,11 +121,17 @@ class ODE(object):
         variable = Variable(name, init, comment, self.name)
         
         # Register the variable
-        self._variables.append(variable)
         self._register_object(variable)
 
         # Return the sympy version of the variable
         return variable.sym
+
+    def add_comment(self, comment_str):
+        check_arg(comment_str, str, context=ODE.add_comment)
+        self._intermediates["_comment_" + str(self._comment_num)] = comment_str
+        print
+        print "# " + comment_str
+        self._comment_num += 1
 
     def get_object(self, name):
         """
@@ -191,9 +196,11 @@ class ODE(object):
         # Register the derivatives
         check_arg(expr, (sp.Basic, scalars), 1)
 
-        for atom in expr.atoms():
+        expanded_expr = expr.subs(self._intermediates_namespace)
+
+        for atom in expanded_expr.atoms():
             if not isinstance(atom, (ModelSymbol, sp.Number, int, float)):
-                type_error("a derivative must be an expressions of "\
+                type_error("A derivative must be an expressions of "\
                            "ModelSymbol or scalars")
                 
             if not isinstance(atom, ModelSymbol):
@@ -203,8 +210,8 @@ class ODE(object):
             sym = self.get_object(atom)
 
             if sym is None:
-                error("ODEObject '{0}' is not registered in the ""\
-                '{1}' ODE".format(atom, self))
+                error("ODEObject '{0}' is not registered in the "\
+                      "'{1}' ODE".format(atom, self))
 
             # If a State
             if self.has_state(sym):
@@ -216,7 +223,7 @@ class ODE(object):
                         self._dependencies[derivative] = set()
                     self._dependencies[derivative].add(sym)
                 if len(stripped_derivatives) == 1 and \
-                       atom not in expr.diff(atom).atoms():
+                       atom not in expanded_expr.diff(atom).atoms():
                     if derivative not in self._linear_dependencies:
                         self._linear_dependencies[derivative] = set()
                     self._linear_dependencies[derivative].add(sym)
@@ -317,6 +324,10 @@ class ODE(object):
         return any(param == par for par in self.iter_parameters())
 
     @property
+    def name(self):
+        return self._name
+
+    @property
     def num_states(self):
         return len([s for s in self.iter_states()])
         
@@ -392,14 +403,15 @@ class ODE(object):
         """
 
         # FIXME: Make this a dict of lists
-        self._states = []
-        self._field_states = []
-        self._parameters = []
-        self._variables = []
-
-        self._all_objects = {}
+        self._all_objects = OrderedDict()
         self._derivative_states = set() # FIXME: No need for a set here...
         self._algebraic_states = set()
+
+        # Collection of intermediate stuff
+        self._intermediates_namespace = OrderedDict()
+        self._intermediates = OrderedDict()
+        self._intermediates_duplicates = {} # Will be populated with deque
+        self._comment_num = 0
 
         # Collect expressions
         self._derivative_expr = []
@@ -413,17 +425,75 @@ class ODE(object):
         self.add_variable("t", 0.0)
         self.add_variable("dt", 0.1)
 
+    def _register_intermediate(self, name, expr):
+        """
+        Register an intermediate
+        """
+
+        # Check if attribute already exist
+        if hasattr(self, name):
+
+            # Check that attribute is not a state, variable or parameter
+            attr = getattr(self, name)
+
+            # If ModelSymbol 
+            if not isinstance(attr, ModelSymbol):
+                error("Illeagal name '{0}'. It is already an attribute "\
+                      "of '{1}'".format(name, self.name))
+
+            # If name is a ModelSymbol and not in intermediates it
+            # state, variable or parameter
+            # FIXME: Should not be nessesary to check...
+            if name not in self._intermediates:
+                obj = self.get_object(attr)
+                assert(obj)
+                error("Illeagal name '{0}'. It is already a registered {1}"\
+                      "of '{2}'".format(name, obj.__class__.__name__, \
+                                        self.name))
+
+            # Register intermediate duplicate
+            if name not in self._intermediates_duplicates:
+                self._intermediates_duplicates[name] = deque()
+            self._intermediates_duplicates[name].append(expr)
+            self._intermediates["duplicate_{0}".format(name)] = name
+
+            # Update namespace
+            self._intermediates_namespace[attr] = expr.subs(\
+                self._intermediates_namespace)
+            from modelparameters.codegeneration import pythoncode
+            print pythoncode(expr, name)
+            print pythoncode(self._intermediates_namespace[attr], name)
+
+        else:
+            self._intermediates[name] = expr
+            #print name, "=", expr
+            sym = ModelSymbol(name, "{0}.{1}".format(self.name, name))
+            setattr(self, name, sym)
+
+            # Update namespace
+            if isinstance(expr, scalars):
+                self._intermediates_namespace[sym] = expr
+            else:
+                self._intermediates_namespace[sym] = expr.subs(\
+                    self._intermediates_namespace)
+
+            from modelparameters.codegeneration import pythoncode
+            print pythoncode(expr, name)
+            print pythoncode(self._intermediates_namespace[sym], name)
+                
+
     def _register_object(self, obj):
         """
         Register an object to the ODE
         """
         assert(isinstance(obj, ODEObject))
         
+        # Register the object
+        self._all_objects[obj.name] = obj
+
         # Make object available as an attribute
         setattr(self, obj.name, obj.sym)
 
-        # Register the object
-        self._all_objects[obj.name] = obj
 
     def _sort_collected_objects(self):
         """
@@ -435,6 +505,23 @@ class ODE(object):
         self._parameters.sort(cmp_func)
         self._variables.sort(cmp_func)
 
+    def __setattr__(self, name, value):
+        if name[0] == "_":
+            self.__dict__[name] = value
+        elif name in self._all_objects:
+            
+            # Called when registering the ODEObject
+            if hasattr(self, name):
+                obj = self.get_object(attr)
+                error("Illeagal name '{0}'. It is already a registered {1}"\
+                      "of '{2}'".format(name, obj.__class__.__name__, \
+                                        self.name))
+            self.__dict__[name] = value
+        elif isinstance(value, ModelSymbol) and value.name == name:
+            self.__dict__[name] = value
+        else:
+            self._register_intermediate(name, value)
+            
     def __eq__(self, other):
         """
         x.__eq__(y) <==> x==y

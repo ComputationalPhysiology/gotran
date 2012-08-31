@@ -26,7 +26,6 @@ T       = 310
 R       = 8.314
 RTonF   = R*T/F
 FonRT   = F/(R*T)
-P_scale = 1.0
 
 parameters("Cell geometry parameters",
            ist=0,
@@ -94,8 +93,8 @@ parameters("L-type Ca Channel parameters",
            bL     = 2.0,
            aL     = 2.0,
            omega   = 0.01,
-           PCa = P_scale*3.125e-4,
-           PK  = P_scale*5.79e-7,
+           PCa = 3.125e-4,
+           PK  = 5.79e-7,
            ICahalf= -0.265,
            )
 
@@ -192,12 +191,12 @@ K_p  = 1/(1+exp((7.488-V)/5.98))
 I_Kp = G_KpMax*K_p*(V-E_k)
 
 comment("NCX Current I_NaCa")
-
-I_NaCa = k_NaCa*(5000/(K_mNa**3+Na_o**3))*(1/(K_mCa+Ca_o))*(1/(1+k_sat*exp((eta-1)*V*FonRT)))*(exp(eta*VFonRT)*Na_i**3*Ca_o-exp((eta-1)*VFonRT)*Na_o**3*Ca_i)
+I_NaCa = k_NaCa*(5000/(K_mNa**3+Na_o**3))*(1/(K_mCa+Ca_o))*\
+         (1/(1+k_sat*exp((eta-1)*V*FonRT)))*\
+         (exp(eta*VFonRT)*Na_i**3*Ca_o-exp((eta-1)*VFonRT)*Na_o**3*Ca_i)
 
 
 comment("Na+-K+ pump current I_NaK")
-
 sigma = 1/7*(exp(Na_o/67.3)-1)
 f_NaK = 1/(1+0.1245*exp(-0.1*VFonRT)+0.0365*sigma*exp(-VFonRT))
 
@@ -329,14 +328,12 @@ J_rel = v_1*(O1_RyR+O2_RyR)*(Ca_JSR-Ca_ss)
 
 
 comment("SERCA2a Pump")
-
 f_b = (Ca_i/K_fb)**N_fb
 r_b = (Ca_NSR/K_rb)**N_rb
 
 J_up = K_SR*(v_maxf*f_b-v_maxr*r_b)/(1+f_b+r_b)
 
 comment("Intracellular Ca fluxes")
-
 J_tr = (Ca_NSR-Ca_JSR)/tau_tr
 J_xfer = (Ca_ss-Ca_i)/tau_xfer
 

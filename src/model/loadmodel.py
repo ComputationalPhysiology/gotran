@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-05-07 -- 2012-08-31"
+__date__ = "2012-05-07 -- 2012-09-01"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["load_ode"]
@@ -30,9 +30,10 @@ class NamespaceCollector(OrderedDict):
     Collect executions 
     """
     def __setitem__(self, name, value):
-        if name in self:
-            print "WARNING", name, "already defined as an intermediate variables"
-        OrderedDict.__setitem__(self, name, value)
+        
+        ode = _get_load_ode()
+        setattr(ode, name, value)
+        OrderedDict.__setitem__(self, name, getattr(ode, name))
 
 def load_ode(filename, name=None, collect_intermediates=True, **kwargs):
     """
@@ -78,7 +79,8 @@ def load_ode(filename, name=None, collect_intermediates=True, **kwargs):
                           states=_states,
                           parameters=_parameters,
                           variables=_variables,
-                          diff=_diff,
+                          diff=ode.diff,
+                          comment=ode.add_comment,
                           model_arguments=_model_arguments))
 
     # Execute the file
@@ -98,12 +100,14 @@ def load_ode(filename, name=None, collect_intermediates=True, **kwargs):
         collected_names["_comment_{0}".format(_comment_num)] = comment_str
         _comment_num += 1
 
-    namespace["comment"] = comment
+    #namespace["comment"] = comment
 
     # Execute file and collect 
     execfile(filename, _namespace, collected_names)
-    for name, item in collected_names.items():
-        print name, ":", item
+
+    #from modelparameters.codegeneration import pythoncode
+    #for name, item in collected_names.items():
+    #    print pythoncode(item, name)
 
     #print global_names.keys()
 
@@ -207,25 +211,6 @@ def _variables(comment="", **kwargs):
     # Check values and create sympy Symbols
     _add_entities(comment, kwargs, "variable")
 
-def _diff(derivatives, expr):
-    """
-    Set derivative of a declared state
-
-    Arguments
-    ---------
-    derivatives : State, list of States or 0
-        If derivatives is a single state then it is interpreted as an ODE
-        If a list of states (with possible scalar weights) or 0 is
-        given, it is interpreted as a DAE expression.
-    expr : Sympy expression of ModelSymbols
-        The derivative expression
-    """
-    
-    # Get current ode
-    global _current_ode
-
-    _current_ode.diff(derivatives, expr)
-
 def _model_arguments(**kwargs):
     """
     Defines arguments that can be altered while the ODE is loaded
@@ -282,7 +267,10 @@ def _add_entities(comment, kwargs, entity):
     add = getattr(ode, "add_{0}".format(entity))
     
     # Symbol and value dicts
-    for name, value in kwargs.iteritems():
+    for name in sorted(kwargs.keys()):
+
+        # Get value
+        value = kwargs[name]
 
         # Add the symbol
         sym = add(name, value, comment)
