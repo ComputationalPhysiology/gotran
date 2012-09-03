@@ -57,7 +57,37 @@ class CodeGenerator(object):
         """
         Generate code for evaluating state derivatives
         """
+
+        from modelparameters.codegeneration import pythoncode
+
+        ode = self.oderepr.ode
+        # Start building body
+        body_lines = ["# Imports", "import numpy as np"]
+        body_lines.append("")
+        body_lines.append("assert(len(states) == {0})".format(ode.num_states))
+        body_lines.append(", ".join(state.name for i, state in \
+                                    enumerate(ode.iter_states())) + " = states")
+
+        # Iterate over the intermediates and collect
+        # FIXME: Move to oderepresentation
+        # FIXME: Put stuff backend independent method
+        for intermediate, expr in ode._intermediates.items():
+            if "_comment_" in intermediate:
+                body_lines.append("")
+                body_lines.append("# " + expr)
+            elif "_duplicate_" in intermediate:
+                intermediate = expr
+                body_lines.append(pythoncode(\
+                    ode._intermediates_duplicates[intermediate].popleft(), intermediate))
+            else:
+                body_lines.append(pythoncode(expr, intermediate))
+                
+        # Add function prototype
+        dy_function = self.wrap_body_with_function_prototype(\
+            body_lines, "dy_{0}".format(self.oderepr.name), "states", \
+            "init_values", "Init values")
         
+        return "\n".join(self.indent_and_split_lines(dy_function))
 
     def init_code(self):
         """

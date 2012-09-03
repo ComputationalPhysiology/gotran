@@ -10,6 +10,9 @@ def _default_params():
         # array with indices)
         use_names = True,
 
+        # Keep all intermediates
+        keep_intermediates = True, 
+
         # If True, logic for field states are created
         field_states = False,
 

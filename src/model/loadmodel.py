@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-05-07 -- 2012-09-01"
+__date__ = "2012-05-07 -- 2012-09-03"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["load_ode"]
@@ -18,22 +18,21 @@ from gotran2.common import *
 from gotran2.model.ode import ODE
 
 # Global variables
-global _namespace, _load_arguments, _current_ode, _comment_num
+global _namespace, _load_arguments, _current_ode
 
 _load_arguments = {}
 _namespace = {}
 _current_ode = None
-_comment_num = 0
 
-class NamespaceCollector(OrderedDict):
+class IntermediateDispatcher(dict):
     """
-    Collect executions 
+    Dispatch intermediates to ODE attributes
     """
     def __setitem__(self, name, value):
         
         ode = _get_load_ode()
         setattr(ode, name, value)
-        OrderedDict.__setitem__(self, name, getattr(ode, name))
+        dict.__setitem__(self, name, getattr(ode, name))
 
 def load_ode(filename, name=None, collect_intermediates=True, **kwargs):
     """
@@ -49,8 +48,6 @@ def load_ode(filename, name=None, collect_intermediates=True, **kwargs):
         Set the name of ODE (defaults to filename)
     """
 
-    global _comment_num
-
     # If a Param is provided turn it into its value
     for key, value in kwargs.items():
         if isinstance(value, Param):
@@ -59,10 +56,10 @@ def load_ode(filename, name=None, collect_intermediates=True, **kwargs):
     # Get global variables and reset them
     namespace = _get_load_namespace()
     namespace.clear()
+    
     arguments = _get_load_arguments()
     arguments.clear()
     arguments.update(kwargs)
-    _comment_num = 0
 
     # Create an ODE which will be populated with data when ode file is loaded
     ode = ODE(name or filename)
@@ -91,25 +88,10 @@ def load_ode(filename, name=None, collect_intermediates=True, **kwargs):
         error("Could not find '{0}'".format(filename))
 
     # Dict to collect declared intermediates
-    collected_names = NamespaceCollector()
-
-    # Counter for indexing global comments
-    def comment(comment_str):
-        global _comment_num
-        check_arg(comment_str, str, context=comment)
-        collected_names["_comment_{0}".format(_comment_num)] = comment_str
-        _comment_num += 1
-
-    #namespace["comment"] = comment
+    intermediate_dispatcher = IntermediateDispatcher()
 
     # Execute file and collect 
-    execfile(filename, _namespace, collected_names)
-
-    #from modelparameters.codegeneration import pythoncode
-    #for name, item in collected_names.items():
-    #    print pythoncode(item, name)
-
-    #print global_names.keys()
+    execfile(filename, _namespace, intermediate_dispatcher)
 
     info("Loaded ODE model '{0}' with:".format(ode.name))
     for what in ["states", "parameters", "variables"]:
@@ -121,7 +103,6 @@ def load_ode(filename, name=None, collect_intermediates=True, **kwargs):
     _set_load_ode(None)
     namespace.clear()
     arguments.clear()
-    _comment_num = 0
     
     return ode
 

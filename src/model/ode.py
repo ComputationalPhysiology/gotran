@@ -1,20 +1,20 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2012 " + __author__
-__date__ = "2012-02-22 -- 2012-09-01"
+__date__ = "2012-02-22 -- 2012-09-03"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["ODE"]
 
 # System imports
-import sympy as sym
+import inspect
 from collections import OrderedDict, deque
 
+
 # ModelParameter imports
-from modelparameters.sympytools import ModelSymbol, sp
-from modelparameters.utils import listwrap
+from modelparameters.sympytools import ModelSymbol, sp, sp_namespace
 
 # Gotran imports
-from gotran2.common import error, check_arg, scalars
+from gotran2.common import error, check_arg, check_kwarg, scalars, listwrap
 from gotran2.model.odeobjects import *
 
 class ODE(object):
@@ -50,8 +50,8 @@ class ODE(object):
         init : scalar, ScalarParam
             The initial value of the state
         comment : str (optional)
-            A comment which will follow the state
         
+            A comment which will follow the state
         Example:
         ========
 
@@ -129,8 +129,6 @@ class ODE(object):
     def add_comment(self, comment_str):
         check_arg(comment_str, str, context=ODE.add_comment)
         self._intermediates["_comment_" + str(self._comment_num)] = comment_str
-        print
-        print "# " + comment_str
         self._comment_num += 1
 
     def get_object(self, name):
@@ -195,8 +193,7 @@ class ODE(object):
 
         # Register the derivatives
         check_arg(expr, (sp.Basic, scalars), 1)
-
-        expanded_expr = expr.subs(self._intermediates_namespace)
+        expanded_expr = eval(sp.sstr(expr), self._expansion_namespace, {})
 
         for atom in expanded_expr.atoms():
             if not isinstance(atom, (ModelSymbol, sp.Number, int, float)):
@@ -232,8 +229,11 @@ class ODE(object):
         # No derivatives (algebraic)
         if not stripped_derivatives:
             self._algebraic_expr.append(expr)
+            self._algebraic_expr_expanded.append(expanded_expr)
         else:
             self._derivative_expr.append((derivatives, expr))
+            self._derivative_expr_expanded.append((derivatives, \
+                                                   expanded_expr))
 
     def iter_states(self):
         """
@@ -408,14 +408,16 @@ class ODE(object):
         self._algebraic_states = set()
 
         # Collection of intermediate stuff
-        self._intermediates_namespace = OrderedDict()
+        self._expansion_namespace = OrderedDict()
         self._intermediates = OrderedDict()
         self._intermediates_duplicates = {} # Will be populated with deque
         self._comment_num = 0
 
-        # Collect expressions
+        # Collect expressions (Expanded and intermediate kept)
         self._derivative_expr = []
+        self._derivative_expr_expanded = []
         self._algebraic_expr = []
+        self._algebraic_expr_expanded = []
 
         # Analytics (not sure we need these...)
         self._dependencies = {}
@@ -424,7 +426,16 @@ class ODE(object):
         # Add time as a variable
         self.add_variable("t", 0.0)
         self.add_variable("dt", 0.1)
+        
+        # Populate expansion namespace with sympy namespace
+        self._expansion_namespace.update(sp_namespace)
 
+    def update_expansion_namespace(self, **kwargs):
+        """
+        Update the namespace all intermediates gets expanded into.
+        """
+        self._expansion_namespace.update(kwargs)
+        
     def _register_intermediate(self, name, expr):
         """
         Register an intermediate
@@ -455,14 +466,13 @@ class ODE(object):
             if name not in self._intermediates_duplicates:
                 self._intermediates_duplicates[name] = deque()
             self._intermediates_duplicates[name].append(expr)
-            self._intermediates["duplicate_{0}".format(name)] = name
+            self._intermediates["_duplicate_{0}".format(name)] = name
 
-            # Update namespace
-            self._intermediates_namespace[attr] = expr.subs(\
-                self._intermediates_namespace)
-            from modelparameters.codegeneration import pythoncode
-            print pythoncode(expr, name)
-            print pythoncode(self._intermediates_namespace[attr], name)
+            #self._expansion_namespace[attr] = expr.subs(\
+            #    self._expansion_namespace)
+            #from modelparameters.codegeneration import pythoncode
+            #print pythoncode(expr, name)
+            #print pythoncode(self._expansion_namespace[attr], name)
 
         else:
             self._intermediates[name] = expr
@@ -470,17 +480,28 @@ class ODE(object):
             sym = ModelSymbol(name, "{0}.{1}".format(self.name, name))
             setattr(self, name, sym)
 
-            # Update namespace
-            if isinstance(expr, scalars):
-                self._intermediates_namespace[sym] = expr
-            else:
-                self._intermediates_namespace[sym] = expr.subs(\
-                    self._intermediates_namespace)
+            #if isinstance(expr, scalars):
+            #    self._expansion_namespace[sym] = expr
+            #else:
+            #    self._expansion_namespace[sym] = expr.subs(\
+            #        self._expansion_namespace)
 
-            from modelparameters.codegeneration import pythoncode
-            print pythoncode(expr, name)
-            print pythoncode(self._intermediates_namespace[sym], name)
+            #from modelparameters.codegeneration import pythoncode
+            #print pythoncode(expr, name)
+            #print pythoncode(self._expansion_namespace[sym], name)
                 
+        # Update namespace
+        try:
+            # Evaluate expression in expansion namespace. Remove the ode name prefix
+            # in any included ModelSymbols
+            self._expansion_namespace[name] = eval(\
+                sp.sstr(expr).replace(self._name+".", ""), self._expansion_namespace, {})
+        except NameError, e:
+            raise NameError("{0}. Registering an intermediate failed because of "\
+                            "missmatch between \nthe ode's expansion namespace "\
+                            "and the global namespace. If needed update the \n"\
+                            "ode's namespace using, "\
+                            "ode.update_expansion_namespace()".format(e))
 
     def _register_object(self, obj):
         """
@@ -494,6 +515,8 @@ class ODE(object):
         # Make object available as an attribute
         setattr(self, obj.name, obj.sym)
 
+        # Register symbol in the expansion namespace
+        self._expansion_namespace[obj.name] = obj.sym
 
     def _sort_collected_objects(self):
         """
