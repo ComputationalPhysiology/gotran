@@ -11,12 +11,16 @@ class CodeGenerator(object):
         check_arg(oderepr, ODERepresentation, 0)
         self.oderepr = oderepr
         self.max_line_length = 79
+        self.init_language_specific_syntax()
+        self.oderepr.update_index(self.index)
+
+    def init_language_specific_syntax(self):
         self.language = "python"
         self.line_ending = ""
         self.closure_start = ""
         self.closure_end = ""
         self.line_cont = "\\"
-        self.comment = "\n#"
+        self.comment = "#"
         self.index = lambda i : "[{0}]".format(i)
         self.indent = 4
         self.indent_str = " "
@@ -35,6 +39,7 @@ class CodeGenerator(object):
         prototype = ["def {0}({1}):".format(name, args)]
         body = []
 
+        # Wrap comment if any
         if comment:
             body.append("\"\"\"")
             if isinstance(comment, list):
@@ -61,35 +66,62 @@ class CodeGenerator(object):
         from modelparameters.codegeneration import pythoncode
 
         ode = self.oderepr.ode
-        # Start building body
-        body_lines = ["# Imports", "import numpy as np"]
-        body_lines.append("")
-        body_lines.append("assert(len(states) == {0})".format(ode.num_states))
-        body_lines.append(", ".join(state.name for i, state in \
-                                    enumerate(ode.iter_states())) + " = states")
 
-        # Iterate over the intermediates and collect
-        # FIXME: Move to oderepresentation
-        # FIXME: Put stuff backend independent method
-        for intermediate, expr in ode._intermediates.items():
-            if "_comment_" in intermediate:
+        assert(not ode.is_dae)
+
+        # Start building body
+        body_lines = ["# Imports", "import numpy as np", "import math", "from math import pow, sqrt, log"]
+        body_lines.append("")
+        body_lines.append("# Assign states")
+        body_lines.append("assert(len(states) == {0})".format(ode.num_states))
+        if self.oderepr.optimization.use_names:
+            body_lines.append(", ".join(state.name for i, state in \
+                                        enumerate(ode.iter_states())) + " = states")
+        
+        # Add parameters code if not numerals
+        if not self.oderepr.optimization.parameter_numerals:
+            body_lines.append("")
+            body_lines.append("# Assign parameters")
+            body_lines.append("assert(len(parameters) == {0})".format(\
+                ode.num_parameters))
+
+            if self.oderepr.optimization.use_names:
+                body_lines.append(", ".join(param.name for i, param in \
+                        enumerate(ode.iter_parameters())) + " = parameters")
+
+        # Iterate over any body needed to define the dy
+        for expr, name in self.oderepr.iter_dy_body():
+            if name == "COMMENT":
                 body_lines.append("")
                 body_lines.append("# " + expr)
-            elif "_duplicate_" in intermediate:
-                intermediate = expr
-                body_lines.append(pythoncode(\
-                    ode._intermediates_duplicates[intermediate].popleft(), intermediate))
             else:
-                body_lines.append(pythoncode(expr, intermediate))
-                
+                body_lines.append(pythoncode(expr, name))
+
+        # Init dy
+        body_lines.append("")
+        body_lines.append("# Init dy")
+        body_lines.append("dy = np.zeros_like(states)")
+        
+        # Add dy[i] lines
+        for ind, (state, (derivative, expr)) in enumerate(\
+            zip(ode.iter_states(), self.oderepr.iter_derivative_expr())):
+            assert(state.sym == derivative[0])
+            body_lines.append(pythoncode(expr, "dy[{0}]".format(ind)))
+        
+        body_lines.append("")
+        body_lines.append("# Return dy")
+
         # Add function prototype
+        args = "t, states"
+        if not self.oderepr.optimization.parameter_numerals:
+            args += ", parameters"
         dy_function = self.wrap_body_with_function_prototype(\
-            body_lines, "dy_{0}".format(self.oderepr.name), "states", \
-            "init_values", "Init values")
+            body_lines, "dy_{0}".format(self.oderepr.name), args, \
+            "dy", "Calculate right hand side")
         
         return "\n".join(self.indent_and_split_lines(dy_function))
 
-    def init_code(self):
+    def init_states_code(self):
         """
         Generate code for setting initial condition
         """
@@ -98,6 +130,9 @@ class CodeGenerator(object):
         body_lines = ["# Imports", "import numpy as np",\
                       "from modelparameters.utils import Range", \
                       "", "# Init values"]
+        body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
+            state.name, state.init) for state in \
+                      self.oderepr.ode.iter_states())))
         body_lines.append("init_values = np.array([{0}], dtype=np.float_)".format(\
             ", ".join("{0}".format(state.init) for state in \
                       self.oderepr.ode.iter_states())))
@@ -129,10 +164,58 @@ class CodeGenerator(object):
         
         # Add function prototype
         init_function = self.wrap_body_with_function_prototype(\
-            body_lines, "init_{0}".format(self.oderepr.name), "**values", \
+            body_lines, "{0}_init_values".format(self.oderepr.name), "**values", \
             "init_values", "Init values")
         
         return "\n".join(self.indent_and_split_lines(init_function))
+
+    def init_param_code(self):
+        """
+        Generate code for setting parameters
+        """
+
+        # Start building body
+        body_lines = ["# Imports", "import numpy as np",\
+                      "from modelparameters.utils import Range", \
+                      "", "# Param values"]
+        body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
+            param.name, param.init) for param in \
+                      self.oderepr.ode.iter_parameters())))
+        body_lines.append("param_values = np.array([{0}], dtype=np.float_)".format(\
+            ", ".join("{0}".format(param.init) for param in \
+                      self.oderepr.ode.iter_parameters())))
+        body_lines.append("")
+        
+        range_check = "lambda value : value {minop} {minvalue} and "\
+                      "value {maxop} {maxvalue}"
+        body_lines.append("# Parameter indices and limit checker")
+
+        body_lines.append("state_ind = dict({0})".format(\
+            ", ".join("{0}=({1}, {2})".format(\
+                state.param.name, i, repr(state.param._range))\
+                for i, state in enumerate(self.oderepr.ode.iter_parameters()))))
+        body_lines.append("")
+
+        body_lines.append("for param_name, value in values.items():")
+        body_lines.append(\
+            ["if param_name not in param_ind:",
+             ["raise ValueError(\"{{0}} is not a param in the {0} ODE\"."\
+              "format(param_name))".format(self.oderepr.name)],
+             "ind, range = param_ind[param_name]",
+             "if value not in range:",
+             ["raise ValueError(\"While setting \'{0}\' {1}\".format("\
+              "param_name, range.format_not_in(value)))"],
+             "", "# Assign value",
+             "param_values[ind] = value"])
+            
+        body_lines.append("")
+        
+        # Add function prototype
+        function = self.wrap_body_with_function_prototype(\
+            body_lines, "{0}_parameters".format(self.oderepr.name), "**values", \
+            "param_values", "Parameter values")
+        
+        return "\n".join(self.indent_and_split_lines(function))
 
     def indent_and_split_lines(self, code_lines, indent=0, ret_lines=None):
         """
@@ -160,8 +243,8 @@ class CodeGenerator(object):
                 if self.closure_end:
                     ret_lines.append(self.indent*indent*self.indent_str + \
                                      self.closure_end)
-
                 continue
+            
             if line == "":
                 ret_lines.append(line)
                 continue
@@ -172,17 +255,30 @@ class CodeGenerator(object):
 
                 # Divide along white spaces
                 splitted_line = deque(line.split(" "))
+
+                # If no split
+                if splitted_line == line:
+                    ret_lines.append("{0}{1}{2}".format(\
+                        self.indent*indent*self.indent_str, line, \
+                        self.line_ending))
+                    continue
+                    
                 first_line = True
                 inside_str = False
+                is_comment = len(line) > len(self.comment) and \
+                             self.comment == line[:len(self.comment)]
+                
                 while splitted_line:
                     line_stump = []
-                    indent_length = self.indent*(indent if first_line else indent + 1)
+                    indent_length = self.indent*(indent if first_line or is_comment \
+                                                 else indent + 1)
                     line_length = indent_length
-                    first_line = False
 
                     # FIXME: Line continuation symbol is not included in linelength
-                    while splitted_line and ((line_length + len(splitted_line[0]) \
-                                              + 1 + inside_str) < self.max_line_length):
+                    while splitted_line and \
+                              (((line_length + len(splitted_line[0]) \
+                                 + 1 + inside_str) < self.max_line_length) \
+                               or not line_stump):
                         line_stump.append(splitted_line.popleft())
 
                         # Add a \" char to first stub if inside str
@@ -190,28 +286,35 @@ class CodeGenerator(object):
                             line_stump[-1] = "\""+line_stump[-1]
                             
                         # Check if we get inside or leave a str
-                        if "\"" in line_stump[-1] and not \
-                               ("\\\"" in line_stump[-1] or "\"\"\"" in line_stump[-1]):
+                        if not is_comment and ("\"" in line_stump[-1] and not \
+                            ("\\\"" in line_stump[-1] or "\"\"\"" in line_stump[-1])):
                             inside_str = not inside_str
 
-                        line_length += len(line_stump[-1]) + 1
+                        # Check line length
+                        line_length += len(line_stump[-1]) + 1 + \
+                                (is_comment and not first_line)*(len(self.comment) + 1)
 
                     # If we are inside a str and at the end of line add
-                    if inside_str:
+                    if inside_str and not is_comment:
                         line_stump[-1] = line_stump[-1]+"\""
                         
                     # Join line stump and add indentation
                     ret_lines.append(indent_length*self.indent_str + \
-                                     " ".join(line_stump))
+                                     (is_comment and not first_line)* \
+                                     (self.comment+" ") + " ".join(line_stump))
 
                     # If it is the last line stump add line ending otherwise
                     # line continuation sign
-                    ret_lines[-1] = ret_lines[-1] + (self.line_cont \
-                                    if splitted_line else self.line_ending)
+                    ret_lines[-1] = ret_lines[-1] + (not is_comment)*\
+                                    (self.line_cont if splitted_line else \
+                                     self.line_ending)
                 
+                    first_line = False
             else:
                 ret_lines.append("{0}{1}{2}".format(\
                     self.indent*indent*self.indent_str, line, \
                     self.line_ending))
 
         return ret_lines
+
+#class CCodeGenerator(CodeGenerator)

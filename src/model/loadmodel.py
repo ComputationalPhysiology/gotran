@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-05-07 -- 2012-09-03"
+__date__ = "2012-05-07 -- 2012-09-04"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["load_ode"]
@@ -11,7 +11,7 @@ from collections import OrderedDict
 
 # modelparameters import
 from modelparameters.parameters import ScalarParam, ArrayParam, ConstParam
-from modelparameters.sympytools import sp_namespace
+from modelparameters.sympytools import sp_namespace, sp
 
 # gotran imports
 from gotran2.common import *
@@ -78,6 +78,7 @@ def load_ode(filename, name=None, collect_intermediates=True, **kwargs):
                           variables=_variables,
                           diff=ode.diff,
                           comment=ode.add_comment,
+                          sp=sp,
                           model_arguments=_model_arguments))
 
     # Execute the file
@@ -92,7 +93,12 @@ def load_ode(filename, name=None, collect_intermediates=True, **kwargs):
 
     # Execute file and collect 
     execfile(filename, _namespace, intermediate_dispatcher)
-
+    
+    # Check for completeness
+    if not ode.is_complete:
+        error("ODE mode '{0}' is not complete and could not be loaded.".\
+              format(ode.name))
+    
     info("Loaded ODE model '{0}' with:".format(ode.name))
     for what in ["states", "parameters", "variables"]:
         num = getattr(ode, "num_{0}".format(what))

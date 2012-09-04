@@ -124,11 +124,11 @@ comment("Na+ current I_Na")
 E_Na = RTonF*log(Na_o/Na_i)
 I_Na = G_NaMax*m**3*h*j*(V-E_Na)
 
-a_h = Conditional(Ge(V, -40), 0, 0.135*exp((80+V)/(-6.8)))
+a_h = Conditional(Ge(V, -40), 0.0, 0.135*exp((80+V)/(-6.8)))
 b_h = Conditional(Ge(V, -40), 1/(0.13*(1+exp((V+10.66)/(-11.1)))), \
                   3.56*exp(0.079*V)+3.1e5*exp(0.35*V))
 
-a_j = Conditional(Ge(V, -40), 0, (-1.2714e5*exp(0.2444*V)-3.474e-5*exp(-0.04391*V))\
+a_j = Conditional(Ge(V, -40), 0.0, (-1.2714e5*exp(0.2444*V)-3.474e-5*exp(-0.04391*V))\
                   *(V+37.78)/(1+exp(0.311*(V+79.23))))
 b_j = Conditional(Ge(V, -40), 0.3*exp(-2.535e-7*V)/(1+exp(-0.1*(V+32))),
                   0.1212*exp(-0.01052*V)/(1+exp(-0.1378*(V+40.14))))
@@ -141,7 +141,7 @@ b_j = Conditional(Ge(V, -40), 0.3*exp(-2.535e-7*V)/(1+exp(-0.1*(V+32))),
 
 a_m = 0.32*(V+47.13)/(1-exp(-0.1*(V+47.13)))
 b_m = 0.08*exp(-V/11)
-dm = Conditional(Ge(V, -90), a_m*(1-m)-b_m*m, 0)
+dm = Conditional(Ge(V, -90), a_m*(1-m)-b_m*m, 0.0)
 
 comment("Rapid-activating delayed rectifier K+ current I_Kr")
 
@@ -311,7 +311,7 @@ a2 =  exp(2.0*VFonRT)-1.0
 ICamax = PCa*4.0*VFsqonRT*(a1/a2)
 I_Ca = ICamax*yCa*Open
 
-PKprime = PK/(1.0+(Min(0.0, ICamax)/ICahalf ))  
+PKprime = PK/(1.0+(Min(0.0, ICamax)/ICahalf ))
 a1 = K_i*exp(VFonRT)-K_o
 a2 = exp(VFonRT)-1.0
 I_CaK = PKprime*Open*yCa*VFsqonRT*(a1/a2)

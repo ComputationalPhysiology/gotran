@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2012 " + __author__
-__date__ = "2012-02-22 -- 2012-09-03"
+__date__ = "2012-02-22 -- 2012-09-04"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["ODE"]
@@ -12,6 +12,7 @@ from collections import OrderedDict, deque
 
 # ModelParameter imports
 from modelparameters.sympytools import ModelSymbol, sp, sp_namespace
+from modelparameters.codegeneration import sympycode
 
 # Gotran imports
 from gotran2.common import error, check_arg, check_kwarg, scalars, listwrap
@@ -193,7 +194,8 @@ class ODE(object):
 
         # Register the derivatives
         check_arg(expr, (sp.Basic, scalars), 1)
-        expanded_expr = eval(sp.sstr(expr), self._expansion_namespace, {})
+        expanded_expr = eval(sympycode(expr).replace(self.name+".",""),\
+                             self._expansion_namespace, {})
 
         for atom in expanded_expr.atoms():
             if not isinstance(atom, (ModelSymbol, sp.Number, int, float)):
@@ -227,7 +229,7 @@ class ODE(object):
 
         # Store expressions
         # No derivatives (algebraic)
-        if not stripped_derivatives:
+        if not derivatives:
             self._algebraic_expr.append(expr)
             self._algebraic_expr_expanded.append(expanded_expr)
         else:
@@ -235,6 +237,25 @@ class ODE(object):
             self._derivative_expr_expanded.append((derivatives, \
                                                    expanded_expr))
 
+    def get_derivative_expr(self, expanded=False):
+        """
+        Return the derivative expression
+        """
+
+        if expanded:
+            return self._derivative_expr_expanded
+        else:
+            return self._derivative_expr
+
+    def get_algebraic_expr(self, expanded=False):
+        """
+        Return the algebraic expression
+        """
+        if expanded:
+            return self._algebraic_expr_expanded
+        else:
+            return self._algebraic_expr
+        
     def iter_states(self):
         """
         Return an iterator over registered states
@@ -361,7 +382,7 @@ class ODE(object):
         if not states:
             return False
 
-        if len(state) > self.num_derivative_expr + self.num_algebraic_expr:
+        if len(states) > self.num_derivative_expr + self.num_algebraic_expr:
             # FIXME: Need a better name instead of xpressions...
             info("The ODE is under determined. The number of States are more "\
                  "than the number of expressions.")
@@ -378,9 +399,40 @@ class ODE(object):
         self._algebraic_states.difference_update(self._derivative_states)
 
         # Concistancy check
-        if len(self._algebraic_states)+len(self._derivative_states) != \
-               len(states):
+        if len(self._algebraic_states) + len(self._derivative_states) != len(states):
+            info("The sum of the algebraic and derivative states need equal "\
+                 "the total number of states.")
             return False
+
+        # If we have the same number of derivative expressions as number of
+        # states we need to check that we have one derivative of each state.
+        # and sort the derivatives 
+        if self.num_derivative_expr == len(states):
+
+            for derivative, expr in self._derivative_expr:
+                if len(derivative) != 1:
+                    # FIXME: Better error message
+                    info("When no DAE expression is used only 1 differential "\
+                         "state is allowed per diff call: {0}".format(derivative))
+                    return False
+
+            # Get a copy of the lists and prepare sorting
+            derivative_expr = self._derivative_expr[:]
+            derivative_expr_expanded = self._derivative_expr_expanded[:]
+            derivative_expr_sorted = []
+            derivative_expr_expanded_sorted = []
+
+            for state in states:
+                for ind, (derivative, expr) in enumerate(derivative_expr):
+                    if derivative[0] == state.sym:
+                        derivative_expr_sorted.append(derivative_expr.pop(ind))
+                        derivative_expr_expanded_sorted.append(\
+                            derivative_expr_expanded.pop(ind))
+                        break
+
+            # Store the sorted derivatives
+            self._derivative_expr = derivative_expr_sorted
+            self._derivative_expr_expanded = derivative_expr_expanded_sorted
 
         # Nothing more to check?
         return True
@@ -412,6 +464,7 @@ class ODE(object):
         self._intermediates = OrderedDict()
         self._intermediates_duplicates = {} # Will be populated with deque
         self._comment_num = 0
+        self._duplicate_num = 0
 
         # Collect expressions (Expanded and intermediate kept)
         self._derivative_expr = []
@@ -466,13 +519,9 @@ class ODE(object):
             if name not in self._intermediates_duplicates:
                 self._intermediates_duplicates[name] = deque()
             self._intermediates_duplicates[name].append(expr)
-            self._intermediates["_duplicate_{0}".format(name)] = name
-
-            #self._expansion_namespace[attr] = expr.subs(\
-            #    self._expansion_namespace)
-            #from modelparameters.codegeneration import pythoncode
-            #print pythoncode(expr, name)
-            #print pythoncode(self._expansion_namespace[attr], name)
+            self._intermediates["_duplicate_{0}".format(\
+                self._duplicate_num)] = name
+            self._duplicate_num += 1
 
         else:
             self._intermediates[name] = expr
@@ -480,22 +529,14 @@ class ODE(object):
             sym = ModelSymbol(name, "{0}.{1}".format(self.name, name))
             setattr(self, name, sym)
 
-            #if isinstance(expr, scalars):
-            #    self._expansion_namespace[sym] = expr
-            #else:
-            #    self._expansion_namespace[sym] = expr.subs(\
-            #        self._expansion_namespace)
-
-            #from modelparameters.codegeneration import pythoncode
-            #print pythoncode(expr, name)
-            #print pythoncode(self._expansion_namespace[sym], name)
-                
         # Update namespace
         try:
             # Evaluate expression in expansion namespace. Remove the ode name prefix
             # in any included ModelSymbols
-            self._expansion_namespace[name] = eval(\
-                sp.sstr(expr).replace(self._name+".", ""), self._expansion_namespace, {})
+
+            self._expansion_namespace[name] = eval(
+                sympycode(expr).replace(self.name+".",""), \
+                self._expansion_namespace, {})
         except NameError, e:
             raise NameError("{0}. Registering an intermediate failed because of "\
                             "missmatch between \nthe ode's expansion namespace "\
