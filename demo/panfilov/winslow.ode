@@ -312,8 +312,8 @@ ICamax = PCa*4.0*VFsqonRT*(a1/a2)
 I_Ca = ICamax*yCa*Open
 
 PKprime = PK/(1.0+(Min(0.0, ICamax)/ICahalf ))
-a1 = K_i*exp(VFonRT)-K_o
-a2 = exp(VFonRT)-1.0
+a1 = K_i*expVFonRT-K_o
+a2 = expVFonRT-1.0
 I_CaK = PKprime*Open*yCa*VFsqonRT*(a1/a2)
 
 comment("RyR Channel")

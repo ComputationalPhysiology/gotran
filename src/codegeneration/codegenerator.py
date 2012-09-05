@@ -227,7 +227,7 @@ class CodeGenerator(object):
 
 
         # Walk through the code_lines
-        for line in code_lines:
+        for line_ind, line in enumerate(code_lines):
 
             # If another closure is encountered
             if isinstance(line, list):
@@ -245,12 +245,27 @@ class CodeGenerator(object):
                                      self.closure_end)
                 continue
             
+            line_ending = self.line_ending
+            # Do not use line endings the line before and after a closure
+            if line_ind + 1 < len(code_lines):
+                if isinstance(code_lines[line_ind+1], list):
+                    line_ending = ""
+
+            # Check of we parse a comment line
+            if len(line) > len(self.comment) and self.comment == \
+               line[:len(self.comment)]:
+                is_comment = True
+                line_ending = ""
+            else:
+                is_comment = False
+                
+            # Empty line
             if line == "":
                 ret_lines.append(line)
                 continue
 
             # Check for long lines
-            if self.indent*indent + len(line) + len(self.line_ending) > \
+            if self.indent*indent + len(line) + len(line_ending) > \
                    self.max_line_length:
 
                 # Divide along white spaces
@@ -260,13 +275,11 @@ class CodeGenerator(object):
                 if splitted_line == line:
                     ret_lines.append("{0}{1}{2}".format(\
                         self.indent*indent*self.indent_str, line, \
-                        self.line_ending))
+                        line_ending))
                     continue
                     
                 first_line = True
                 inside_str = False
-                is_comment = len(line) > len(self.comment) and \
-                             self.comment == line[:len(self.comment)]
                 
                 while splitted_line:
                     line_stump = []
@@ -307,14 +320,115 @@ class CodeGenerator(object):
                     # line continuation sign
                     ret_lines[-1] = ret_lines[-1] + (not is_comment)*\
                                     (self.line_cont if splitted_line else \
-                                     self.line_ending)
+                                     line_ending)
                 
                     first_line = False
             else:
                 ret_lines.append("{0}{1}{2}".format(\
                     self.indent*indent*self.indent_str, line, \
-                    self.line_ending))
+                    line_ending))
 
         return ret_lines
 
-#class CCodeGenerator(CodeGenerator)
+class CCodeGenerator(CodeGenerator):
+    def init_language_specific_syntax(self):
+        self.language = "C"
+        self.line_ending = ";"
+        self.closure_start = "{"
+        self.closure_end = "}"
+        self.line_cont = ""
+        self.comment = "//"
+        self.index = lambda i : "[{0}]".format(i)
+        self.indent = 2
+        self.indent_str = " "
+    
+    def wrap_body_with_function_prototype(self, body_lines, name, args, \
+                                          return_type="", comment=""):
+        """
+        Wrap a passed body of lines with a function prototype
+        """
+        check_arg(body_lines, list)
+        check_arg(name, str)
+        check_arg(args, str)
+        check_arg(return_type, str)
+        check_arg(comment, (str, list))
+
+        return_type = return_type or "void"
+
+        prototype = []
+        if comment:
+            prototype.append("{0} {1}".format(self.comment, comment))
+
+        prototype.append("{0} {1}({2})".format(return_type, name, args))
+        body = []
+
+        # Append body to prototyp
+        prototype.append(body_lines)
+        return prototype
+    
+    def dy_code(self):
+        """
+        Generate code for evaluating state derivatives
+        """
+
+        from modelparameters.codegeneration import ccode
+
+        ode = self.oderepr.ode
+
+        assert(not ode.is_dae)
+
+        # Start building body
+        body_lines = ["", "// Assign states"]
+        ##body_lines.append("assert(len(states) == {0})".format(ode.num_states))
+        if self.oderepr.optimization.use_names:
+            for i, state in enumerate(ode.iter_states()):
+                body_lines.append("const double {0} = states[{1}]".format(state.name, i))
+        
+        # Add parameters code if not numerals
+        if not self.oderepr.optimization.parameter_numerals:
+            body_lines.append("")
+            body_lines.append("// Assign parameters")
+            #body_lines.append("assert(len(parameters) == {0})".format(\
+            #    ode.num_parameters))
+
+            if self.oderepr.optimization.use_names:
+                for i, param in enumerate(ode.iter_parameters()):
+                    body_lines.append("const double {0} = parameters[{1}]".format(\
+                        param.name, i))
+
+        # Iterate over any body needed to define the dy
+        declared_duplicates = []
+        for expr, name in self.oderepr.iter_dy_body():
+
+            name = str(name)
+            
+            if name == "COMMENT":
+                body_lines.append("")
+                body_lines.append("// " + expr)
+            else:
+                if name in ode._intermediates_duplicates:
+                    if name not in declared_duplicates:
+                        declared_duplicates.append(name)
+                        name = "double " + name
+
+                else:
+                    name = "const double " + name
+
+                body_lines.append(ccode(expr, name))
+
+        # Add dy[i] lines
+        for ind, (state, (derivative, expr)) in enumerate(\
+            zip(ode.iter_states(), self.oderepr.iter_derivative_expr())):
+            assert(state.sym == derivative[0])
+            body_lines.append(ccode(expr, "dy[{0}]".format(ind)))
+        
+        # Add function prototype
+        parameters = "" if self.oderepr.optimization.parameter_numerals \
+                     else "double* parameters, "
+        args = "double t, const double* states, {0}double* dy".format(parameters)
+        dy_function = self.wrap_body_with_function_prototype(\
+            body_lines, "dy_{0}".format(self.oderepr.name), args, \
+            "", "Calculate right hand side of {0}".format(self.oderepr.name))
+        
+        return "\n".join(self.indent_and_split_lines(dy_function))
+

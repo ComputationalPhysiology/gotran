@@ -1,7 +1,9 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-02-22 -- 2012-06-28"
+__date__ = "2012-02-22 -- 2012-09-05"
 __license__  = "GNU LGPL Version 3.0 or later"
+
+__version__ = "2.0"
 
 # Import gotran2 modules
 import common
