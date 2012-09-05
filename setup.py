@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-02-22 -- 2012-08-27"
+__date__ = "2012-02-22 -- 2012-09-05"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 
@@ -19,7 +19,8 @@ import sys
 major = 2
 minor = 0
 
-scripts = [pjoin("scripts", "gotran2")]
+scripts = [pjoin("scripts", "gotran2"),
+           pjoin("scripts", "cellml2gotran.py")]
 
 if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
     # In the Windows command prompt we can't execute Python scripts
