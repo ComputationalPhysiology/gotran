@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-05-07 -- 2012-09-04"
+__date__ = "2012-05-07 -- 2012-09-06"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["load_ode"]
@@ -69,7 +69,7 @@ def load_ode(filename, name=None, collect_intermediates=True, **kwargs):
 
     # Create namespace which the ode file will be executed in
     namespace.update(sp_namespace)
-    namespace.update(dict(t=ode.t, dt=ode.dt,
+    namespace.update(dict(time=ode.time, dt=ode.dt,
                           ScalarParam=ScalarParam,
                           ArrayParam=ArrayParam,
                           ConstParam=ConstParam,

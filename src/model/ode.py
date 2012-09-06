@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2012 " + __author__
-__date__ = "2012-02-22 -- 2012-09-04"
+__date__ = "2012-02-22 -- 2012-09-06"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["ODE"]
@@ -197,6 +197,7 @@ class ODE(object):
         expanded_expr = eval(sympycode(expr).replace(self.name+".",""),\
                              self._expansion_namespace, {})
 
+        expanded_expr = sp.sympify(expanded_expr)
         for atom in expanded_expr.atoms():
             if not isinstance(atom, (ModelSymbol, sp.Number, int, float)):
                 type_error("A derivative must be an expressions of "\
@@ -477,7 +478,7 @@ class ODE(object):
         self._linear_dependencies = {}
 
         # Add time as a variable
-        self.add_variable("t", 0.0)
+        self.add_variable("time", 0.0)
         self.add_variable("dt", 0.1)
         
         # Populate expansion namespace with sympy namespace
@@ -576,7 +577,7 @@ class ODE(object):
             
             # Called when registering the ODEObject
             if hasattr(self, name):
-                obj = self.get_object(attr)
+                obj = self.get_object(name)
                 error("Illeagal name '{0}'. It is already a registered {1}"\
                       "of '{2}'".format(name, obj.__class__.__name__, \
                                         self.name))

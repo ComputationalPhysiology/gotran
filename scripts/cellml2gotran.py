@@ -57,7 +57,9 @@ class Component(object):
                                       variables.items() if value is not None)
         
         self.derivatives = derivatives
-        self.dependent_components = OrderedDict()
+
+        self.components_dependencies = OrderedDict() 
+        self.dependent_components = OrderedDict() 
 
         # Attributes which will be populated later
         # FIXME: Should we populate the parameters based on the variables
@@ -115,9 +117,12 @@ class Component(object):
         
         if any(equation.name in self.used_variables \
                for equation in component.equations):
-            self.dependent_components[component] = \
-                [equation for equation in component.equations \
-                 if equation.name in self.used_variables]
+            dep_equations = [equation for equation in component.equations \
+                             if equation.name in self.used_variables]
+
+            # Register mutual dependencies
+            self.components_dependencies[component] = dep_equations
+            component.dependent_components[self] = dep_equations
             
             # Add logics for dependencies of all Equations.
             for other_equation in component.equations:
@@ -166,7 +171,7 @@ class MathMLBaseParser(object):
         self._operators = {
             "power" : '**',
             "divide": '/',
-            "times" : ' * ',
+            "times" : '*',
             "minus" : ' - ',
             "plus"  : ' + ',
             "lt"    : ' < ',
@@ -215,7 +220,7 @@ class MathMLBaseParser(object):
         equation_list = self._parse_subtree(root)
         return equation_list, self._state_variable, self._derivative, self.used_variables
     
-    def _parse_subtree(self, root, parent = None):
+    def _parse_subtree(self, root, parent=None):
         op = self._gettag(root)
 
         # If the tag i "apply" pick the operator and continue parsing
@@ -230,8 +235,8 @@ class MathMLBaseParser(object):
             # Build the equation string
             eq  = []
             
-            # Check if we need parentesis
-            use_parent = (not parent is None) and \
+            # Check if we need parenthesis
+            use_parent = (parent is not None) and \
                          (self._precedence[parent] < self._precedence[op])
             
             # If unary operator
@@ -240,8 +245,12 @@ class MathMLBaseParser(object):
                 if op == "minus":
                     use_parent = False
                     eq += ["-"]
-                else:    
+                else:
+                    
+                    # Always use paranthesis for unary operators
+                    use_parent = True
                     eq += [self._operators[op]]
+
                 eq += ["("]*use_parent + self._parse_subtree(root[0],op) + [")"]*use_parent
                 return eq
             else:
@@ -264,9 +273,19 @@ class MathMLBaseParser(object):
         return [var.text.strip()]
     
     def _parse_diff(self, operands):
+
+        # Store old used_variables so we can erase any collected state variables
+        used_variables_prior_parse = self.used_variables.copy()
+        
         x = "".join(self._parse_subtree(operands[1]))
         y = "".join(self._parse_subtree(operands[0]))
         d = "d" + x + "d" + y
+
+        # Restore used_variables
+        self.used_variables = used_variables_prior_parse
+
+        # Store derivative
+        self.used_variables.add(d)
         
         # This is an in/out variable remember it
         self._derivative = d
@@ -443,6 +462,7 @@ class CellMLParser:
 
             # Get variable and initial values
             for var in comp.getiterator(cellml_namespace + "variable"):
+
                 var_name = var.attrib["name"]
                 if var.attrib.has_key("initial_value"):
                     initial = var.attrib["initial_value"]
@@ -459,16 +479,24 @@ class CellMLParser:
                     equation_list, state_variable, derivative, \
                             used_variables = self.mathmlparser.parse(eq)
 
+                    # Get equation name
                     eq_name = equation_list[0]
+
+                    # Discard collected equation name from used variables
+                    used_variables.discard(eq_name)
+                    
                     assert(re.findall("(\w+)", eq_name)[0]==eq_name)
                     assert(equation_list[1] == self.mathmlparser["eq"])
                     equations.append(Equation(eq_name, "".join(equation_list[2:]),
                                               used_variables))
                     
-                    if not state_variable is None:
+                    # Do not register state variables twice
+                    if state_variable is not None and \
+                           state_variable not in state_variables:
                         state_variables.append(state_variable)
-                    
-                    if not derivative is None:
+
+                    # Do not register derivatives twice
+                    if derivative is not None and derivative not in derivatives:
                         derivatives.append(derivative)
 
             # FIXME: Add logic to extract variables
@@ -507,7 +535,7 @@ class CellMLParser:
                     components.append(component)
                     break
                 
-                if any(dep in components for dep in component.dependent_components):
+                if any(dep in components for dep in component.components_dependencies):
                     components.append(component)
                     dependant_components.append(component)
                 else:
@@ -524,7 +552,7 @@ class CellMLParser:
         
         # Gather zero dependent equations
         for comp in circular_components:
-            for dep_comp, equations in comp.dependent_components.items():
+            for dep_comp, equations in comp.components_dependencies.items():
                 for equation in equations:
                     if not equation.dependent_equations and equation.name \
                            in comp.used_variables:
@@ -532,7 +560,7 @@ class CellMLParser:
 
         # Check for one dependency if that is the zero one
         for comp in circular_components:
-            for dep_comp, equations in comp.dependent_components.items():
+            for dep_comp, equations in comp.components_dependencies.items():
                 for equation in equations:
                     if len(equation.dependent_equations) == 1 and \
                            equation.name in comp.used_variables and \
@@ -544,7 +572,7 @@ class CellMLParser:
         for low_dep in list(zero_dep_equations) + list(one_dep_equations):
             num = 0
             for comp in circular_components:
-                for equations in comp.dependent_components.values():
+                for equations in comp.components_dependencies.values():
                     num += low_dep in equations
             
             heruistic_score.append((num, low_dep))
@@ -563,7 +591,7 @@ class CellMLParser:
             
             # Gather zero dependent equations
             for comp in circular_components:
-                for dep_comp, equations in comp.dependent_components.items():
+                for dep_comp, equations in comp.components_dependencies.items():
                     for equation in equations:
                         if not equation.dependent_equations:
                             zero_dep_equations.append(equation)
@@ -590,15 +618,18 @@ class CellMLParser:
         param_lines = []
         equation_lines = []
         derivative_lines = []
+        derivatives_intermediates = []
 
         # Iterate over components and collect stuff
         for comp in self.components:
             comp_name = comp.name.replace("_", " ").capitalize()
+
+            # Collect initial state values
             if comp.state_variables:
                 state_lines.append("")
                 state_lines.append("states(\"{0}\",".format(comp_name))
                 for name, value in comp.state_variables.items():
-                    state_lines.append("       {0}={1},".format(name, value))
+                    state_lines.append("       {0} = {1},".format(name, value))
                 state_lines[-1] = state_lines[-1][:-1]+")"
 
                 # Collect derivatives
@@ -606,17 +637,32 @@ class CellMLParser:
                                              comp.derivatives):
                     for eq in comp.equations:
                         if eq.name in derivative:
-                            derivative_lines.append("diff({0}, {1})".format(\
-                                state, eq.expr))
+                            print "DERIVATIVE:", eq.name
+                            # Check that derivative equation is not used
+                            # by component or dependent components
+                            for potential_dep in comp.equations + \
+                                    comp.dependent_components.keys():
+                                if eq.name in potential_dep.used_variables:
+                                    derivatives_intermediates.append(eq.name)
+                                    derivative_lines.append("diff({0}, {1})".format(\
+                                        state, eq.name))
+                                    
+                                    break
+                            else:
+                                # Derivative is not used by anyone. Add it to 
+                                derivative_lines.append("diff({0}, {1})".format(\
+                                    state, eq.expr))
                             break
-                                   
+            
+            # Collect initial parameters values
             if comp.parameters:
                 param_lines.append("")
                 param_lines.append("parameters(\"{0}\",".format(comp_name))
                 for name, value in comp.parameters.items():
-                    param_lines.append("           {0}={1},".format(name, value))
+                    param_lines.append("           {0} = {1},".format(name, value))
                 param_lines[-1] = param_lines[-1][:-1]+")"
 
+            # Collect all intermediate equations
             if comp.equations:
                 equation_lines.append("")
                 equation_lines.append("comment(\"{0}\")".format(\
@@ -624,10 +670,11 @@ class CellMLParser:
                 
                 for eq in comp.equations:
                     
-                    # If derivative line continue
-                    if eq.name in comp.derivatives:
+                    # If derivative line and not used else where continue
+                    if eq.name in comp.derivatives and \
+                           eq.name not in derivatives_intermediates:
                         continue
-                    equation_lines.append("{0}={1}".format(eq.name, eq.expr))
+                    equation_lines.append("{0} = {1}".format(eq.name, eq.expr))
 
         # FIXME: Add logic for DAE
 
@@ -686,5 +733,5 @@ if __name__ == "__main__":
             if key == "ho":
                 header_name = i
     
-    cellml = CellMLParser(args[0], modelname = flags["m"][2])
+    cellml = CellMLParser(args[0])
     cellml.to_gotran()
