@@ -32,7 +32,7 @@ class Equation(object):
         return self.name
     
     def __repr__(self):
-        return "Equation({0} = {1})".format(self.name, self.expr)
+        return "Equation({0} = {1})".format(self.name, "".join(self.expr))
 
     def __eq__(self, other):
         if not isinstance(other, Equation):
@@ -91,8 +91,15 @@ class Component(object):
         for equation in self.equations:
             self.used_variables.update(equation.used_variables)
 
+        # Remove dependencies on names defined by component
         self.used_variables.difference_update(\
             equation.name for equation in self.equations)
+
+        self.used_variables.difference_update(\
+            name for name in self.parameters)
+
+        self.used_variables.difference_update(\
+            name for name in self.state_variables)
 
     def __hash__(self):
         return hash(self.name)
@@ -130,6 +137,22 @@ class Component(object):
                     if other_equation.name in equation.used_variables:
                         equation.dependent_equations.append(other_equation)
             
+
+    def change_parameter_name(self, oldname, newname):
+        """
+        Change the name of a parameter
+        Assume the name is only used locally within this component
+        """
+        assert(oldname in self.parameters)
+
+        # Update parameters
+        self.parameters = OrderedDict((newname if name == oldname else name, value) \
+                                      for name, value in self.parameters.items())
+
+        # Update equations
+        for eqn in self.equations:
+            while oldname in eqn.expr:
+                eqn.expr[eqn.expr.index(oldname)] = newname
 
 class MathMLBaseParser(object):
     def __init__(self):
@@ -433,6 +456,10 @@ class CellMLParser:
         """
         components = deque()
         cellml_namespace = self.cellml.tag.split("}")[0] + "}"
+
+        # Collect states and parameters to check for duplicates
+        collected_states = []
+        collected_parameters = []
         
         # Import other models
         for model in self.cellml.getiterator(cellml_namespace + "import"):
@@ -443,6 +470,21 @@ class CellMLParser:
             components.extend(CellMLParser(\
                 model.attrib["{http://www.w3.org/1999/xlink}href"], \
                 import_comp_names).components)
+
+        # Extract parameters and states
+        for comp in components:
+            for name in comp.state_variables:
+                if name in collected_states:
+                    warning("Duplicated state name in detected: '%s' in "\
+                            "imported component: '%s'" % (name, comp.name))
+                collected_states.append(name)
+            
+            for name in comp.parameters.keys():
+                if name in collected_states + collected_parameters:
+                    new_name = name + "_" + comp_name.split("_")[0]
+                    comp.change_parameter_name(name, new_name)
+                    name = new_name
+                collected_parameters.append(name)
             
         extracted_equations = []
         
@@ -487,7 +529,7 @@ class CellMLParser:
                     
                     assert(re.findall("(\w+)", eq_name)[0]==eq_name)
                     assert(equation_list[1] == self.mathmlparser["eq"])
-                    equations.append(Equation(eq_name, "".join(equation_list[2:]),
+                    equations.append(Equation(eq_name, equation_list[2:],
                                               used_variables))
                     
                     # Do not register state variables twice
@@ -499,23 +541,39 @@ class CellMLParser:
                     if derivative is not None and derivative not in derivatives:
                         derivatives.append(derivative)
 
-            # FIXME: Add logic to extract variables
+            # Extract any equations labled for extraction
             if extract_equations:
                 for equation in equations[:]:
                     if equation.name in extract_equations:
                         extracted_equations.append(equation)
                         equations.remove(equation)
             
-            # Make a list of the used_variables
-            components.append(Component(comp_name, variables, \
-                                        equations, state_variables, derivatives))
+            # Create Component
+            comp = Component(comp_name, variables, equations, state_variables, \
+                             derivatives)
+
+            # Check for duplicates of parameters and states
+            for name in comp.state_variables:
+                if name in collected_states:
+                    warning("Duplicated state name in detected: '%s' in "\
+                            "component: '%s'" % (name, comp.name))
+                collected_states.append(name)
+            
+            for name in comp.parameters.keys():
+                if name in collected_states + collected_parameters:
+                    new_name = name + "_" + comp_name.split("_")[0]
+                    comp.change_parameter_name(name, new_name)
+                    name = new_name
+                collected_parameters.append(name)
+            
+            # Store component
+            components.append(comp)
 
         # Add extracted equations as a new Component
         if extracted_equations:
             components.append(Component("ExtractedEquations", [], \
                                         extracted_equations, [], []))
         
-        #all_equations = []
         # Check internal dependencies
         for comp0 in components:
             #all_equations.extend(comp0.equations)
@@ -623,7 +681,8 @@ class CellMLParser:
         # Iterate over components and collect stuff
         for comp in self.components:
             comp_name = comp.name.replace("_", " ").capitalize()
-
+            
+            
             # Collect initial state values
             if comp.state_variables:
                 state_lines.append("")
@@ -651,7 +710,7 @@ class CellMLParser:
                             else:
                                 # Derivative is not used by anyone. Add it to 
                                 derivative_lines.append("diff({0}, {1})".format(\
-                                    state, eq.expr))
+                                    state, "".join(eq.expr)))
                             break
             
             # Collect initial parameters values
@@ -674,7 +733,7 @@ class CellMLParser:
                     if eq.name in comp.derivatives and \
                            eq.name not in derivatives_intermediates:
                         continue
-                    equation_lines.append("{0} = {1}".format(eq.name, eq.expr))
+                    equation_lines.append("{0} = {1}".format(eq.name, "".join(eq.expr)))
 
         # FIXME: Add logic for DAE
 
@@ -694,13 +753,13 @@ class CellMLParser:
                                    
 if __name__ == "__main__":
     import getopt
+    import sys
 
-    # Filepointers and fallback values
-    c_out_fp = sys.stdout
-    h_out_fp = sys.stdout
+    c_out_fp = None
+    h_out_fp = None
     c_skel_fp = None
     h_skel_fp = None
-
+    
     #        Flag    Description             Variable   Option
     flags = {"co" : ["cpp output file",      c_out_fp,  "w"],
              "ho" : ["header output file",   h_out_fp,  "w"],
@@ -721,7 +780,6 @@ if __name__ == "__main__":
     except getopt.GetoptError:
         usage()
 
-    header_name = "##HEADERNAME##"
     for k,i in opts:
         key = k[2:]
         if key in flags:
