@@ -23,7 +23,7 @@ exec(gen.dy_code())
 
 parameters = winslow_parameters()
 states = winslow_init_values()
-dy = np.asarray(states)
+dy = np.asarray(states).copy()
 dy_correct = dy_winslow(0.0, states, parameters)
 
 for keep, use_cse, numerals, use_names in \
@@ -44,9 +44,6 @@ for keep, use_cse, numerals, use_names in \
         int(oderepr.optimization.parameter_numerals),
         int(oderepr.optimization.use_names))
     
-    parameters = winslow_parameters()
-    states = winslow_init_values()
-
     module = jit(oderepr)
     t0 = time.time()
     if oderepr.optimization.parameter_numerals:
