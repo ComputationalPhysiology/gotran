@@ -144,7 +144,10 @@ class Component(object):
         Assume the name is only used locally within this component
         """
         assert(oldname in self.parameters)
-
+        
+        print "Change parameter name: '{0}' to '{1}' in component '{2}'."\
+              .format(oldname, newname, self.name)
+        
         # Update parameters
         self.parameters = OrderedDict((newname if name == oldname else name, value) \
                                       for name, value in self.parameters.items())
@@ -475,7 +478,7 @@ class CellMLParser:
         for comp in components:
             for name in comp.state_variables:
                 if name in collected_states:
-                    warning("Duplicated state name in detected: '%s' in "\
+                    warning("Duplicated state name: '%s' detected in "\
                             "imported component: '%s'" % (name, comp.name))
                 collected_states.append(name)
             
@@ -555,7 +558,7 @@ class CellMLParser:
             # Check for duplicates of parameters and states
             for name in comp.state_variables:
                 if name in collected_states:
-                    warning("Duplicated state name in detected: '%s' in "\
+                    warning("Duplicated state name: '%s' detected in "\
                             "component: '%s'" % (name, comp.name))
                 collected_states.append(name)
             
@@ -696,7 +699,6 @@ class CellMLParser:
                                              comp.derivatives):
                     for eq in comp.equations:
                         if eq.name in derivative:
-                            print "DERIVATIVE:", eq.name
                             # Check that derivative equation is not used
                             # by component or dependent components
                             for potential_dep in comp.equations + \
