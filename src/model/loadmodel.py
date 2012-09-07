@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-05-07 -- 2012-09-06"
+__date__ = "2012-05-07 -- 2012-09-07"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["load_ode"]
@@ -61,8 +61,15 @@ def load_ode(filename, name=None, collect_intermediates=True, **kwargs):
     arguments.clear()
     arguments.update(kwargs)
 
+    # Extract name from filename
+    if len(filename) < 4 or filename[-4:] != ".ode":
+        name = name or filename
+        filename = filename + ".ode"
+    elif name is None:
+        name = filename[:-4]
+
     # Create an ODE which will be populated with data when ode file is loaded
-    ode = ODE(name or filename)
+    ode = ODE(name)
     _set_load_ode(ode)
 
     debug("Loading {}".format(_current_ode))
@@ -82,9 +89,6 @@ def load_ode(filename, name=None, collect_intermediates=True, **kwargs):
                           model_arguments=_model_arguments))
 
     # Execute the file
-    if len(filename) < 4 or filename[-4:] != ".ode":
-        filename = filename + ".ode"
-    
     if (not os.path.isfile(filename)):
         error("Could not find '{0}'".format(filename))
 
