@@ -16,5 +16,13 @@ from common import DEBUG, INFO, WARNING, ERROR, CRITICAL, \
 from model import *
 from algorithms import *
 
+# Model parameters
+from modelparameters.parameters import ScalarParam
+from modelparameters.parameterdict import ParameterDict
+from modelparameters.sympytools import sp_namespace as _sp_namespace
+
+# Add sympy namespace to globals
+globals().update(_sp_namespace)
+
 # Assign the __all__ attribute
 __all__ = [name for name in globals().keys() if name[:1] != "_"]

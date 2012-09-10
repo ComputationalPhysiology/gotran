@@ -129,7 +129,97 @@ class ODE(object):
         # Return the sympy version of the variable
         return variable.sym
 
+    def add_states(self, comment="", **kwargs):
+        """
+        Add a number of states to the current ODE
+    
+        Example
+        -------
+    
+        >>> ode = ODE("MyOde")
+        >>> ode.states(e=0.0, g=1.0)
+        """
+    
+        if not kwargs:
+            error("expected at least one state")
+        
+        # Check values and create sympy Symbols
+        self._add_entities(comment, kwargs, "state")
+    
+    def add_parameters(self, comment="", **kwargs):
+        """
+        Add a number of parameters to the current ODE
+    
+        Example
+        -------
+    
+        >>> ode = ODE("MyOde")
+        >>> ode.add_parameters(v_rest=-85.0,
+                               v_peak=35.0,
+                               time_constant=1.0)
+        """
+        
+        if not kwargs:
+            error("expected at least one state")
+        
+        # Check values and create sympy Symbols
+        self._add_entities(comment, kwargs, "parameter")
+        
+    def add_variables(self, comment="", **kwargs):
+        """
+        Add a number of variables to the current ODE
+    
+        Example
+        -------
+    
+        >>> ode = ODE("MyOde")
+        >>> ode.add_variables(c_out=0.0, c_in=1.0)
+        
+        """
+    
+        if not kwargs:
+            error("expected at least one variable")
+        
+        # Check values and create sympy Symbols
+        self._add_entities(comment, kwargs, "variable")
+    
+    def _add_entities(self, comment, kwargs, entity):
+        """
+        Help function for determine if each entity in the kwargs is unique
+        and to check the type of the given default value
+        """
+        assert(entity in ["state", "parameter", "variable"])
+    
+        # Get caller frame
+        # namespace = _get_load_namespace()
+    
+        # Get add method
+        add = getattr(self, "add_{0}".format(entity))
+        
+        # Symbol and value dicts
+        for name in sorted(kwargs.keys()):
+    
+            # Get value
+            value = kwargs[name]
+    
+            # Add the symbol
+            sym = add(name, value, comment)
+
+            # FIXME: Should we add this capability back?
+            # Add symbol to caller frames namespace
+            #try:
+            #    debug("Adding {0} '{1}' to namespace".format(entity, name))
+            #    if name in namespace:
+            #        warning("Symbol with name: '{0}' already in namespace.".\
+            #                format(name))
+            #    namespace[name] = sym
+            #except:
+            #    error("Not able to add '{0}' to namespace".format(name))
+    
     def add_comment(self, comment_str):
+        """
+        Add comment to ODE
+        """
         check_arg(comment_str, str, context=ODE.add_comment)
         self._intermediates["_comment_" + str(self._comment_num)] = comment_str
         self._comment_num += 1
@@ -614,12 +704,13 @@ class ODE(object):
             subs[getattr(self, what)] = getattr(other, what)
 
         for what, item in self._intermediates.items():
+            if what[0] == "_":
+                continue
             if not hasattr(other, what):
                 return False
             if getattr(self, what) != getattr(other, what):
                 return False
             subs[getattr(self, what)] = getattr(other, what)
-        
 
         # FIXME: Fix comparison of expressions
         #print "self:", self._derivative_expr

@@ -275,5 +275,3 @@ def _add_entities(comment, kwargs, entity):
             namespace[name] = sym
         except:
             error("Not able to add '{0}' to namespace".format(name))
-
-

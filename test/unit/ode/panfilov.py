@@ -54,6 +54,8 @@ class Creation(unittest.TestCase):
         self.assertNotEqual(id(ode), id(self.ode))
         
         ode = load_ode("panfilov", small_change=True)
+
+        # FIXME: Comment in when comparison works
         #self.assertFalse(ode == self.ode)
 
     def test_attributes(self):
@@ -108,6 +110,62 @@ class Creation(unittest.TestCase):
         self.assertTrue(all(ode.has_parameter(param) for param in \
                             ["v_rest", "v_peak", "time_constant"]))
         
+    def test_code_gen(self):
+        """
+        Test generation of code
+        """
+
+        import numpy as np
+        from gotran2.codegeneration.codegenerator import \
+             CodeGenerator, ODERepresentation
+        from gotran2.codegeneration.compilemodule import jit
+        
+        keep, use_cse, numerals, use_names = (1,0,0,1)
+
+        gen = CodeGenerator(ODERepresentation(self.ode,
+                                              keep_intermediates=keep, \
+                                              use_cse=use_cse,
+                                              parameter_numerals=numerals,\
+                                              use_names=use_names))
+
+        exec(gen.init_states_code())
+        exec(gen.init_param_code())
+        exec(gen.dy_code())
+
+        parameters = panfilov_parameters()
+        states = panfilov_init_values()
+        dy_jit = np.asarray(states).copy()
+        dy_correct = dy_panfilov(0.0, states, parameters)
+
+        for keep, use_cse, numerals, use_names in \
+                [(1,0,0,1), (1,0,0,0), \
+                 (1,0,1,1), (1,0,1,0), \
+                 (0,0,0,1), (0,0,0,0), \
+                 (0,0,1,1), (0,0,1,0), \
+                 (0,1,0,1), (0,1,0,0), \
+                 (0,1,1,1), (0,1,1,0)]:
+
+            oderepr = ODERepresentation(self.ode,
+                                        keep_intermediates=keep, \
+                                        use_cse=use_cse,
+                                        parameter_numerals=numerals,\
+                                        use_names=use_names)
+
+            gen = CodeGenerator(oderepr)
+            jit_oderepr = jit(oderepr)
+
+            # Execute code
+            exec(gen.dy_code())
+            if numerals:
+                dy_eval = dy_panfilov(0.0, states)
+                jit_oderepr.dy_panfilov(0.0, states, dy_jit)
+            else:
+                dy_eval = dy_panfilov(0.0, states, parameters)
+                jit_oderepr.dy_panfilov(0.0, states, parameters, dy_jit)
+
+            self.assertTrue(np.sum(np.abs((dy_eval-dy_correct))) < 1e-12)
+            self.assertTrue(np.sum(np.abs((dy_jit-dy_correct))) < 1e-12)
+            
         
 if __name__ == "__main__":
     unittest.main()
