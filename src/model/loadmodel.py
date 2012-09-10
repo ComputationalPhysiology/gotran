@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-05-07 -- 2012-09-07"
+__date__ = "2012-05-07 -- 2012-09-10"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["load_ode"]
@@ -10,7 +10,7 @@ import os
 from collections import OrderedDict
 
 # modelparameters import
-from modelparameters.parameters import ScalarParam, ArrayParam, ConstParam
+from modelparameters.parameters import Param, ScalarParam, ArrayParam, ConstParam
 from modelparameters.sympytools import sp_namespace, sp
 
 # gotran imports

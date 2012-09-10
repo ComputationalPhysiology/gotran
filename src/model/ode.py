@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2012 " + __author__
-__date__ = "2012-02-22 -- 2012-09-06"
+__date__ = "2012-02-22 -- 2012-09-10"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["ODE"]
@@ -38,6 +38,8 @@ class ODE(object):
         self._name = name
 
         # Initialize all variables
+        self._all_objects = OrderedDict()
+        self._intermediates = OrderedDict()
         self.clear()
 
     def add_state(self, name, init, comment=""):
@@ -448,21 +450,26 @@ class ODE(object):
         Returns True if the ODE is empty
         """
         # By default only t is a registered object
-        return len(self._all_objects) == 1
+        return len(self._all_objects) == 2
 
     def clear(self):
         """
         Clear any registered objects
         """
 
-        # FIXME: Make this a dict of lists
+        # Delete stored attributes
+        for name in self._all_objects.keys()+self._intermediates.keys():
+            if name[0] == "_":
+                continue
+            delattr(self, name)
+        
         self._all_objects = OrderedDict()
         self._derivative_states = set() # FIXME: No need for a set here...
         self._algebraic_states = set()
 
         # Collection of intermediate stuff
         self._expansion_namespace = OrderedDict()
-        self._intermediates = OrderedDict()
+        self._intermediates.clear()
         self._intermediates_duplicates = {} # Will be populated with deque
         self._comment_num = 0
         self._duplicate_num = 0
@@ -597,27 +604,37 @@ class ODE(object):
         if id(self) == id(other):
             return True
         
-        # Sort all collected objects
-        self._sort_collected_objects()
-        other._sort_collected_objects()
-
-        # Compare the list of objects
-        for what in ["_states", "_field_states", "_parameters", "_variables"]:
+        # Compare all registered attributes
+        subs = {}
+        for what, item in self._all_objects.items():
+            if not hasattr(other, what):
+                return False
             if getattr(self, what) != getattr(other, what):
                 return False
+            subs[getattr(self, what)] = getattr(other, what)
 
-        # Check equal differentiation
-        # FIXME: Remove dependent
-        for state in self.iter_states():
-            if len(state.diff_expr) != len(other.get_object(state).diff_expr):
+        for what, item in self._intermediates.items():
+            if not hasattr(other, what):
                 return False
-            for dependent, expr in state.diff_expr.items():
-                if dependent not in other.get_object(state).diff_expr:
-                    return False
-                if other.get_object(state).diff_expr[dependent] != \
-                   state.diff_expr[dependent]:
-                    return False
+            if getattr(self, what) != getattr(other, what):
+                return False
+            subs[getattr(self, what)] = getattr(other, what)
         
+
+        # FIXME: Fix comparison of expressions
+        #print "self:", self._derivative_expr
+        #print "other:", other._derivative_expr
+
+        #for derivatives, expr in self._derivative_expr:
+        #    if (derivatives, expr.subs(subs)) not in other._derivative_expr:
+        #        print "Nope..."
+        #        return False
+        #
+        #for derivatives, expr in self._derivative_expr_expanded:
+        #    if (derivatives, expr.subs(subs)) not in other._derivative_expr_expanded:
+        #        print "Nopeidope..."
+        #        return False
+
         return True
 
     def __str__(self):
