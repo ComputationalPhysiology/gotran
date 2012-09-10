@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+__author__ = "Johan Hake (hake.dev@gmail.com)"
+__copyright__ = "Copyright (C) 2012 " + __author__
+__date__ = "2012-09-10 -- 2012-09-10"
+__license__  = "GNU LGPL Version 3.0 or later"
+
+# Gotran imports
+from gotran2.input.cellml import CellMLParser
+
+def define_parser(extract_equations):
+    """
+    Return a populated option parser
+    """
+    import optparse
+
+    parser = optparse.OptionParser(\
+        usage = "%prog [options]",
+        description="Translate CellML files into gotran files.")
+
+    def list_parser(option, opt_str, value, parser):
+        rargs = parser.rargs
+        #print rargs
+        while rargs:
+            arg = rargs[0]
+            
+            # Stop if we hit an arg like "--par", i.e, PAR_PREFIX
+            if arg[0] == "-" :
+                break
+            else:
+                extract_equations.append(rargs.pop(0))
+                
+    opt = parser.add_option("-e", "--extract-equations", \
+                            help="Extract equations from components to prevent "\
+                            "circular dependencies. Usage: -e FonRT RTonF",
+                            action="callback",
+                            callback=list_parser,
+                            metavar="EQN1 EQN", )
+
+    parser.add_option("-g", "--global-equations", help="Globally, instead of "\
+                      "component wise, declared equations. Another "\
+                      "option to avoid circular dependencies.",
+                      action="store_true",
+                      default=False, 
+                      dest="global_equations")
+
+    return parser
+
+if __name__ == "__main__":
+    import sys
+
+    extract_equations = []
+    parser = define_parser(extract_equations)
+
+    options, args =parser.parse_args()
+    
+    if options.global_equations:
+        print "*** Warning: Option: --global-equations is not implemented."
+
+    if len(args) != 1:
+        raise ValueError("Expected 1 and only one CellML file.")
+
+    cellml = CellMLParser(args[0], extract_equations=extract_equations)
+    cellml.to_gotran()

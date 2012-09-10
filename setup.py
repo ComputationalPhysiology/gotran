@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-02-22 -- 2012-09-05"
+__date__ = "2012-02-22 -- 2012-09-10"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 
@@ -20,7 +20,7 @@ major = 2
 minor = 0
 
 scripts = [pjoin("scripts", "gotran2"),
-           pjoin("scripts", "cellml2gotran.py")]
+           pjoin("scripts", "cellml2gotran")]
 
 if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
     # In the Windows command prompt we can't execute Python scripts
@@ -83,7 +83,8 @@ setup(name = "Gotran2",
       author = __author__.split("(")[0],
       author_email = __author__.split("(")[1][:-1],
       packages = ["gotran2", "gotran2.common", "gotran2.model",
-                  "gotran2.algorithms", "gotran2.codegeneration"],
+                  "gotran2.algorithms", "gotran2.codegeneration",
+                  "gotran2.input"],
       package_dir = {"gotran2": "src"},
       scripts = scripts,
       cmdclass    = {'test': run_tests,
