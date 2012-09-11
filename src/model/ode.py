@@ -15,7 +15,8 @@ from modelparameters.sympytools import ModelSymbol, sp, sp_namespace
 from modelparameters.codegeneration import sympycode
 
 # Gotran imports
-from gotran2.common import error, check_arg, check_kwarg, scalars, listwrap
+from gotran2.common import type_error, value_error, error, check_arg, \
+     check_kwarg, scalars, listwrap, info, debug
 from gotran2.model.odeobjects import *
 
 class ODE(object):
@@ -291,9 +292,11 @@ class ODE(object):
 
         expanded_expr = sp.sympify(expanded_expr)
         for atom in expanded_expr.atoms():
-            if not isinstance(atom, (ModelSymbol, sp.Number, int, float)):
+            if not isinstance(atom, (ModelSymbol, sp.NumberSymbol, \
+                                     sp.Number, int, float)):
                 type_error("A derivative must be an expressions of "\
-                           "ModelSymbol or scalars")
+                           "ModelSymbol or scalars, got {0} which is "\
+                           "a {1}.".format(atom, atom.__class__.__name__))
                 
             if not isinstance(atom, ModelSymbol):
                 continue
@@ -744,4 +747,5 @@ class ODE(object):
         x.__repr__() <==> repr(x)
         """
         return "{}('{}')".format(self.__class__.__name__, self.name)
+
 
