@@ -172,6 +172,7 @@ class MathMLBaseParser(object):
         self.variables_names = set()
     
         self._precedence = {
+            "piecewise" : 0, 
             "power" : 0,
             "divide": 1,
             "times" : 1,
@@ -264,7 +265,7 @@ class MathMLBaseParser(object):
             root = children[1:]
         # If use special method to parse
         if hasattr(self, "_parse_" + op):
-            return getattr(self, "_parse_" + op)(root)
+            return getattr(self, "_parse_" + op)(root, parent)
         elif op in self._operators.keys():
             # Build the equation string
             eq  = []
@@ -285,39 +286,72 @@ class MathMLBaseParser(object):
                     use_parent = True
                     eq += [self._operators[op]]
 
-                eq += ["("]*use_parent + self._parse_subtree(root[0],op) + [")"]*use_parent
+                eq += ["("]*use_parent + self._parse_subtree(root[0], op) + [")"]*use_parent
                 return eq
             else:
                 # Binary operator
-                eq += ["("] * use_parent + self._parse_subtree(root[0],op)
+                eq += ["("] * use_parent + self._parse_subtree(root[0], op)
                 for operand in root[1:]:
-                    eq = eq + [self._operators[op]] + self._parse_subtree(operand,op)
+                    eq = eq + [self._operators[op]] + self._parse_subtree(operand, op)
                 eq = eq + [")"]*use_parent
                 return eq
         else:
             raise AttributeError,"No support for parsing MathML " + op + " operator."
 
-    def _parse_pi(self, var):
+    def _parse_conditional(self, condition, operands, parent):
+        return [condition] + ["("] + self._parse_subtree(operands[0], parent) \
+               + [", "] +  self._parse_subtree(operands[1], parent) + [")"]
+    
+    def _parse_lt(self, operands, parent):
+        return self._parse_conditional("Lt", operands, "lt")
+
+    def _parse_leq(self, operands, parent):
+        return self._parse_conditional("Le", operands, "leq")
+
+    def _parse_gt(self, operands, parent):
+        return self._parse_conditional("Gt", operands, "gt")
+
+    def _parse_geq(self, operands, parent):
+        return self._parse_conditional("Ge", operands, "geq")
+
+    def _parse_neq(self, operands, parent):
+        return self._parse_conditional("Ne", operands, "neq")
+
+    def _parse_eq(self, operands, parent):
+        # Parsing conditional
+        if parent == "piecewise":
+            return self._parse_conditional("Eq", operands, "eq")
+
+        # Parsing assignment
+        return self._parse_subtree(operands[0], "eq") + [self["eq"]] + \
+               self._parse_subtree(operands[1], "eq")
+
+    def _parse_pi(self, var, parent):
         return ["pi"]
     
-    def _parse_ci(self, var):
+    def _parse_ci(self, var, parent):
         varname = var.text.strip()
         if varname in python_keywords:
             varname = varname + "_"
         self.used_variables.add(varname)
         return [varname]
     
-    def _parse_cn(self, var):
+    def _parse_cn(self, var, parent):
         #print "CN", var.text.strip()
-        return [var.text.strip()]
+        value = var.text.strip()
+
+        # Fis possible strangeness with integer division in Python...
+        if "." not in value:
+            value += ".0"
+        return [value]
     
-    def _parse_diff(self, operands):
+    def _parse_diff(self, operands, parent):
 
         # Store old used_variables so we can erase any collected state variables
         used_variables_prior_parse = self.used_variables.copy()
         
-        x = "".join(self._parse_subtree(operands[1]))
-        y = "".join(self._parse_subtree(operands[0]))
+        x = "".join(self._parse_subtree(operands[1], "diff"))
+        y = "".join(self._parse_subtree(operands[0], "diff"))
         d = "d" + x + "d" + y
 
         # Restore used_variables
@@ -331,30 +365,26 @@ class MathMLBaseParser(object):
         self._state_variable = x
         return [d]
     
-    def _parse_bvar(self, var):
+    def _parse_bvar(self, var, parent):
         if len(var) == 1:
-            return self._parse_subtree(var[0])
+            return self._parse_subtree(var[0], "bvar")
         else:
             sys.exit("ERROR: No support for higher order derivatives.")                
             
-    def _parse_piecewise(self, cases):
+    def _parse_piecewise(self, cases, parent):
         if len(cases) == 2:
             piece_children = cases[0].getchildren()
-            cond  = self._parse_subtree(piece_children[1])
-            true  = self._parse_subtree(piece_children[0])
-            false = self._parse_subtree(cases[1].getchildren()[0])
+            cond  = self._parse_subtree(piece_children[1], "piecewise")
+            true  = self._parse_subtree(piece_children[0], "piecewise")
+            false = self._parse_subtree(cases[1].getchildren()[0], "piecewise")
             return ["Conditional", "("] + cond + [", "] + true + [", "] + false + [")"]
         else:
             piece_children = cases[0].getchildren()
-            cond  = self._parse_subtree(piece_children[1])
-            true  = self._parse_subtree(piece_children[0])
+            cond  = self._parse_subtree(piece_children[1], "piecewise")
+            true  = self._parse_subtree(piece_children[0], "piecewise")
             return ["Conditional", "("] + cond + [", "] + true + [", "] + \
-                   self._parse_piecewise(cases[1:]) + [")"]
+                   self._parse_piecewise(cases[1:], "piecewise") + [")"]
     
-    def _parse_eq(self, operands):
-        return self._parse_subtree(operands[0]) + [self["eq"]] + \
-               self._parse_subtree(operands[1])
-
 class MathMLCPPParser(MathMLBaseParser):
     def _parse_power(self, operands):
         return ["pow", "("] + self._parse_subtree(operands[0]) + [", "] + \
