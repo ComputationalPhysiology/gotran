@@ -142,8 +142,7 @@ def load_ode(filename, name=None, **kwargs):
     
     # Check for completeness
     if not ode.is_complete:
-        error("ODE mode '{0}' is not complete and could not be loaded.".\
-              format(ode.name))
+        warning("ODE mode '{0}' is not complete.".format(ode.name))
     
     info("Loaded ODE model '{0}' with:".format(ode.name))
     for what in ["states", "parameters", "variables"]:

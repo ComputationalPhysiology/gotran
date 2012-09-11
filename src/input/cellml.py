@@ -5,6 +5,7 @@ import urllib
 from xml.etree import ElementTree
 
 from collections import OrderedDict, deque
+from gotran2.common import warning
 
 __all__ = ["cellml2ode", "CellMLParser"]
 
@@ -54,8 +55,7 @@ class Component(object):
     """
     Class for holding information about a CellML Component
     """
-    def __init__(self, name, variables, equations, state_variables=None,
-                 derivatives=None):
+    def __init__(self, name, variables, equations, state_variables=None):
         self.name = name
 
         self.state_variables = OrderedDict((state, variables.pop(state, None)) \
@@ -64,7 +64,7 @@ class Component(object):
         self.parameters = OrderedDict((name, value) for name, value in \
                                       variables.items() if value is not None)
         
-        self.derivatives = derivatives
+        self.derivatives = state_variables
 
         self.components_dependencies = OrderedDict() 
         self.dependent_components = OrderedDict() 
@@ -153,8 +153,8 @@ class Component(object):
         """
         assert(oldname in self.parameters)
         
-        print "Change parameter name: '{0}' to '{1}' in component '{2}'."\
-              .format(oldname, newname, self.name)
+        warning("Locally change parameter name: '{0}' to '{1}' in component '{2}'."\
+                .format(oldname, newname, self.name))
         
         # Update parameters
         self.parameters = OrderedDict((newname if name == oldname else name, value) \
@@ -164,6 +164,34 @@ class Component(object):
         for eqn in self.equations:
             while oldname in eqn.expr:
                 eqn.expr[eqn.expr.index(oldname)] = newname
+
+    def change_state_name(self, oldname, newname):
+        """
+        Change the name of a state
+        Assume the name is only used locally within this component
+        """
+        assert(oldname in self.state_variables)
+        
+        warning("Locally change state name: '{0}' to '{1}' in component '{2}'."\
+                .format(oldname, newname, self.name))
+        
+        # Update parameters
+        self.state_variables = OrderedDict((newname if name == oldname else name, value) \
+                                      for name, value in self.state_variables.items())
+
+        oldder = self.derivatives[oldname]
+        newder = oldder.replace(oldname, newname)
+        self.derivatives = OrderedDict((newname if name == oldname else name, \
+                                        newder if value == oldder else value) \
+                                       for name, value in self.derivatives.items())
+        # Update equations
+        for eqn in self.equations:
+            while oldname in eqn.expr:
+                eqn.expr[eqn.expr.index(oldname)] = newname
+            while oldder in eqn.expr:
+                eqn.expr[eqn.expr.index(oldder)] = newder
+            if oldder == eqn.name:
+                eqn.name = newder
 
 class MathMLBaseParser(object):
     def __init__(self):
@@ -337,10 +365,9 @@ class MathMLBaseParser(object):
         return [varname]
     
     def _parse_cn(self, var, parent):
-        #print "CN", var.text.strip()
         value = var.text.strip()
 
-        # Fis possible strangeness with integer division in Python...
+        # Fix possible strangeness with integer division in Python...
         if "." not in value:
             value += ".0"
         return [value]
@@ -400,11 +427,12 @@ class MathMLCPPParser(MathMLBaseParser):
         else:
             sys.exit("ERROR: No support for cases with other than two possibilities.")
 
-class CellMLParser:
+class CellMLParser(object):
     """
     This module parses a CellML XML-file and converts it to PyCC code
     """
-    def __init__(self, model_source, targets=None, extract_equations=None):
+    def __init__(self, model_source, targets=None, extract_equations=None, \
+                 change_state_names=None):
         """
         Arguments:
         ----------
@@ -413,9 +441,11 @@ class CellMLParser:
             Path or url to CellML file
         targets : list (optional)
             Components of the model to parse
-        extract_equations : list (optional)
+        extract_equations : list of str (optional)
             List of equations which should be extracted from its component
             to prevent circular dependency
+        change_state_names : list of str
+            List of str with state names which should have it name locally changed
         """
 
         # Open file or url
@@ -428,6 +458,7 @@ class CellMLParser:
                 raise RuntimeError("ERROR: Unable to open " + model_source)
 
         extract_equations = extract_equations or []
+        change_state_names = change_state_names or []
 
         self.model_source = model_source
         self.cellml = ElementTree.parse(fp).getroot()
@@ -436,7 +467,8 @@ class CellMLParser:
 
         self.components, self.circular_dependency, self.zero_dep_equations, \
                          self.one_dep_equations, self.heuristic_score  = \
-                         self.parse_components(targets, extract_equations)
+                         self.parse_components(targets, extract_equations, \
+                                               change_state_names)
         self.documentation = self.parse_documentation()
 
         #if self.circular_dependency:
@@ -503,7 +535,7 @@ class CellMLParser:
         """
         return "".join(node.tag.split("}")[1:])
 
-    def parse_components(self, targets, extract_equations):
+    def parse_components(self, targets, extract_equations, change_state_names):
         """
         Build a dictionary containing dictionarys describing each
         component of the cellml model
@@ -512,8 +544,8 @@ class CellMLParser:
         cellml_namespace = self.cellml.tag.split("}")[0] + "}"
 
         # Collect states and parameters to check for duplicates
-        collected_states = []
-        collected_parameters = []
+        collected_states = dict()
+        collected_parameters = dict()
         
         # Import other models
         for model in self.cellml.getiterator(cellml_namespace + "import"):
@@ -531,14 +563,14 @@ class CellMLParser:
                 if name in collected_states:
                     warning("Duplicated state name: '%s' detected in "\
                             "imported component: '%s'" % (name, comp.name))
-                collected_states.append(name)
+                collected_states[name] = comp
             
             for name in comp.parameters.keys():
                 if name in collected_states + collected_parameters:
                     new_name = name + "_" + comp_name.split("_")[0]
                     comp.change_parameter_name(name, new_name)
                     name = new_name
-                collected_parameters.append(name)
+                collected_parameters[name] = comp
             
         extracted_equations = []
         
@@ -553,8 +585,8 @@ class CellMLParser:
             # Collect variables and equations
             variables = OrderedDict()
             equations = []
-            state_variables = []
-            derivatives = []
+            state_variables = OrderedDict()
+            #derivatives = []
 
             # Get variable and initial values
             for var in comp.getiterator(cellml_namespace + "variable"):
@@ -593,11 +625,7 @@ class CellMLParser:
                     # Do not register state variables twice
                     if state_variable is not None and \
                            state_variable not in state_variables:
-                        state_variables.append(state_variable)
-
-                    # Do not register derivatives twice
-                    if derivative is not None and derivative not in derivatives:
-                        derivatives.append(derivative)
+                        state_variables[state_variable] = derivative
 
             # Extract any equations labled for extraction
             if extract_equations:
@@ -607,32 +635,49 @@ class CellMLParser:
                         equations.remove(equation)
 
             # Create Component
-            comp = Component(comp_name, variables, equations, state_variables, \
-                             derivatives)
+            comp = Component(comp_name, variables, equations, state_variables)
 
             # Check for duplicates of parameters and states
-            for name in comp.state_variables:
+            for name in comp.state_variables.keys():
+                if name in change_state_names:
+                    newname = name + "_" + comp_name.split("_")[0]
+                    comp.change_state_name(name, newname)
+                    name = newname
+                
                 if name in collected_states:
                     warning("Duplicated state name: '%s' detected in "\
                             "component: '%s'" % (name, comp.name))
-                collected_states.append(name)
+                collected_states[name] = comp
+
+            all_collected_names = collected_states.keys() + \
+                                  collected_parameters.keys()
             
             for name in comp.parameters.keys():
-                if name in collected_states + collected_parameters:
+                if name in all_collected_names:
                     new_name = name + "_" + comp_name.split("_")[0]
+                    if new_name in all_collected_names:
+                        new_name = name + "_" + comp_name
+                        
                     comp.change_parameter_name(name, new_name)
                     name = new_name
-                collected_parameters.append(name)
+                collected_parameters[name] = comp
+                all_collected_names.append(name)
             
             # Store component
             components.append(comp)
 
+        for name, comp in collected_states.items():
+            if name in collected_parameters:
+                warning("State name: '{0}' in component: '{1}' is a "\
+                        "duplication of a parameter in component {2}".format(\
+                            name, comp.name, collected_parameters[name].name))
+
         # Add extracted equations as a new Component
         if extracted_equations:
             components.append(Component("Extracted_equations", {}, \
-                                        extracted_equations, [], []))
+                                        extracted_equations, {}))
         elif extract_equations:
-            print "Warning: No equations were extracted."
+            warning("No equations were extracted.")
         
         # Check internal dependencies
         for comp0 in components:
@@ -698,10 +743,10 @@ class CellMLParser:
         heruistic_score.sort(reverse=True)
 
         if heruistic_score:
-            print "Circular dependency detetected. A heuristic score of which "\
-                  "equations it might be benefitial to extract follows:"
+            warning("Circular dependency detetected. A heuristic score of which "\
+                    "equations it might be benefitial to extract follows:")
             for num, dep in heruistic_score:
-                print num, ":", dep
+                warning("{0} : {1}".format(num, dep))
 
         return sorted_components, circular_components, list(zero_dep_equations), \
                list(one_dep_equations), heruistic_score
@@ -755,8 +800,7 @@ class CellMLParser:
                 state_lines[-1] = state_lines[-1][:-1]+")"
 
                 # Collect derivatives
-                for state, derivative in zip(comp.state_variables, \
-                                             comp.derivatives):
+                for state, derivative in comp.derivatives.items():
                     for eq in comp.equations:
                         if eq.name in derivative:
 
@@ -795,7 +839,7 @@ class CellMLParser:
                 for eq in comp.equations:
                     
                     # If derivative line and not used else where continue
-                    if eq.name in comp.derivatives and \
+                    if eq.name in comp.derivatives.values() and \
                            eq.name not in derivatives_intermediates:
                         continue
                     equation_lines.append("{0} = {1}".format(eq.name, "".join(eq.expr)))
@@ -821,11 +865,12 @@ class CellMLParser:
         open("{0}.ode".format(self.name), \
              "w").write()
 
-def cellml2ode(cellml, extract_equations=None):
+def cellml2ode(cellml, extract_equations=None, change_state_names=None):
     """
     Convert a CellML model into an ode
     """
     from gotran2 import exec_ode
-    cellml = CellMLParser(cellml, extract_equations=extract_equations)
+    cellml = CellMLParser(cellml, extract_equations=extract_equations, \
+                          change_state_names=change_state_names)
     return exec_ode(cellml.to_gotran(), cellml.name)
     

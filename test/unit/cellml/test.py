@@ -9,6 +9,7 @@ from gotran2.input.cellml import *
 class CellMLTester(unittest.TestCase):
 
     def test_winslow_1999(self):
+        print "winslow_rice_jafri_marban_ororke_1999.cellml"
         ode = cellml2ode("winslow_rice_jafri_marban_ororke_1999.cellml")
         self.assertEqual(ode.num_states, 33)
 
@@ -19,6 +20,7 @@ class CellMLTester(unittest.TestCase):
     #    self.assertEqual(ode.num_states, 22)
 
     def test_hinch_2004(self):
+        print "Hinch_et_al_2004.cellml"
         ode = cellml2ode("Hinch_et_al_2004.cellml")
         self.assertEqual(ode.num_states, 6)
 
@@ -32,34 +34,40 @@ class CellMLTester(unittest.TestCase):
     #    self.assertEqual(ode.num_states, 6)
 
     def test_niederer_2006(self):
+        print "niederer_hunter_smith_2006.cellml"
         ode = cellml2ode("niederer_hunter_smith_2006.cellml", ["Ca_b", "Ca_i"])
         self.assertEqual(ode.num_states, 5)
 
     def test_iyer_2004(self):
+        print "iyer_mazhari_winslow_2004.cellml"
         ode = cellml2ode("iyer_mazhari_winslow_2004.cellml", ["RT_over_F"])
         self.assertEqual(ode.num_states, 67)
 
-    # FIXME: Problem with R being both a parameter and a state.
-    # FIXME: Should change name of state in this case.
-    #def test_shannon_2004(self):
-    #    ode = cellml2ode("shannon_wang_puglisi_weber_bers_2004_b.cellml")
-    #    self.assertEqual(ode.num_states, 45)
+    def test_shannon_2004(self):
+        print "shannon_wang_puglisi_weber_bers_2004_b.cellml"
+        ode = cellml2ode("shannon_wang_puglisi_weber_bers_2004_b.cellml", \
+                         change_state_names = ["R"])
+        self.assertEqual(ode.num_states, 45)
 
     def test_niederer_et_al(self):
         ode = cellml2ode("Niederer_et_al_2006.cellml", ["Ca_b", "Ca_i"])
         self.assertEqual(ode.num_states, 5)
-
+    
     def test_maleckar_2009(self):
         ode = cellml2ode("maleckar_greenstein_trayanova_giles_2009.cellml")
         self.assertEqual(ode.num_states, 30)
-
+    
     def test_irvine_1999(self):
         ode = cellml2ode("irvine_jafri_winslow_1999.cellml")
         self.assertEqual(ode.num_states, 13)
-
+    
     def test_grandi_2010(self):
         ode = cellml2ode("grandi_pasqualini_bers_2010.cellml")
         self.assertEqual(ode.num_states, 39)
+    
+    def test_rice_2008(self):
+        ode = cellml2ode("rice_wang_bers_detombe_2008.cellml")
+        self.assertEqual(ode.num_states, 11)
 
 if __name__ == "__main__":
     unittest.main()
