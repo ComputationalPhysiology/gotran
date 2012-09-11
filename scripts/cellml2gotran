@@ -62,4 +62,6 @@ if __name__ == "__main__":
         raise ValueError("Expected 1 and only one CellML file.")
 
     cellml = CellMLParser(args[0], extract_equations=extract_equations)
-    cellml.to_gotran()
+    gotran_code = cellml.to_gotran()
+    open("{0}.ode".format(cellml.name), \
+         "w").write(gotran_code)

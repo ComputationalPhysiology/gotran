@@ -1,5 +1,3 @@
-"""Unit tests for the compiled Markov models"""
-
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __date__ = "2012-05-07 -- 2012-09-10"
 __copyright__ = "Copyright (C) 2012 " + __author__

@@ -6,7 +6,15 @@ from xml.etree import ElementTree
 
 from collections import OrderedDict, deque
 
+__all__ = ["cellml2ode", "CellMLParser"]
+
 ui = "UNINITIALIZED"
+
+python_keywords = ["and", "del", "from", "not", "while", "as", "elif",
+                   "global", "or", "with", "assert", "else", "if", "pass",
+                   "yield", "break", "except", "import", "print", "class",
+                   "exec", "in", "raise", "continue", "finally", "is",
+                   "return", "def", "for", "lambda", "try"]
 
 class Equation(object):
     """
@@ -288,11 +296,16 @@ class MathMLBaseParser(object):
                 return eq
         else:
             raise AttributeError,"No support for parsing MathML " + op + " operator."
+
+    def _parse_pi(self, var):
+        return ["pi"]
     
     def _parse_ci(self, var):
-        var = var.text.strip()
-        self.used_variables.add(var)
-        return [var]
+        varname = var.text.strip()
+        if varname in python_keywords:
+            varname = varname + "_"
+        self.used_variables.add(varname)
+        return [varname]
     
     def _parse_cn(self, var):
         #print "CN", var.text.strip()
@@ -534,7 +547,11 @@ class CellMLParser:
 
                     # Get equation name
                     eq_name = equation_list[0]
-
+                    
+                    if eq_name in python_keywords:
+                        equation_list[0] = eq_name + "_"
+                        eq_name = equation_list[0]
+                    
                     # Discard collected equation name from used variables
                     used_variables.discard(eq_name)
                     
@@ -765,54 +782,20 @@ class CellMLParser:
             len(derivative_lines)))
         gotran_lines.extend(derivative_lines)
         gotran_lines.append("")
+        
+
+        # Return joined lines
+        return "\n".join(gotran_lines)
 
         # Write file
         open("{0}.ode".format(self.name), \
-             "w").write("\n".join(gotran_lines))
-                                   
-if __name__ == "__main__":
-    import sys
-    import optparse
+             "w").write()
 
-    parser = optparse.OptionParser(\
-        usage = "%prog [options]",
-        description="Translate CellML files into gotran files.")
-
-    extract_equations = []
+def cellml2ode(cellml, extract_equations=None):
+    """
+    Convert a CellML model into an ode
+    """
+    from gotran2 import exec_ode
+    cellml = CellMLParser(cellml, extract_equations=extract_equations)
+    return exec_ode(cellml.to_gotran(), cellml.name)
     
-    def list_parser(option, opt_str, value, parser):
-        rargs = parser.rargs
-        #print rargs
-        while rargs:
-            arg = rargs[0]
-            
-            # Stop if we hit an arg like "--par", i.e, PAR_PREFIX
-            if arg[0] == "-" :
-                break
-            else:
-                extract_equations.append(rargs.pop(0))
-                
-    opt = parser.add_option("-e", "--extract-equations", \
-                            help="Extract equations from components to prevent "\
-                            "circular dependencies. Usage: -e FonRT RTonF",
-                            action="callback",
-                            callback=list_parser,
-                            metavar="EQN1 EQN", )
-
-    parser.add_option("-g", "--global-equations", help="Globally, instead of "\
-                      "component wise, declared equations. Another "\
-                      "option to avoid circular dependencies.",
-                      action="store_true",
-                      default=False, 
-                      dest="global_equations")
-
-    options, args =parser.parse_args()
-    
-    if options.global_equations:
-        print "*** Warning: Option: --global-equations is not implemented."
-
-    if len(args) != 1:
-        raise ValueError("Expected 1 and only one CellML file.")
-    
-    cellml = CellMLParser(args[0], extract_equations=extract_equations)
-    cellml.to_gotran()

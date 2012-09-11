@@ -3,7 +3,7 @@ __copyright__ = "Copyright (C) 2010 " + __author__
 __date__ = "2012-05-07 -- 2012-09-10"
 __license__  = "GNU LGPL Version 3.0 or later"
 
-__all__ = ["load_ode"]
+__all__ = ["load_ode", "exec_ode"]
 
 # System imports
 import os
@@ -34,7 +34,65 @@ class IntermediateDispatcher(dict):
         setattr(ode, name, value)
         dict.__setitem__(self, name, getattr(ode, name))
 
-def load_ode(filename, name=None, collect_intermediates=True, **kwargs):
+def _init_namespace(ode):
+    # Get global variables and reset them
+    namespace = _get_load_namespace()
+    namespace.clear()
+    namespace.update(sp_namespace)
+    namespace.update(dict(time=ode.time, dt=ode.dt,
+                          ScalarParam=ScalarParam,
+                          ArrayParam=ArrayParam,
+                          ConstParam=ConstParam,
+                          states=_states,
+                          parameters=_parameters,
+                          variables=_variables,
+                          diff=ode.diff,
+                          comment=ode.add_comment,
+                          sp=sp,
+                          model_arguments=_model_arguments))
+    return namespace
+
+def _reset_globals():
+    _get_load_arguments().clear()
+    _get_load_namespace().clear()
+    _set_load_ode(None)
+
+def exec_ode(ode_str, name):
+    """
+    Execute an ode given by a str
+    """
+    # Create an ODE which will be populated with data when ode file is loaded
+    ode = ODE(name)
+    _set_load_ode(ode)
+
+    debug("Loading {}".format(_current_ode))
+
+    # Create namespace which the ode file will be executed in
+    namespace = _init_namespace(ode)
+
+    # Dict to collect declared intermediates
+    intermediate_dispatcher = IntermediateDispatcher()
+
+    # Execute file and collect 
+    exec(ode_str, namespace, intermediate_dispatcher)
+    
+    # Check for completeness
+    if not ode.is_complete:
+        error("ODE mode '{0}' is not complete and could not be loaded.".\
+              format(ode.name))
+    
+    info("Loaded ODE model '{0}' with:".format(ode.name))
+    for what in ["states", "parameters", "variables"]:
+        num = getattr(ode, "num_{0}".format(what))
+        if num:
+            info("{0}: {1}".format(("Num "+what).rjust(15), num))
+
+    # Reset global variables
+    _reset_globals()
+    
+    return ode
+
+def load_ode(filename, name=None, **kwargs):
     """
     Load an ODE from file and return the instance
 
@@ -52,10 +110,6 @@ def load_ode(filename, name=None, collect_intermediates=True, **kwargs):
     for key, value in kwargs.items():
         if isinstance(value, Param):
             kwargs[key] = value.getvalue()
-
-    # Get global variables and reset them
-    namespace = _get_load_namespace()
-    namespace.clear()
     
     arguments = _get_load_arguments()
     arguments.clear()
@@ -75,18 +129,7 @@ def load_ode(filename, name=None, collect_intermediates=True, **kwargs):
     debug("Loading {}".format(_current_ode))
 
     # Create namespace which the ode file will be executed in
-    namespace.update(sp_namespace)
-    namespace.update(dict(time=ode.time, dt=ode.dt,
-                          ScalarParam=ScalarParam,
-                          ArrayParam=ArrayParam,
-                          ConstParam=ConstParam,
-                          states=_states,
-                          parameters=_parameters,
-                          variables=_variables,
-                          diff=ode.diff,
-                          comment=ode.add_comment,
-                          sp=sp,
-                          model_arguments=_model_arguments))
+    _init_namespace(ode)
 
     # Execute the file
     if (not os.path.isfile(filename)):
@@ -110,9 +153,7 @@ def load_ode(filename, name=None, collect_intermediates=True, **kwargs):
             info("{0}: {1}".format(("Num "+what).rjust(15), num))
 
     # Reset global variables
-    _set_load_ode(None)
-    namespace.clear()
-    arguments.clear()
+    _reset_globals()
     
     return ode
 

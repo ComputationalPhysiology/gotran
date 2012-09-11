@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2012 " + __author__
-__date__ = "2012-02-22 -- 2012-09-10"
+__date__ = "2012-02-22 -- 2012-09-11"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["ODE"]
@@ -609,7 +609,7 @@ class ODE(object):
             if name not in self._intermediates:
                 obj = self.get_object(attr)
                 assert(obj)
-                error("Illeagal name '{0}'. It is already a registered {1}"\
+                error("Illeagal name '{0}'. It is already a registered {1} "\
                       "of '{2}'".format(name, obj.__class__.__name__, \
                                         self.name))
 
@@ -649,6 +649,11 @@ class ODE(object):
         assert(isinstance(obj, ODEObject))
         
         # Register the object
+        if obj.name in self._all_objects:
+            obj = self._all_objects[obj.name]
+            error("Illeagal name '{0}'. It is already a registered {1} "\
+                  "of '{2}'".format(obj.name, obj.__class__.__name__, \
+                                    self.name))
         self._all_objects[obj.name] = obj
 
         # Make object available as an attribute
@@ -675,7 +680,7 @@ class ODE(object):
             # Called when registering the ODEObject
             if hasattr(self, name):
                 obj = self.get_object(name)
-                error("Illeagal name '{0}'. It is already a registered {1}"\
+                error("Illeagal name '{0}'. It is already a registered {1} "\
                       "of '{2}'".format(name, obj.__class__.__name__, \
                                         self.name))
             self.__dict__[name] = value
