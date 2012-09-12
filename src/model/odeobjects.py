@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2012 " + __author__
-__date__ = "2012-02-22 -- 2012-08-31"
+__date__ = "2012-02-22 -- 2012-09-11"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["ODEObject", "Parameter", "State", "Variable"]#
@@ -203,7 +203,7 @@ class Variable(ODEObject):
         super(Variable, self).__init__(name, init, comment, ode_name)
 
         # Add previous value symbol
-        self.sym_0 = ModelSymbol("{0}__0".format(name), \
-                                 "{0}.{1}__0".format(ode_name, name))
+        self.sym_0 = ModelSymbol("{0}_0".format(name), \
+                                 "{0}.{1}_0".format(ode_name, name))
 
 
