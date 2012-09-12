@@ -13,5 +13,5 @@ def list_python_files():
     """
     Return a list of all included src files
     """
-    return [f for f in get_status_output('hg status -c -m -n')[1].split('\n') \
+    return [f for f in sorted(get_status_output('hg status -c -m -n')[1].split('\n')) \
             if "site-packages" in f and ".py" == f[-3:] and "~" not in f]
