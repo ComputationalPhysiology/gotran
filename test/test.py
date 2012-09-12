@@ -12,27 +12,31 @@ import os
 # Gotran imports
 from instant import get_status_output
 
-pwd = os.path.dirname(os.path.abspath(__file__))
+def run_tests():
 
-# Tests to run
-tests = ["unit", "regression"]
+    pwd = os.path.dirname(os.path.abspath(__file__))
+    
+    # Tests to run
+    tests = ["unit", "regression"]
+    
+    failed = []
+    
+    # Command to run
+    command = "python test.py " + " ".join(sys.argv[1:])
+    
+    # Run testsg
+    for test in tests:
+        if not os.path.isfile(os.path.join(test, "test.py")):
+            continue
+        print ""
+        print "Running tests: %s" % test
+        print "----------------------------------------------------------------------"
+        os.chdir(os.path.join(pwd, test))
+        fail, output = get_status_output(command)
+        print output
+        if fail:
+            failed.append(fail)
 
-failed = []
-
-# Command to run
-command = "python test.py " + " ".join(sys.argv[1:])
-
-# Run testsg
-for test in tests:
-    if not os.path.isfile(os.path.join(test, "test.py")):
-        continue
-    print ""
-    print "Running tests: %s" % test
-    print "----------------------------------------------------------------------"
-    os.chdir(os.path.join(pwd, test))
-    fail, output = get_status_output(command)
-    print output
-    if fail:
-        failed.append(fail)
-
-sys.exit(len(failed))
+if __name__ == "__main__":
+    failed = run_tests()
+    sys.exit(len(failed))

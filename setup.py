@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-02-22 -- 2012-09-10"
+__date__ = "2012-02-22 -- 2012-09-12"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 
@@ -73,7 +73,8 @@ class run_tests(Command):
 
     def run(self):
         import os
-        os.system("python utils/run_tests.py")
+        os.chdir("test")
+        os.system("python test.py")
 
 setup(name = "Gotran2",
       version = "{0}.{1}".format(major, minor),
@@ -85,7 +86,6 @@ setup(name = "Gotran2",
       packages = ["gotran2", "gotran2.common", "gotran2.model",
                   "gotran2.algorithms", "gotran2.codegeneration",
                   "gotran2.input"],
-      package_dir = {"gotran2": pjoin("site-packages", "gotran2")},
       scripts = scripts,
       cmdclass    = {'test': run_tests,
                      'clean': clean,
