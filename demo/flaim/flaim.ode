@@ -1,0 +1,792 @@
+constants(Rgas)
+parameters(ist)
+
+input(y)  
+output(dy)
+
+default_states(dummy = -9.3280358e+001, y1 =         7.3339490e-001,y2 = 	     3.6293532e-006,y3 = 	     7.0595027e-008,y4 = 	     4.9239092e-003,y5 = 	     1.0110244e-005,y6 = 	     3.3335692e-002,y7 = 	     1.6499818e-007,y8 = 	     7.0123010e-008,y9 = 	     2.2298029e-004,y10 =	     4.5721917e-007,y11 = 	     2.5346874e-007,y12 = 	     1.3794198e-012,y13 = 	     2.3430651e-011,y14 = 	     2.2427345e-009,y15 = 	     4.6119478e-012,y16 = 	     1.0284733e-008,y17 = 	     5.0513547e-014,y18 = 	     2.2118998e-014,y19 = 	     7.6039529e-011,y20 = 	     1.5633682e-013,y21 = 	     2.1582373e-005,y22 = 	     6.4088015e-010,y23 = 	     1.4079987e-006,y24 = 	     1.7370543e-005,y25 = 	     3.5649988e-008,y26 = 	     2.8130536e-007,y27 = 	     1.3961118e-012,y28 = 	     6.1530051e-013,y29 = 	     2.3037094e-007,y30 = 	     4.7241499e-010,y31 = 	     2.1553707e-001,y32 = 	     1.0668244e-006,y33 = 	     5.1754412e-007,y34 = 	     1.4819990e-003,y35 = 	     3.0415484e-006,y36 = 	     8.5495357e-003,y37 = 	     4.2313101e-008,y38 = 	     1.7984273e-008,y39 = 	     5.7694490e-005,y40 = 	     1.1777211e-007,V = 	     -9.3280358e+001,P_UO =      1.7441541e-008,P_UIF =     3.0503807e-007,P_UC2 =     1.1190614e-002,Nai = 	     1.0638607e+001,Ki = 	     1.3126535e+002,Cai = 	     1.2908536e-004,CaSR =      9.4008170e-001,LTRPNCa =   1.1454207e-001,HTRPNCa =   9.7822696e-001,xKs = 	     1.7315831e-004,C0Kv43 =    7.7067212e-001,C1Kv43 =    1.5747921e-001,C2Kv43 =    1.2067272e-002,C3Kv43 =    4.1097812e-004,OKv43 =     5.2485683e-006,CI0Kv43 =   6.1199608e-003,CI1Kv43 =   1.6040227e-002,CI2Kv43 =   2.1294558e-002,CI3Kv43 =   1.4881526e-002,OIKv43 =    3.1254533e-003,C0Kv14 =    7.6976189e-001,C1Kv14 =    9.0762111e-002,C2Kv14 =    4.0131646e-003,C3Kv14 =    7.8871758e-005,OKv14 =     5.8311669e-007,CI0Kv14 =   1.2542472e-001,CI1Kv14 =   6.5975926e-003,CI2Kv14 =   2.5135115e-003,CI3Kv14 =   9.3343580e-004,OIKv14 =    5.7286124e-004,C1Herg =    9.9957296e-001,C2Herg =    3.5656289e-004,C3Herg =    6.2706532e-005,OHerg =     6.8139808e-006,IHerg =     9.6131236e-007,P_UC3 =     2.9347837e+000,OIKv43Ca =  2.3365783e-006,P_UIM1 =    5.7141846e-010,P_UC1 =     1.6155023e-005,P_IC3 =     5.5412991e-002,P_IC2 =     2.1129545e-004,P_UIM2 =    1.6823625e-008,P_LC3 =     7.6377957e-004,P_LC2 =     2.9123655e-006,P_LC1 =     4.2043564e-009,P_LO =      4.5391720e-012)
+
+ist = 0;
+
+dummy = y[0]
+y1 = y[1]
+y2 = y[2]
+y3 = y[3]
+y4 = y[4]
+y5 = y[5]
+y6 = y[6]
+y7 = y[7]
+y8 = y[8]
+y9 = y[9]
+y10 = y[10]
+y11 = y[11]
+y12 = y[12]
+y13 = y[13]
+y14 = y[14]
+y15 = y[15]
+y16 = y[16]
+y17 = y[17]
+y18 = y[18]
+y19 = y[19]
+y20 = y[20]
+y21 = y[21]
+y22 = y[22]
+y23 = y[23]
+y24 = y[24]
+y25 = y[25]
+y26 = y[26]
+y27 = y[27]
+y28 = y[28]
+y29 = y[29]
+y30 = y[30]
+y31 = y[31]
+y32 = y[32]
+y33 = y[33]
+y34 = y[34]
+y35 = y[35]
+y36 = y[36]
+y37 = y[37]
+y38 = y[38]
+y39 = y[39]
+y40 = y[40]
+V = y[41]
+P_UO = y[42]
+P_UIF = y[43]
+P_UC2 = y[44]
+Nai = y[45]
+Ki = y[46]
+Cai = y[47]
+CaSR = y[48]
+LTRPNCa = y[49]
+HTRPNCa = y[50]
+xKs = y[51]
+C0Kv43 = y[52]
+C1Kv43 = y[53]
+C2Kv43 = y[54]
+C3Kv43 = y[55]
+OKv43 = y[56]
+CI0Kv43 = y[57]
+CI1Kv43 = y[58]
+CI2Kv43 = y[59]
+CI3Kv43 = y[60]
+OIKv43 = y[61]
+C0Kv14 = y[62]
+C1Kv14 = y[63]
+C2Kv14 = y[64]
+C3Kv14 = y[65]
+OKv14 = y[66]
+CI0Kv14 = y[67]
+CI1Kv14 = y[68]
+CI2Kv14 = y[69]
+CI3Kv14 = y[70]
+OIKv14 = y[71]
+C1Herg = y[72]
+C2Herg = y[73]
+C3Herg = y[74]
+OHerg = y[75]
+IHerg = y[76]
+P_UC3 = y[77]
+OIKv43Ca = y[78]
+P_UIM1 = y[79]
+P_UC1 = y[80]
+P_IC3 = y[81]
+P_IC2 = y[82]
+P_UIM2 = y[83]
+P_LC3 = y[84]
+P_LC2 = y[85]
+P_LC1 = y[86]
+P_LO = y[87]
+
+
+
+
+
+
+
+
+GCab = 1e-3
+GNab = 1e-3
+
+
+NCaRU = 50000;                  #   Number of Ca Release Units
+Faraday = 96.5;                 #   Faraday's constant (C/mmol)
+Temp = 310;                     #   Temperature (K) 310 = 37, 296 = 23
+Rgas = 8.314;                   #   Universal Gas constant (J/[mol K])
+RT_over_F = Rgas*Temp/Faraday;
+Csa = 153.4e-6;                 #   Membrane capacitance (pF)
+VSS = 0.203e-12;                #   Single dyad subspace volume (microL)
+VSR = 1.3913e-6;                #   SR volume (microL)
+Vmyo = 25.84e-6;                #   Myoplasmic volume (microL)
+PCa = 9.13e-13;                 #   LCC single channel permeability (cm**3/s)
+JRyRmax = 5 * 3.92;             #   Ca flux rate through open RyR (1/ms)
+r_xfer = 220;                   #   Ca flux rate from SS to myoplasm (1/ms)
+Cao = 2;                        #   Extracellular [Ca] (mM)
+Ko = 4;                         #   Extracellular [K] (mM)
+Nao = 138;                      #   Extracellular [Na] (mM)
+Clo = 150;                      #   Extracellular [Cl] (mM)
+Cli = 20;                       #   Intracellular [Cl] (mM)
+
+KdIto2 = 0.1502;                #   Dissociation constant of Cl channel (Ito2) for Ca (mM)
+PCl = 2.65e-15;                 #   Cl single channel permeability (cm**3/s)
+
+i768v = 1.0;                    # Mutation = 1.0 for normal, 1.5 for mutation.    
+
+              
+GKs = 0.02;                    #    Maximal conductance of IKs (mS/microF)   
+kNaCa = 0.27;                  #    Scale factor for Na/Ca exchanger (A/F) - potentially heterogeneous
+KSR = 2;#1.0*2.0;              #    Scale factor for SR Ca ATPase         
+GNal = 1.15;                   #    Maximal conductance of INal(mS/uF) 
+Kv4p3Scale = 3.0;              #    Scale factor for kv4.3 current. New paramete.
+k_alphai = 2.25;               #    Scale factor for kv4.3 current. New paramete.         
+k_betai = 1.125;               #    Scale factor for kv4.3 current. New paramete.
+k_alphaoi = 1000;              #    Scale factor for kv4.3 current. New prameter.
+k_betaoi = 16*5.2310e-4;       #    Scale factor for kv4.3 current. New parameter.
+betaoi = 0.038;                #    Scale factor for kv4.3 current. New parameter.
+betaa0Kv43 = 0.080185;         #    Scale factor for kv4.3 current. New parameter.
+Ito2scale = 0.5;               #    Scale factor for icacl current. New parameter.
+Cm = 182;                      #   Capacitance - not used. 
+
+
+GKr = 0.029;                    #   Maximal conductance of IKr (mS/microF)
+GK1 = 2.73;                     #   Maximal conductance of IK1 (mS/microF)
+GKp = 0.003;                    #   Maximal conductance of IKp (mS/microF)
+GNa = 12.8;                     #   Maximal conductance of INa (mS/microF)
+KmNa = 87.5;                    #   Na half saturation constant for Na/Ca exchanger (mM)
+KmCa = 1.38;                    #   Ca half saturation constant for Na/Ca exchanger (mM)
+KmK1 = 13.0;                    #   K half saturation constant for IK1 (mM)
+ksat = 0.2;                     #   Na/Ca exchange saturation factor at negative potentials
+eta = 0.35;                     #   Controls voltage dependence of Na/Ca exchange
+INaKmax = 1.7325;               #   Scale factor for Na/K pump (A/F)
+#KmNai = 20;                     #   Na half saturation constant for Na/K pump (mM)
+KmKo = 1.5;                     #   K half saturation constant for Na/K pump (mM)
+IpCamax = 0.03;                 #   Maximum sarcolemmal Ca pump current (A/F)
+KmpCa = 0.0005;                 #   Ca half saturation constant for sarcolemmal Ca pump (mM)
+
+
+Kfb = 0.26e-3;                  #   Forward half-saturation constant for SR Ca ATPase (mM)
+Krb = 1.8;                      #   Reverse half-saturation constant for SR Ca ATPase (mM)
+#KSR = 1;                        #   Scale factor for SR Ca ATPase
+Nfb = 0.75;                     #   Forward cooperativity constant for SR Ca ATPase
+Nrb = 0.75;                     #   Reverse cooperativity constant for SR Ca ATPase
+vmaxf = KSR*2.0961e-4;              #   SR Ca ATPase forward rate parameter (mM/ms)
+vmaxr = KSR*2.0961e-4;              #   SR Ca ATPase reverse rate parameter (mM/ms)
+
+KvScale = 1.5876;               #   Scale factor for Kv4.3 and Kv1.4 currents
+Kv43Frac = 0.85;                #   Fraction of Ito1 (peak current at 40 mV) that is made up of Kv4.3 
+#Kv43Frac = 0.70;                #   Fraction of Ito1 (peak current at 40 mV) that is made up of Kv4.3 
+GKv43 = Kv43Frac*KvScale*0.1*Kv4p3Scale;   #   Maximal conductance of IKv43 (mS/microF)
+PKv14 = (1-Kv43Frac)*KvScale*4.792933e-7;       #   Maximal conductance of IKv14 (mS/microF)
+
+
+alphaa0Kv43 = 0.543708 ;         #   IKv43 rate parameter (1/ms)
+aaKv43 = 0.028983;              #   IKv43 rate parameter (1/mV)
+#betaa0Kv43 = 0.080185;          #   IKv43 rate parameter (1/ms)
+baKv43 = 0.0468437/2;             #   IKv43 rate parameter (1/mV)
+alphai0Kv43 = (0.0498424)*k_alphai;        #   IKv43 rate parameter (1/ms)
+aiKv43 = 0.000373016;           #   IKv43 rate parameter (1/mV)
+betai0Kv43 = (0.000819482)*k_betai;       #   IKv43 rate parameter (1/ms)
+biKv43 = 0.00000005374;         #   IKv43 rate parameter (1/mV)
+alphaa0Kv14 = 6*0.31551;        #   IKv14 rate parameter (1/ms)
+aaKv14 = 0.00695;               #   IKv14 rate parameter (1/mV)
+betaa0Kv14 = 6*0.001966;        #   IKv14 rate parameter (1/ms)
+baKv14 = 0.08527;               #   IKv14 rate parameter (1/mV)
+alphai0Kv14 = 6*0.0004938;      #   IKv14 rate parameter (1/ms)
+betai0Kv14 = 6*0.0000176;       #   IKv14 rate parameter (1/ms)
+f1Kv43 = 1.8936;                #   IKv43 rate parameter
+f2Kv43 = 14.224647456;          #   IKv43 rate parameter
+f3Kv43 = 158.574378389;         #   IKv43 rate parameter
+f4Kv43 = 142.936645351;         #   IKv43 rate parameter
+b1Kv43 = 6.77348;               #   IKv43 rate parameter
+b2Kv43 = 15.6212705152;         #   IKv43 rate parameter
+b3Kv43 = 28.7532603313;         #   IKv43 rate parameter
+b4Kv43 = 524.576206679;         #   IKv43 rate parameter
+f1Kv14 = 0.20005;               #   IKv14 rate parameter
+f2Kv14 = 0.320280;              #   IKv14 rate parameter
+f3Kv14 = 13.50909223;           #   IKv14 rate parameter
+f4Kv14 = 1151.7651385;          #   IKv14 rate parameter
+b1Kv14 = 2.2300;                #   IKv14 rate parameter
+b2Kv14 = 12.000299;             #   IKv14 rate parameter
+b3Kv14 = 5.3701338025;          #   IKv14 rate parameter
+b4Kv14 = 5.2396395511;          #   IKv14 rate parameter
+
+A0_HERG = 0.017147641733086;    #   IKr rate parameter (1/ms)
+B0_HERG = 0.03304608038835;     #   IKr rate parameter (1/mV)
+A1_HERG = 0.03969328381141;     #   IKr rate parameter (1/ms)
+B1_HERG = -0.04306054163980;    #   IKr rate parameter (1/mV)
+A2_HERG = 0.02057448605977;     #   IKr rate parameter (1/ms)
+B2_HERG = 0.02617412715118;     #   IKr rate parameter (1/mV)
+A3_HERG = 0.00134366604423;     #   IKr rate parameter (1/ms)
+B3_HERG = -0.02691385498399;    #   IKr rate parameter (1/mV)
+A4_HERG = 0.10666316491288;     #   IKr rate parameter (1/ms)
+B4_HERG = 0.00568908859717;     #   IKr rate parameter (1/mV)
+A5_HERG = 0.00646393910049;     #   IKr rate parameter (1/ms)
+B5_HERG = -0.04536642959543;    #   IKr rate parameter (1/mV)
+A6_HERG = 0.00008039374403;     #   IKr rate parameter (1/ms)
+B6_HERG = 0.00000069808924;     #   IKr rate parameter (1/mV)
+T_Const_HERG = 5.320000001;     #   IKr rate scale factor for temperature
+C2H_to_C3H = T_Const_HERG*0.02608362043337;     #   IKr transition rate (1/ms)
+C3H_to_C2H = T_Const_HERG*0.14832978132145;     #   IKr transition rate (1/ms)
+
+
+CSQNtot = 2.7;                  #   Total SR calsequestrin concentration (mM)
+KmCSQN = 0.63;                  #   Ca half saturation constant for calsequestrin (mM)
+LTRPNtot = 0.07;                #   Total troponin low-affinity site concentration (mM)
+HTRPNtot = 0.14;                #   Total troponin high-affinity site concentration (mM)
+khtrpn_plus = 20;               #   Troponin Ca binding rate parameter (1/[mM ms])
+khtrpn_minus = 0.066e-3;        #   Troponin Ca binding rate parameter (1/ms)
+kltrpn_plus = 40;               #   Troponin Ca binding rate parameter (1/[mM ms])
+kltrpn_minus = 0.04;            #   Troponin Ca binding rate parameter (1/ms)
+CMDNtot = 0.05;                 #   Total myoplasmic calmodulin concentration (mM)
+EGTAtot = 0.;                    #   Total myoplasmic EGTA concentration (mM)
+KmCMDN = 2.38e-3;               #   Ca half saturation constant for calmodulin (mM)
+KmEGTA = 1.5e-4;                #   Ca half saturation constant for EGTA (mM)
+
+
+VF_over_RT=V/RT_over_F;
+VFsq_over_RT=(1000*Faraday)*VF_over_RT;
+
+
+
+fL = 0.85;                      #   L-type Ca channel rate parameter (1/ms)
+gL = 2;                         #   L-type Ca channel rate parameter (1/ms)
+bL = 32.1948;                   #   L-type Ca channel rate parameter
+aL = 12.8878;                   #   L-type Ca channel rate parameter
+omega = 0.0269659;              #   L-type Ca channel rate parameter (1/ms)
+gammacf = 1.39;                 #   L-type Ca channel rate parameter (1/[mM ms])
+
+alpha = 0.835399*exp(0.0269241*(V-35));     #   L-type Ca channel rate parameter (1/ms)
+beta =  0.0331584*exp(-0.0934594*(V-35));   #   L-type Ca channel rate parameter (1/ms)
+
+yCainf = 0.4/(1+exp((V+12.5)/5)) + 0.6;     #   L-type Ca channel steady-state inactivation
+tauyCa = 340/(1+exp((V+30)/12)) + 60;       #   L-type Ca channel inactivation time constant (ms)
+kby = yCainf/tauyCa;            #   L-type Ca channel rate parameter (1/ms)
+kfy = (1 - yCainf)/tauyCa;      #   L-type Ca channel rate parameter (1/ms)
+
+k12 = 5 * 877.5;                #   RyR channel rate parameter (1/ms)
+k21 = 5 * 250;                  #   RyR channel rate parameter (1/ms)
+k23 = 2.358e8;                  #   RyR channel rate parameter (1/ms)
+k32 = 9.6;                      #   RyR channel rate parameter (1/ms)
+k34 = 1.415e6;                  #   RyR channel rate parameter (1/ms)
+k43 = 13.65;                    #   RyR channel rate parameter (1/ms)
+k45 = 0.07;                     #   RyR channel rate parameter (1/ms)
+k54 = 93.385;                   #   RyR channel rate parameter (1/ms)
+k56 = 1.887e7;                  #   RyR channel rate parameter (1/ms)
+k65 = 30;                       #   RyR channel rate parameter (1/ms)
+k25 = 2.358e6;                  #   RyR channel rate parameter (1/ms)
+k52 = 0.001235;                 #   RyR channel rate parameter (1/ms)
+
+CaSS_1 = Cai;                   #   Ca concentration for each open-closed configuaration
+CaSS_2 = (PCa*2*VF_over_RT/VSS*0.341*Cao/(exp(2*VF_over_RT)-1) + r_xfer*Cai)           / (PCa*2*VF_over_RT/VSS/(1-exp(-2*VF_over_RT)) + r_xfer);
+CaSS_3 = (JRyRmax*CaSR + r_xfer*Cai)/(JRyRmax + r_xfer);
+CaSS_4 = (PCa*2*VF_over_RT/VSS*0.341*Cao/(exp(2*VF_over_RT)-1) + JRyRmax*CaSR + r_xfer*Cai)     / (PCa*2*VF_over_RT/VSS/(1-exp(-2*VF_over_RT)) + JRyRmax + r_xfer);
+
+LCC_1_to_2 = alpha;             #   Set L-type Ca channel rates (1/ms)
+LCC_2_to_1 = beta;
+LCC_2_to_3 = fL;
+LCC_3_to_2 = gL;
+LCC_1_to_4_CaSS_1 = gammacf*CaSS_1;
+LCC_1_to_4_CaSS_2 = gammacf*CaSS_2;
+LCC_1_to_4_CaSS_3 = gammacf*CaSS_3;
+LCC_1_to_4_CaSS_4 = gammacf*CaSS_4;
+LCC_4_to_1 = omega;
+LCC_4_to_5 = aL*alpha;
+LCC_5_to_4 = beta/bL;
+LCC_2_to_5_CaSS_1 = aL*gammacf*CaSS_1;
+LCC_2_to_5_CaSS_2 = aL*gammacf*CaSS_2;
+LCC_2_to_5_CaSS_3 = aL*gammacf*CaSS_3;
+LCC_2_to_5_CaSS_4 = aL*gammacf*CaSS_4;
+LCC_5_to_2 = omega/bL;
+
+LCC_6_to_7 = alpha;
+LCC_7_to_6 = beta;
+LCC_7_to_8 = fL;
+LCC_8_to_7 = gL;
+LCC_6_to_9_CaSS_1 = gammacf*CaSS_1;
+LCC_6_to_9_CaSS_2 = gammacf*CaSS_2;
+LCC_6_to_9_CaSS_3 = gammacf*CaSS_3;
+LCC_6_to_9_CaSS_4 = gammacf*CaSS_4;
+LCC_9_to_6 = omega;
+LCC_9_to_10 = aL*alpha;
+LCC_10_to_9 = beta/bL;
+LCC_7_to_10_CaSS_1 = aL*gammacf*CaSS_1;
+LCC_7_to_10_CaSS_2 = aL*gammacf*CaSS_2;
+LCC_7_to_10_CaSS_3 = aL*gammacf*CaSS_3;
+LCC_7_to_10_CaSS_4 = aL*gammacf*CaSS_4;
+LCC_10_to_7 = omega/bL;
+
+LCC_1_to_6 = kfy;
+LCC_2_to_7 = kfy;
+LCC_3_to_8 = kfy;
+LCC_4_to_9 = kfy;
+LCC_5_to_10 = kfy;
+LCC_6_to_1 = kby;
+LCC_7_to_2 = kby;
+LCC_8_to_3 = kby;
+LCC_9_to_4 = kby;
+LCC_10_to_5 = kby;
+
+CaSSmod_1 = min(CaSS_1, 0.05); # 50 microM max on RyR rates except for k12
+CaSSmod_2 = min(CaSS_2, 0.05);
+CaSSmod_3 = min(CaSS_3, 0.05);
+CaSSmod_4 = min(CaSS_4, 0.05);
+
+RyR_1_to_2_CaSS_1 = k12*CaSS_1**2;       #   Set RyR channel rates (1/ms)
+RyR_1_to_2_CaSS_2 = k12*CaSS_2**2;
+RyR_1_to_2_CaSS_3 = k12*CaSS_3**2;
+RyR_1_to_2_CaSS_4 = k12*CaSS_4**2;
+RyR_2_to_1 = k21;
+RyR_2_to_3_CaSS_1 = k23*CaSSmod_1**2;
+RyR_2_to_3_CaSS_2 = k23*CaSSmod_2**2;
+RyR_2_to_3_CaSS_3 = k23*CaSSmod_3**2;
+RyR_2_to_3_CaSS_4 = k23*CaSSmod_4**2;
+RyR_3_to_2_CaSS_1 = k32*k43/(k34*CaSSmod_1**2 + k43);
+RyR_3_to_2_CaSS_2 = k32*k43/(k34*CaSSmod_2**2 + k43);
+RyR_3_to_2_CaSS_3 = k32*k43/(k34*CaSSmod_3**2 + k43);
+RyR_3_to_2_CaSS_4 = k32*k43/(k34*CaSSmod_4**2 + k43);
+RyR_2_to_4_CaSS_1 = k25*CaSSmod_1**2;
+RyR_2_to_4_CaSS_2 = k25*CaSSmod_2**2;
+RyR_2_to_4_CaSS_3 = k25*CaSSmod_3**2;
+RyR_2_to_4_CaSS_4 = k25*CaSSmod_4**2;
+RyR_4_to_2_CaSS_1 = k52*k65/(k56*CaSSmod_1**2 + k65);
+RyR_4_to_2_CaSS_2 = k52*k65/(k56*CaSSmod_2**2 + k65);
+RyR_4_to_2_CaSS_3 = k52*k65/(k56*CaSSmod_3**2 + k65);
+RyR_4_to_2_CaSS_4 = k52*k65/(k56*CaSSmod_4**2 + k65);
+RyR_3_to_4_CaSS_1 = k45*k34*CaSSmod_1**2/(k34*CaSSmod_1**2 + k43);
+RyR_3_to_4_CaSS_2 = k45*k34*CaSSmod_2**2/(k34*CaSSmod_2**2 + k43);
+RyR_3_to_4_CaSS_3 = k45*k34*CaSSmod_3**2/(k34*CaSSmod_3**2 + k43);
+RyR_3_to_4_CaSS_4 = k45*k34*CaSSmod_4**2/(k34*CaSSmod_4**2 + k43);
+RyR_4_to_3_CaSS_1 = k65*k54*CaSSmod_1**2/(k56*CaSSmod_1**2 + k65);
+RyR_4_to_3_CaSS_2 = k65*k54*CaSSmod_2**2/(k56*CaSSmod_2**2 + k65);
+RyR_4_to_3_CaSS_3 = k65*k54*CaSSmod_3**2/(k56*CaSSmod_3**2 + k65);
+RyR_4_to_3_CaSS_4 = k65*k54*CaSSmod_4**2/(k56*CaSSmod_4**2 + k65);
+
+
+
+
+dy[1] = -LCC_1_to_2*y1 +LCC_2_to_1*y2 -LCC_1_to_4_CaSS_1*y1 +LCC_4_to_1*y4           -LCC_1_to_6*y1 +LCC_6_to_1*y6 -RyR_1_to_2_CaSS_1*y1 +RyR_2_to_1*y11;
+dy[2] = +LCC_1_to_2*y1 -LCC_2_to_1*y2 -LCC_2_to_3*y2 +LCC_3_to_2*y3         -LCC_2_to_5_CaSS_1*y2 +LCC_5_to_2*y5 -LCC_2_to_7*y2 +LCC_7_to_2*y7         -RyR_1_to_2_CaSS_1*y2 +RyR_2_to_1*y12;
+dy[3] = +LCC_2_to_3*y2 -LCC_3_to_2*y3 -LCC_3_to_8*y3 +LCC_8_to_3*y8       -RyR_1_to_2_CaSS_2*y3 +RyR_2_to_1*y13;
+dy[4] = +LCC_1_to_4_CaSS_1*y1 -LCC_4_to_1*y4 -LCC_4_to_5*y4 +LCC_5_to_4*y5          -LCC_4_to_9*y4 +LCC_9_to_4*y9 -RyR_1_to_2_CaSS_1*y4 +RyR_2_to_1*y14;
+dy[5] = +LCC_2_to_5_CaSS_1*y2 -LCC_5_to_2*y5 +LCC_4_to_5*y4 -LCC_5_to_4*y5          -LCC_5_to_10*y5 +LCC_10_to_5*y10 -RyR_1_to_2_CaSS_1*y5 +RyR_2_to_1*y15;
+dy[6] = +LCC_1_to_6*y1 -LCC_6_to_1*y6 -LCC_6_to_7*y6 +LCC_7_to_6*y7         -LCC_6_to_9_CaSS_1*y6 +LCC_9_to_6*y9 -RyR_1_to_2_CaSS_1*y6 +RyR_2_to_1*y16;
+dy[7] = +LCC_2_to_7*y2 -LCC_7_to_2*y7 +LCC_6_to_7*y6 -LCC_7_to_6*y7         -LCC_7_to_8*y7 +LCC_8_to_7*y8 -LCC_7_to_10_CaSS_1*y7 +LCC_10_to_7*y10          -RyR_1_to_2_CaSS_1*y7 +RyR_2_to_1*y17;
+dy[8] = +LCC_3_to_8*y3 -LCC_8_to_3*y8 +LCC_7_to_8*y7 -LCC_8_to_7*y8          -RyR_1_to_2_CaSS_1*y8 +RyR_2_to_1*y18;
+dy[9]= +LCC_4_to_9*y4 -LCC_9_to_4*y9 +LCC_6_to_9_CaSS_1*y6 -LCC_9_to_6*y9         -LCC_9_to_10*y9 +LCC_10_to_9*y10 -RyR_1_to_2_CaSS_1*y9 +RyR_2_to_1*y19;
+dy[10] = +LCC_5_to_10*y5 -LCC_10_to_5*y10 +LCC_7_to_10_CaSS_1*y7 -LCC_10_to_7*y10         +LCC_9_to_10*y9 -LCC_10_to_9*y10 -RyR_1_to_2_CaSS_1*y10 +RyR_2_to_1*y20;
+dy[11] = +RyR_1_to_2_CaSS_1*y1 -RyR_2_to_1*y11 -LCC_1_to_2*y11 +LCC_2_to_1*y12      -LCC_1_to_4_CaSS_1*y11 +LCC_4_to_1*y14 -LCC_1_to_6*y11 +LCC_6_to_1*y16        -RyR_2_to_3_CaSS_1*y11 +RyR_3_to_2_CaSS_3*y21 -RyR_2_to_4_CaSS_1*y11 +RyR_4_to_2_CaSS_1*y31;
+dy[12] = +RyR_1_to_2_CaSS_1*y2 -RyR_2_to_1*y12 +LCC_1_to_2*y11 -LCC_2_to_1*y12       -LCC_2_to_3*y12 +LCC_3_to_2*y13 -LCC_2_to_5_CaSS_1*y12 +LCC_5_to_2*y15         -LCC_2_to_7*y12 +LCC_7_to_2*y17 -RyR_2_to_3_CaSS_1*y12 +RyR_3_to_2_CaSS_3*y22       -RyR_2_to_4_CaSS_1*y12 +RyR_4_to_2_CaSS_1*y32;
+dy[13] = +RyR_1_to_2_CaSS_2*y3 -RyR_2_to_1*y13 +LCC_2_to_3*y12 -LCC_3_to_2*y13      -LCC_3_to_8*y13 +LCC_8_to_3*y18 -RyR_2_to_3_CaSS_2*y13 +RyR_3_to_2_CaSS_4*y23       -RyR_2_to_4_CaSS_2*y13 +RyR_4_to_2_CaSS_2*y33;
+dy[14]= +RyR_1_to_2_CaSS_1*y4 -RyR_2_to_1*y14 +LCC_1_to_4_CaSS_1*y11 -LCC_4_to_1*y14    -LCC_4_to_5*y14 +LCC_5_to_4*y15 -LCC_4_to_9*y14 +LCC_9_to_4*y19     -RyR_2_to_3_CaSS_1*y14 +RyR_3_to_2_CaSS_3*y24 -RyR_2_to_4_CaSS_1*y14 +RyR_4_to_2_CaSS_1*y34;
+dy[15] = +RyR_1_to_2_CaSS_1*y5 -RyR_2_to_1*y15 +LCC_2_to_5_CaSS_1*y12 -LCC_5_to_2*y15    +LCC_4_to_5*y14 -LCC_5_to_4*y15 -LCC_5_to_10*y15 +LCC_10_to_5*y20   -RyR_2_to_3_CaSS_1*y15 +RyR_3_to_2_CaSS_3*y25 -RyR_2_to_4_CaSS_1*y15 +RyR_4_to_2_CaSS_1*y35;
+dy[16] = +RyR_1_to_2_CaSS_1*y6 -RyR_2_to_1*y16 +LCC_1_to_6*y11 -LCC_6_to_1*y16      -LCC_6_to_7*y16 +LCC_7_to_6*y17 -LCC_6_to_9_CaSS_1*y16 +LCC_9_to_6*y19       -RyR_2_to_3_CaSS_1*y16 +RyR_3_to_2_CaSS_3*y26 -RyR_2_to_4_CaSS_1*y16 +RyR_4_to_2_CaSS_1*y36;
+dy[17] = +RyR_1_to_2_CaSS_1*y7 -RyR_2_to_1*y17 +LCC_2_to_7*y12 -LCC_7_to_2*y17      +LCC_6_to_7*y16 -LCC_7_to_6*y17 -LCC_7_to_8*y17 +LCC_8_to_7*y18  -LCC_7_to_10_CaSS_1*y17 +LCC_10_to_7*y20 -RyR_2_to_3_CaSS_1*y17 +RyR_3_to_2_CaSS_3*y27     -RyR_2_to_4_CaSS_1*y17 +RyR_4_to_2_CaSS_1*y37;
+dy[18] = +RyR_1_to_2_CaSS_1*y8 -RyR_2_to_1*y18 +LCC_3_to_8*y13 -LCC_8_to_3*y18    +LCC_7_to_8*y17 -LCC_8_to_7*y18 -RyR_2_to_3_CaSS_1*y18 +RyR_3_to_2_CaSS_3*y28        -RyR_2_to_4_CaSS_1*y18 +RyR_4_to_2_CaSS_1*y38;
+dy[19] = +RyR_1_to_2_CaSS_1*y9 -RyR_2_to_1*y19 +LCC_4_to_9*y14 -LCC_9_to_4*y19         +LCC_6_to_9_CaSS_1*y16 -LCC_9_to_6*y19 -LCC_9_to_10*y19 +LCC_10_to_9*y20          -RyR_2_to_3_CaSS_1*y19 +RyR_3_to_2_CaSS_3*y29 -RyR_2_to_4_CaSS_1*y19 +RyR_4_to_2_CaSS_1*y39;
+dy[20] = +RyR_1_to_2_CaSS_1*y10 -RyR_2_to_1*y20 +LCC_5_to_10*y15 -LCC_10_to_5*y20    +LCC_7_to_10_CaSS_1*y17 -LCC_10_to_7*y20 +LCC_9_to_10*y19 -LCC_10_to_9*y20      -RyR_2_to_3_CaSS_1*y20 +RyR_3_to_2_CaSS_3*y30 -RyR_2_to_4_CaSS_1*y20 +RyR_4_to_2_CaSS_1*y40;
+dy[21] = +RyR_2_to_3_CaSS_1*y11 -RyR_3_to_2_CaSS_3*y21 -LCC_1_to_2*y21 +LCC_2_to_1*y22    -LCC_1_to_4_CaSS_3*y21 +LCC_4_to_1*y24 -LCC_1_to_6*y21 +LCC_6_to_1*y26   -RyR_3_to_4_CaSS_3*y21 +RyR_4_to_3_CaSS_1*y31;
+dy[22] = +RyR_2_to_3_CaSS_1*y12 -RyR_3_to_2_CaSS_3*y22 +LCC_1_to_2*y21 -LCC_2_to_1*y22  -LCC_2_to_3*y22 +LCC_3_to_2*y23 -LCC_2_to_5_CaSS_3*y22 +LCC_5_to_2*y25    -LCC_2_to_7*y22 +LCC_7_to_2*y27 -RyR_3_to_4_CaSS_3*y22 +RyR_4_to_3_CaSS_1*y32;
+dy[23] = +RyR_2_to_3_CaSS_2*y13 -RyR_3_to_2_CaSS_4*y23 +LCC_2_to_3*y22 -LCC_3_to_2*y23  -LCC_3_to_8*y23 +LCC_8_to_3*y28 -RyR_3_to_4_CaSS_4*y23 +RyR_4_to_3_CaSS_2*y33;
+dy[24] = +RyR_2_to_3_CaSS_1*y14 -RyR_3_to_2_CaSS_3*y24 +LCC_1_to_4_CaSS_3*y21 -LCC_4_to_1*y24   -LCC_4_to_5*y24 +LCC_5_to_4*y25 -LCC_4_to_9*y24 +LCC_9_to_4*y29     -RyR_3_to_4_CaSS_3*y24 +RyR_4_to_3_CaSS_1*y34;
+dy[25] = +RyR_2_to_3_CaSS_1*y15 -RyR_3_to_2_CaSS_3*y25 +LCC_2_to_5_CaSS_3*y22 -LCC_5_to_2*y25    +LCC_4_to_5*y24 -LCC_5_to_4*y25 -LCC_5_to_10*y25 +LCC_10_to_5*y30 -RyR_3_to_4_CaSS_3*y25 +RyR_4_to_3_CaSS_1*y35;
+dy[26] = +RyR_2_to_3_CaSS_1*y16 -RyR_3_to_2_CaSS_3*y26 +LCC_1_to_6*y21 -LCC_6_to_1*y26    -LCC_6_to_7*y26 +LCC_7_to_6*y27 -LCC_6_to_9_CaSS_3*y26 +LCC_9_to_6*y29       -RyR_3_to_4_CaSS_3*y26 +RyR_4_to_3_CaSS_1*y36;
+dy[27] = +RyR_2_to_3_CaSS_1*y17 -RyR_3_to_2_CaSS_3*y27 +LCC_2_to_7*y22 -LCC_7_to_2*y27       +LCC_6_to_7*y26 -LCC_7_to_6*y27 -LCC_7_to_8*y27 +LCC_8_to_7*y28         -LCC_7_to_10_CaSS_3*y27 +LCC_10_to_7*y30 -RyR_3_to_4_CaSS_3*y27 +RyR_4_to_3_CaSS_1*y37;
+dy[28] = +RyR_2_to_3_CaSS_1*y18 -RyR_3_to_2_CaSS_3*y28 +LCC_3_to_8*y23 -LCC_8_to_3*y28  +LCC_7_to_8*y27 -LCC_8_to_7*y28 -RyR_3_to_4_CaSS_3*y28 +RyR_4_to_3_CaSS_1*y38;
+dy[29] = +RyR_2_to_3_CaSS_1*y19 -RyR_3_to_2_CaSS_3*y29 +LCC_4_to_9*y24 -LCC_9_to_4*y29     +LCC_6_to_9_CaSS_3*y26 -LCC_9_to_6*y29 -LCC_9_to_10*y29 +LCC_10_to_9*y30      -RyR_3_to_4_CaSS_3*y29 +RyR_4_to_3_CaSS_1*y39;
+dy[30] = +RyR_2_to_3_CaSS_1*y20 -RyR_3_to_2_CaSS_3*y30 +LCC_5_to_10*y25 -LCC_10_to_5*y30      +LCC_7_to_10_CaSS_3*y27 -LCC_10_to_7*y30 +LCC_9_to_10*y29 -LCC_10_to_9*y30    -RyR_3_to_4_CaSS_3*y30 +RyR_4_to_3_CaSS_1*y40;
+dy[31] = +RyR_2_to_4_CaSS_1*y11 -RyR_4_to_2_CaSS_1*y31 +RyR_3_to_4_CaSS_3*y21 -RyR_4_to_3_CaSS_1*y31     -LCC_1_to_2*y31 +LCC_2_to_1*y32 -LCC_1_to_4_CaSS_1*y31 +LCC_4_to_1*y34    -LCC_1_to_6*y31 +LCC_6_to_1*y36;
+dy[32] = +RyR_2_to_4_CaSS_1*y12 -RyR_4_to_2_CaSS_1*y32 +RyR_3_to_4_CaSS_3*y22 -RyR_4_to_3_CaSS_1*y32       +LCC_1_to_2*y31 -LCC_2_to_1*y32 -LCC_2_to_3*y32 +LCC_3_to_2*y33      -LCC_2_to_5_CaSS_1*y32 +LCC_5_to_2*y35 -LCC_2_to_7*y32 +LCC_7_to_2*y37;
+dy[33] = +RyR_2_to_4_CaSS_2*y13 -RyR_4_to_2_CaSS_2*y33 +RyR_3_to_4_CaSS_4*y23 -RyR_4_to_3_CaSS_2*y33     +LCC_2_to_3*y32 -LCC_3_to_2*y33 -LCC_3_to_8*y33 +LCC_8_to_3*y38;
+dy[34] = +RyR_2_to_4_CaSS_1*y14 -RyR_4_to_2_CaSS_1*y34 +RyR_3_to_4_CaSS_3*y24 -RyR_4_to_3_CaSS_1*y34      +LCC_1_to_4_CaSS_1*y31 -LCC_4_to_1*y34 -LCC_4_to_5*y34 +LCC_5_to_4*y35     -LCC_4_to_9*y34 +LCC_9_to_4*y39;
+dy[35] = +RyR_2_to_4_CaSS_1*y15 -RyR_4_to_2_CaSS_1*y35 +RyR_3_to_4_CaSS_3*y25 -RyR_4_to_3_CaSS_1*y35      +LCC_2_to_5_CaSS_1*y32 -LCC_5_to_2*y35 +LCC_4_to_5*y34 -LCC_5_to_4*y35      -LCC_5_to_10*y35 +LCC_10_to_5*y40;
+dy[36] = +RyR_2_to_4_CaSS_1*y16 -RyR_4_to_2_CaSS_1*y36 +RyR_3_to_4_CaSS_3*y26 -RyR_4_to_3_CaSS_1*y36      +LCC_1_to_6*y31 -LCC_6_to_1*y36 -LCC_6_to_7*y36 +LCC_7_to_6*y37      -LCC_6_to_9_CaSS_1*y36 +LCC_9_to_6*y39;
+dy[37] = +RyR_2_to_4_CaSS_1*y17 -RyR_4_to_2_CaSS_1*y37 +RyR_3_to_4_CaSS_3*y27 -RyR_4_to_3_CaSS_1*y37      +LCC_2_to_7*y32 -LCC_7_to_2*y37 +LCC_6_to_7*y36 -LCC_7_to_6*y37     -LCC_7_to_8*y37 +LCC_8_to_7*y38 -LCC_7_to_10_CaSS_1*y37 +LCC_10_to_7*y40;
+dy[38] = +RyR_2_to_4_CaSS_1*y18 -RyR_4_to_2_CaSS_1*y38 +RyR_3_to_4_CaSS_3*y28 -RyR_4_to_3_CaSS_1*y38      +LCC_3_to_8*y33 -LCC_8_to_3*y38 +LCC_7_to_8*y37 -LCC_8_to_7*y38;
+dy[39] = +RyR_2_to_4_CaSS_1*y19 -RyR_4_to_2_CaSS_1*y39 +RyR_3_to_4_CaSS_3*y29 -RyR_4_to_3_CaSS_1*y39      +LCC_4_to_9*y34 -LCC_9_to_4*y39 +LCC_6_to_9_CaSS_1*y36 -LCC_9_to_6*y39     -LCC_9_to_10*y39 +LCC_10_to_9*y40;
+dy[40] = +RyR_2_to_4_CaSS_1*y20 -RyR_4_to_2_CaSS_1*y40 +RyR_3_to_4_CaSS_3*y30 -RyR_4_to_3_CaSS_1*y40      +LCC_5_to_10*y35 -LCC_10_to_5*y40 +LCC_7_to_10_CaSS_1*y37 -LCC_10_to_7*y40  +LCC_9_to_10*y39 -LCC_10_to_9*y40;
+
+
+PCaSS_2 = y3+y13+y33;         #   Evaluate occupancy probability for each open-closed configuartion
+PCaSS_3 = y21+y22+y24+y25+y26+y27+y28+y29+y30;
+PCaSS_4 = y23;
+PCaSS_1 = 1 - PCaSS_2 - PCaSS_3 - PCaSS_4;
+
+                                    #   Evaluate fluxes/currents across LCC-RyR boundary
+ICaL = NCaRU/Csa*PCa*4*VFsq_over_RT/(exp(2*VF_over_RT)-1)    * ( PCaSS_2*(CaSS_2*exp(2*VF_over_RT)-0.341*Cao) + PCaSS_4*(CaSS_4*exp(2*VF_over_RT)-0.341*Cao) );
+
+JCaL = -ICaL*Csa/(2*Faraday*1000*VSS);
+Ito2 = Ito2scale*NCaRU/Csa*PCl*VFsq_over_RT*(Cli*exp(-VF_over_RT)-Clo)/(exp(-VF_over_RT) - 1)        * ( PCaSS_4/(1 + KdIto2/CaSS_4) + PCaSS_3/(1 + KdIto2/CaSS_3)        + PCaSS_2/(1 + KdIto2/CaSS_2) + PCaSS_1/(1 + KdIto2/CaSS_1) );
+
+JRyR = NCaRU*JRyRmax * ( PCaSS_4*(CaSR - CaSS_4) + PCaSS_3*(CaSR - CaSS_3) );
+Jss2b = NCaRU*r_xfer * ( PCaSS_4*(CaSS_4 - Cai) + PCaSS_3*(CaSS_3 - Cai)                         + PCaSS_2*(CaSS_2 - Cai) + PCaSS_1*(CaSS_1 - Cai) );
+CaSSavg = PCaSS_1*CaSS_1 + PCaSS_2*CaSS_2 + PCaSS_3*CaSS_3 + PCaSS_4*CaSS_4;        # Average dyadic Ca concentration
+
+
+                                    #   Evaluate currents and state derivatives of global model 
+ENa = RT_over_F*log(Nao/Nai);
+EK =  RT_over_F*log(Ko/Ki);
+EKs = RT_over_F*log((Ko+0.01833*Nao)/(Ki+0.01833*Nai));
+ECa = 0.5*RT_over_F*log(Cao/max(1e-10,Cai));
+
+#### Markov model for WT INa including INaL - Clancy 2003######
+a11= 3.802/(0.1027*exp(-V/17.0)+0.20*exp(-V/150));
+a12=  ( 3.802/(0.1027*exp(-V/15.0)+0.23*exp(-V/150)));
+a13=3.802/(0.1027*exp(-V/12.0)+0.250*exp(-V/150));
+b11= 0.4*exp(-V/20.3); #Clancy et al, 2003 (WT/I1768V)
+b12= 0.4*exp(-(V-5)/20.3); #Clancy et al, 2003 (WT/I1768V)
+b13= 0.4*exp(-(V-10)/20.3)/4.5; #Clancy et al, 2003 (WT/I1768V)
+a3= (3.7933e-7*exp(-V/7.7))*5*i768v;#Clancy et al, 2003 (WT/I1768V)
+b3= (0.0084+.00002*V);
+a2= ((9.178*exp(V/29.68))/4.5);#Clancy et al, 2003 (WT/I1768V)
+b2= ((a13*a2*a3)/(b13*b3));	
+a4= (a2/100)*1.5; #Clancy et al, 2003 (WT/I1768V)
+b4 = a3*5*i768v;#Clancy et al, 2003 (WT/I1768V)
+a5= (a2/95000)*1.5; #Clancy et al, 2003 (WT/I1768V)
+b5 = (a3/50)*5*i768v;#Clancy et al, 2003 (WT/I1768V)
+
+mu1= 1.0e-7;
+mu2= 3.0e-4;
+
+#Upper states
+dP_UO = (P_UC1*a13+P_UIF*b2+P_LO*mu2)- (P_UO*(b13+a2+mu1));
+dP_UIF = (P_IC2*a12+P_UO*a2+P_UC1*b3+P_UIM1*b4)- (P_UIF*(b2+a3+a4+b12));
+dP_UC2 = (P_IC2*a3+P_UC1*b12+P_UC3*a11+P_LC2*mu2)-(P_UC2*(a12+b11+mu1+b3));
+dP_UC3 = P_IC3*a3+P_UC2*b11+P_LC3*mu2-(P_UC3*(a11+mu1+b3));
+dP_UIM1 = (P_UIF*a4+P_UIM2*b5)-P_UIM1*(b4+a5);
+dP_UC1 = P_UC2*a12+P_UO*b13+P_LC1*mu2+P_UIF*a3-(P_UC1*(a13+b12+mu1+b3));
+dP_IC3 = (P_UC3*b3+P_IC2*b11)-P_IC3*(a11+a3);
+dP_IC2 = (P_UC2*b3+P_IC3*a11+P_UIF*b12)-P_IC2*(a12+b11+a3);
+dP_UIM2 = P_UIM1*a5-P_UIM2*b5;
+
+#Lower states
+dP_LC3 = P_UC3*mu1+P_LC2*b11-(P_LC3*(a11+mu2));
+dP_LC2 = P_UC2*mu1+P_LC3*a11+P_LC1*b12-(P_LC2*(a12+mu2+b11));
+dP_LC1 = P_UC1*mu1+P_LC2*a12+P_LO*b13-(P_LC1*(a13+mu2+b12));
+dP_LO = (P_LC1*a13+P_UO*mu1)-(P_LO*(b13+mu2));
+
+
+GNa = 4.6; # mS/uF
+INa = GNa*(P_UO)*(V-ENa); # INa 
+
+INal = GNal*(P_LO)*(V-ENa); # INal
+
+fKo = (Ko/4)**0.5;
+IKr = GKr*fKo*OHerg*(V-EK);
+
+IKs = GKs*(xKs**2)*(V-EKs);
+
+IKv43 = GKv43*(OKv43)*(V-EK);
+
+a1 =  Ki*exp(VF_over_RT)-Ko;
+a2 =  exp(VF_over_RT)-1;
+IKv14_K = PKv14*OKv14*VFsq_over_RT*(a1/a2);
+a1 =  Nai*exp(VF_over_RT)-Nao;
+IKv14_Na = 0.02*PKv14*OKv14*VFsq_over_RT*(a1/a2);
+IKv14 = IKv14_K + IKv14_Na;
+Ito1 = IKv43 + IKv14;
+
+K1_inf = 1/(0.94+exp(1.76/RT_over_F*(V-EK)));
+IK1 = GK1*Ko/(Ko+KmK1)*K1_inf*(V-EK);
+
+INab = GNab*(V-ENa);
+
+KpV = 1/(1+exp((7.488-V)/5.98));
+IKp = GKp*KpV*(V-EK);				
+      
+sigma = (exp(Nao/67.3)-1)/7;
+a1 = 1+0.1245*exp(-0.1*VF_over_RT);
+a2 = 0.0365*sigma*exp(-VF_over_RT);
+fNaK = 1/(a1+a2);
+a1 = Ko/(Ko+KmKo);
+a2 = 1+(15/Nai)**3; # modified pump
+
+
+INaK = INaKmax*fNaK*(a1/a2);
+
+
+a1 = exp(eta*VF_over_RT)*Nai**3*Cao;
+a2 = exp((eta-1)*VF_over_RT)*Nao**3*Cai;
+a3 = 1+ksat*exp((eta-1)*VF_over_RT);
+a4 = KmCa+Cao;
+a5 = 5000/(KmNa**3+Nao**3);
+INaCa = kNaCa*a5*(a1-a2)/(a4*a3);
+
+ICab = GCab*(V-ECa);
+
+IpCa = IpCamax*Cai/(KmpCa+Cai);
+
+
+C1H_to_C2H = T_Const_HERG*A0_HERG*exp(B0_HERG*V);
+C2H_to_C1H = T_Const_HERG*A1_HERG*exp(B1_HERG*V);
+C3H_to_OH =  T_Const_HERG*A2_HERG*exp(B2_HERG*V);
+OH_to_C3H =  T_Const_HERG*A3_HERG*exp(B3_HERG*V);
+OH_to_IH =   T_Const_HERG*A4_HERG*exp(B4_HERG*V);
+IH_to_OH =   T_Const_HERG*A5_HERG*exp(B5_HERG*V);
+C3H_to_IH =  T_Const_HERG*A6_HERG*exp(B6_HERG*V);
+IH_to_C3H =  (OH_to_C3H*IH_to_OH*C3H_to_IH)/(C3H_to_OH*OH_to_IH);
+dC1Herg = C2H_to_C1H * C2Herg - C1H_to_C2H * C1Herg;
+a1 = C1H_to_C2H * C1Herg + C3H_to_C2H * C3Herg;
+a2 = (C2H_to_C1H + C2H_to_C3H) * C2Herg;
+dC2Herg = a1-a2;
+a1 = C2H_to_C3H*C2Herg + OH_to_C3H*OHerg + IH_to_C3H*IHerg;
+a2 = (C3H_to_IH + C3H_to_OH + C3H_to_C2H) * C3Herg;
+dC3Herg = a1-a2;
+a1 = C3H_to_OH * C3Herg + IH_to_OH * IHerg;
+a2 = (OH_to_C3H + OH_to_IH) * OHerg;
+dOHerg = a1-a2;
+a1 = C3H_to_IH * C3Herg + OH_to_IH * OHerg;
+a2 = (IH_to_C3H + IH_to_OH) * IHerg;
+dIHerg = a1-a2;
+
+xKs_inf = 1/(1+exp(-(V-24.7)/13.6));
+a1 = 7.19e-5*(V-10)/(1-exp(-0.148*(V-10)));
+a2 = 1.31e-4*(V-10)/(exp(0.0687*(V-10))-1);
+tau_xKs = 1/(a1+a2);
+dxKs = (xKs_inf-xKs)/tau_xKs;
+	
+fb = (Cai/Kfb)**Nfb;
+rb = (CaSR/Krb)**Nrb;
+Jup = (vmaxf*fb - vmaxr*rb)/(1 + fb + rb);
+ 
+dLTRPNCa = kltrpn_plus*Cai*(1 - LTRPNCa) - kltrpn_minus * LTRPNCa;
+dHTRPNCa = khtrpn_plus*Cai*(1 - HTRPNCa) - khtrpn_minus * HTRPNCa;
+Jtrpn = LTRPNtot*dLTRPNCa+HTRPNtot*dHTRPNCa;
+
+beta_i = 1/(1+CMDNtot*KmCMDN/(Cai+KmCMDN)**2+EGTAtot*KmEGTA/(Cai+KmEGTA)**2);
+beta_SR = 1/(1+CSQNtot*KmCSQN/(CaSR+KmCSQN)**2);
+
+a1 = Csa/(Vmyo*Faraday*1000);
+dNai = -( INal + INa+INab+3*(INaCa+INaK)+ IKv14_Na)*a1;
+
+a3 = IKr+IKs+IK1+IKp;
+dKi = -( a3-2*INaK+Ito1 + ist)*a1;
+
+a3 = ICab-2*INaCa+IpCa;
+dCai = beta_i*(Jss2b*VSS/Vmyo-Jup-Jtrpn - a3*0.5*a1);
+
+dCaSR = beta_SR*(Jup*Vmyo/VSR - JRyR*VSS/VSR);
+
+
+a1 = INal+ INa+ICaL+IKr+IKs;
+a2 = IK1+IKp+INaCa+INaK+Ito1+Ito2;
+a3 = IpCa+ICab+INab;
+Itot = a1+a2+a3+ist;
+dV = -Itot;
+
+alpha_act43 = alphaa0Kv43*exp(aaKv43*V);
+beta_act43  = betaa0Kv43*exp(-baKv43*V);
+
+alpha_inact43 = alphai0Kv43*exp(-aiKv43*V);
+beta_inact43  = betai0Kv43*exp(biKv43*V);
+alpha_act43_Ca = k_alphaoi*Cai;
+beta_act43_Ca = k_betaoi*exp(-betaoi*V);
+
+
+C0Kv43_to_C1Kv43 = 4*alpha_act43;
+C1Kv43_to_C2Kv43 = 3*alpha_act43;
+C2Kv43_to_C3Kv43 = 2*alpha_act43;
+C3Kv43_to_OKv43  =   alpha_act43;
+
+CI0Kv43_to_CI1Kv43 = 4*b1Kv43*alpha_act43;
+CI1Kv43_to_CI2Kv43 = 3*b2Kv43*alpha_act43/b1Kv43;
+CI2Kv43_to_CI3Kv43 = 2*b3Kv43*alpha_act43/b2Kv43;
+CI3Kv43_to_OIKv43  =   b4Kv43*alpha_act43/b3Kv43;
+
+C1Kv43_to_C0Kv43 =   beta_act43;
+C2Kv43_to_C1Kv43 = 2*beta_act43;
+C3Kv43_to_C2Kv43 = 3*beta_act43;
+OKv43_to_C3Kv43  = 4*beta_act43;
+
+CI1Kv43_to_CI0Kv43 =          beta_act43/f1Kv43;
+CI2Kv43_to_CI1Kv43 = 2*f1Kv43*beta_act43/f2Kv43;
+CI3Kv43_to_CI2Kv43 = 3*f2Kv43*beta_act43/f3Kv43;
+OIKv43_to_CI3Kv43  = 4*f3Kv43*beta_act43/f4Kv43;
+
+C0Kv43_to_CI0Kv43 = beta_inact43;
+C1Kv43_to_CI1Kv43 = f1Kv43*beta_inact43;
+C2Kv43_to_CI2Kv43 = f2Kv43*beta_inact43;
+C3Kv43_to_CI3Kv43 = f3Kv43*beta_inact43;
+OKv43_to_OIKv43   = f4Kv43*beta_inact43;
+
+OKv43_to_OIKv43Ca   = alpha_act43_Ca;
+OIKv43Ca_to_OKv43   = beta_act43_Ca;
+
+CI0Kv43_to_C0Kv43 = alpha_inact43;
+CI1Kv43_to_C1Kv43 = alpha_inact43/b1Kv43;
+CI2Kv43_to_C2Kv43 = alpha_inact43/b2Kv43;
+CI3Kv43_to_C3Kv43 = alpha_inact43/b3Kv43;
+OIKv43_to_OKv43   = alpha_inact43/b4Kv43;
+
+a1 = (C0Kv43_to_C1Kv43+C0Kv43_to_CI0Kv43)*C0Kv43;
+a2 = C1Kv43_to_C0Kv43*C1Kv43 + CI0Kv43_to_C0Kv43*CI0Kv43;
+dC0Kv43 = a2 - a1;
+
+a1 = (C1Kv43_to_C2Kv43+C1Kv43_to_C0Kv43+C1Kv43_to_CI1Kv43)*C1Kv43;
+a2 = C2Kv43_to_C1Kv43*C2Kv43 + CI1Kv43_to_C1Kv43*CI1Kv43 + C0Kv43_to_C1Kv43*C0Kv43;
+dC1Kv43 = a2 - a1;
+
+a1 = (C2Kv43_to_C3Kv43+C2Kv43_to_C1Kv43+C2Kv43_to_CI2Kv43)*C2Kv43;
+a2 = C3Kv43_to_C2Kv43*C3Kv43 + CI2Kv43_to_C2Kv43*CI2Kv43 + C1Kv43_to_C2Kv43*C1Kv43;
+dC2Kv43 = a2 - a1;
+
+a1 = (C3Kv43_to_OKv43+C3Kv43_to_C2Kv43+C3Kv43_to_CI3Kv43)*C3Kv43;
+a2 = OKv43_to_C3Kv43*OKv43 + CI3Kv43_to_C3Kv43*CI3Kv43 + C2Kv43_to_C3Kv43*C2Kv43;
+dC3Kv43 = a2 - a1;
+
+a1 = (OKv43_to_C3Kv43+OKv43_to_OIKv43+ OKv43_to_OIKv43Ca )*OKv43;
+a2 = C3Kv43_to_OKv43*C3Kv43 + OIKv43_to_OKv43*OIKv43 + OIKv43Ca_to_OKv43*OIKv43Ca;
+dOKv43 = a2 - a1;
+
+a1 = (CI0Kv43_to_C0Kv43+CI0Kv43_to_CI1Kv43)*CI0Kv43;
+a2 = C0Kv43_to_CI0Kv43*C0Kv43 + CI1Kv43_to_CI0Kv43*CI1Kv43;
+dCI0Kv43 = a2 - a1;
+
+a1 = (CI1Kv43_to_CI2Kv43+CI1Kv43_to_C1Kv43+CI1Kv43_to_CI0Kv43)*CI1Kv43;
+a2 = CI2Kv43_to_CI1Kv43*CI2Kv43 + C1Kv43_to_CI1Kv43*C1Kv43 + CI0Kv43_to_CI1Kv43*CI0Kv43;
+dCI1Kv43 = a2 - a1;
+
+a1 = (CI2Kv43_to_CI3Kv43+CI2Kv43_to_C2Kv43+CI2Kv43_to_CI1Kv43)*CI2Kv43;
+a2 = CI3Kv43_to_CI2Kv43*CI3Kv43 + C2Kv43_to_CI2Kv43*C2Kv43 + CI1Kv43_to_CI2Kv43*CI1Kv43;
+dCI2Kv43 = a2 - a1;
+
+a1 = (CI3Kv43_to_OIKv43+CI3Kv43_to_C3Kv43+CI3Kv43_to_CI2Kv43)*CI3Kv43;
+a2 = OIKv43_to_CI3Kv43*OIKv43 + C3Kv43_to_CI3Kv43*C3Kv43 + CI2Kv43_to_CI3Kv43*CI2Kv43;
+dCI3Kv43 = a2 - a1;
+
+a1 = (OIKv43_to_OKv43+OIKv43_to_CI3Kv43)*OIKv43;
+a2 = OKv43_to_OIKv43*OKv43 + CI3Kv43_to_OIKv43*CI3Kv43;
+dOIKv43 = a2 - a1;
+
+
+
+a1 = (OIKv43Ca_to_OKv43)*OIKv43Ca;
+a2 = OKv43_to_OIKv43Ca*OKv43;
+dOIKv43Ca = a2-a1 ;
+
+alpha_act14 = alphaa0Kv14*exp(aaKv14*V);
+beta_act14  = betaa0Kv14*exp(-baKv14*V);
+alpha_inact14 = alphai0Kv14;
+beta_inact14  = betai0Kv14;
+
+C0Kv14_to_C1Kv14 = 4*alpha_act14;
+C1Kv14_to_C2Kv14 = 3*alpha_act14;
+C2Kv14_to_C3Kv14 = 2*alpha_act14;
+C3Kv14_to_OKv14  =   alpha_act14;
+
+CI0Kv14_to_CI1Kv14 = 4*b1Kv14*alpha_act14;
+CI1Kv14_to_CI2Kv14 = 3*b2Kv14*alpha_act14/b1Kv14;
+CI2Kv14_to_CI3Kv14 = 2*b3Kv14*alpha_act14/b2Kv14;
+CI3Kv14_to_OIKv14  =   b4Kv14*alpha_act14/b3Kv14;
+
+C1Kv14_to_C0Kv14 =   beta_act14;
+C2Kv14_to_C1Kv14 = 2*beta_act14;
+C3Kv14_to_C2Kv14 = 3*beta_act14;
+OKv14_to_C3Kv14  = 4*beta_act14;
+
+CI1Kv14_to_CI0Kv14 =          beta_act14/f1Kv14;
+CI2Kv14_to_CI1Kv14 = 2*f1Kv14*beta_act14/f2Kv14;
+CI3Kv14_to_CI2Kv14 = 3*f2Kv14*beta_act14/f3Kv14;
+OIKv14_to_CI3Kv14  = 4*f3Kv14*beta_act14/f4Kv14;
+
+C0Kv14_to_CI0Kv14 = beta_inact14;
+C1Kv14_to_CI1Kv14 = f1Kv14*beta_inact14;
+C2Kv14_to_CI2Kv14 = f2Kv14*beta_inact14;
+C3Kv14_to_CI3Kv14 = f3Kv14*beta_inact14;
+OKv14_to_OIKv14   = f4Kv14*beta_inact14;
+
+CI0Kv14_to_C0Kv14 = alpha_inact14;
+CI1Kv14_to_C1Kv14 = alpha_inact14/b1Kv14;
+CI2Kv14_to_C2Kv14 = alpha_inact14/b2Kv14;
+CI3Kv14_to_C3Kv14 = alpha_inact14/b3Kv14;
+OIKv14_to_OKv14   = alpha_inact14/b4Kv14;
+
+a1 = (C0Kv14_to_C1Kv14+C0Kv14_to_CI0Kv14)*C0Kv14;
+a2 = C1Kv14_to_C0Kv14*C1Kv14 + CI0Kv14_to_C0Kv14*CI0Kv14;
+dC0Kv14 = a2 - a1;
+
+a1 = (C1Kv14_to_C2Kv14+C1Kv14_to_C0Kv14+C1Kv14_to_CI1Kv14)*C1Kv14;
+a2 = C2Kv14_to_C1Kv14*C2Kv14 + CI1Kv14_to_C1Kv14*CI1Kv14 + C0Kv14_to_C1Kv14*C0Kv14;
+dC1Kv14 = a2 - a1;
+
+a1 = (C2Kv14_to_C3Kv14+C2Kv14_to_C1Kv14+C2Kv14_to_CI2Kv14)*C2Kv14;
+a2 = C3Kv14_to_C2Kv14*C3Kv14 + CI2Kv14_to_C2Kv14*CI2Kv14 + C1Kv14_to_C2Kv14*C1Kv14;
+dC2Kv14 = a2 - a1;
+
+a1 = (C3Kv14_to_OKv14+C3Kv14_to_C2Kv14+C3Kv14_to_CI3Kv14)*C3Kv14;
+a2 = OKv14_to_C3Kv14*OKv14 + CI3Kv14_to_C3Kv14*CI3Kv14 + C2Kv14_to_C3Kv14*C2Kv14;
+dC3Kv14 = a2 - a1;
+
+a1 = (OKv14_to_C3Kv14+OKv14_to_OIKv14)*OKv14;
+a2 = C3Kv14_to_OKv14*C3Kv14 + OIKv14_to_OKv14*OIKv14;
+dOKv14 = a2 - a1;
+
+a1 = (CI0Kv14_to_C0Kv14+CI0Kv14_to_CI1Kv14)*CI0Kv14;
+a2 = C0Kv14_to_CI0Kv14*C0Kv14 + CI1Kv14_to_CI0Kv14*CI1Kv14;
+dCI0Kv14 = a2 - a1;
+
+a1 = (CI1Kv14_to_CI2Kv14+CI1Kv14_to_C1Kv14+CI1Kv14_to_CI0Kv14)*CI1Kv14;
+a2 = CI2Kv14_to_CI1Kv14*CI2Kv14 + C1Kv14_to_CI1Kv14*C1Kv14 + CI0Kv14_to_CI1Kv14*CI0Kv14;
+dCI1Kv14 = a2 - a1;
+
+a1 = (CI2Kv14_to_CI3Kv14+CI2Kv14_to_C2Kv14+CI2Kv14_to_CI1Kv14)*CI2Kv14;
+a2 = CI3Kv14_to_CI2Kv14*CI3Kv14 + C2Kv14_to_CI2Kv14*C2Kv14 + CI1Kv14_to_CI2Kv14*CI1Kv14;
+dCI2Kv14 = a2 - a1;
+
+a1 = (CI3Kv14_to_OIKv14+CI3Kv14_to_C3Kv14+CI3Kv14_to_CI2Kv14)*CI3Kv14;
+a2 = OIKv14_to_CI3Kv14*OIKv14 + C3Kv14_to_CI3Kv14*C3Kv14 + CI2Kv14_to_CI3Kv14*CI2Kv14;
+dCI3Kv14 = a2 - a1;
+
+a1 = (OIKv14_to_OKv14+OIKv14_to_CI3Kv14)*OIKv14;
+a2 = OKv14_to_OIKv14*OKv14 + CI3Kv14_to_OIKv14*CI3Kv14;
+dOIKv14 = a2 - a1;
+
+dy[0] = dV;
+dy[41] = dV;
+dy[42] = dP_UO;#dmNa;
+dy[43] = dP_UIF;#dhNa;
+dy[44] = dP_UC2;#djNa;
+dy[45] = dNai;
+dy[46] = dKi;
+dy[47] = dCai;
+dy[48] = dCaSR;
+dy[49] = dLTRPNCa;
+dy[50] = dHTRPNCa;
+dy[51] = dxKs;
+dy[52] = dC0Kv43;
+dy[53] = dC1Kv43;
+dy[54] = dC2Kv43;
+dy[55] = dC3Kv43;
+dy[56] = dOKv43;
+dy[57] = dCI0Kv43;
+dy[58] = dCI1Kv43;
+dy[59] = dCI2Kv43;
+dy[60] = dCI3Kv43;
+dy[61] = dOIKv43;
+dy[62] = dC0Kv14;
+dy[63] = dC1Kv14;
+dy[64] = dC2Kv14;
+dy[65] = dC3Kv14;
+dy[66] = dOKv14;
+dy[67] = dCI0Kv14;
+dy[68] = dCI1Kv14;
+dy[69] = dCI2Kv14;
+dy[70] = dCI3Kv14;
+dy[71] = dOIKv14;
+dy[72] = dC1Herg;
+dy[73] = dC2Herg;
+dy[74] = dC3Herg;
+dy[75] = dOHerg;
+dy[76] = dIHerg;
+dy[77] = dP_UC3;
+dy[78] = dOIKv43Ca;
+dy[79] = dP_UIM1;
+dy[80] = dP_UC1;
+dy[81] = dP_IC3;
+dy[82] = dP_IC2;
+dy[83] = dP_UIM2;
+dy[84] = dP_LC3;
+dy[85] = dP_LC2;
+dy[86] = dP_LC1;
+dy[87] = dP_LO;
+
+
+
