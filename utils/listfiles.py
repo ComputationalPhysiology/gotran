@@ -3,15 +3,15 @@
 
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2010-11-26 -- 2012-02-23"
+__date__ = "2010-11-26 -- 2012-09-12"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 
-from gotran2.common.commands import get_output
+from instant import get_status_output
 
-def list_files():
+def list_python_files():
     """
     Return a list of all included src files
     """
-    return [f for f in get_output('hg status -c -m -n').split('\n') if "src" in f and ".py" in f and "~" not in f]
-
+    return [f for f in get_status_output('hg status -c -m -n')[1].split('\n') \
+            if "site-packages" in f and ".py" == f[-3:] and "~" not in f]

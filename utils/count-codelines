@@ -3,10 +3,10 @@
 
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2010-11-04 -- 2012-02-23"
+__date__ = "2010-11-04 -- 2012-09-12"
 __license__  = "GNU LGPL Version 3.0 or later"
 
-from listfiles import list_files
+from listfiles import list_python_files
 
 code_lines = 0
 blank_lines = 0
@@ -16,7 +16,7 @@ meta_data = 0
 
 in_docstring= False
 
-for f in list_files():
+for f in list_python_files():
     for line in open(f, "r").readlines():
         line = line.strip()
         if in_docstring:

@@ -3,20 +3,17 @@
 
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2010-11-08 -- 2011-02-07"
+__date__ = "2010-11-08 -- 2012-09-12"
 __license__  = "GNU LGPL Version 3.0 or later"
 
-
-from gotran2.common.commands import get_output
+from listfiles import list_python_files
 
 max_line_length = 79
 max_display_of_line = 50
 
-python_files = [f for f in get_output('bzr ls -VR').split('\n') if "src" in f and ".py" in f]
-
-
 clean = True
-for f in python_files:
+
+for f in list_python_files():
     too_long = {}
     for num, line in enumerate(open(f, "r").readlines()):
         if len(line) > max_line_length + 1:
