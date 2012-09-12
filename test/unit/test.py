@@ -1,7 +1,7 @@
 """Run all unit tests."""
 
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2010-03-19 -- 2012-05-08"
+__date__ = "2010-03-19 -- 2012-09-12"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3.0"
 
@@ -11,10 +11,11 @@ import os
 import re
 
 # Gotran imports
-from gotran2.common.commands import get_output
+from instant import get_status_output
 
 # Tests to run
-tests = dict(ode = ["panfilov"])
+tests = dict(ode = ["panfilov", "winslow"],
+             cellml = ["test"])
 
 # Run tests
 failed = []
@@ -24,7 +25,7 @@ for test_dir, tests in tests.items():
     print "----------------------------------------------------------------------"
 
     for test in tests:
-        output = get_output("cd {0} && python {1}.py".format(test_dir, test))
+        result, output = get_status_output("cd {0} && python {1}.py".format(test_dir, test))
         if "OK" in output:
             num_tests = int(re.search("Ran (\d+) test", output).groups()[0])
             print "{0}: OK ({1} tests)".format(test, num_tests)

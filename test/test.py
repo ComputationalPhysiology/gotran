@@ -1,7 +1,7 @@
 "Run all tests"
 
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2012-05-08"
+__date__ = "2012-05-07 -- 2012-09-12"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3.0"
 
@@ -10,7 +10,7 @@ import sys
 import os
 
 # Gotran imports
-from gotran2.common.commands import get_status_output
+from instant import get_status_output
 
 pwd = os.path.dirname(os.path.abspath(__file__))
 
