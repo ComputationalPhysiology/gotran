@@ -50,7 +50,7 @@ class ODEObject(object):
         elif isinstance(init, scalars):
             init = ScalarParam(init)
         else:
-            init = ArrayParam(init)
+            init = ArrayParam(np.fromiter(init, dtype=np.float_))
             
         # Create a symname based on the name of the ODE
         if ode_name:

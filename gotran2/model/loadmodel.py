@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-05-07 -- 2012-09-12"
+__date__ = "2012-05-07 -- 2012-09-20"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["load_ode", "exec_ode"]
@@ -146,7 +146,8 @@ def load_ode(filename, name=None, **kwargs):
         warning("ODE mode '{0}' is not complete.".format(ode.name))
     
     info("Loaded ODE model '{0}' with:".format(ode.name))
-    for what in ["states", "parameters", "variables"]:
+    for what in ["states", "field_states", "parameters", "field_parameters",
+                 "variables", "monitored_intermediates"]:
         num = getattr(ode, "num_{0}".format(what))
         if num:
             info("{0}: {1}".format(("Num "+what).rjust(15), num))

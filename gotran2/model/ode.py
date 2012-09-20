@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2012 " + __author__
-__date__ = "2012-02-22 -- 2012-09-12"
+__date__ = "2012-02-22 -- 2012-09-20"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["ODE"]
@@ -41,6 +41,8 @@ class ODE(object):
         # Initialize all variables
         self._all_objects = OrderedDict()
         self._intermediates = OrderedDict()
+        self._monitored_intermediates = []
+        
         self.clear()
 
     def add_state(self, name, init, comment=""):
@@ -183,7 +185,21 @@ class ODE(object):
         
         # Check values and create sympy Symbols
         self._add_entities(comment, kwargs, "variable")
-    
+
+    def add_intermediates(self, *args):
+        """
+        Add intermediate variables to be monitored
+
+        """
+
+        for arg in args:
+            check_arg(arg, (str, ModelSymbol))
+            if str(arg) not in self._intermediates:
+                error("Intermediate '{0}' is not a registered intermediate "\
+                      "in this ODE.")
+            # Register the monitored intermediate
+            self._monitored_intermediates.append(str(arg))
+            
     def _add_entities(self, comment, kwargs, entity):
         """
         Help function for determine if each entity in the kwargs is unique
@@ -369,6 +385,14 @@ class ODE(object):
             if isinstance(state, State) and state.is_field:
                 yield state
 
+    def iter_field_parameters(self):
+        """
+        Return an iterator over registered field parameters
+        """
+        for param in self._all_objects.values():
+            if isinstance(param, Parameter) and param.is_field:
+                yield param
+
     def iter_variables(self):
         """
         Return an iterator over registered variables
@@ -384,6 +408,13 @@ class ODE(object):
         for parameter in self._all_objects.values():
             if isinstance(parameter, Parameter):
                 yield parameter
+                
+    def iter_monitored_intermediates(self):
+        """
+        Return an iterator over registered monitored intermediates
+        """
+        for intermediate in self._monitored_intermediates:
+            yield intermediate
 
     def has_state(self, state):
         """
@@ -412,6 +443,20 @@ class ODE(object):
             return False
         
         return any(state == st for st in self.iter_field_states())
+        
+    def has_field_parameter(self, param):
+        """
+        Return True if param is a registered field state
+        """
+        check_arg(param, (str, ModelSymbol, ODEObject))
+        if isinstance(param, (str, ModelSymbol)):
+            param = self.get_object(param)
+            return isinstance(param, Parameter) and param.is_field 
+        
+        if not isinstance(param, Parameter):
+            return False
+        
+        return any(param == st for st in self.iter_field_params())
         
     def has_variable(self, variable):
         """
@@ -458,6 +503,10 @@ class ODE(object):
         return len([s for s in self.iter_parameters()])
         
     @property
+    def num_field_parameters(self):
+        return len([s for s in self.iter_field_parameters()])
+        
+    @property
     def num_variables(self):
         return len([s for s in self.iter_variables()])
 
@@ -468,6 +517,13 @@ class ODE(object):
     @property
     def num_algebraic_expr(self):
         return len(self._algebraic_expr)
+
+    @property
+    def num_monitored_intermediates(self):
+        """
+        Return the number of monitored intermediates
+        """
+        return len(self._monitored_intermediates)
 
     @property
     def is_complete(self):

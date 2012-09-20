@@ -1,9 +1,16 @@
+__author__ = "Johan Hake (hake.dev@gmail.com)"
+__copyright__ = "Copyright (C) 2010 " + __author__
+__date__ = "2012-08-22 -- 2012-09-20"
+__license__  = "GNU LGPL Version 3.0 or later"
+
+# System imports
 from collections import deque
 
+# Model parameters imports
 from modelparameters.parameters import *
 
+# Gotran imports
 from gotran2.common import check_arg
-
 from oderepresentation import ODERepresentation
 
 class CodeGenerator(object):
@@ -230,7 +237,8 @@ class CodeGenerator(object):
         
         return "\n".join(self.indent_and_split_lines(function))
 
-    def indent_and_split_lines(self, code_lines, indent=0, ret_lines=None):
+    def indent_and_split_lines(self, code_lines, indent=0, ret_lines=None, \
+                               no_line_ending=False):
         """
         Combine a set of lines into a single string
         """
@@ -259,7 +267,7 @@ class CodeGenerator(object):
                                      self.closure_end)
                 continue
             
-            line_ending = self.line_ending
+            line_ending = "" if no_line_ending else self.line_ending
             # Do not use line endings the line before and after a closure
             if line_ind + 1 < len(code_lines):
                 if isinstance(code_lines[line_ind+1], list):
@@ -383,7 +391,7 @@ class CCodeGenerator(CodeGenerator):
         prototype.append(body_lines)
         return prototype
     
-    def dy_body(self, parameters_in_signature=False):
+    def dy_body(self, parameters_in_signature=False, result_name="dy"):
         """
         Generate body lines of code for evaluating state derivatives
         """
@@ -436,27 +444,30 @@ class CCodeGenerator(CodeGenerator):
         for ind, (state, (derivative, expr)) in enumerate(\
             zip(ode.iter_states(), self.oderepr.iter_derivative_expr())):
             assert(state.sym == derivative[0])
-            body_lines.append(ccode(expr, "dy[{0}]".format(ind)))
+            body_lines.append(ccode(expr, "{0}[{1}]".format(result_name, ind)))
 
+        body_lines.append("")
+        
         # Return the body lines
         return body_lines
         
-    def dy_code(self, parameters_in_signature=False):
+    def dy_code(self, parameters_in_signature=False, result_name="dy"):
         """
         Generate code for evaluating state derivatives
         """
 
-        body_lines = self.dy_body(parameters_in_signature)
+        body_lines = self.dy_body(parameters_in_signature, result_name)
 
         # Add function prototype
         parameters = "" if not parameters_in_signature or \
                      self.oderepr.optimization.parameter_numerals \
                      else "double* parameters, "
-        args = "double t, const double* states, {0}double* dy".format(\
-            parameters)
+        args = "double t, const double* states, {0}double* {1}".format(\
+            parameters, result_name)
         dy_function = self.wrap_body_with_function_prototype(\
             body_lines, "dy_{0}".format(self.oderepr.name), args, \
             "", "Calculate right hand side of {0}".format(self.oderepr.name))
         
         return "\n".join(self.indent_and_split_lines(dy_function))
+
 
