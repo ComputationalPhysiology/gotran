@@ -57,10 +57,10 @@ class CodeGenerator(object):
         # Append body to prototyp
         prototype.append(body)
         return prototype
-        
-    def dy_code(self):
+
+    def dy_body(self):
         """
-        Generate code for evaluating state derivatives
+        Generate body lines of code for evaluating state derivatives
         """
 
         from modelparameters.codegeneration import pythoncode
@@ -108,6 +108,16 @@ class CodeGenerator(object):
             zip(ode.iter_states(), self.oderepr.iter_derivative_expr())):
             assert(state.sym == derivative[0])
             body_lines.append(pythoncode(expr, "dy[{0}]".format(ind)))
+
+        # Return body lines 
+        return body_lines
+        
+    def dy_code(self):
+        """
+        Generate code for evaluating state derivatives
+        """
+
+        body_lines = self.dy_body()
         
         body_lines.append("")
         body_lines.append("# Return dy")
@@ -116,6 +126,7 @@ class CodeGenerator(object):
         args = "t, states"
         if not self.oderepr.optimization.parameter_numerals:
             args += ", parameters"
+        
         dy_function = self.wrap_body_with_function_prototype(\
             body_lines, "dy_{0}".format(self.oderepr.name), args, \
             "dy", "Calculate right hand side")
@@ -372,9 +383,9 @@ class CCodeGenerator(CodeGenerator):
         prototype.append(body_lines)
         return prototype
     
-    def dy_code(self):
+    def dy_body(self):
         """
-        Generate code for evaluating state derivatives
+        Generate body lines of code for evaluating state derivatives
         """
 
         from modelparameters.codegeneration import ccode
@@ -425,7 +436,17 @@ class CCodeGenerator(CodeGenerator):
             zip(ode.iter_states(), self.oderepr.iter_derivative_expr())):
             assert(state.sym == derivative[0])
             body_lines.append(ccode(expr, "dy[{0}]".format(ind)))
+
+        # Return the body lines
+        return body_lines
         
+    def dy_code(self):
+        """
+        Generate code for evaluating state derivatives
+        """
+
+        body_lines = self.dy_body()
+
         # Add function prototype
         parameters = "" if self.oderepr.optimization.parameter_numerals \
                      else "double* parameters, "
