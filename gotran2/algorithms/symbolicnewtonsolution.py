@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2012 " + __author__
-__date__ = "2012-06-28 -- 2012-09-12"
+__date__ = "2012-06-28 -- 2012-09-20"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["SymbolicNewtonSolution"]
@@ -63,15 +63,26 @@ def _LU_solve(AA, rhs):
     A = AA[:,:]
     p = []
 
+    nnz = 0
+    for i in range(n):
+        for j in range(n):
+            nnz += not _iszero(A[i,j])
+
+    print "Num non zeros in jacobian:", nnz
+
     # A map between old symbols and new. The values in this dict corresponds to
     # where an old symbol is used. If the length of the value is 1 it is only
     # used once and once the value is used it can be freed.
     old_new = OrderedDict()
     new_old = OrderedDict()
     new_count = 0
+    global zero_operations
+    zero_operations = 0
     
     def update_entry(new_count, i, j, k):
+        global zero_operations
         if _iszero(A[i,k]*A[k,j]):
+            zero_operations += 1
             return new_count
 
         # Create new symbol and store the representation
@@ -115,26 +126,42 @@ def _LU_solve(AA, rhs):
             p.append([pivot,j])
         scale = 1 / A[j,j]
         for i in range(j+1,n):
-            if not _iszero(A[i,j]):
-                # Create new symbol and store the representation
-                new_sym = sp.Symbol("j_{0}_{1}:{2}".format(i, j, new_count))
-                new_old[new_sym] = A[i,j] * scale
-                for old_sym in [A[i,j], A[j,j]]:
-                    storage = old_new.get(old_sym)
-                    if storage is None:
-                        storage = set()
-                        old_new[old_sym] = storage
-                    storage.add(new_sym)
+            if _iszero(A[i,j]):
+                zero_operations += 1
+                continue
+
+            # Create new symbol and store the representation
+            new_sym = sp.Symbol("j_{0}_{1}:{2}".format(i, j, new_count))
+            new_old[new_sym] = A[i,j] * scale
+            for old_sym in [A[i,j], A[j,j]]:
+                storage = old_new.get(old_sym)
+                if storage is None:
+                    storage = set()
+                    old_new[old_sym] = storage
+                storage.add(new_sym)
                     
-                # Change entry to the new symbol 
-                A[i,j] = new_sym
-                new_count += 1
+            # Change entry to the new symbol 
+            A[i,j] = new_sym
+            new_count += 1
+
+    nnz = 0
+    for i in range(n):
+        for j in range(n):
+            nnz += not _iszero(A[i,j])
+
+    print "Num non zeros in factorized jacobian:", nnz
+    print "Num non-zero operations while factorizing matrix:", new_count
+    print "Num zero operations while factorizing matrix:", zero_operations
+    factorizing_nnz_operations = new_count 
+    zero_operations = 0
 
     n = AA.rows
     b = rhs.permuteFwd(p)
     
     def update_entry(new_count, i, j):
+        global zero_operations
         if _iszero(b[j,0]*A[i,j]):
+            zero_operations += 1
             return new_count
 
         # Create new symbol and store the representation
@@ -166,6 +193,9 @@ def _LU_solve(AA, rhs):
             #b.row(i, lambda x,k: x - b[j,k]*A[i,j])
         b.row(i, lambda x,k: x / A[i,i])
     
+    print "Num zero operations while forward/backward substituting matrix:", zero_operations
+    print "Num non-zero operations while factorizing matrix:", new_count - factorizing_nnz_operations 
+
     return b, new_old, old_new
 
     return A, p, old_new, new_old
