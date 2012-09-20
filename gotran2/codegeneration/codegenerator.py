@@ -383,7 +383,7 @@ class CCodeGenerator(CodeGenerator):
         prototype.append(body_lines)
         return prototype
     
-    def dy_body(self):
+    def dy_body(self, parameters_in_signature=False):
         """
         Generate body lines of code for evaluating state derivatives
         """
@@ -402,7 +402,8 @@ class CCodeGenerator(CodeGenerator):
                     state.name, i))
         
         # Add parameters code if not numerals
-        if not self.oderepr.optimization.parameter_numerals:
+        if parameters_in_signature and \
+               not self.oderepr.optimization.parameter_numerals:
             body_lines.append("")
             body_lines.append("// Assign parameters")
 
@@ -440,15 +441,16 @@ class CCodeGenerator(CodeGenerator):
         # Return the body lines
         return body_lines
         
-    def dy_code(self):
+    def dy_code(self, parameters_in_signature=False):
         """
         Generate code for evaluating state derivatives
         """
 
-        body_lines = self.dy_body()
+        body_lines = self.dy_body(parameters_in_signature)
 
         # Add function prototype
-        parameters = "" if self.oderepr.optimization.parameter_numerals \
+        parameters = "" if not parameters_in_signature or \
+                     self.oderepr.optimization.parameter_numerals \
                      else "double* parameters, "
         args = "double t, const double* states, {0}double* dy".format(\
             parameters)

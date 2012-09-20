@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2009-08-15 -- 2012-09-12"
+__date__ = "2009-08-15 -- 2012-09-20"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 import sys
@@ -117,11 +117,14 @@ def jit(oderepr):
     """
     JIT compile an ode 
     """
+
+    # FIXME: Very rudimentary implementation
+    # FIXME: Make more versatil
     check_arg(oderepr, ODERepresentation)
 
     gen = CCodeGenerator(oderepr)
 
-    code = gen.dy_code()
+    code = gen.dy_code(parameters_in_signature=True)
     
     # Compile module
     return compile_extension_module(code, oderepr.ode)
@@ -182,7 +185,7 @@ def configure_instant():
     instant_kwargs['include_dirs'] = [numpy.get_include()]
     instant_kwargs['system_headers'] = ["numpy/arrayobject.h", "math.h"]
     instant_kwargs['swigargs'] =['-O -c++']
-    instant_kwargs['cppargs'] = []
+    instant_kwargs['cppargs'] = ['-O2']
 
     return instant_kwargs
 
