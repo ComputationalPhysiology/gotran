@@ -76,8 +76,8 @@ namespace goss {{
 #endif
 """
 
-_no_intermediates_snippet = """      // No intermediates
-      throw std::runtime_error(\"No intermediates in \\'{0}\\'.\");"""
+_no_intermediates_snippet = """\n      // No intermediates
+      throw std::runtime_error(\"No intermediates in the \\'{0}\\' model.\");"""
 
 _class_form = dict(
   MODELNAME="NOT_IMPLEMENTED",
@@ -123,10 +123,11 @@ class GossCodeGenerator(CCodeGenerator):
                             self.oderepr.ode.num_monitored_intermediates
 
         self.class_form["intermediate_evaluation_code"] = \
-                                    _no_intermediates_snippet.format(oderepr.name)
+                _no_intermediates_snippet.format(oderepr.name.capitalize()) + \
+                "\n"
         self.class_form["intermediate_componentwise_evaluation_code"] = \
-                       _no_intermediates_snippet.format(oderepr.name) + \
-                       "      return 0.0;"
+                _no_intermediates_snippet.format(oderepr.name.capitalize()) + \
+                "\n      return 0.0;\n"
 
         self._constructor_body()
         self._variable_init_and_declarations()
@@ -274,8 +275,6 @@ class GossCodeGenerator(CCodeGenerator):
         
         body = self.dy_body(parameters_in_signature=False, \
                             result_name="values")
-
         code = "\n".join(self.indent_and_split_lines(body, indent=3))
-
         self.class_form["eval_code"] = code
         
