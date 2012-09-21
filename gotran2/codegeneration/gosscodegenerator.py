@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-09-20 -- 2012-09-20"
+__date__ = "2012-09-20 -- 2012-09-21"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 # Gotran imports
@@ -11,13 +11,13 @@ _class_template = """#ifndef {MODELNAME}_H_IS_INCLUDED
 
 #include <stdexcept>
 
-#include \"goss/ParameterizedODE\"
-#include \"goss/LinearizedODE\"
+#include \"goss/ParameterizedODE.h\"
+#include \"goss/LinearizedODE.h\"
 
 namespace goss {{
 
   // Implementation of gotran generated ODE
-  class {ModelName} : public Parameterized {linearized_inheritance}
+  class {ModelName} : public ParameterizedODE {linearized_inheritance}
   {{
   public:
 
@@ -77,7 +77,7 @@ namespace goss {{
 """
 
 _no_intermediates_snippet = """      // No intermediates
-      throw std::runtime_error(\"No intermediates in \\'{ModelName}\\'.\");"""
+      throw std::runtime_error(\"No intermediates in \\'{0}\\'.\");"""
 
 _class_form = dict(
   MODELNAME="NOT_IMPLEMENTED",
@@ -121,6 +121,12 @@ class GossCodeGenerator(CCodeGenerator):
                             self.oderepr.ode.num_field_parameters
         self.class_form["num_intermediates"] = \
                             self.oderepr.ode.num_monitored_intermediates
+
+        self.class_form["intermediate_evaluation_code"] = \
+                                    _no_intermediates_snippet.format(oderepr.name)
+        self.class_form["intermediate_componentwise_evaluation_code"] = \
+                       _no_intermediates_snippet.format(oderepr.name) + \
+                       "      return 0.0;"
 
         self._constructor_body()
         self._variable_init_and_declarations()
