@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-09-20 -- 2012-09-21"
+__date__ = "2012-09-20 -- 2012-10-08"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 # Gotran imports
@@ -112,8 +112,12 @@ class GossCodeGenerator(CCodeGenerator):
         super(GossCodeGenerator, self).__init__(oderepr)
         
         self.class_form = _class_form.copy()
-        self.class_form["MODELNAME"] = self.oderepr.name.upper()
-        self.class_form["ModelName"] = self.oderepr.name.capitalize()
+        name = self.oderepr.name
+        self.class_form["MODELNAME"] = name.upper()
+        self.class_form["ModelName"] = name if name[0].isupper()\
+                                       else name[0].upper() + \
+                                       (name[1:] if len(name) > 1 else "")
+            
         self.class_form["num_states"] = self.oderepr.ode.num_states
         self.class_form["num_parameters"] = self.oderepr.ode.num_parameters
         self.class_form["num_field_states"] = self.oderepr.ode.num_field_states

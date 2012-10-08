@@ -4,7 +4,7 @@ from modelparameters.parameterdict import *
 from modelparameters.sympytools import sp
 
 from gotran2.model.ode import ODE
-from gotran2.common import check_arg
+from gotran2.common import check_arg, check_kwarg
 
 def _default_params():
     return ParameterDict(
@@ -16,25 +16,23 @@ def _default_params():
         # Keep all intermediates
         keep_intermediates = True, 
 
-        # If True, logic for field states are created
-        field_states = False,
-
-        # If True, logic for field paramters are created
-        field_parameters = False,
-
-        # If True , code for altering variables are created
+        # If True, code for altering variables are created
+        # FIXME: Not used
         use_variables = False,
 
         # Find sub expressions of only parameters and create a dummy parameter
+        # FIXME: Not used
         parameter_contraction = False,
 
         # Exchange all parameters with their initial numerical values
         parameter_numerals = False,
 
         # Split terms with more than max_terms into several evaluations
+        # FIXME: Not used
         max_terms = ScalarParam(5, ge=2),
 
-        # Use sympy common sub expression simplifications
+        # Use sympy common sub expression simplifications,
+        # only when keep_intermediates is false
         use_cse = False,
         )
 
@@ -43,10 +41,27 @@ class ODERepresentation(object):
     Intermediate ODE representation where various optimizations
     can be performed.
     """
-    def __init__(self, ode, **optimization):
+    def __init__(self, ode, name="", **optimization):
+        """
+        Create an ODERepresentation
+
+        Arguments:
+        ----------
+        ode : ODE
+            The ode to be represented
+        name : str (optional)
+            An argument which determines the name of the ode representation,
+            making it possible to create different representations identified
+            with different names.
+        """
         check_arg(ode, ODE, 0)
-        
+        check_kwarg(name, "name", str)
+
         self.ode = ode
+
+        # Store the name
+        self._name = name if name else ode.name
+        
         self.optimization = _default_params()
         self.optimization.update(optimization)
         self._symbol_subs = None
@@ -85,7 +100,7 @@ class ODERepresentation(object):
 
     @property
     def name(self):
-        return self.ode.name
+        return self._name
 
     def subs(self, expr):
         if isinstance(expr, sp.Basic):

@@ -26,5 +26,5 @@ diff(e, -time_constant*(v_peak-v_rest)*(ga*E*(E-a)*(E-1) + E*g))
 if test:
     diff(g, 0.25*time_constant*eps*(-g - gs*e*(E-a-1)))
 else:
-    diff(g, 0.25*time_constant*eps*(-g - gs*e*(E-a-1)))
+    diff(g, time_constant*eps*(-g - gs*e*(E-a-1)))
     

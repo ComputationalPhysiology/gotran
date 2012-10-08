@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-05-07 -- 2012-09-20"
+__date__ = "2012-05-07 -- 2012-10-08"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 __all__ = ["load_ode", "exec_ode"]
@@ -85,7 +85,7 @@ def exec_ode(ode_str, name):
     for what in ["states", "parameters", "variables"]:
         num = getattr(ode, "num_{0}".format(what))
         if num:
-            info("{0}: {1}".format(("Num "+what).rjust(15), num))
+            info("{0}: {1}".format(("Num "+what).rjust(22), num))
 
     # Reset global variables
     _reset_globals()
@@ -150,7 +150,7 @@ def load_ode(filename, name=None, **kwargs):
                  "variables", "monitored_intermediates"]:
         num = getattr(ode, "num_{0}".format(what))
         if num:
-            info("{0}: {1}".format(("Num "+what).rjust(15), num))
+            info("{0}: {1}".format(("Num "+what).rjust(22), num))
 
     # Reset global variables
     _reset_globals()
