@@ -36,13 +36,14 @@ for keep, use_cse, numerals, use_names in \
 
     oderepr = ODERepresentation(ode, keep_intermediates=keep, \
                                 use_cse=use_cse, parameter_numerals=numerals, \
-                                use_names=use_names)
+                                use_parameter_names=use_names, \
+                                use_state_names=use_names)
 
     params = "{0}_{1}_{2}_{3}".format(\
         int(oderepr.optimization.keep_intermediates),
         int(oderepr.optimization.use_cse),           
         int(oderepr.optimization.parameter_numerals),
-        int(oderepr.optimization.use_names))
+        int(use_names))
     
     module = jit(oderepr)
     t0 = time.time()

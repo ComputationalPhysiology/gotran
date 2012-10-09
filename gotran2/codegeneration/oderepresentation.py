@@ -4,14 +4,18 @@ from modelparameters.parameterdict import *
 from modelparameters.sympytools import sp
 
 from gotran2.model.ode import ODE
-from gotran2.common import check_arg, check_kwarg
+from gotran2.common import check_arg, check_kwarg, info
+
+import sys
 
 def _default_params():
     return ParameterDict(
 
-        # Use state, parameters, and variable names in code (compared to
-        # array with indices)
-        use_names = True,
+        # Use state names in code (compared to array with indices)
+        use_state_names = True,
+
+        # Use parameter names in code (compared to array with indices)
+        use_parameter_names = True,
 
         # Keep all intermediates
         keep_intermediates = True, 
@@ -71,6 +75,8 @@ class ODERepresentation(object):
         if not self.optimization.keep_intermediates and \
                self.optimization.use_cse:
 
+            info("Calculating common sub expressions. May take some time...")
+            sys.stdout.flush()
             # If we use cse we extract the sub expressions here and cache
             # information
             self._cse_subs, self._cse_derivative_expr = \
@@ -91,7 +97,9 @@ class ODERepresentation(object):
             # Store usage count
             # FIXME: Use this for more sorting!
             self._cse_counts = cse_counts
-        
+
+            info(" done")
+
     def update_index(self, index):
         """
         Set index notation, specific for language syntax
@@ -119,13 +127,13 @@ class ODERepresentation(object):
             if self.optimization.parameter_numerals:
                 subs.update((param.sym, param.init) \
                             for param in self.ode.iter_parameters())
-            elif not self.optimization.use_names:
+            elif not self.optimization.use_parameter_names:
                 subs.update((param.sym, sp.Symbol("parameters"+self.index(\
                     ind))) for ind, param in enumerate(\
                                 self.ode.iter_parameters()))
 
             # Deal with state subs
-            if not self.optimization.use_names:
+            if not self.optimization.use_state_names:
                 subs.update((state.sym, sp.Symbol("states"+self.index(ind)))\
                             for ind, state in enumerate(\
                                 self.ode.iter_states()))
@@ -190,8 +198,9 @@ class ODERepresentation(object):
                     
         elif self.optimization.use_cse:
             yield "Common Sub Expressions", "COMMENT"
-            for name, expr in self._cse_subs:
-                yield expr, name
+            for (name, expr), cse_count in zip(self._cse_subs, self._cse_counts):
+                if cse_count:
+                    yield expr, name
             
 
     

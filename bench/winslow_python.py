@@ -15,7 +15,8 @@ for keep, use_cse, numerals, use_names in \
     
     gen = CodeGenerator(ODERepresentation(ode, keep_intermediates=keep, \
                                           use_cse=use_cse, parameter_numerals=numerals,\
-                                          use_names=use_names))
+                                          use_parameter_names=use_names, \
+                                          use_state_names=use_names))
     
     #print gen.dy_code()
     code ="\n\n".join([gen.init_states_code(),
@@ -26,7 +27,7 @@ for keep, use_cse, numerals, use_names in \
         int(gen.oderepr.optimization.keep_intermediates),
         int(gen.oderepr.optimization.use_cse),           
         int(gen.oderepr.optimization.parameter_numerals),
-        int(gen.oderepr.optimization.use_names))
+        int(use_names))
     
     code = "\n".join(\
         ["# keep_intermediates = {0}".format(gen.oderepr.optimization.keep_intermediates),

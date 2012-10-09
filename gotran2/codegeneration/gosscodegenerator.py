@@ -113,10 +113,12 @@ class GossCodeGenerator(CCodeGenerator):
         
         self.class_form = _class_form.copy()
         name = self.oderepr.name
+
+        self._name = name if name[0].isupper() else name[0].upper() + \
+                     (name[1:] if len(name) > 1 else "")
+        
         self.class_form["MODELNAME"] = name.upper()
-        self.class_form["ModelName"] = name if name[0].isupper()\
-                                       else name[0].upper() + \
-                                       (name[1:] if len(name) > 1 else "")
+        self.class_form["ModelName"] = self.name
             
         self.class_form["num_states"] = self.oderepr.ode.num_states
         self.class_form["num_parameters"] = self.oderepr.ode.num_parameters
@@ -136,6 +138,10 @@ class GossCodeGenerator(CCodeGenerator):
         self._constructor_body()
         self._variable_init_and_declarations()
         self._eval_code()
+
+    @property
+    def name(self):
+        return self._name
     
     def generate(self):
         """

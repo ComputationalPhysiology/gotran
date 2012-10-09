@@ -1,6 +1,6 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-08-22 -- 2012-09-20"
+__date__ = "2012-08-22 -- 2012-10-09"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 # System imports
@@ -82,7 +82,7 @@ class CodeGenerator(object):
         body_lines.append("")
         body_lines.append("# Assign states")
         body_lines.append("assert(len(states) == {0})".format(ode.num_states))
-        if self.oderepr.optimization.use_names:
+        if self.oderepr.optimization.use_state_names:
             body_lines.append(", ".join(state.name for i, state in \
                             enumerate(ode.iter_states())) + " = states")
         
@@ -93,7 +93,7 @@ class CodeGenerator(object):
             body_lines.append("assert(len(parameters) == {0})".format(\
                 ode.num_parameters))
 
-            if self.oderepr.optimization.use_names:
+            if self.oderepr.optimization.use_parameter_names:
                 body_lines.append(", ".join(param.name for i, param in \
                         enumerate(ode.iter_parameters())) + " = parameters")
 
@@ -404,7 +404,7 @@ class CCodeGenerator(CodeGenerator):
 
         # Start building body
         body_lines = ["", "// Assign states"]
-        if self.oderepr.optimization.use_names:
+        if self.oderepr.optimization.use_state_names:
             for i, state in enumerate(ode.iter_states()):
                 body_lines.append("const double {0} = states[{1}]".format(\
                     state.name, i))
@@ -415,7 +415,7 @@ class CCodeGenerator(CodeGenerator):
             body_lines.append("")
             body_lines.append("// Assign parameters")
 
-            if self.oderepr.optimization.use_names:
+            if self.oderepr.optimization.use_parameter_names:
                 for i, param in enumerate(ode.iter_parameters()):
                     body_lines.append("const double {0} = parameters[{1}]".\
                                       format(param.name, i))
