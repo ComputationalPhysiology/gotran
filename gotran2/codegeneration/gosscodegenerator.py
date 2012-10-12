@@ -38,7 +38,7 @@ namespace goss {{
 
     // Constructor
     {ModelName}() : ODE({num_states}),
-      ParameterizedODE({num_states}, {num_parameters}, {num_field_states}, {num_field_parameters}, {num_intermediates}), {linearized_base_initialization}
+      ParameterizedODE({num_states}, {num_parameters}, {num_field_states}, {num_field_parameters}, {num_monitored}), {linearized_base_initialization}
 {variable_initialization}
       
     {{
@@ -63,20 +63,14 @@ namespace goss {{
       return new {ModelName}(*this);
     }}
 
-    // Evaluate the intermediates
-    void eval_intermediates(const double* x, double t, double* y) const
+    // Evaluate the monitored intermediates
+    void eval_monitored(const double* states, double t, double* monitored) const
     {{
-{intermediate_evaluation_code}
-    }}
-
-    // Evaluate componentwise intermediates
-    double eval_intermediate(uint i, const double* x, double t) const
-    {{
-{intermediate_componentwise_evaluation_code}
+{monitored_evaluation_code}
     }}
 
     // Set all field parameters
-    void set_field_parameters(const double* values)
+    void set_field_parameters(const double* field_params)
     {{
 {set_field_parameters_code}
     }}
@@ -91,8 +85,8 @@ namespace goss {{
 #endif
 """
 
-_no_intermediates_snippet = """\n      // No intermediates
-      throw std::runtime_error(\"No intermediates in the \\'{0}\\' model.\");"""
+_no_monitored_snippet = """\n      // No monitored
+      throw std::runtime_error(\"No monitored in the \\'{0}\\' model.\");"""
 
 _class_form = dict(
   MODELNAME="NOT_IMPLEMENTED",
@@ -103,15 +97,14 @@ _class_form = dict(
   num_parameters=0,
   num_field_states=0,
   num_field_parameters=0,
-  num_intermediates=0,
+  num_monitored=0,
   state_names_ctr="NOT_IMPLEMENTED",
   variable_initialization="NOT_IMPLEMENTED",
   constructor="",
   eval_code="NOT_IMPLEMENTED",
   initial_condition_code="NOT_IMPLEMENTED",
   eval_componentwise_code="",
-  intermediate_evaluation_code="",
-  intermediate_componentwise_evaluation_code="",
+  monitored_evaluation_code="",
   set_field_parameters_code="",
   variable_declaration="NOT_IMPLEMENTED",
 )
@@ -140,19 +133,18 @@ class GossCodeGenerator(CppCodeGenerator):
         self.class_form["num_field_states"] = self.oderepr.ode.num_field_states
         self.class_form["num_field_parameters"] = \
                             self.oderepr.ode.num_field_parameters
-        self.class_form["num_intermediates"] = \
+        self.class_form["num_monitored"] = \
                             self.oderepr.ode.num_monitored_intermediates
 
-        self.class_form["intermediate_evaluation_code"] = \
-                _no_intermediates_snippet.format(oderepr.name.capitalize()) + \
+        self.class_form["monitored_evaluation_code"] = \
+                _no_monitored_snippet.format(oderepr.name.capitalize()) + \
                 "\n"
-        self.class_form["intermediate_componentwise_evaluation_code"] = \
-                _no_intermediates_snippet.format(oderepr.name.capitalize()) + \
-                "\n      return 0.0;\n"
 
         self._constructor_body()
         self._variable_init_and_declarations()
         self._eval_code()
+        if oderepr.ode.num_monitored_intermediates > 0:
+            self._monitored_code()
 
     @property
     def name(self):
@@ -203,11 +195,11 @@ class GossCodeGenerator(CppCodeGenerator):
                 i, param.name) for i, param in \
                         enumerate(ode.iter_field_parameters()))
             
-        # Intermediate names
-        if self.class_form["num_intermediates"] > 0:
-            body.extend(["", "// Intermediate names"])
-            body.extend("_intermediate_names[{0}] = \"{1}\"".format(\
-                i, intermediate) for i, intermediate in \
+        # Monitored names
+        if self.class_form["num_monitored"] > 0:
+            body.extend(["", "// Monitored names"])
+            body.extend("_monitored_names[{0}] = \"{1}\"".format(\
+                i, monitored) for i, (monitored, expr) in \
                         enumerate(ode.iter_monitored_intermediates()))
 
         # Parameter to value map
@@ -281,7 +273,7 @@ class GossCodeGenerator(CppCodeGenerator):
         
         if self.class_form["num_field_parameters"] > 0:
             set_field_parameters_code.extend(["", "// Set field parameters"])
-            set_field_parameters_code.extend("{0} = values[{1}]".format(\
+            set_field_parameters_code.extend("{0} = field_params[{1}]".format(\
                 param.name, i) for i, param in \
                                     enumerate(ode.iter_field_parameters()))
 
@@ -302,4 +294,14 @@ class GossCodeGenerator(CppCodeGenerator):
                             result_name="values")
         code = "\n".join(self.indent_and_split_lines(body, indent=3))
         self.class_form["eval_code"] = code
+        
+    def _monitored_code(self):
+        """
+        Generate code for the monitored method
+        """
+        body = self.monitored_body(parameters_in_signature=False, \
+                                   result_name="monitored")
+        code = "\n".join(self.indent_and_split_lines(body, indent=3))
+        self.class_form["monitored_evaluation_code"] = code
+        
         

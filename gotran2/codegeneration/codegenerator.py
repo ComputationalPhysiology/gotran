@@ -576,6 +576,82 @@ class CCodeGenerator(CodeGenerator):
         
         return "\n".join(self.indent_and_split_lines(dy_function))
 
+    def monitored_body(self, parameters_in_signature=False, result_name="monitored"):
+        """
+        Generate body lines of code for evaluating monitored intermediates
+        """
+
+        ode = self.oderepr.ode
+
+        assert(not ode.is_dae)
+
+        # Start building body
+        body_lines = ["", "// Assign states"]
+        if self.oderepr.optimization.use_state_names:
+            for ind, state in enumerate(ode.iter_states()):
+                if state.name in self.oderepr._used_in_monitoring["states"]:
+                    body_lines.append("const double {0} = states[{1}]".format(\
+                        state.name, ind))
+        
+        # Add parameters code if not numerals
+        if parameters_in_signature and \
+               not self.oderepr.optimization.parameter_numerals:
+            body_lines.append("")
+            body_lines.append("// Assign parameters")
+
+            if self.oderepr.optimization.use_parameter_names:
+                for ind, param in enumerate(ode.iter_parameters()):
+                    if param.name in self.oderepr._used_in_monitoring["parameters"]:
+                        body_lines.append("const double {0} = parameters[{1}]".\
+                                          format(param.name, ind))
+
+        # Iterate over any body needed to define the monitored
+        declared_duplicates = []
+        for expr, name in self.oderepr.iter_monitored_body():
+
+            name = str(name)
+            
+            if name == "COMMENT":
+                body_lines.append("")
+                body_lines.append("// " + expr)
+            else:
+                name = "const double " + name
+                body_lines.append(self.to_code(expr, name))
+
+        # Add monitored[i] lines
+        for ind, (monitored, expr) in enumerate(\
+            self.oderepr.iter_monitored_expr()):
+            if monitored == "COMMENT":
+                body_lines.append("")
+                body_lines.append("// " + expr)
+            else:
+                body_lines.append(self.to_code(expr, "{0}[{1}]".format(\
+                    result_name, ind)))
+
+        body_lines.append("")
+        
+        # Return the body lines
+        return body_lines
+        
+    def monitored_code(self, parameters_in_signature=False, result_name="monitored"):
+        """
+        Generate code for evaluating monitored intermediates
+        """
+
+        body_lines = self.monitored_body(parameters_in_signature, result_name)
+
+        # Add function prototype
+        parameters = "" if not parameters_in_signature or \
+                     self.oderepr.optimization.parameter_numerals \
+                     else "double* parameters, "
+        args = "double t, const double* states, {0}double* {1}".format(\
+            parameters, result_name)
+        monitored_function = self.wrap_body_with_function_prototype(\
+            body_lines, "dy_{0}".format(self.oderepr.name), args, \
+            "", "Calculate monitored intermediates {0}".format(self.oderepr.name))
+        
+        return "\n".join(self.indent_and_split_lines(monitored_function))
+
 
 class CppCodeGenerator(CCodeGenerator):
     
