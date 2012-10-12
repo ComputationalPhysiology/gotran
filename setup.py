@@ -1,10 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-__author__ = "Johan Hake (hake.dev@gmail.com)"
-__copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-02-22 -- 2012-09-12"
-__license__  = "GNU LGPL Version 3.0 or later"
-
 
 # System imports
 from distutils.core import setup
@@ -81,8 +76,8 @@ setup(name = "Gotran2",
       description = """
       A declarative language describing ordinary differential equations.
       """,
-      author = __author__.split("(")[0],
-      author_email = __author__.split("(")[1][:-1],
+      author = "Johan Hake",
+      author_email = "hake.dev@gmail.com",
       packages = ["gotran2", "gotran2.common", "gotran2.model",
                   "gotran2.algorithms", "gotran2.codegeneration",
                   "gotran2.input"],
