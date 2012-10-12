@@ -20,7 +20,7 @@ from collections import deque
 
 # Model parametrs imports
 from modelparameters.parameterdict import *
-from modelparameters.sympytools import sp
+from modelparameters.sympytools import sp, iter_symbol_params_from_expr
 
 # Local gotran imports
 from gotran2.model.ode import ODE
@@ -104,6 +104,7 @@ class ODERepresentation(object):
                             for der, expr in ode.get_derivative_expr(True)], \
                            symbols=sp.numbered_symbols("cse_"), \
                            optimizations=[])
+            
             cse_counts = [[] for i in range(len(self._cse_subs))]
             for i in range(len(self._cse_subs)):
                 for j in range(i+1, len(self._cse_subs)):
@@ -120,6 +121,52 @@ class ODERepresentation(object):
 
             info(" done")
 
+        # If the ode contains any monitored intermediates generate CSE versions 
+        if ode.num_monitored_intermediates > 0:
+
+            # Generate info about used states and parameters
+            self._used_in_monitoring = dict(
+                states = set(), parameters = set()
+                )
+
+            for name, expr in ode.iter_monitored_intermediates():
+                for sym in iter_symbol_params_from_expr(expr):
+
+                    if ode.has_state(sym):
+                        self._used_in_monitoring["states"].add(sym.name)
+                    elif ode.has_parameter(sym):
+                        self._used_in_monitoring["parameters"].add(sym.name)
+                    else:
+                        # Skip if ModelSymbols is not state or parameter
+                        pass
+            
+            self._cse_monitored_subs, self._cse_monitored_expr = \
+                        sp.cse([self.subs(expr) \
+                            for name, expr in ode.iter_monitored_intermediates()], \
+                               symbols=sp.numbered_symbols("cse_"), \
+                               optimizations=[])
+            
+            cse_counts = [[] for i in range(len(self._cse_monitored_subs))]
+            for i in range(len(self._cse_monitored_subs)):
+                for j in range(i+1, len(self._cse_monitored_subs)):
+                    if self._cse_monitored_subs[i][0] in \
+                           self._cse_monitored_subs[j][1]:
+                        cse_counts[i].append(j)
+                    
+                for j in range(len(self._cse_monitored_expr)):
+                    if self._cse_monitored_subs[i][0] in self._cse_monitored_expr[j]:
+                        cse_counts[i].append(j+len(self._cse_monitored_subs))
+
+            # Store usage count
+            # FIXME: Use this for more sorting!
+            self._cse_monitored_counts = cse_counts
+
+            self._used_in_monitoring["parameters"] = \
+                                list(self._used_in_monitoring["parameters"])
+
+            self._used_in_monitoring["states"] = \
+                                list(self._used_in_monitoring["states"])
+            
     def update_index(self, index):
         """
         Set index notation, specific for language syntax
@@ -131,6 +178,10 @@ class ODERepresentation(object):
         return self._name
 
     def subs(self, expr):
+        """
+        Call subs on the passed expr using symbol_subs if the expr is
+        a SymPy Basic
+        """
         if isinstance(expr, sp.Basic):
             return expr.subs(self.symbol_subs)
         return expr
@@ -138,7 +189,7 @@ class ODERepresentation(object):
     @property
     def symbol_subs(self):
         """
-        return a subs dict for parameters
+        Return a subs dict for all ODE Objects (states, parameters)
         """
         if self._symbol_subs is None:
 
@@ -186,8 +237,6 @@ class ODERepresentation(object):
                     for ((derivatives, expr), cse_expr) in zip(\
                         self.ode.get_derivative_expr(), \
                         self._cse_derivative_expr))
-            
-        
 
     def iter_dy_body(self):
         """
@@ -221,8 +270,33 @@ class ODERepresentation(object):
             for (name, expr), cse_count in zip(self._cse_subs, self._cse_counts):
                 if cse_count:
                     yield expr, name
-            
 
-    
+    def iter_monitored_body(self):
+        """
+        Iterate over the body defining the monitored expressions 
+        """
+        
+        if self.ode.num_monitored_intermediates == 0:
+            return
 
+        # Yield the CSE
+        yield "Common Sub Expressions for monitored intermediates", "COMMENT"
+        for (name, expr), cse_count in zip(self._cse_monitored_subs, \
+                                           self._cse_monitored_counts):
+            if cse_count:
+                yield expr, name
 
+    def iter_monitored_expr(self):
+        """
+        Iterate over the monitored expressions 
+        """
+        
+        if self.ode.num_monitored_intermediates == 0:
+            return
+
+        yield "COMMENT", "Monitored intermediates"
+
+        for ((name, expr), cse_expr) in zip(\
+            self.ode.iter_monitored_intermediates(), \
+            self._cse_monitored_expr):
+            yield name, cse_expr

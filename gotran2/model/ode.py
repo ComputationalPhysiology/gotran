@@ -53,7 +53,7 @@ class ODE(object):
         # Initialize all variables
         self._all_objects = OrderedDict()
         self._intermediates = OrderedDict()
-        self._monitored_intermediates = []
+        self._monitored_intermediates = OrderedDict()
         
         self.clear()
 
@@ -198,19 +198,28 @@ class ODE(object):
         # Check values and create sympy Symbols
         self._add_entities(comment, kwargs, "variable")
 
-    def add_intermediates(self, *args):
+    def add_monitored(self, *args):
         """
         Add intermediate variables to be monitored
 
+        Arguments
+        ---------
+        args : any number of intermediates
+            Intermediates which will be monitored
         """
 
-        for arg in args:
-            check_arg(arg, (str, ModelSymbol))
-            if str(arg) not in self._intermediates:
+        for i, arg in enumerate(args):
+            check_arg(arg, (str, ModelSymbol), i)
+            name = arg.name
+
+            if name not in self._intermediates:
                 error("Intermediate '{0}' is not a registered intermediate "\
-                      "in this ODE.")
-            # Register the monitored intermediate
-            self._monitored_intermediates.append(str(arg))
+                      "in this ODE.".format(name))
+
+            assert(name in self._expansion_namespace)
+            
+            # Register the expanded monitored intermediate
+            self._monitored_intermediates[name] = self._expansion_namespace[name]
             
     def _add_entities(self, comment, kwargs, entity):
         """
@@ -425,8 +434,8 @@ class ODE(object):
         """
         Return an iterator over registered monitored intermediates
         """
-        for intermediate in self._monitored_intermediates:
-            yield intermediate
+        for name, intermediate in self._monitored_intermediates.items():
+            yield name, intermediate
 
     def has_state(self, state):
         """

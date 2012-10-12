@@ -359,6 +359,8 @@ beta_i = 1.0/(1.0+a1)#+a2)
 
 comment("initial stimulating current I_st")
 
+monitor(I_Ca, I_CaK, I_NaCa)
+
 comment("The ODE system")
 
 diff(V      , -(I_Na+I_Ca+I_CaK+I_Kr+I_Ks+I_to+I_ti+I_Kp+I_NaCa+I_NaK+I_pCa+I_bCa+I_bNa+ist))

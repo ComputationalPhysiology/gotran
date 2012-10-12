@@ -21,8 +21,8 @@ for keep, use_cse, numerals, use_names in \
     #print gen.dy_code()
     code ="\n\n".join([gen.init_states_code(),
                        gen.init_param_code(),
-                       gen.dy_code()])
-    
+                       gen.dy_code(), gen.monitored_code()])
+
     params = "{0}_{1}_{2}_{3}".format(\
         int(gen.oderepr.optimization.keep_intermediates),
         int(gen.oderepr.optimization.use_cse),           

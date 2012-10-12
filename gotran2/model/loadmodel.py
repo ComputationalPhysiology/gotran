@@ -61,6 +61,7 @@ def _init_namespace(ode):
                           variables=_variables,
                           diff=ode.diff,
                           comment=ode.add_comment,
+                          monitor=ode.add_monitored,
                           sp=sp,
                           model_arguments=_model_arguments))
     return namespace
@@ -162,7 +163,8 @@ def load_ode(filename, name=None, **kwargs):
                  "variables", "monitored_intermediates"]:
         num = getattr(ode, "num_{0}".format(what))
         if num:
-            info("{0}: {1}".format(("Num "+what).rjust(22), num))
+            info("{0}: {1}".format(("Num "+what.replace("_", \
+                                                        " ")).rjust(22), num))
 
     # Reset global variables
     _reset_globals()

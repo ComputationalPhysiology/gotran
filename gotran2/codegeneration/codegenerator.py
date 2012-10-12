@@ -152,6 +152,99 @@ class CodeGenerator(object):
         
         return "\n".join(self.indent_and_split_lines(dy_function))
 
+
+    def monitored_body(self):
+        """
+        Generate body lines of code for evaluating state derivatives
+        """
+
+        from modelparameters.codegeneration import pythoncode
+
+        ode = self.oderepr.ode
+
+        # Start building body
+        body_lines = ["# Imports", "import numpy as np", "import math", \
+                      "from math import pow, sqrt, log"]
+        body_lines.append("")
+        body_lines.append("# Assign states")
+        body_lines.append("assert(len(states) == {0})".format(ode.num_states))
+        if self.oderepr.optimization.use_state_names:
+
+            state_indices, state_names = [], []
+            for ind, state in enumerate(ode.iter_states()):
+                if state.name in self.oderepr._used_in_monitoring["states"]:
+                    state_names.append(state.name)
+                    state_indices.append("states[{0}]".format(ind))
+            
+            body_lines.append(", ".join(state_names) + " = " +\
+                              ", ".join(state_indices))
+        
+        # Add parameters code if not numerals
+        if not self.oderepr.optimization.parameter_numerals:
+            body_lines.append("")
+            body_lines.append("# Assign parameters")
+            body_lines.append("assert(len(parameters) == {0})".format(\
+                ode.num_parameters))
+
+            if self.oderepr.optimization.use_parameter_names:
+            
+                parameter_indices, parameter_names = [], []
+                for ind, param in enumerate(ode.iter_parameters()):
+                    if param.name in self.oderepr._used_in_monitoring["parameters"]:
+                        parameter_names.append(param.name)
+                        parameter_indices.append("parameters[{0}]".format(ind))
+            
+                body_lines.append(", ".join(parameter_names) + " = " +\
+                                  ", ".join(parameter_indices))
+
+        # Iterate over any body needed to define the dy
+        for expr, name in self.oderepr.iter_monitored_body():
+            if name == "COMMENT":
+                body_lines.append("")
+                body_lines.append("# " + expr)
+            else:
+                body_lines.append(pythoncode(expr, name))
+
+        # Init dy
+        body_lines.append("")
+        body_lines.append("# Init monitored")
+        body_lines.append("monitored = np.zeros({0}, dtype=np.float_)".format(\
+            ode.num_monitored_intermediates))
+        
+        # Add monitored[i] lines
+        for ind, (monitored, expr) in enumerate(\
+            self.oderepr.iter_monitored_expr()):
+            if monitored == "COMMENT":
+                body_lines.append("")
+                body_lines.append("# " + expr)
+            else:
+                body_lines.append(pythoncode(expr, "monitored[{0}]".format(ind)))
+
+        # Return body lines 
+        return body_lines
+
+
+    def monitored_code(self):
+        """
+        Generate code for evaluating monitored variables
+        """
+
+        body_lines = self.monitored_body()
+        
+        body_lines.append("")
+        body_lines.append("# Return monitored")
+
+        # Add function prototype
+        args = "t, states"
+        if not self.oderepr.optimization.parameter_numerals:
+            args += ", parameters"
+        
+        monitor_function = self.wrap_body_with_function_prototype(\
+            body_lines, "monitor_{0}".format(self.oderepr.name), args, \
+            "monitored", "Calculate monitored intermediates")
+        
+        return "\n".join(self.indent_and_split_lines(monitor_function))
+
     def init_states_code(self):
         """
         Generate code for setting initial condition
