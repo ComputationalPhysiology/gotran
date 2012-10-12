@@ -1,15 +1,16 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __copyright__ = "Copyright (C) 2010 " + __author__
-__date__ = "2012-09-20 -- 2012-10-08"
+__date__ = "2012-09-20 -- 2012-10-09"
 __license__  = "GNU LGPL Version 3.0 or later"
 
 # Gotran imports
-from codegenerator import CCodeGenerator
+from codegenerator import CppCodeGenerator
 
 _class_template = """#ifndef {MODELNAME}_H_IS_INCLUDED
 #define {MODELNAME}_H_IS_INCLUDED
 
 #include <stdexcept>
+#include <cmath>
 
 #include \"goss/ParameterizedODE.h\"
 #include \"goss/LinearizedODE.h\"
@@ -101,7 +102,7 @@ _class_form = dict(
   variable_declaration="NOT_IMPLEMENTED",
 )
 
-class GossCodeGenerator(CCodeGenerator):
+class GossCodeGenerator(CppCodeGenerator):
     """
     Class for generating an implementation of a goss ODE
     """

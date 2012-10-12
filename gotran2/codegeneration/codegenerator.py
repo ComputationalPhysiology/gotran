@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__copyright__ = "Copyright (C) 2010 " + __author__
+__copyright__ = "Copyright (C) 2012 " + __author__
 __date__ = "2012-08-22 -- 2012-10-09"
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -357,6 +357,8 @@ class CodeGenerator(object):
 
 class CCodeGenerator(CodeGenerator):
     def init_language_specific_syntax(self):
+        from modelparameters.codegeneration import ccode
+
         self.language = "C"
         self.line_ending = ";"
         self.closure_start = "{"
@@ -366,6 +368,7 @@ class CCodeGenerator(CodeGenerator):
         self.index = lambda i : "[{0}]".format(i)
         self.indent = 2
         self.indent_str = " "
+        self.to_code = ccode
     
     def wrap_body_with_function_prototype(self, body_lines, name, args, \
                                           return_type="", comment=""):
@@ -395,8 +398,6 @@ class CCodeGenerator(CodeGenerator):
         """
         Generate body lines of code for evaluating state derivatives
         """
-
-        from modelparameters.codegeneration import ccode
 
         ode = self.oderepr.ode
 
@@ -438,13 +439,13 @@ class CCodeGenerator(CodeGenerator):
                 else:
                     name = "const double " + name
 
-                body_lines.append(ccode(expr, name))
+                body_lines.append(self.to_code(expr, name))
 
         # Add dy[i] lines
         for ind, (state, (derivative, expr)) in enumerate(\
             zip(ode.iter_states(), self.oderepr.iter_derivative_expr())):
             assert(state.sym == derivative[0])
-            body_lines.append(ccode(expr, "{0}[{1}]".format(result_name, ind)))
+            body_lines.append(self.to_code(expr, "{0}[{1}]".format(result_name, ind)))
 
         body_lines.append("")
         
@@ -471,3 +472,9 @@ class CCodeGenerator(CodeGenerator):
         return "\n".join(self.indent_and_split_lines(dy_function))
 
 
+class CppCodeGenerator(CCodeGenerator):
+    
+    def init_language_specific_syntax(self):
+        from modelparameters.codegeneration import cppcode
+        super(CppCodeGenerator, self).init_language_specific_syntax()
+        self.to_code = cppcode
