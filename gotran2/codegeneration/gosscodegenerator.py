@@ -23,6 +23,7 @@ from codegenerator import CppCodeGenerator
 _class_template = """#ifndef {MODELNAME}_H_IS_INCLUDED
 #define {MODELNAME}_H_IS_INCLUDED
 
+#include <boost/shared_ptr.hpp>
 #include <stdexcept>
 #include <cmath>
 
@@ -58,7 +59,7 @@ namespace goss {{
     }}
 
     // Return a copy of the ODE
-    ODE* copy() const
+    boost::shared_ptr<ODE> copy() const
     {{
       return new {ModelName}(*this);
     }}
