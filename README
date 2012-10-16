@@ -1,0 +1,16 @@
+Gotran - General ODE TRAnslator
+===============================
+
+Gotran:
+
+  - provides a Python interface to declare arbitrary ODEs.
+
+  - provides and interface for generating code for typically a right
+    hand side for C/C++/Python.
+
+  - is intentionally lightweight, and could be interfaced by other
+    Python libraries needing functionalities to abstract a general
+    ODE.
+
+  - depends on NumPy, and indirectly on SymPy through the package
+    ModelParameters. See further instructions in INSTALL
