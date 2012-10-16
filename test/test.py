@@ -1,7 +1,7 @@
 "Run all tests"
 
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2012-09-12"
+__date__ = "2012-05-07 -- 2012-10-16"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3.0"
 
@@ -37,6 +37,8 @@ def run_tests():
         if fail:
             failed.append(fail)
 
+    return failed
+
 if __name__ == "__main__":
     failed = run_tests()
-    sys.exit(len(failed))
+    sys.exit(len(failed) != 0)
