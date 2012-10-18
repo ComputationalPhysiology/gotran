@@ -17,6 +17,7 @@
 
 # System imports
 from collections import deque
+import re
 
 # Model parameters imports
 from modelparameters.parameters import *
@@ -24,6 +25,8 @@ from modelparameters.parameters import *
 # Gotran imports
 from gotran2.common import check_arg
 from oderepresentation import ODERepresentation
+
+_re_str = re.compile(".*\"([\w\s]+)\".*")
 
 class CodeGenerator(object):
     def __init__(self, oderepr):
@@ -425,11 +428,12 @@ class CodeGenerator(object):
                         # Add a \" char to first stub if inside str
                         if len(line_stump) == 1 and inside_str:
                             line_stump[-1] = "\""+line_stump[-1]
-                            
+                        
                         # Check if we get inside or leave a str
                         if not is_comment and ("\"" in line_stump[-1] and not \
                             ("\\\"" in line_stump[-1] or \
-                             "\"\"\"" in line_stump[-1])):
+                             "\"\"\"" in line_stump[-1] or \
+                                re.search(_re_str, line_stump[-1]))):
                             inside_str = not inside_str
                             
                         # Check line length
