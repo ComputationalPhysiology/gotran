@@ -1,5 +1,5 @@
-Depdendencies
-=============
+Dependencies
+============
 
 Gotran depends on Instant, SymPy, NumPy and ModelParameters.
 
@@ -8,8 +8,10 @@ Gotran depends on Instant, SymPy, NumPy and ModelParameters.
   - NumPy:            <http://numpy.scipy.org>
   - ModelParameters:  <https://launchpad.net/modelparameters>
 
-To install Gotran:
+To install Gotran system-wide (typically requires root access):
 
   python setup.py install
 
-You might need to be root to be able to install Gotran
+To install Gotran locally, specify a path:
+
+  python setup.py install --prefix=favorite-absolute-path
