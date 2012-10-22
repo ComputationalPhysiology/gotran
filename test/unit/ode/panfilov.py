@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2012-09-10"
+__date__ = "2012-05-07 -- 2012-10-19"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -108,7 +108,7 @@ class Creation(unittest.TestCase):
         self.assertTrue(all(ode.has_parameter(param) for param in \
                             ["v_rest", "v_peak", "time_constant"]))
         
-    def test_code_gen(self):
+    def test_python_code_gen(self):
         """
         Test generation of code
         """
@@ -164,6 +164,21 @@ class Creation(unittest.TestCase):
             self.assertTrue(np.sum(np.abs((dy_eval-dy_correct))) < 1e-12)
             self.assertTrue(np.sum(np.abs((dy_jit-dy_correct))) < 1e-12)
             
+            
+    def test_matlab_python_code(self):
+        from gotran2.codegeneration.codegenerator import \
+             MatlabCodeGenerator, ODERepresentation
+        
+        keep, use_cse, numerals, use_names = (1,0,0,1)
+
+        gen = MatlabCodeGenerator(ODERepresentation(self.ode,
+                                                    keep_intermediates=keep, \
+                                                    use_cse=use_cse,
+                                                    parameter_numerals=numerals,\
+                                                    use_names=use_names))
+
+        print gen.default_value_code()
+        print gen.dy_code()
         
 if __name__ == "__main__":
     unittest.main()
