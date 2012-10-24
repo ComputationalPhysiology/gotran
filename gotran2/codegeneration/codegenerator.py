@@ -150,7 +150,7 @@ class CodeGenerator(object):
             args += ", parameters"
         
         dy_function = self.wrap_body_with_function_prototype(\
-            body_lines, "dy_{0}".format(self.oderepr.name), args, \
+            body_lines, "rhs", args, \
             "dy", "Calculate right hand side")
         
         return "\n".join(self.indent_and_split_lines(dy_function))
@@ -243,7 +243,7 @@ class CodeGenerator(object):
             args += ", parameters"
         
         monitor_function = self.wrap_body_with_function_prototype(\
-            body_lines, "monitor_{0}".format(self.oderepr.name), args, \
+            body_lines, "monitor", args, \
             "monitored", "Calculate monitored intermediates")
         
         return "\n".join(self.indent_and_split_lines(monitor_function))
@@ -279,8 +279,10 @@ class CodeGenerator(object):
         body_lines.append("for state_name, value in values.items():")
         body_lines.append(\
             ["if state_name not in state_ind:",
-             ["raise ValueError(\"{{0}} is not a state in the {0} ODE\"."\
-              "format(state_name))".format(self.oderepr.name)],
+             ["raise ValueError(\"{{0}} is not a state.\".format(state_name))"],
+             # FIXME: Outcommented because of bug in indent_and_split_lines
+             # ["raise ValueError(\"{{0}} is not a state in the {0} ODE\"."\
+             #"format(state_name))".format(self.oderepr.name)],
              "ind, range = state_ind[state_name]",
              "if value not in range:",
              ["raise ValueError(\"While setting \'{0}\' {1}\".format("\
@@ -292,8 +294,8 @@ class CodeGenerator(object):
         
         # Add function prototype
         init_function = self.wrap_body_with_function_prototype(\
-            body_lines, "{0}_init_values".format(self.oderepr.name), \
-            "**values", "init_values", "Init values")
+            body_lines, "init_values", "**values", "init_values", \
+            "Init values")
         
         return "\n".join(self.indent_and_split_lines(init_function))
 
@@ -328,8 +330,9 @@ class CodeGenerator(object):
         body_lines.append("for param_name, value in values.items():")
         body_lines.append(\
             ["if param_name not in param_ind:",
-             ["raise ValueError(\"{{0}} is not a param in the {0} ODE\"."\
-              "format(param_name))".format(self.oderepr.name)],
+             ["raise ValueError(\"{{0}} is not a param\".format(param_name))"],
+             # ["raise ValueError(\"{{0}} is not a param in the {0} ODE\"."\
+             #  "format(param_name))".format(self.oderepr.name)],
              "ind, range = param_ind[param_name]",
              "if value not in range:",
              ["raise ValueError(\"While setting \'{0}\' {1}\".format("\
@@ -341,7 +344,7 @@ class CodeGenerator(object):
         
         # Add function prototype
         function = self.wrap_body_with_function_prototype(\
-            body_lines, "{0}_parameters".format(self.oderepr.name), \
+            body_lines, "default_parameters", \
             "**values", "param_values", "Parameter values")
         
         return "\n".join(self.indent_and_split_lines(function))
@@ -576,7 +579,7 @@ class CCodeGenerator(CodeGenerator):
         args = "double t, const double* states, {0}double* {1}".format(\
             parameters, result_name)
         dy_function = self.wrap_body_with_function_prototype(\
-            body_lines, "dy_{0}".format(self.oderepr.name), args, \
+            body_lines, "rhs", args, \
             "", "Calculate right hand side of {0}".format(self.oderepr.name))
         
         return "\n".join(self.indent_and_split_lines(dy_function))
@@ -652,7 +655,7 @@ class CCodeGenerator(CodeGenerator):
         args = "double t, const double* states, {0}double* {1}".format(\
             parameters, result_name)
         monitored_function = self.wrap_body_with_function_prototype(\
-            body_lines, "dy_{0}".format(self.oderepr.name), args, \
+            body_lines, "monitored", args, \
             "", "Calculate monitored intermediates {0}".format(self.oderepr.name))
         
         return "\n".join(self.indent_and_split_lines(monitored_function))
@@ -780,7 +783,7 @@ class MatlabCodeGenerator(CodeGenerator):
                 body_lines.append("")
                 body_lines.append("% --- {0} ---".format(state.comment))
             
-            body_lines.append("{0} = states({1})".format(state.name, ind))
+            body_lines.append("{0} = states({1})".format(state.name, ind+1))
         
         # Iterate over any body needed to define the dy
         for expr, name in self.oderepr.iter_dy_body():
@@ -794,7 +797,7 @@ class MatlabCodeGenerator(CodeGenerator):
         for ind, (state, (derivative, expr)) in enumerate(\
             zip(ode.iter_states(), self.oderepr.iter_derivative_expr())):
             assert(state.sym == derivative[0]), "{0}!={1}".format(state.sym, derivative[0])
-            body_lines.append(self.to_code(expr, "dy({0})".format(ind)))
+            body_lines.append(self.to_code(expr, "dy({0})".format(ind+1)))
         
         body_lines = self.wrap_body_with_function_prototype( \
             body_lines, ode.name, "time, states, p", "[dy]", \

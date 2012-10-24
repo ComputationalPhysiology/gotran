@@ -581,7 +581,8 @@ class ODE(object):
 
         # If we have the same number of derivative expressions as number of
         # states we need to check that we have one derivative of each state.
-        # and sort the derivatives 
+        # and sort the derivatives
+
         if self.num_derivative_expr == len(states):
 
             for derivative, expr in self._derivative_expr:
