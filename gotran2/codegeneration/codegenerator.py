@@ -145,12 +145,12 @@ class CodeGenerator(object):
         body_lines.append("# Return dy")
 
         # Add function prototype
-        args = "t, states"
+        args = "time, states"
         if not self.oderepr.optimization.parameter_numerals:
             args += ", parameters"
         
         dy_function = self.wrap_body_with_function_prototype(\
-            body_lines, "dy_{0}".format(self.oderepr.name), args, \
+            body_lines, "rhs", args, \
             "dy", "Calculate right hand side")
         
         return "\n".join(self.indent_and_split_lines(dy_function))
@@ -238,12 +238,12 @@ class CodeGenerator(object):
         body_lines.append("# Return monitored")
 
         # Add function prototype
-        args = "t, states"
+        args = "time, states"
         if not self.oderepr.optimization.parameter_numerals:
             args += ", parameters"
         
         monitor_function = self.wrap_body_with_function_prototype(\
-            body_lines, "monitor_{0}".format(self.oderepr.name), args, \
+            body_lines, "monitor", args, \
             "monitored", "Calculate monitored intermediates")
         
         return "\n".join(self.indent_and_split_lines(monitor_function))
@@ -261,7 +261,8 @@ class CodeGenerator(object):
             state.name, state.init) for state in \
                       self.oderepr.ode.iter_states())))
         body_lines.append("init_values = np.array([{0}], dtype=np.float_)"\
-                          .format(", ".join("{0}".format(state.init) \
+                          .format(", ".join("{0}".format(\
+                state.init if np.isscalar(state.init) else state.init[0])\
                             for state in self.oderepr.ode.iter_states())))
         body_lines.append("")
         
@@ -278,8 +279,10 @@ class CodeGenerator(object):
         body_lines.append("for state_name, value in values.items():")
         body_lines.append(\
             ["if state_name not in state_ind:",
-             ["raise ValueError(\"{{0}} is not a state in the {0} ODE\"."\
-              "format(state_name))".format(self.oderepr.name)],
+             ["raise ValueError(\"{{0}} is not a state.\".format(state_name))"],
+             # FIXME: Outcommented because of bug in indent_and_split_lines
+             # ["raise ValueError(\"{{0}} is not a state in the {0} ODE\"."\
+             #"format(state_name))".format(self.oderepr.name)],
              "ind, range = state_ind[state_name]",
              "if value not in range:",
              ["raise ValueError(\"While setting \'{0}\' {1}\".format("\
@@ -291,8 +294,8 @@ class CodeGenerator(object):
         
         # Add function prototype
         init_function = self.wrap_body_with_function_prototype(\
-            body_lines, "{0}_init_values".format(self.oderepr.name), \
-            "**values", "init_values", "Init values")
+            body_lines, "init_values", "**values", "init_values", \
+            "Init values")
         
         return "\n".join(self.indent_and_split_lines(init_function))
 
@@ -327,8 +330,9 @@ class CodeGenerator(object):
         body_lines.append("for param_name, value in values.items():")
         body_lines.append(\
             ["if param_name not in param_ind:",
-             ["raise ValueError(\"{{0}} is not a param in the {0} ODE\"."\
-              "format(param_name))".format(self.oderepr.name)],
+             ["raise ValueError(\"{{0}} is not a param\".format(param_name))"],
+             # ["raise ValueError(\"{{0}} is not a param in the {0} ODE\"."\
+             #  "format(param_name))".format(self.oderepr.name)],
              "ind, range = param_ind[param_name]",
              "if value not in range:",
              ["raise ValueError(\"While setting \'{0}\' {1}\".format("\
@@ -340,7 +344,7 @@ class CodeGenerator(object):
         
         # Add function prototype
         function = self.wrap_body_with_function_prototype(\
-            body_lines, "{0}_parameters".format(self.oderepr.name), \
+            body_lines, "default_parameters", \
             "**values", "param_values", "Parameter values")
         
         return "\n".join(self.indent_and_split_lines(function))
@@ -507,7 +511,7 @@ class CCodeGenerator(CodeGenerator):
         """
         Generate body lines of code for evaluating state derivatives
         """
-
+        
         ode = self.oderepr.ode
 
         assert(not ode.is_dae)
@@ -575,7 +579,7 @@ class CCodeGenerator(CodeGenerator):
         args = "double t, const double* states, {0}double* {1}".format(\
             parameters, result_name)
         dy_function = self.wrap_body_with_function_prototype(\
-            body_lines, "dy_{0}".format(self.oderepr.name), args, \
+            body_lines, "rhs", args, \
             "", "Calculate right hand side of {0}".format(self.oderepr.name))
         
         return "\n".join(self.indent_and_split_lines(dy_function))
@@ -651,7 +655,7 @@ class CCodeGenerator(CodeGenerator):
         args = "double t, const double* states, {0}double* {1}".format(\
             parameters, result_name)
         monitored_function = self.wrap_body_with_function_prototype(\
-            body_lines, "dy_{0}".format(self.oderepr.name), args, \
+            body_lines, "monitored", args, \
             "", "Calculate monitored intermediates {0}".format(self.oderepr.name))
         
         return "\n".join(self.indent_and_split_lines(monitored_function))
@@ -663,3 +667,148 @@ class CppCodeGenerator(CCodeGenerator):
         from modelparameters.codegeneration import cppcode
         super(CppCodeGenerator, self).init_language_specific_syntax()
         self.to_code = cppcode
+
+class MatlabCodeGenerator(CodeGenerator):
+    """
+    A Matlab Code generator
+    """
+    def init_language_specific_syntax(self):
+        from modelparameters.codegeneration import matlabcode
+
+        self.language = "Matlab"
+        self.line_ending = ";"
+        self.closure_start = ""
+        self.closure_end = ""
+        self.line_cont = "..."
+        self.comment = "%"
+        self.index = lambda i : "({0})".format(i)
+        self.indent = 2
+        self.indent_str = " "
+        self.to_code = matlabcode
+
+    def wrap_body_with_function_prototype(self, body_lines, name, args, \
+                                          return_args="", comment=""):
+        """
+        Wrap a passed body of lines with a function prototype
+        """
+        check_arg(body_lines, list)
+        check_arg(name, str)
+        check_arg(args, str)
+        check_arg(return_args, str)
+        check_arg(comment, (str, list))
+        
+        prototype = ["function {0} = {1}({2})".format(return_args, name, args)]
+        body = []
+
+        # Wrap comment if any
+        if comment:
+            if isinstance(comment, list):
+                body.extend(comment)
+            else:
+                body.append(comment)
+
+        # Extend the body with body lines
+        body.extend(body_lines)
+
+        # Append body to prototyp
+        prototype.append(body)
+        return prototype
+
+    def default_value_code(self):
+        """
+        Create code for getting intital values and default parameter values
+        """
+        ode = self.oderepr.ode
+
+        body_lines = []
+
+        # Start building body
+        body_lines.append("")
+        body_lines.append("")
+        body_lines.append("% --- Default parameters values --- ")
+        
+        present_param_comment = ""
+        for param in ode.iter_parameters():
+            
+            if present_param_comment != param.comment:
+                present_param_comment = param.comment
+                
+                body_lines.append("")
+                body_lines.append("% --- {0} ---".format(param.comment))
+            
+            body_lines.append("p.{0} = {1}".format(param.name, param.init))
+            
+        body_lines.append("")
+        body_lines.append("")
+        body_lines.append("% --- Default initial state values --- ")
+        
+        present_state_comment = ""
+        for state in ode.iter_states():
+            
+            if present_state_comment != state.comment:
+                present_state_comment = state.comment
+                
+                body_lines.append("")
+                body_lines.append("% --- {0} ---".format(state.comment))
+            
+            body_lines.append("x0.{0} = {1}".format(state.name, state.init))
+
+          
+        body_lines = self.wrap_body_with_function_prototype(\
+            body_lines, "{0}Init".format(ode.name), "", "[p, x0]",\
+            "% Default initial conditions for {0}".format(ode.name))
+
+        return "\n".join(self.indent_and_split_lines(body_lines))
+
+    
+    def dy_code(self):
+        """
+        Generate code for rhs evaluation for the ode
+        """
+
+        ode = self.oderepr.ode
+
+        self.oderepr.set_parameter_prefix("p.")
+
+        body_lines = [""]
+        
+        body_lines.append("% --- State values --- ")
+
+        present_state_comment = ""
+        for ind, state in enumerate(ode.iter_states()):
+            
+            if present_state_comment != state.comment:
+                present_state_comment = state.comment
+                
+                body_lines.append("")
+                body_lines.append("% --- {0} ---".format(state.comment))
+            
+            body_lines.append("{0} = states({1})".format(state.name, ind+1))
+        
+        # Iterate over any body needed to define the dy
+        for expr, name in self.oderepr.iter_dy_body():
+            if name == "COMMENT":
+                body_lines.append("")
+                body_lines.append("% " + expr)
+            else:
+                body_lines.append(self.to_code(expr, name))
+
+        # Add dy(i) lines
+        for ind, (state, (derivative, expr)) in enumerate(\
+            zip(ode.iter_states(), self.oderepr.iter_derivative_expr())):
+            assert(state.sym == derivative[0]), "{0}!={1}".format(state.sym, derivative[0])
+            body_lines.append(self.to_code(expr, "dy({0})".format(ind+1)))
+        
+        body_lines = self.wrap_body_with_function_prototype( \
+            body_lines, ode.name, "time, states, p", "[dy]", \
+            ["% {0}(time, states, p)".format(ode.name),
+             "% ",
+             "% Usage",
+             "% -----",
+             "% x0, p {0}Init();".format(ode.name),
+             "% x = struct2array(x0)",
+             "% [T, S] = ode15s(@{0}, [0, 60], x, [], p);".format(ode.name),
+             ])
+        
+        return "\n".join(self.indent_and_split_lines(body_lines))
+        

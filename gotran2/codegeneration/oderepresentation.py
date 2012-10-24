@@ -32,24 +32,24 @@ def _default_params():
     return ParameterDict(
 
         # Use state names in code (compared to array with indices)
-        use_state_names = True,
+        use_state_names = 1,
 
         # Use parameter names in code (compared to array with indices)
-        use_parameter_names = True,
+        use_parameter_names = 1,
 
         # Keep all intermediates
-        keep_intermediates = True, 
+        keep_intermediates = 1, 
 
         # If True, code for altering variables are created
         # FIXME: Not used
-        use_variables = False,
+        use_variables = 0,
 
         # Find sub expressions of only parameters and create a dummy parameter
         # FIXME: Not used
-        parameter_contraction = False,
+        parameter_contraction = 0,
 
         # Exchange all parameters with their initial numerical values
-        parameter_numerals = False,
+        parameter_numerals = 0,
 
         # Split terms with more than max_terms into several evaluations
         # FIXME: Not used
@@ -57,7 +57,7 @@ def _default_params():
 
         # Use sympy common sub expression simplifications,
         # only when keep_intermediates is false
-        use_cse = False,
+        use_cse = 0,
         )
 
 class ODERepresentation(object):
@@ -87,9 +87,14 @@ class ODERepresentation(object):
         self._name = name if name else ode.name
         
         self.optimization = _default_params()
+
         self.optimization.update(optimization)
         self._symbol_subs = None
         self.index = lambda i : "[{0}]".format(i)
+
+        # Init prefix info
+        self._state_prefix = ""
+        self._parameter_prefix = ""
 
         # Check for using CSE
         if not self.optimization.keep_intermediates and \
@@ -177,6 +182,26 @@ class ODERepresentation(object):
     def name(self):
         return self._name
 
+    def set_state_prefix(self, prefix):
+        """
+        Register a prefix to a state name. Used if 
+        """
+        check_arg(prefix, str)
+        self._state_prefix = prefix
+
+        # Reset symbol subs
+        self._symbol_subs = None
+
+    def set_parameter_prefix(self, prefix):
+        """
+        Register a prefix to a parameter name. Used if 
+        """
+        check_arg(prefix, str)
+        self._parameter_prefix = prefix
+
+        # Reset symbol subs
+        self._symbol_subs = None
+
     def subs(self, expr):
         """
         Call subs on the passed expr using symbol_subs if the expr is
@@ -194,6 +219,7 @@ class ODERepresentation(object):
         if self._symbol_subs is None:
 
             subs = {}
+            
             # Deal with parameter subs first
             if self.optimization.parameter_numerals:
                 subs.update((param.sym, param.init) \
@@ -202,12 +228,21 @@ class ODERepresentation(object):
                 subs.update((param.sym, sp.Symbol("parameters"+self.index(\
                     ind))) for ind, param in enumerate(\
                                 self.ode.iter_parameters()))
+            elif self._parameter_prefix:
+                subs.update((param.sym, sp.Symbol("{0}{1}".format(\
+                    self._parameter_prefix, param.name))) \
+                            for param in self.ode.iter_parameters())
 
             # Deal with state subs
             if not self.optimization.use_state_names:
                 subs.update((state.sym, sp.Symbol("states"+self.index(ind)))\
                             for ind, state in enumerate(\
                                 self.ode.iter_states()))
+
+            elif self._state_prefix:
+                subs.update((param.sym, sp.Symbol("{0}{1}".format(\
+                    self._state_prefix, param.name))) \
+                            for param in self.ode.iter_states())
 
             self._symbol_subs = subs
                 

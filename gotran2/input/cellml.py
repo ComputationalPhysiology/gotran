@@ -222,7 +222,7 @@ class MathMLBaseParser(object):
             "piecewise" : 0, 
             "power" : 0,
             "divide": 1,
-            "times" : 1,
+            "times" : 2,
             "minus" : 4,
             "plus"  : 5,
             "lt"    : 6,

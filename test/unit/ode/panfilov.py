@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2012-09-10"
+__date__ = "2012-05-07 -- 2012-10-22"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -39,6 +39,7 @@ class Creation(unittest.TestCase):
                  (ode.ga*ode.E*(ode.E-ode.a)*(ode.E-1) + ode.E*ode.g))
         ode.diff(g, 0.25*ode.time_constant*ode.eps*(-g - ode.gs*e*(ode.E-ode.a-1)))
         
+        assert(ode.is_complete)
         self.ode = ode
 
 
@@ -108,7 +109,7 @@ class Creation(unittest.TestCase):
         self.assertTrue(all(ode.has_parameter(param) for param in \
                             ["v_rest", "v_peak", "time_constant"]))
         
-    def test_code_gen(self):
+    def test_python_code_gen(self):
         """
         Test generation of code
         """
@@ -130,10 +131,10 @@ class Creation(unittest.TestCase):
         exec(gen.init_param_code())
         exec(gen.dy_code())
 
-        parameters = panfilov_parameters()
-        states = panfilov_init_values()
+        parameters = default_parameters()
+        states = init_values()
         dy_jit = np.asarray(states).copy()
-        dy_correct = dy_panfilov(0.0, states, parameters)
+        dy_correct = rhs(0.0, states, parameters)
 
         for keep, use_cse, numerals, use_names in \
                 [(1,0,0,1), (1,0,0,0), \
@@ -155,15 +156,30 @@ class Creation(unittest.TestCase):
             # Execute code
             exec(gen.dy_code())
             if numerals:
-                dy_eval = dy_panfilov(0.0, states)
-                jit_oderepr.dy_panfilov(0.0, states, dy_jit)
+                dy_eval = rhs(0.0, states)
+                jit_oderepr.rhs(0.0, states, dy_jit)
             else:
-                dy_eval = dy_panfilov(0.0, states, parameters)
-                jit_oderepr.dy_panfilov(0.0, states, parameters, dy_jit)
+                dy_eval = rhs(0.0, states, parameters)
+                jit_oderepr.rhs(0.0, states, parameters, dy_jit)
 
             self.assertTrue(np.sum(np.abs((dy_eval-dy_correct))) < 1e-12)
             self.assertTrue(np.sum(np.abs((dy_jit-dy_correct))) < 1e-12)
             
+            
+    def test_matlab_python_code(self):
+        from gotran2.codegeneration.codegenerator import \
+             MatlabCodeGenerator, ODERepresentation
+        
+        keep, use_cse, numerals, use_names = (1,0,0,1)
+
+        gen = MatlabCodeGenerator(ODERepresentation(self.ode,
+                                                    keep_intermediates=keep, \
+                                                    use_cse=use_cse,
+                                                    parameter_numerals=numerals,\
+                                                    use_names=use_names))
+
+        print gen.default_value_code()
+        print gen.dy_code()
         
 if __name__ == "__main__":
     unittest.main()
