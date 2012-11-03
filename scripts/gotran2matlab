@@ -1,0 +1,40 @@
+#!/usr/bin/env python
+
+from gotran2.codegeneration.codegenerator import \
+     MatlabCodeGenerator, ODERepresentation
+from gotran2.model import load_ode
+from gotran2 import info
+
+def main(filename):
+    """
+    Create a matlab cell model file from a gotran model
+    """
+
+    # Load Gotran model
+    ode = load_ode(filename)
+
+    # Create an ODE representation
+    keep, use_cse, numerals, use_names = (1,0,0,1)
+    oderepr = ODERepresentation(ode,
+                                keep_intermediates=keep, \
+                                use_cse=use_cse,
+                                parameter_numerals=numerals,\
+                                use_names=use_names)
+
+    # Create a Matlab Cell model code generator
+    gen = MatlabCodeGenerator(oderepr)
+
+    info("")
+    info("Generating Matlab files for the {0} ode...".format(ode.name))
+    open("{0}_init.m".format(ode.name), "w").write(gen.default_value_code())
+    open("{0}.m".format(ode.name), "w").write(gen.dy_code())
+    info("  done.")
+
+if __name__ == "__main__":
+    import sys
+    
+    if len(sys.argv) < 2:
+        raise RuntimeError("Expected a gotran file argument")
+	 
+    file_name = sys.argv[1]
+    main(file_name)

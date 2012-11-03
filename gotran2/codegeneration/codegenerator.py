@@ -755,7 +755,7 @@ class MatlabCodeGenerator(CodeGenerator):
 
           
         body_lines = self.wrap_body_with_function_prototype(\
-            body_lines, "{0}Init".format(ode.name), "", "[p, x0]",\
+            body_lines, "{0}_init".format(ode.name), "", "[p, x0]",\
             "% Default initial conditions for {0}".format(ode.name))
 
         return "\n".join(self.indent_and_split_lines(body_lines))
@@ -794,6 +794,7 @@ class MatlabCodeGenerator(CodeGenerator):
                 body_lines.append(self.to_code(expr, name))
 
         # Add dy(i) lines
+        body_lines.append("dy = zeros({0}, 1)".format(ode.num_states))
         for ind, (state, (derivative, expr)) in enumerate(\
             zip(ode.iter_states(), self.oderepr.iter_derivative_expr())):
             assert(state.sym == derivative[0]), "{0}!={1}".format(state.sym, derivative[0])
@@ -805,8 +806,8 @@ class MatlabCodeGenerator(CodeGenerator):
              "% ",
              "% Usage",
              "% -----",
-             "% x0, p {0}Init();".format(ode.name),
-             "% x = struct2array(x0)",
+             "% [p, x0] = {0}_init();".format(ode.name),
+             "% x = cell2mat(struct2cell(x0));",
              "% [T, S] = ode15s(@{0}, [0, 60], x, [], p);".format(ode.name),
              ])
         
