@@ -678,7 +678,7 @@ class MatlabCodeGenerator(CodeGenerator):
         self.language = "Matlab"
         self.line_ending = ";"
         self.closure_start = ""
-        self.closure_end = ""
+        self.closure_end = "end"
         self.line_cont = "..."
         self.comment = "%"
         self.index = lambda i : "({0})".format(i)
@@ -724,6 +724,8 @@ class MatlabCodeGenerator(CodeGenerator):
 
         # Start building body
         body_lines.append("")
+        body_lines.append("if nargout < 1 || nargout > 3")
+        body_lines.append(["error('Expected 1-3 output arguments.')"])
         body_lines.append("")
         body_lines.append("% --- Default parameters values --- ")
         
@@ -736,30 +738,55 @@ class MatlabCodeGenerator(CodeGenerator):
                 body_lines.append("")
                 body_lines.append("% --- {0} ---".format(param.comment))
             
-            body_lines.append("p.{0} = {1}".format(param.name, param.init))
+            body_lines.append("params.{0} = {1}".format(param.name, param.init))
+
+        body_lines.append("")
             
-        body_lines.append("")
-        body_lines.append("")
-        body_lines.append("% --- Default initial state values --- ")
+        # Default initial values and state names
+        init_values = [""]
+        init_values.append("% --- Default initial state values --- ")
+        init_values.append("x0 = zeros({0}, 1)".format(ode.num_states))
+
+        state_names = [""]
+        state_names.append("% --- State names --- ")
+        state_names.append("state_names = cell({0}, 1)".format(ode.num_states))
         
         present_state_comment = ""
-        for state in ode.iter_states():
+        for ind, state in enumerate(ode.iter_states()):
             
             if present_state_comment != state.comment:
                 present_state_comment = state.comment
-                
-                body_lines.append("")
-                body_lines.append("% --- {0} ---".format(state.comment))
-            
-            body_lines.append("x0.{0} = {1}".format(state.name, state.init))
 
-          
+                init_values.append("")
+                init_values.append("% --- {0} ---".format(state.comment))
+            
+                state_names.append("")
+                state_names.append("% --- {0} ---".format(state.comment))
+
+            init_values.append("x0({0}) = {1}".format(ind + 1, state.init))
+            state_names.append("state_names{{{0}}} = \"{1}\"".format(ind + 1, state.name))
+
+        init_values.append("varargout{1} = x0")
+        state_names.append("varargout{2} = state_names")
+
+        # Add bodys to code
+        body_lines.append("if nargout == 2")
+        body_lines.append(init_values)
+        
+        body_lines.append("")
+        body_lines.append("if nargout == 3")
+        body_lines.append(state_names)
+
         body_lines = self.wrap_body_with_function_prototype(\
-            body_lines, "{0}_init".format(ode.name), "", "[p, x0]",\
-            "% Default initial conditions for {0}".format(ode.name))
+            body_lines, "{0}_default".format(ode.name), "", "[params, varargout]",\
+            ["% Default values for ODE model: {0}".format(ode.name),
+             "% ------------------------------{0}".format(len(ode.name)*"-"),
+             "%",
+             "% params = {0}_default();".format(ode.name),
+             "% [params, ic] = {0}_default();".format(ode.name),
+             "% [params, ic, state_names] = {0}_default();".format(ode.name)])
 
         return "\n".join(self.indent_and_split_lines(body_lines))
-
     
     def dy_code(self):
         """
@@ -772,6 +799,13 @@ class MatlabCodeGenerator(CodeGenerator):
 
         body_lines = [""]
         
+        body_lines.append("if nargin != 2 || nargin != 3")
+        body_lines.append(["error('Expected 2-3 input arguments.')"])
+        body_lines.append("")
+        body_lines.append("if nargin == 2")
+        body_lines.append(["p = default_{0}()".format(ode.name)])
+        body_lines.append("")
+
         body_lines.append("% --- State values --- ")
 
         present_state_comment = ""
@@ -802,12 +836,11 @@ class MatlabCodeGenerator(CodeGenerator):
         
         body_lines = self.wrap_body_with_function_prototype( \
             body_lines, ode.name, "time, states, p", "[dy]", \
-            ["% {0}(time, states, p)".format(ode.name),
+            ["% {0}(time, states, varagin)".format(ode.name),
              "% ",
              "% Usage",
              "% -----",
-             "% [p, x0] = {0}_init();".format(ode.name),
-             "% x = cell2mat(struct2cell(x0));",
+             "% [p, x] = {0}_default();".format(ode.name),
              "% [T, S] = ode15s(@{0}, [0, 60], x, [], p);".format(ode.name),
              ])
         

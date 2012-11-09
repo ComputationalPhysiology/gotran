@@ -26,7 +26,7 @@ def main(filename):
 
     info("")
     info("Generating Matlab files for the {0} ode...".format(ode.name))
-    open("{0}_init.m".format(ode.name), "w").write(gen.default_value_code())
+    open("{0}_default.m".format(ode.name), "w").write(gen.default_value_code())
     open("{0}.m".format(ode.name), "w").write(gen.dy_code())
     info("  done.")
 
