@@ -31,10 +31,14 @@ def main(filename):
     info("  done.")
 
 if __name__ == "__main__":
+    import os
     import sys
     
     if len(sys.argv) < 2:
-        raise RuntimeError("Expected a gotran file argument")
+        raise RuntimeError("Expected a single gotran file argument")
+
+    if not os.path.isfile(sys.argv[1]):
+        raise IOError("Expected the argument to be a file")
 	 
     file_name = sys.argv[1]
     main(file_name)
