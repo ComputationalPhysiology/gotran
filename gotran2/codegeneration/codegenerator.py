@@ -764,7 +764,7 @@ class MatlabCodeGenerator(CodeGenerator):
                 state_names.append("% --- {0} ---".format(state.comment))
 
             init_values.append("x0({0}) = {1}".format(ind + 1, state.init))
-            state_names.append("state_names{{{0}}} = \"{1}\"".format(ind + 1, state.name))
+            state_names.append("state_names{{{0}}} = \'{1}\'".format(ind + 1, state.name))
 
         init_values.append("varargout(1) = {x0}")
         state_names.append("varargout(2) = {state_names}")
@@ -799,7 +799,7 @@ class MatlabCodeGenerator(CodeGenerator):
 
         body_lines = [""]
         
-        body_lines.append("if !(nargin == 2 || nargin == 3)")
+        body_lines.append("if ~(nargin == 2 || nargin == 3)")
         body_lines.append(["error('Expected 2-3 input arguments.')"])
         body_lines.append("")
         body_lines.append("if nargin == 2")

@@ -330,6 +330,7 @@ class ODE(object):
 
         expanded_expr = sp.sympify(expanded_expr)
         for atom in expanded_expr.atoms():
+            # FIXME: Include Dummy to prevent bailout for Piecewise in sympy <= 0.7.2
             if not isinstance(atom, (ModelSymbol, sp.NumberSymbol, \
                                      sp.Number, int, float, sp.Dummy)):
                 type_error("A derivative must be an expressions of "\
