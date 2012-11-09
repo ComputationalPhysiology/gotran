@@ -331,7 +331,7 @@ class ODE(object):
         expanded_expr = sp.sympify(expanded_expr)
         for atom in expanded_expr.atoms():
             if not isinstance(atom, (ModelSymbol, sp.NumberSymbol, \
-                                     sp.Number, int, float)):
+                                     sp.Number, int, float, sp.Dummy)):
                 type_error("A derivative must be an expressions of "\
                            "ModelSymbol or scalars, got {0} which is "\
                            "a {1}.".format(atom, atom.__class__.__name__))
