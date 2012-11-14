@@ -14,9 +14,9 @@ import sys
 major = 2
 minor = 0
 
-scripts = [pjoin("scripts", "gotran"),
-           pjoin("scripts", "gotranpy"),
-           pjoin("scripts", "gotranmatlab"),
+scripts = [pjoin("scripts", "gotran2"),
+           pjoin("scripts", "gotran2py"),
+           pjoin("scripts", "gotran2matlab"),
            pjoin("scripts", "cellml2gotran")]
 
 if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
