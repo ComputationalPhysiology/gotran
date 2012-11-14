@@ -23,8 +23,8 @@ import sys
 import os
 
 # gotran imports
-from gotran2 import load_ode
-from gotran2.common import error
+from gotran import load_ode
+from gotran.common import error
 
 def main(odefile, arguments, **kwargs):
     """

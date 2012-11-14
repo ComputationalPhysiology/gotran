@@ -19,7 +19,7 @@
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
 # Gotran imports
-from gotran2.input.cellml import CellMLParser
+from gotran.input.cellml import CellMLParser
 
 def define_parser(extract_equations, change_state_names):
     """
