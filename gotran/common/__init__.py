@@ -1,4 +1,4 @@
-# Copyright (C) 2012 Johan Hake
+# Copyright (C) 2011-2012 Johan Hake
 #
 # This file is part of Gotran.
 #
@@ -15,10 +15,24 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-import symbolicnewtonsolution
+# ModelParameters imports
+from modelparameters.logger import *
+import modelparameters.commands as commands
 
-# gotran2 imports
-from gotran2.algorithms.symbolicnewtonsolution import *
+# Base class for ModelParameters exceptions
+class GotranException(RuntimeError):
+    "Base class for ModelParameters exceptions"
+    pass
+
+set_default_exception(GotranException)
+from modelparameters.utils import *
+
+# gotran imports
+from gotran.common.dicts import *
+from gotran.common.disk import *
+
+# Set initial log level to INFO
+set_log_level(INFO)
 
 __all__ = [_name for _name in globals().keys() if _name[0] != "_"]
 

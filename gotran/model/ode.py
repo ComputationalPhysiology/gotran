@@ -27,9 +27,9 @@ from modelparameters.sympytools import ModelSymbol, sp, sp_namespace
 from modelparameters.codegeneration import sympycode
 
 # Gotran imports
-from gotran2.common import type_error, value_error, error, check_arg, \
+from gotran.common import type_error, value_error, error, check_arg, \
      check_kwarg, scalars, listwrap, info, debug
-from gotran2.model.odeobjects import *
+from gotran.model.odeobjects import *
 
 class ODE(object):
     """

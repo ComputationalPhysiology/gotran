@@ -20,7 +20,7 @@ import urllib
 from xml.etree import ElementTree
 
 from collections import OrderedDict, deque
-from gotran2.common import warning, error
+from gotran.common import warning, error
 
 __all__ = ["cellml2ode", "CellMLParser"]
 
@@ -908,7 +908,7 @@ def cellml2ode(cellml, extract_equations=None, change_state_names=None):
     """
     Convert a CellML model into an ode
     """
-    from gotran2 import exec_ode
+    from gotran import exec_ode
     cellml = CellMLParser(cellml, extract_equations=extract_equations, \
                           change_state_names=change_state_names)
     return exec_ode(cellml.to_gotran(), cellml.name)

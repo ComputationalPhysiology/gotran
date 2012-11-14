@@ -19,7 +19,7 @@
 
 __all__ = ["CellModel", "gccm"]
 
-from gotran2.common.utils import *
+from gotran.common.utils import *
 
 # Holder for all cellmodels
 _all_cellmodels = {}

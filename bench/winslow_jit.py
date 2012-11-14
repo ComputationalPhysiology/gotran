@@ -1,6 +1,6 @@
-from gotran2 import *
-from gotran2.codegeneration.codegenerator import *
-from gotran2.codegeneration.compilemodule import jit
+from gotran import *
+from gotran.codegeneration.codegenerator import *
+from gotran.codegeneration.compilemodule import jit
 import time
 import numpy as np
 

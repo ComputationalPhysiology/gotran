@@ -25,8 +25,8 @@ import numpy
 from cPickle import Unpickler, Pickler
 from os.path import isdir, join
 
-# gotran2 imports
-from gotran2.common import *
+# gotran imports
+from gotran.common import *
 
 TIME_FORMAT = "%Y.%m.%d-%H.%M.%S"
 

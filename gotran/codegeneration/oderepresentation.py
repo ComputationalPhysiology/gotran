@@ -23,8 +23,8 @@ from modelparameters.parameterdict import *
 from modelparameters.sympytools import sp, iter_symbol_params_from_expr
 
 # Local gotran imports
-from gotran2.model.ode import ODE
-from gotran2.common import check_arg, check_kwarg, info
+from gotran.model.ode import ODE
+from gotran.common import check_arg, check_kwarg, info
 
 import sys
 

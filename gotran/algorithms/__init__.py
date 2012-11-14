@@ -15,26 +15,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-__version__ = "2.0"
+import symbolicnewtonsolution
 
-# Import gotran2 modules
-import common
-import model
-import algorithms
+# gotran imports
+from gotran.algorithms.symbolicnewtonsolution import *
 
-# Import classes and routines from gotran2 modules
-from common import DEBUG, INFO, WARNING, ERROR, CRITICAL, \
-     info, debug, warning, error, set_log_level
-from model import *
-from algorithms import *
+__all__ = [_name for _name in globals().keys() if _name[0] != "_"]
 
-# Model parameters
-from modelparameters.parameters import ScalarParam
-from modelparameters.parameterdict import ParameterDict
-from modelparameters.sympytools import sp_namespace as _sp_namespace
-
-# Add sympy namespace to globals
-globals().update(_sp_namespace)
-
-# Assign the __all__ attribute
-__all__ = [name for name in globals().keys() if name[:1] != "_"]
+del _name

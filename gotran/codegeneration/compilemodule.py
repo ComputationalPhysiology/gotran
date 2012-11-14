@@ -23,8 +23,8 @@ import instant
 import hashlib
 import types
 
-import gotran2
-from gotran2.common import check_arg, push_log_level, pop_log_level, info, INFO
+import gotran
+from gotran.common import check_arg, push_log_level, pop_log_level, info, INFO
 from oderepresentation import ODERepresentation
 from codegenerator import CCodeGenerator
 
@@ -149,7 +149,7 @@ def compile_extension_module(code, ode):
     # Create unique module name for this application run
     module_name = "gotran_compiled_module_{0}_{1}".format(\
         ode.name, hashlib.md5(repr(code) + instant.get_swig_version() + \
-                              gotran2.__version__).hexdigest())
+                              gotran.__version__).hexdigest())
         
     # Check cache
     compiled_module = instant.import_module(module_name)

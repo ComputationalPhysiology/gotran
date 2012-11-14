@@ -4,7 +4,7 @@ __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
 import unittest
-from gotran2 import *
+from gotran import *
 
 class Creation(unittest.TestCase):
 
@@ -115,9 +115,9 @@ class Creation(unittest.TestCase):
         """
 
         import numpy as np
-        from gotran2.codegeneration.codegenerator import \
+        from gotran.codegeneration.codegenerator import \
              CodeGenerator, ODERepresentation
-        from gotran2.codegeneration.compilemodule import jit
+        from gotran.codegeneration.compilemodule import jit
         
         keep, use_cse, numerals, use_names = (1,0,0,1)
 
@@ -167,7 +167,7 @@ class Creation(unittest.TestCase):
             
             
     def test_matlab_python_code(self):
-        from gotran2.codegeneration.codegenerator import \
+        from gotran.codegeneration.codegenerator import \
              MatlabCodeGenerator, ODERepresentation
         
         keep, use_cse, numerals, use_names = (1,0,0,1)

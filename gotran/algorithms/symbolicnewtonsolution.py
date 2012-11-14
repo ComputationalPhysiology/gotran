@@ -22,8 +22,8 @@ from modelparameters.sympytools import sp
 from modelparameters.utils import check_arg, scalars
 
 # Local imports
-from gotran2.model.ode import ODE
-from gotran2.common.dicts import odict
+from gotran.model.ode import ODE
+from gotran.common.dicts import odict
 from collections import OrderedDict
 
 def _iszero(x):

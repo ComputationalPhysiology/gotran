@@ -14,9 +14,9 @@ import sys
 major = 2
 minor = 0
 
-scripts = [pjoin("scripts", "gotran2"),
-           pjoin("scripts", "gotran2py"),
-           pjoin("scripts", "gotran2matlab"),
+scripts = [pjoin("scripts", "gotran"),
+           pjoin("scripts", "gotranpy"),
+           pjoin("scripts", "gotranmatlab"),
            pjoin("scripts", "cellml2gotran")]
 
 if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
@@ -73,16 +73,16 @@ class run_tests(Command):
         os.chdir("test")
         os.system("python test.py")
 
-setup(name = "Gotran2",
+setup(name = "Gotran",
       version = "{0}.{1}".format(major, minor),
       description = """
       A declarative language describing ordinary differential equations.
       """,
       author = "Johan Hake",
       author_email = "hake.dev@gmail.com",
-      packages = ["gotran2", "gotran2.common", "gotran2.model",
-                  "gotran2.algorithms", "gotran2.codegeneration",
-                  "gotran2.input"],
+      packages = ["gotran", "gotran.common", "gotran.model",
+                  "gotran.algorithms", "gotran.codegeneration",
+                  "gotran.input"],
       scripts = scripts,
       cmdclass    = {'test': run_tests,
                      'clean': clean,

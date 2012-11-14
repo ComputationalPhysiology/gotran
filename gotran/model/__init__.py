@@ -15,24 +15,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-# ModelParameters imports
-from modelparameters.logger import *
-import modelparameters.commands as commands
+import odeobjects
+import ode
+import loadmodel
 
-# Base class for ModelParameters exceptions
-class GotranException(RuntimeError):
-    "Base class for ModelParameters exceptions"
-    pass
-
-set_default_exception(GotranException)
-from modelparameters.utils import *
-
-# gotran2 imports
-from gotran2.common.dicts import *
-from gotran2.common.disk import *
-
-# Set initial log level to INFO
-set_log_level(INFO)
+# gotran imports
+from odeobjects import *
+from ode import *
+from loadmodel import *
 
 __all__ = [_name for _name in globals().keys() if _name[0] != "_"]
 

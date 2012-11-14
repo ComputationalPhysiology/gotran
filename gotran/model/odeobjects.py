@@ -25,7 +25,7 @@ import numpy as np
 from modelparameters.sympytools import sp, ModelSymbol
 from modelparameters.parameters import *
 
-from gotran2.common import error, check_arg, scalars
+from gotran.common import error, check_arg, scalars
 
 class ODEObject(object):
     """

@@ -23,7 +23,7 @@ import re
 from modelparameters.parameters import *
 
 # Gotran imports
-from gotran2.common import check_arg
+from gotran.common import check_arg
 from oderepresentation import ODERepresentation
 
 _re_str = re.compile(".*\"([\w\s]+)\".*")

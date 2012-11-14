@@ -27,8 +27,8 @@ from modelparameters.parameters import Param, ScalarParam, ArrayParam, \
 from modelparameters.sympytools import sp_namespace, sp
 
 # gotran imports
-from gotran2.common import *
-from gotran2.model.ode import ODE
+from gotran.common import *
+from gotran.model.ode import ODE
 
 # Global variables
 global _namespace, _load_arguments, _current_ode

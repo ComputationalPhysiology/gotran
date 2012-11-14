@@ -1,5 +1,5 @@
-from gotran2 import *
-from gotran2.codegeneration.codegenerator import *
+from gotran import *
+from gotran.codegeneration.codegenerator import *
 
 ode = load_ode("winslow")
 
