@@ -34,10 +34,10 @@ for keep, use_cse, numerals, use_names in \
          "# use_cse = {0}".           format(gen.oderepr.optimization.use_cse),
          "# parameter_numerals = {0}".format(gen.oderepr.optimization.parameter_numerals),
          code,
-         "init_states, parameters = winslow_init_values(), winslow_parameters()",
+         "init_states, parameters = init_values(), default_parameters()",
          "import time", "t0 = time.time()",
          "for i in range({0}):".format(times),
-         "    dy = dy_winslow(0.0, init_states" + (")" \
+         "    dy = rhs(0.0, init_states" + (")" \
          if gen.oderepr.optimization.parameter_numerals else ", parameters)"),
          '''print """
 keep_intermediates = {0}

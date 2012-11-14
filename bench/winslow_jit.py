@@ -21,10 +21,10 @@ exec(gen.init_states_code())
 exec(gen.init_param_code())
 exec(gen.dy_code())
 
-parameters = winslow_parameters()
-states = winslow_init_values()
+parameters = default_parameters()
+states = init_values()
 dy = np.asarray(states).copy()
-dy_correct = dy_winslow(0.0, states, parameters)
+dy_correct = rhs(0.0, states, parameters)
 
 for keep, use_cse, numerals, use_names in \
         [(1,0,0,1), (1,0,0,0), \
@@ -48,13 +48,13 @@ for keep, use_cse, numerals, use_names in \
     module = jit(oderepr)
     t0 = time.time()
     if oderepr.optimization.parameter_numerals:
-        module.dy_winslow(0.0, states, dy)
+        module.rhs(0.0, states, dy)
         for i in range(times):
-            module.dy_winslow(0.0, states, dy)
+            module.rhs(0.0, states, dy)
     else:
-        module.dy_winslow(0.0, states, parameters, dy)
+        module.rhs(0.0, states, parameters, dy)
         for i in range(times):
-            module.dy_winslow(0.0, states, parameters, dy)
+            module.rhs(0.0, states, parameters, dy)
 
     print """
 keep_intermediates = {0}
