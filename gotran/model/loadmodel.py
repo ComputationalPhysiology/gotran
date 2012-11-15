@@ -24,7 +24,7 @@ from collections import OrderedDict
 # modelparameters import
 from modelparameters.parameters import Param, ScalarParam, ArrayParam, \
      ConstParam
-from modelparameters.sympytools import sp_namespace, sp
+from modelparameters.sympytools import sp_namespace, sp, ModelSymbol
 
 # gotran imports
 from gotran.common import *
@@ -43,9 +43,13 @@ class IntermediateDispatcher(dict):
     """
     def __setitem__(self, name, value):
         
-        ode = _get_load_ode()
-        setattr(ode, name, value)
-        dict.__setitem__(self, name, getattr(ode, name))
+        if isinstance(value, sp.Basic) and any(isinstance(atom, ModelSymbol) \
+                                               for atom in value.atoms()):
+            ode = _get_load_ode()
+            setattr(ode, name, value)
+            dict.__setitem__(self, name, getattr(ode, name))
+        else:
+            dict.__setitem__(self, name, value)
 
 def _init_namespace(ode):
     # Get global variables and reset them
