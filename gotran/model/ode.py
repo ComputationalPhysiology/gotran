@@ -52,6 +52,13 @@ class ODE(object):
 
         # Initialize all variables
         self._all_objects = OrderedDict()
+        self._states = []
+        self._field_states = []
+        self._parameters = []
+        self._field_parameters = []
+        self._variables = []
+
+        # FIXME: Move to list when we have a dedicated Intermediate class
         self._intermediates = OrderedDict()
         self._monitored_intermediates = OrderedDict()
         
@@ -82,7 +89,10 @@ class ODE(object):
         
         # Register the state
         self._register_object(state)
-
+        self._states.append(state)
+        if state.is_field:
+            self._field_states.append(state)
+            
         # Return the sympy version of the state
         return state.sym
         
@@ -111,6 +121,9 @@ class ODE(object):
         
         # Register the parameter
         self._register_object(parameter)
+        self._parameters.append(parameter)
+        if parameter.is_field:
+            self._field_parameters.append(parameter)
 
         # Return the sympy version of the parameter
         return parameter.sym
@@ -140,6 +153,7 @@ class ODE(object):
         
         # Register the variable
         self._register_object(variable)
+        self._variables.append(variable)
 
         # Return the sympy version of the variable
         return variable.sym
@@ -387,47 +401,42 @@ class ODE(object):
             return self._algebraic_expr_expanded
         else:
             return self._algebraic_expr
-        
-    def iter_states(self):
-        """
-        Return an iterator over registered states
-        """
-        for state in self._all_objects.values():
-            if isinstance(state, State):
-                yield state
 
-    def iter_field_states(self):
+    @property
+    def states(self):
         """
-        Return an iterator over registered field states
+        Return a list of all states 
         """
-        for state in self._all_objects.values():
-            if isinstance(state, State) and state.is_field:
-                yield state
+        return self._states
 
-    def iter_field_parameters(self):
+    @property
+    def field_states(self):
         """
-        Return an iterator over registered field parameters
+        Return a list of all field states 
         """
-        for param in self._all_objects.values():
-            if isinstance(param, Parameter) and param.is_field:
-                yield param
+        return self._field_states
 
-    def iter_variables(self):
+    @property
+    def parameters(self):
         """
-        Return an iterator over registered variables
+        Return a list of all parameters 
         """
-        for variable in self._all_objects.values():
-            if isinstance(variable, Variable):
-                yield variable
+        return self._parameters
 
-    def iter_parameters(self):
+    @property
+    def field_parameters(self):
         """
-        Return an iterator over registered parameters
+        Return a list of all field parameters
         """
-        for parameter in self._all_objects.values():
-            if isinstance(parameter, Parameter):
-                yield parameter
-                
+        return self._field_parameters
+
+    @property
+    def variables(self):
+        """
+        Return a list of all variables 
+        """
+        return self._variables
+
     def iter_monitored_intermediates(self):
         """
         Return an iterator over registered monitored intermediates
@@ -440,94 +449,94 @@ class ODE(object):
         Return True if state is a registered state or field state
         """
         check_arg(state, (str, ModelSymbol, ODEObject))
+
+        # Grab ODEObject if str or ModelSymbol is passed
         if isinstance(state, (str, ModelSymbol)):
             state = self.get_object(state)
-            return isinstance(state, State)
-        
-        if not isinstance(state, State):
-            return False
-        
-        return any(state == st for st in self.iter_states())
+            if state is None:
+                return False
+            
+        return state in self._states
         
     def has_field_state(self, state):
         """
         Return True if state is a registered field state
         """
         check_arg(state, (str, ModelSymbol, ODEObject))
+
+        # Grab ODEObject if str or ModelSymbol is passed
         if isinstance(state, (str, ModelSymbol)):
             state = self.get_object(state)
-            return isinstance(state, State) and state.is_field 
+            if state is None:
+                return False
+            
+        return state in self._field_states
         
-        if not isinstance(state, State):
-            return False
-        
-        return any(state == st for st in self.iter_field_states())
-        
-    def has_field_parameter(self, param):
+    def has_parameter(self, parameter):
         """
-        Return True if param is a registered field state
+        Return True if parameter is a registered parameter or field parameter
         """
-        check_arg(param, (str, ModelSymbol, ODEObject))
-        if isinstance(param, (str, ModelSymbol)):
-            param = self.get_object(param)
-            return isinstance(param, Parameter) and param.is_field 
+        check_arg(parameter, (str, ModelSymbol, ODEObject))
+
+        # Grab ODEObject if str or ModelSymbol is passed
+        if isinstance(parameter, (str, ModelSymbol)):
+            parameter = self.get_object(parameter)
+            if parameter is None:
+                return False
+
+        return parameter in self._parameters
         
-        if not isinstance(param, Parameter):
-            return False
-        
-        return any(param == st for st in self.iter_field_params())
+    def has_field_parameter(self, parameter):
+        """
+        Return True if parameter is a registered field parameter
+        """
+        check_arg(parameter, (str, ModelSymbol, ODEObject))
+
+        # Grab ODEObject if str or ModelSymbol is passed
+        if isinstance(parameter, (str, ModelSymbol)):
+            parameter = self.get_object(parameter)
+            if parameter is None:
+                return False
+
+        return parameter in self._field_parameters
         
     def has_variable(self, variable):
         """
-        Return True if variable is a registered variable
+        Return True if variable is a registered Variable
         """
         check_arg(variable, (str, ModelSymbol, ODEObject))
+
+        # Grab ODEObject if str or ModelSymbol is passed
         if isinstance(variable, (str, ModelSymbol)):
             variable = self.get_object(variable)
-            return isinstance(variable, Variable)
-        
-        if not isinstance(Variable):
-            return False
-        
-        return any(variable == var for var in self.iter_variables())
-        
-    def has_parameter(self, param):
-        """
-        Return True if state is a registered parameter
-        """
-        check_arg(param, (str, ModelSymbol, ODEObject))
-        if isinstance(param, (str, ModelSymbol)):
-            param = self.get_object(param)
-            return isinstance(param, Parameter)
-        
-        if not isinstance(param, Parameter):
-            return False
-        
-        return any(param == par for par in self.iter_parameters())
+            if variable is None:
+                return False
 
+        return variable in self._variables
+        
     @property
     def name(self):
         return self._name
 
     @property
     def num_states(self):
-        return len([s for s in self.iter_states()])
+        return len(self._states)
         
     @property
     def num_field_states(self):
-        return len([s for s in self.iter_field_states()])
+        return len(self._field_states)
         
     @property
     def num_parameters(self):
-        return len([s for s in self.iter_parameters()])
+        return len(self._parameters)
         
     @property
     def num_field_parameters(self):
-        return len([s for s in self.iter_field_parameters()])
+        return len(self._field_parameters)
         
     @property
     def num_variables(self):
-        return len([s for s in self.iter_variables()])
+        return len(self._variables)
 
     @property
     def num_derivative_expr(self):
@@ -549,7 +558,7 @@ class ODE(object):
         """
         Check that the ODE is complete
         """
-        states = [state for state in self.iter_states()]
+        states = self._states
 
         if not states:
             return False
@@ -630,7 +639,7 @@ class ODE(object):
         """
 
         # Delete stored attributes
-        for name in self._all_objects.keys()+self._intermediates.keys():
+        for name in self._all_objects.keys() + self._intermediates.keys():
             if name[0] == "_":
                 continue
             delattr(self, name)
@@ -731,6 +740,7 @@ class ODE(object):
         assert(isinstance(obj, ODEObject))
         
         # Register the object
+        # FIXME: Add possibilities to add duplicates of an Intermediate
         if obj.name in self._all_objects:
             obj = self._all_objects[obj.name]
             error("Illeagal name '{0}'. It is already a registered {1} "\
@@ -741,6 +751,9 @@ class ODE(object):
         # Make object available as an attribute
         setattr(self, obj.name, obj.sym)
 
+        # FIXME: Should we add the name of the ode pointing to self, in
+        # FIXME: the expansion namespace, making it possible to access
+        # FIXME: names through attributes?
         # Register symbol in the expansion namespace
         self._expansion_namespace[obj.name] = obj.sym
 

@@ -224,10 +224,10 @@ def _create_newton_system(ode, theta=1):
     """
     
     # Lists of symbols 
-    states = [state.sym for state in ode.iter_states()]
-    states_0 = [state.sym_0 for state in ode.iter_states()]
-    vars_ = [var.sym for var in ode.iter_variables()]
-    vars_0 = [var.sym_0 for var in ode.iter_variables()]
+    states = [state.sym for state in ode.states]
+    states_0 = [state.sym_0 for state in ode.states]
+    vars_ = [var.sym for var in ode.variables]
+    vars_0 = [var.sym_0 for var in ode.variables]
 
     def sum_ders(ders):
         return reduce(lambda x, y: x+y, ders, 0)

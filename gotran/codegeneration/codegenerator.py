@@ -99,7 +99,7 @@ class CodeGenerator(object):
         body_lines.append("assert(len(states) == {0})".format(ode.num_states))
         if self.oderepr.optimization.use_state_names:
             body_lines.append(", ".join(state.name for i, state in \
-                            enumerate(ode.iter_states())) + " = states")
+                            enumerate(ode.states)) + " = states")
         
         # Add parameters code if not numerals
         if not self.oderepr.optimization.parameter_numerals:
@@ -110,7 +110,7 @@ class CodeGenerator(object):
 
             if self.oderepr.optimization.use_parameter_names:
                 body_lines.append(", ".join(param.name for i, param in \
-                        enumerate(ode.iter_parameters())) + " = parameters")
+                        enumerate(ode.parameters)) + " = parameters")
 
         # Iterate over any body needed to define the dy
         for expr, name in self.oderepr.iter_dy_body():
@@ -127,7 +127,7 @@ class CodeGenerator(object):
         
         # Add dy[i] lines
         for ind, (state, (derivative, expr)) in enumerate(\
-            zip(ode.iter_states(), self.oderepr.iter_derivative_expr())):
+            zip(ode.states, self.oderepr.iter_derivative_expr())):
             assert(state.sym == derivative[0])
             body_lines.append(pythoncode(expr, "dy[{0}]".format(ind)))
 
@@ -174,7 +174,7 @@ class CodeGenerator(object):
         if self.oderepr.optimization.use_state_names:
 
             state_indices, state_names = [], []
-            for ind, state in enumerate(ode.iter_states()):
+            for ind, state in enumerate(ode.states):
                 if state.name in self.oderepr._used_in_monitoring["states"]:
                     state_names.append(state.name)
                     state_indices.append("states[{0}]".format(ind))
@@ -192,7 +192,7 @@ class CodeGenerator(object):
             if self.oderepr.optimization.use_parameter_names:
             
                 parameter_indices, parameter_names = [], []
-                for ind, param in enumerate(ode.iter_parameters()):
+                for ind, param in enumerate(ode.parameters):
                     if param.name in self.oderepr._used_in_monitoring["parameters"]:
                         parameter_names.append(param.name)
                         parameter_indices.append("parameters[{0}]".format(ind))
@@ -259,11 +259,11 @@ class CodeGenerator(object):
                       "", "# Init values"]
         body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
             state.name, state.init) for state in \
-                      self.oderepr.ode.iter_states())))
+                      self.oderepr.ode.states)))
         body_lines.append("init_values = np.array([{0}], dtype=np.float_)"\
                           .format(", ".join("{0}".format(\
                 state.init if np.isscalar(state.init) else state.init[0])\
-                            for state in self.oderepr.ode.iter_states())))
+                            for state in self.oderepr.ode.states)))
         body_lines.append("")
         
         range_check = "lambda value : value {minop} {minvalue} and "\
@@ -273,7 +273,7 @@ class CodeGenerator(object):
         body_lines.append("state_ind = dict({0})".format(\
             ", ".join("{0}=({1}, {2})".format(\
                 state.param.name, i, repr(state.param._range))\
-                for i, state in enumerate(self.oderepr.ode.iter_states()))))
+                for i, state in enumerate(self.oderepr.ode.states))))
         body_lines.append("")
 
         body_lines.append("for state_name, value in values.items():")
@@ -310,10 +310,10 @@ class CodeGenerator(object):
                       "", "# Param values"]
         body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
             param.name, param.init) for param in \
-                      self.oderepr.ode.iter_parameters())))
+                      self.oderepr.ode.parameters)))
         body_lines.append("param_values = np.array([{0}], dtype=np.float_)"\
                           .format(", ".join("{0}".format(param.init) \
-                    for param in self.oderepr.ode.iter_parameters())))
+                    for param in self.oderepr.ode.parameters)))
         body_lines.append("")
         
         range_check = "lambda value : value {minop} {minvalue} and "\
@@ -324,7 +324,7 @@ class CodeGenerator(object):
             ", ".join("{0}=({1}, {2})".format(\
                 state.param.name, i, repr(state.param._range))\
                 for i, state in enumerate(\
-                          self.oderepr.ode.iter_parameters()))))
+                          self.oderepr.ode.parameters))))
         body_lines.append("")
 
         body_lines.append("for param_name, value in values.items():")
@@ -519,7 +519,7 @@ class CCodeGenerator(CodeGenerator):
         # Start building body
         body_lines = ["", "// Assign states"]
         if self.oderepr.optimization.use_state_names:
-            for i, state in enumerate(ode.iter_states()):
+            for i, state in enumerate(ode.states):
                 body_lines.append("const double {0} = states[{1}]".format(\
                     state.name, i))
         
@@ -530,7 +530,7 @@ class CCodeGenerator(CodeGenerator):
             body_lines.append("// Assign parameters")
 
             if self.oderepr.optimization.use_parameter_names:
-                for i, param in enumerate(ode.iter_parameters()):
+                for i, param in enumerate(ode.parameters):
                     body_lines.append("const double {0} = parameters[{1}]".\
                                       format(param.name, i))
 
@@ -556,7 +556,7 @@ class CCodeGenerator(CodeGenerator):
 
         # Add dy[i] lines
         for ind, (state, (derivative, expr)) in enumerate(\
-            zip(ode.iter_states(), self.oderepr.iter_derivative_expr())):
+            zip(ode.states, self.oderepr.iter_derivative_expr())):
             assert(state.sym == derivative[0])
             body_lines.append(self.to_code(expr, "{0}[{1}]".format(result_name, ind)))
 
@@ -596,7 +596,7 @@ class CCodeGenerator(CodeGenerator):
         # Start building body
         body_lines = ["", "// Assign states"]
         if self.oderepr.optimization.use_state_names:
-            for ind, state in enumerate(ode.iter_states()):
+            for ind, state in enumerate(ode.states):
                 if state.name in self.oderepr._used_in_monitoring["states"]:
                     body_lines.append("const double {0} = states[{1}]".format(\
                         state.name, ind))
@@ -608,7 +608,7 @@ class CCodeGenerator(CodeGenerator):
             body_lines.append("// Assign parameters")
 
             if self.oderepr.optimization.use_parameter_names:
-                for ind, param in enumerate(ode.iter_parameters()):
+                for ind, param in enumerate(ode.parameters):
                     if param.name in self.oderepr._used_in_monitoring["parameters"]:
                         body_lines.append("const double {0} = parameters[{1}]".\
                                           format(param.name, ind))
@@ -730,7 +730,7 @@ class MatlabCodeGenerator(CodeGenerator):
         body_lines.append("% --- Default parameters values --- ")
         
         present_param_comment = ""
-        for param in ode.iter_parameters():
+        for param in ode.parameters:
             
             if present_param_comment != param.comment:
                 present_param_comment = param.comment
@@ -752,7 +752,7 @@ class MatlabCodeGenerator(CodeGenerator):
         state_names.append("state_names = cell({0}, 1)".format(ode.num_states))
         
         present_state_comment = ""
-        for ind, state in enumerate(ode.iter_states()):
+        for ind, state in enumerate(ode.states):
             
             if present_state_comment != state.comment:
                 present_state_comment = state.comment
@@ -809,7 +809,7 @@ class MatlabCodeGenerator(CodeGenerator):
         body_lines.append("% --- State values --- ")
 
         present_state_comment = ""
-        for ind, state in enumerate(ode.iter_states()):
+        for ind, state in enumerate(ode.states):
             
             if present_state_comment != state.comment:
                 present_state_comment = state.comment
@@ -830,7 +830,7 @@ class MatlabCodeGenerator(CodeGenerator):
         # Add dy(i) lines
         body_lines.append("dy = zeros({0}, 1)".format(ode.num_states))
         for ind, (state, (derivative, expr)) in enumerate(\
-            zip(ode.iter_states(), self.oderepr.iter_derivative_expr())):
+            zip(ode.states, self.oderepr.iter_derivative_expr())):
             assert(state.sym == derivative[0]), "{0}!={1}".format(state.sym, derivative[0])
             body_lines.append(self.to_code(expr, "dy({0})".format(ind+1)))
         

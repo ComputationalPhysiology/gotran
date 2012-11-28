@@ -223,26 +223,26 @@ class ODERepresentation(object):
             # Deal with parameter subs first
             if self.optimization.parameter_numerals:
                 subs.update((param.sym, param.init) \
-                            for param in self.ode.iter_parameters())
+                            for param in self.ode.parameters)
             elif not self.optimization.use_parameter_names:
                 subs.update((param.sym, sp.Symbol("parameters"+self.index(\
                     ind))) for ind, param in enumerate(\
-                                self.ode.iter_parameters()))
+                                self.ode.parameters))
             elif self._parameter_prefix:
                 subs.update((param.sym, sp.Symbol("{0}{1}".format(\
                     self._parameter_prefix, param.name))) \
-                            for param in self.ode.iter_parameters())
+                            for param in self.ode.parameters)
 
             # Deal with state subs
             if not self.optimization.use_state_names:
                 subs.update((state.sym, sp.Symbol("states"+self.index(ind)))\
                             for ind, state in enumerate(\
-                                self.ode.iter_states()))
+                                self.ode.states))
 
             elif self._state_prefix:
                 subs.update((param.sym, sp.Symbol("{0}{1}".format(\
                     self._state_prefix, param.name))) \
-                            for param in self.ode.iter_states())
+                            for param in self.ode.states)
 
             self._symbol_subs = subs
                 

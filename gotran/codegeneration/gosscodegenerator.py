@@ -165,8 +165,8 @@ class GossCodeGenerator(CppCodeGenerator):
         ode = self.oderepr.ode
 
         # State names
-        state_names = [state.name for state in ode.iter_states()]
-        field_state_names = [state.name for state in ode.iter_field_states()]
+        state_names = [state.name for state in ode.states]
+        field_state_names = [state.name for state in ode.field_states]
         body = ["", "// State names"]
         body.extend("_state_names[{0}] = \"{1}\"".format(i, name) \
                     for i, name in enumerate(state_names))
@@ -176,7 +176,7 @@ class GossCodeGenerator(CppCodeGenerator):
             body.extend(["", "// Parameter names"])
             body.extend("_parameter_names[{0}] = \"{1}\"".format(\
                 i, param.name) for i, param in \
-                        enumerate(ode.iter_parameters()))
+                        enumerate(ode.parameters))
             
         # Field state names
         if self.class_form["num_field_states"] > 0:
@@ -208,7 +208,7 @@ class GossCodeGenerator(CppCodeGenerator):
             body.extend(["", "// Parameter to value map"])
             body.extend("_param_to_value[\"{0}\"] = &{1}".format(\
                 param.name, param.name) for i, param in \
-                        enumerate(ode.iter_parameters()))
+                        enumerate(ode.parameters))
 
         body.append("")
         code = "\n".join(self.indent_and_split_lines(body, indent=3))
@@ -229,17 +229,17 @@ class GossCodeGenerator(CppCodeGenerator):
         init = []
 
         state_declarations.extend("const double {0} = states[{1}]".format(state.name, i) \
-                                  for i, state in enumerate(ode.iter_states()))
+                                  for i, state in enumerate(ode.states))
         
         # Parameter declaration and init
         if self.class_form["num_parameters"] > 0:
             parameter_declarations.extend(["", "// Parameters"])
             parameter_declarations.append("double " + ", ".join(\
-                param.name for param in ode.iter_parameters())) 
+                param.name for param in ode.parameters)) 
             
             init.extend("{0}({1})".format(param.name, param.init[0] \
                         if param.is_field else param.init) \
-                        for param in ode.iter_parameters())
+                        for param in ode.parameters)
         
         # Parameter initialization
         init = [", ".join(init)]
@@ -263,7 +263,7 @@ class GossCodeGenerator(CppCodeGenerator):
         ic_code.append("values->data.reset(new double[_num_states])")
         ic_code.extend("values->data[{0}] = {1}".format(\
             i, state.init[0] if state.is_field else state.init) \
-                       for i, state in enumerate(ode.iter_states()))
+                       for i, state in enumerate(ode.states))
 
         code = "\n".join(self.indent_and_split_lines(ic_code, indent=3))
 
