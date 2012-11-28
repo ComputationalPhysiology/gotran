@@ -41,7 +41,7 @@ class ODEObject(object):
             The name of the ODEObject
         init : scalar, ScalarParam
             The initial value of this ODEObject
-        comment : str (optional)
+        component : str (optional)
             A comment about the ODEObject
         ode_name : str (optional)
             The name of the ODE the ODEObject belongs to

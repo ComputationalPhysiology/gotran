@@ -67,9 +67,9 @@ class ODE(object):
             The name of the state variable
         init : scalar, ScalarParam
             The initial value of the state
-        comment : str (optional)
-        
-            A comment which will follow the state
+        component : str (optional)
+            Add state to a particular component
+            
         Example:
         ========
 
@@ -96,8 +96,8 @@ class ODE(object):
             The name of the parameter
         init : scalar, ScalarParam
             The initial value of this parameter
-        comment : str (optional)
-            A comment which will follow the state
+        component : str (optional)
+            Add state to a particular component
         
         Example:
         ========
@@ -125,8 +125,8 @@ class ODE(object):
             The name of the variables
         init : scalar, ScalarParam
             The initial value of this parameter
-        comment : str (optional)
-            A comment which will follow the state
+        component : str (optional)
+            Add state to a particular component
         
         Example:
         ========
@@ -235,10 +235,7 @@ class ODE(object):
         add = getattr(self, "add_{0}".format(entity))
         
         # Symbol and value dicts
-        for name in sorted(kwargs.keys()):
-    
-            # Get value
-            value = kwargs[name]
+        for name, value in sorted(kwargs.items()):
     
             # Add the symbol
             sym = add(name, value, comment)
