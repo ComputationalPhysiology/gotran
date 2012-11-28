@@ -64,7 +64,7 @@ class ODE(object):
         
         self.clear()
 
-    def add_state(self, name, init, comment=""):
+    def add_state(self, name, init, component=""):
         """
         Add a state to the ODE
 
@@ -85,7 +85,7 @@ class ODE(object):
         """
         
         # Create the state
-        state = State(name, init, comment, self.name)
+        state = State(name, init, component, self.name)
         
         # Register the state
         self._register_object(state)
@@ -96,7 +96,7 @@ class ODE(object):
         # Return the sympy version of the state
         return state.sym
         
-    def add_parameter(self, name, init, comment=""):
+    def add_parameter(self, name, init, component=""):
         """
         Add a parameter to the ODE
 
@@ -117,7 +117,7 @@ class ODE(object):
         """
         
         # Create the parameter
-        parameter = Parameter(name, init, comment, self.name)
+        parameter = Parameter(name, init, component, self.name)
         
         # Register the parameter
         self._register_object(parameter)
@@ -128,7 +128,7 @@ class ODE(object):
         # Return the sympy version of the parameter
         return parameter.sym
 
-    def add_variable(self, name, init, comment=""):
+    def add_variable(self, name, init, component=""):
         """
         Add a variable to the ODE
 
@@ -149,7 +149,7 @@ class ODE(object):
         """
         
         # Create the variable
-        variable = Variable(name, init, comment, self.name)
+        variable = Variable(name, init, component, self.name)
         
         # Register the variable
         self._register_object(variable)
@@ -158,7 +158,7 @@ class ODE(object):
         # Return the sympy version of the variable
         return variable.sym
 
-    def add_states(self, comment="", **kwargs):
+    def add_states(self, component="", **kwargs):
         """
         Add a number of states to the current ODE
     
@@ -173,9 +173,9 @@ class ODE(object):
             error("expected at least one state")
         
         # Check values and create sympy Symbols
-        self._add_entities(comment, kwargs, "state")
+        self._add_entities(component, kwargs, "state")
     
-    def add_parameters(self, comment="", **kwargs):
+    def add_parameters(self, component="", **kwargs):
         """
         Add a number of parameters to the current ODE
     
@@ -192,9 +192,9 @@ class ODE(object):
             error("expected at least one state")
         
         # Check values and create sympy Symbols
-        self._add_entities(comment, kwargs, "parameter")
+        self._add_entities(component, kwargs, "parameter")
         
-    def add_variables(self, comment="", **kwargs):
+    def add_variables(self, component="", **kwargs):
         """
         Add a number of variables to the current ODE
     
@@ -210,7 +210,7 @@ class ODE(object):
             error("expected at least one variable")
         
         # Check values and create sympy Symbols
-        self._add_entities(comment, kwargs, "variable")
+        self._add_entities(component, kwargs, "variable")
 
     def add_monitored(self, *args):
         """
@@ -235,7 +235,7 @@ class ODE(object):
             # Register the expanded monitored intermediate
             self._monitored_intermediates[name] = self._expansion_namespace[name]
             
-    def _add_entities(self, comment, kwargs, entity):
+    def _add_entities(self, component, kwargs, entity):
         """
         Help function for determine if each entity in the kwargs is unique
         and to check the type of the given default value
@@ -252,7 +252,7 @@ class ODE(object):
         for name, value in sorted(kwargs.items()):
     
             # Add the symbol
-            sym = add(name, value, comment)
+            sym = add(name, value, component)
 
             # FIXME: Should we add this capability back?
             # Add symbol to caller frames namespace

@@ -385,7 +385,7 @@ class CodeGenerator(object):
                 if isinstance(code_lines[line_ind+1], list):
                     line_ending = ""
 
-            # Check of we parse a comment line
+            # Check if we parse a comment line
             if len(line) > len(self.comment) and self.comment == \
                line[:len(self.comment)]:
                 is_comment = True
@@ -729,14 +729,14 @@ class MatlabCodeGenerator(CodeGenerator):
         body_lines.append("")
         body_lines.append("% --- Default parameters values --- ")
         
-        present_param_comment = ""
+        present_param_component = ""
         for param in ode.parameters:
             
-            if present_param_comment != param.comment:
-                present_param_comment = param.comment
+            if present_param_component != param.component:
+                present_param_component = param.component
                 
                 body_lines.append("")
-                body_lines.append("% --- {0} ---".format(param.comment))
+                body_lines.append("% --- {0} ---".format(param.component))
             
             body_lines.append("params.{0} = {1}".format(param.name, param.init))
 
@@ -751,17 +751,17 @@ class MatlabCodeGenerator(CodeGenerator):
         state_names.append("% --- State names --- ")
         state_names.append("state_names = cell({0}, 1)".format(ode.num_states))
         
-        present_state_comment = ""
+        present_state_component = ""
         for ind, state in enumerate(ode.states):
             
-            if present_state_comment != state.comment:
-                present_state_comment = state.comment
+            if present_state_component != state.component:
+                present_state_component = state.component
 
                 init_values.append("")
-                init_values.append("% --- {0} ---".format(state.comment))
+                init_values.append("% --- {0} ---".format(state.component))
             
                 state_names.append("")
-                state_names.append("% --- {0} ---".format(state.comment))
+                state_names.append("% --- {0} ---".format(state.component))
 
             init_values.append("x0({0}) = {1}".format(ind + 1, state.init))
             state_names.append("state_names{{{0}}} = \'{1}\'".format(ind + 1, state.name))
@@ -808,14 +808,14 @@ class MatlabCodeGenerator(CodeGenerator):
 
         body_lines.append("% --- State values --- ")
 
-        present_state_comment = ""
+        present_state_component = ""
         for ind, state in enumerate(ode.states):
             
-            if present_state_comment != state.comment:
-                present_state_comment = state.comment
+            if present_state_component != state.component:
+                present_state_component = state.component
                 
                 body_lines.append("")
-                body_lines.append("% --- {0} ---".format(state.comment))
+                body_lines.append("% --- {0} ---".format(state.component))
             
             body_lines.append("{0} = states({1})".format(state.name, ind+1))
         

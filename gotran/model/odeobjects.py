@@ -31,7 +31,7 @@ class ODEObject(object):
     """
     Base container class for all ODEObjects
     """
-    def __init__(self, name, init, comment="", ode_name=""):
+    def __init__(self, name, init, component="", ode_name=""):
         """
         Create ODEObject instance
 
@@ -42,7 +42,7 @@ class ODEObject(object):
         init : scalar, ScalarParam
             The initial value of this ODEObject
         component : str (optional)
-            A comment about the ODEObject
+            A component about the ODEObject
         ode_name : str (optional)
             The name of the ODE the ODEObject belongs to
         """
@@ -76,7 +76,7 @@ class ODEObject(object):
         # Store field
         # FIXME: Is this nesesary
         self._field = isinstance(init, ArrayParam)
-        self._comment = comment
+        self._component = component
         self._ode_name = ode_name
 
     @property
@@ -96,8 +96,8 @@ class ODEObject(object):
         return self._param
 
     @property
-    def comment(self):
-        return self._comment
+    def component(self):
+        return self._component
 
     @property
     def init(self):
@@ -132,8 +132,8 @@ class ODEObject(object):
         """
         return "'{0}', {1}{2}{3}".format(\
             self.name, repr(self.init),
-            ", comment='{0}'".format(self._comment) \
-            if self._comment else "",
+            ", component='{0}'".format(self._component) \
+            if self._component else "",
             ", ode_name='{0}'".format(self._ode_name) \
             if self._ode_name else "",)
 
@@ -141,7 +141,7 @@ class State(ODEObject):
     """
     Container class for a State variable
     """
-    def __init__(self, name, init, comment="", ode_name=""):
+    def __init__(self, name, init, component="", ode_name=""):
         """
         Create a state variable with an assosciated initial value
 
@@ -151,14 +151,14 @@ class State(ODEObject):
             The name of the State
         init : scalar, ScalarParam
             The initial value of this state
-        comment : str (optional)
-            A comment about the State
+        component : str (optional)
+            A component about the State
         ode_name : str (optional)
             The name of the ODE the ODEObject belongs to
         """
         
         # Call super class
-        super(State, self).__init__(name, init, comment, ode_name)
+        super(State, self).__init__(name, init, component, ode_name)
 
         # Add an attribute to register dependencies
         self.dependencies = []
@@ -175,7 +175,7 @@ class Parameter(ODEObject):
     """
     Container class for a Parameter
     """
-    def __init__(self, name, init, comment="", ode_name=""):
+    def __init__(self, name, init, component="", ode_name=""):
         """
         Create a Parameter with an assosciated initial value
 
@@ -185,20 +185,20 @@ class Parameter(ODEObject):
             The name of the State
         init : scalar, ScalarParam
             The initial value of this parameter
-        comment : str (optional)
-            A comment about the Parameter
+        component : str (optional)
+            A component about the Parameter
         ode_name : str (optional)
             The name of the ODE the ODEObject belongs to
         """
         
         # Call super class
-        super(Parameter, self).__init__(name, init, comment, ode_name)
+        super(Parameter, self).__init__(name, init, component, ode_name)
 
 class Variable(ODEObject):
     """
     Container class for a Variable
     """
-    def __init__(self, name, init, comment="", ode_name=""):
+    def __init__(self, name, init, component="", ode_name=""):
         """
         Create a variable with an assosciated initial value
 
@@ -208,14 +208,14 @@ class Variable(ODEObject):
             The name of the variable
         init : scalar
             The initial value of this variable
-        comment : str (optional)
-            A comment about the Variables
+        component : str (optional)
+            A component about the Variables
         ode_name : str (optional)
             The name of the ODE the ODEObject belongs to
         """
         
         # Call super class
-        super(Variable, self).__init__(name, init, comment, ode_name)
+        super(Variable, self).__init__(name, init, component, ode_name)
 
         # Add previous value symbol
         self.sym_0 = ModelSymbol("{0}_0".format(name), \
