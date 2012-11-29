@@ -757,16 +757,6 @@ class ODE(object):
         # Register symbol in the expansion namespace
         self._expansion_namespace[obj.name] = obj.sym
 
-    def _sort_collected_objects(self):
-        """
-        Sort the collected object after alphabetic order
-        """ 
-        cmp_func = lambda a, b: cmp(a.name, b.name)
-        self._states.sort(cmp_func)
-        self._field_states.sort(cmp_func)
-        self._parameters.sort(cmp_func)
-        self._variables.sort(cmp_func)
-
     def __setattr__(self, name, value):
         if name[0] == "_":
             self.__dict__[name] = value
