@@ -20,6 +20,7 @@ __all__ = ["ODEObject", "Parameter", "State", "Variable"]#
 
 # System imports
 import numpy as np
+from collections import deque
 
 # ModelParameters imports
 from modelparameters.sympytools import sp, ModelSymbol
@@ -48,7 +49,7 @@ class ODEObject(object):
         """
 
         check_arg(name, str, 0, ODEObject)
-        check_arg(init, scalars + (ScalarParam, list, np.ndarray), \
+        check_arg(init, scalars + (ScalarParam, list, np.ndarray, sp.Basic), \
                   1, ODEObject)
         
         if isinstance(init, ScalarParam):
@@ -61,8 +62,10 @@ class ODEObject(object):
 
         elif isinstance(init, scalars):
             init = ScalarParam(init)
-        else:
+        elif isinstance(init, (list, np.ndarray)):
             init = ArrayParam(np.fromiter(init, dtype=np.float_))
+        else:
+            init = SlaveParam(init)
             
         # Create a symname based on the name of the ODE
         if ode_name:
@@ -152,7 +155,7 @@ class State(ODEObject):
         init : scalar, ScalarParam
             The initial value of this state
         component : str (optional)
-            A component about the State
+            A component for which the State should be associated with.
         ode_name : str (optional)
             The name of the ODE the ODEObject belongs to
         """
@@ -186,7 +189,7 @@ class Parameter(ODEObject):
         init : scalar, ScalarParam
             The initial value of this parameter
         component : str (optional)
-            A component about the Parameter
+            A component for which the Parameter should be associated with.
         ode_name : str (optional)
             The name of the ODE the ODEObject belongs to
         """
@@ -209,7 +212,7 @@ class Variable(ODEObject):
         init : scalar
             The initial value of this variable
         component : str (optional)
-            A component about the Variables
+            A component for which the Variable should be associated with.
         ode_name : str (optional)
             The name of the ODE the ODEObject belongs to
         """
@@ -221,4 +224,56 @@ class Variable(ODEObject):
         self.sym_0 = ModelSymbol("{0}_0".format(name), \
                                  "{0}.{1}_0".format(ode_name, name))
 
+class Expression(ODEObject):
+    """
+    class for all expressions such as intermediates and diff 
+    """
+    def __init__(self, name, expr, expanded_expr, component="", ode_name=""):
+        """
+        Create an Exression with an assosciated name
 
+        Arguments
+        ---------
+        name : str
+            The name of the Expression
+        expr : sympy.Basic
+            The expression 
+        expanded_expr : sympy.Basic
+            The expanded verision of the expression 
+        component : str (optional)
+            A component for which the Expression should be associated with.
+        ode_name : str (optional)
+            The name of the ODE the ODEObject belongs to
+        """
+
+        # Check arguments
+        check_arg(expr, sp.Basic)
+        if not any(isinstance(atom, ModelSymbol) for atom in expr.atoms()):
+            error("expected the expression to contain at least one ModelSymbol.")
+
+        check_arg(expanded_expr, sp.Basic)
+        if not any(isinstance(atom, ModelSymbol) \
+                   for atom in expanded_expr.atoms()):
+            error("expected the expanded_expr to contain at least "\
+                  "one ModelSymbol.")
+        
+        # Call super class with expression as the "init" value
+        super(Expression, self).__init__(name, expr, component, ode_name)
+
+        # Store the expanded expression
+        self._expanded_expr = expanded_expr
+
+    @property
+    def expr(self):
+        """
+        Return the stored expression
+        """
+        return self._param.expr
+
+    @property
+    def expanded_expr(self):
+        """
+        Return the stored expression
+        """
+        return self._expanded_expr
+    
