@@ -846,13 +846,13 @@ class CellMLParser(object):
                                     comp.dependent_components.keys():
                                 if eq.name in potential_dep.used_variables:
                                     derivatives_intermediates.append(eq.name)
-                                    derivative_lines.append("diff({0}, {1})".\
+                                    derivative_lines.append("d{0}_dt = {1}".\
                                                     format(state, eq.name))
                                     
                                     break
                             else:
                                 # Derivative is not used by anyone. Add it to 
-                                derivative_lines.append("diff({0}, {1})".\
+                                derivative_lines.append("d{0}_dt = {1}".\
                                             format(state, "".join(eq.expr)))
                             break
             
@@ -871,7 +871,7 @@ class CellMLParser(object):
                 if comp in self.circular_dependency:
                     equation_lines.append("# Equations with circular "\
                                           "dependency")
-                equation_lines.append("comment(\"{0}\")".format(\
+                equation_lines.append("component(\"{0}\")".format(\
                     comp_name))
                 
                 for eq in comp.equations:
