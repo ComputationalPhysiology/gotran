@@ -43,12 +43,17 @@ class IntermediateDispatcher(dict):
     """
     def __setitem__(self, name, value):
         
-        if isinstance(value, sp.Basic) and any(isinstance(atom, ModelSymbol) \
-                                               for atom in value.atoms()):
-            ode = _get_load_ode()
-            setattr(ode, name, value)
+        # Get ODE
+        ode = _get_load_ode()
+
+        # Set the attr of the ODE
+        if setattr(ode, name, value):
+            # Populate the name space with attr
             dict.__setitem__(self, name, getattr(ode, name))
         else:
+
+            # If no ode attr was generated we just add the value to the
+            # namespace
             dict.__setitem__(self, name, value)
 
 def _init_namespace(ode):
@@ -65,6 +70,7 @@ def _init_namespace(ode):
                           variables=_variables,
                           diff=ode.diff,
                           comment=ode.add_comment,
+                          component=ode.set_component,
                           monitor=ode.add_monitored,
                           sp=sp,
                           model_arguments=_model_arguments))
@@ -207,7 +213,7 @@ def _set_load_ode(ode):
     global _current_ode
     _current_ode = ode
 
-def _states(comment="", **kwargs):
+def _states(component="", **kwargs):
     """
     Add a number of states to the current ODE
 
@@ -222,9 +228,9 @@ def _states(comment="", **kwargs):
         error("expected at least one state")
     
     # Check values and create sympy Symbols
-    _add_entities(comment, kwargs, "state")
+    _add_entities(component, kwargs, "state")
 
-def _parameters(comment="", **kwargs):
+def _parameters(component="", **kwargs):
     """
     Add a number of parameters to the current ODE
 
@@ -241,9 +247,9 @@ def _parameters(comment="", **kwargs):
         error("expected at least one state")
     
     # Check values and create sympy Symbols
-    _add_entities(comment, kwargs, "parameter")
+    _add_entities(component, kwargs, "parameter")
     
-def _variables(comment="", **kwargs):
+def _variables(component="", **kwargs):
     """
     Add a number of variables to the current ODE
 
@@ -259,7 +265,7 @@ def _variables(comment="", **kwargs):
         error("expected at least one variable")
     
     # Check values and create sympy Symbols
-    _add_entities(comment, kwargs, "variable")
+    _add_entities(component, kwargs, "variable")
 
 def _model_arguments(**kwargs):
     """
@@ -300,7 +306,7 @@ def _model_arguments(**kwargs):
         else:
             namespace[key] = arguments[key]
     
-def _add_entities(comment, kwargs, entity):
+def _add_entities(component, kwargs, entity):
     """
     Help function for determine if each entity in the kwargs is unique
     and to check the type of the given default value
@@ -323,7 +329,7 @@ def _add_entities(comment, kwargs, entity):
         value = kwargs[name]
 
         # Add the symbol
-        sym = add(name, value, comment)
+        sym = add(name, value, component=component)
         
         # Add symbol to caller frames namespace
         try:

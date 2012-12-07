@@ -51,20 +51,27 @@ class ODE(object):
         self._name = name
 
         # Initialize all variables
-        self._all_objects = OrderedDict()
-        self._states = []
-        self._field_states = []
-        self._parameters = []
-        self._field_parameters = []
-        self._variables = []
+        self._all_single_ode_objects = OrderedDict()
+        self._states = ODEObjectList()
+        self._field_states = ODEObjectList()
+        self._parameters = ODEObjectList()
+        self._field_parameters = ODEObjectList()
+        self._variables = ODEObjectList()
 
         # FIXME: Move to list when we have a dedicated Intermediate class
-        self._intermediates = OrderedDict()
+        # FIXME: Change name to body?
+        self._intermediates = ODEObjectList()
         self._monitored_intermediates = OrderedDict()
+
+        # Add components
+        self._default_component = ODEComponent(name, self)
+        self._present_component = self._default_component
+        self._components = OrderedDict()
+        self._components[name] = self._default_component
         
         self.clear()
 
-    def add_state(self, name, init, component=""):
+    def add_state(self, name, init, der_init=0.0, component=""):
         """
         Add a state to the ODE
 
@@ -74,6 +81,8 @@ class ODE(object):
             The name of the state variable
         init : scalar, ScalarParam
             The initial value of the state
+        der_init : scalar, ScalarParam
+            The initial value of the state derivative
         component : str (optional)
             Add state to a particular component
             
@@ -83,16 +92,19 @@ class ODE(object):
         >>> ode = ODE("MyOde")
         >>> ode.add_state("e", 1)
         """
-        
-        # Create the state
+
+        # Create the state and derivative
         state = State(name, init, component, self.name)
-        
-        # Register the state
+        state_der = StateDerivative(state, der_init, component, self.name)
+            
         self._register_object(state)
+        self._register_object(state_der)
+        
+        # Append state specific information
         self._states.append(state)
         if state.is_field:
             self._field_states.append(state)
-            
+
         # Return the sympy version of the state
         return state.sym
         
@@ -224,17 +236,21 @@ class ODE(object):
 
         for i, arg in enumerate(args):
             check_arg(arg, (str, ModelSymbol), i)
-            name = arg.name
+            obj = self.get_object(arg)
 
-            if name not in self._intermediates:
-                error("Intermediate '{0}' is not a registered intermediate "\
-                      "in this ODE.".format(name))
-
-            assert(name in self._expansion_namespace)
+            if not isinstance(obj, Intermediate):
+                error("Can only monitor indermediates. '{0}' is not an "\
+                      "Intermediate.".format(obj.name))
             
             # Register the expanded monitored intermediate
-            self._monitored_intermediates[name] = self._expansion_namespace[name]
-            
+            self._monitored_intermediates[name] = obj
+
+    def add_intermediate(self, name, expr):
+        """
+        Add an Intermediate to present 
+        """
+        # FIXME: Add stuff...
+
     def _add_entities(self, component, kwargs, entity):
         """
         Help function for determine if each entity in the kwargs is unique
@@ -252,7 +268,7 @@ class ODE(object):
         for name, value in sorted(kwargs.items()):
     
             # Add the symbol
-            sym = add(name, value, component)
+            sym = add(name, value, component=component)
 
             # FIXME: Should we add this capability back?
             # Add symbol to caller frames namespace
@@ -270,8 +286,21 @@ class ODE(object):
         Add comment to ODE
         """
         check_arg(comment_str, str, context=ODE.add_comment)
-        self._intermediates["_comment_" + str(self._comment_num)] = comment_str
-        self._comment_num += 1
+        self._intermediates.append(\
+            Comment(comment_str, self._present_component.value))
+
+    def set_component(self, component):
+        """
+        Set present component
+        """
+        check_arg(component, str, 0, ODE.set_component)
+
+        # Check if component is already registered
+        comp = self._components.get(component)
+        if comp is None:
+            comp = ODEComponent(component, self)
+            self._components[component] = comp
+        self._present_component = comp
 
     def get_object(self, name):
         """
@@ -282,106 +311,63 @@ class ODE(object):
         if isinstance(name, ModelSymbol):
             name = name.name
         
-        return self._all_objects.get(name)
+        return self._all_single_ode_objects.get(name)
 
-    def diff(self, derivatives, expr):
+    def get_intermediate(self, name):
+        """
+        Return a registered intermediate
+        """
+        return self._intermediates.get(name)
+
+    def diff(self, derivatives, expr, component=""):
         """
         Register an expression for state derivatives
 
         Arguments
         ---------
-        derivatives : State, list of States or 0
-            If derivatives is a single state then it is interpreted as an ODE
-            If a list of states (with possible scalar weights) or 0 is
-            given, it is interpreted as a DAE expression.
+        derivatives : int, sympy.Basic
+            A linear expression of StateDerivative symbols. Can also be an
+            integer and then only 0, to add an algebraic expression
         expr : Sympy expression of ModelSymbols
             The derivative expression
-            
+        component : str (optional)
+            The component will be determined automatically if the
+            DerivativeExpression is an Algebraic expression
         """
-        check_arg(derivatives, (ModelSymbol, list, int), 0)
+
+        derivative_expression = DerivativeExpression(\
+            derivatives, expr, self, component)
         
-        if isinstance(derivatives, int) and derivatives != 0:
-            type_error("expected either a State, a list of States or 0 "
-                       "as the states arguments")
-
-        derivatives = listwrap(derivatives or [])
-        stripped_derivatives = []
         
-        for derivative in derivatives:
-            if isinstance(derivative, sp.Mul):
-                if len(derivative.args) != 2 or \
-                       not (derivative.args[0].is_number and \
-                            isinstance(derivative.args[1]), ModelSymbol):
-                    value_error("expected derivatives to be a linearly "\
-                                "weighted State variables.")
-
-                # Grab ModelSymbol
-                derivative = derivative.args[1]
-                
-            elif not isinstance(derivative, ModelSymbol):
-                value_error("expected derivatives to be a linearly weighted "\
-                            "State variables.")
-            
-            if not self.has_state(derivative):
-                error("expected derivatives to be a declared state "\
-                      "of this ODE")
-
-            # Register this state as used
-            state = self.get_object(derivative)
-            if state in self._derivative_states:
-                error("A derivative for state '{0}' is already registered.")
-                
-            self._derivative_states.add(state)
-            stripped_derivatives.append(state)
-
-        # Register the derivatives
-        check_arg(expr, (sp.Basic, scalars), 1)
-        expanded_expr = eval(sympycode(expr).replace(self.name+".",""),\
-                             self._expansion_namespace, {})
-
-        expanded_expr = sp.sympify(expanded_expr)
-        for atom in expanded_expr.atoms():
-            # FIXME: Include Dummy to prevent bailout for Piecewise in sympy <= 0.7.2
-            if not isinstance(atom, (ModelSymbol, sp.NumberSymbol, \
-                                     sp.Number, int, float, sp.Dummy)):
-                type_error("A derivative must be an expressions of "\
-                           "ModelSymbol or scalars, got {0} which is "\
-                           "a {1}.".format(atom, atom.__class__.__name__))
-                
-            if not isinstance(atom, ModelSymbol):
-                continue
-
-            # Get corresponding ODEObject
-            sym = self.get_object(atom)
-
-            if sym is None:
-                error("ODEObject '{0}' is not registered in the "\
-                      "'{1}' ODE".format(atom, self))
-
-            # If a State
-            if self.has_state(sym):
-
-                # Check dependencies on other states
-                # FIXME: What do we use this for...
-                for derivative in stripped_derivatives:
-                    if derivative not in self._dependencies:
-                        self._dependencies[derivative] = set()
-                    self._dependencies[derivative].add(sym)
-                if len(stripped_derivatives) == 1 and \
-                       atom not in expanded_expr.diff(atom).atoms():
-                    if derivative not in self._linear_dependencies:
-                        self._linear_dependencies[derivative] = set()
-                    self._linear_dependencies[derivative].add(sym)
-
         # Store expressions
-        # No derivatives (algebraic)
-        if not derivatives:
-            self._algebraic_expr.append(expr)
-            self._algebraic_expr_expanded.append(expanded_expr)
+        if derivative_expression.is_algebraic:
+            self._algebraic_expr.append(derivative_expression.expr)
+            self._algebraic_expr_expanded.append(\
+                derivative_expression.expanded_expr)
         else:
-            self._derivative_expr.append((derivatives, expr))
-            self._derivative_expr_expanded.append((derivatives, \
-                                                   expanded_expr))
+            self._derivative_expr.append((derivative_expression.states, \
+                                          derivative_expression.expr))
+            self._derivative_expr_expanded.append(\
+                (derivative_expression.states, \
+                 derivative_expression.expanded_expr))
+
+        # Store derivative expression
+        self._derivative_expressions.append(derivative_expression)
+
+        # Store derivative states
+        self._derivative_states.update(derivative_expression.states)
+
+        # Register obj in component
+        comp_name = derivative_expression.component
+        
+        comp = self._components.get(comp_name)
+        if comp is None:
+            error("Should never come here")
+            comp = ODEComponent(comp_name, self)
+            self._components[comp_name] = comp
+
+        # Add object to component
+        comp.append(derivative_expression)
 
     def get_derivative_expr(self, expanded=False):
         """
@@ -554,6 +540,10 @@ class ODE(object):
         return len(self._monitored_intermediates)
 
     @property
+    def expansion_subs(self):
+        return self._expansion_subs
+
+    @property
     def is_complete(self):
         """
         Check that the ODE is complete
@@ -631,7 +621,7 @@ class ODE(object):
         Returns True if the ODE is empty
         """
         # By default only t is a registered object
-        return len(self._all_objects) == 2
+        return len(self._all_single_ode_objects) == 2
 
     def clear(self):
         """
@@ -639,19 +629,25 @@ class ODE(object):
         """
 
         # Delete stored attributes
-        for name in self._all_objects.keys() + self._intermediates.keys():
+        for name in self._all_single_ode_objects.keys():
             if name[0] == "_":
                 continue
             delattr(self, name)
-        
-        self._all_objects = OrderedDict()
+
+        for intermediate in self._intermediates:
+            try:
+                delattr(self, intermediate.name)
+            except:
+                pass
+            
+        self._all_single_ode_objects = OrderedDict()
+        self._derivative_expressions = []
         self._derivative_states = set() # FIXME: No need for a set here...
         self._algebraic_states = set()
 
         # Collection of intermediate stuff
-        self._expansion_namespace = OrderedDict()
-        self._intermediates.clear()
-        self._intermediates_duplicates = {} # Will be populated with deque
+        self._expansion_subs = []
+        self._intermediates = ODEObjectList()
         self._comment_num = 0
         self._duplicate_num = 0
 
@@ -666,114 +662,111 @@ class ODE(object):
         self._linear_dependencies = {}
 
         # Add time as a variable
-        self.add_variable("time", 0.0)
-        self.add_variable("dt", 0.1)
+        self.add_variable("time", 0.0, self._default_component.value)
+        self.add_variable("dt", 0.1, self._default_component.value)
         
-        # Populate expansion namespace with sympy namespace
-        self._expansion_namespace.update(sp_namespace)
+    def _register_object(self, obj):
+        """
+        Register an ODEObject (only used for states, parameters, variables,
+        and state_derivatives)
+        """
+        
+        assert(isinstance(obj, (State, Parameter, Variable, StateDerivative)))
 
-    def update_expansion_namespace(self, **kwargs):
-        """
-        Update the namespace all intermediates gets expanded into.
-        """
-        self._expansion_namespace.update(kwargs)
-        
+        # Check for existing object
+        dup_obj = self._all_single_ode_objects.get(obj.name)
+        if dup_obj is not None:
+            error("A '{0}' with name '{1}' is already registered in this "\
+                  "ODE.".format(dup_obj, obj.name))
+
+        # Check that we have not started registering intermediates
+        if (len(self._intermediates) + len(self._derivative_expressions)) > 0:
+            error("Cannot register a {0} after an intermediate or derivative "\
+                  "have been registered.".format(type(obj).__name__))
+
+        # Register obj in component
+        comp = self._components.get(obj.component)
+        if comp is None:
+            comp = ODEComponent(obj.component, self)
+            self._components[obj.component] = comp
+
+        # Update present component
+        self._present_component = comp
+
+        # Add object to component if not StateDerivative
+        if not isinstance(obj, StateDerivative):
+            comp.append(obj)
+
+        # Register the object
+        self._all_single_ode_objects[obj.name] = obj
+
+        # Register the symbol of the Object as an attribute
+        self.__dict__[obj.name] = obj.sym
+
     def _register_intermediate(self, name, expr):
         """
         Register an intermediate
         """
 
-        # Check if attribute already exist
-        if hasattr(self, name):
+        # Check that we have not started registering derivatives
+        if self._derivative_expressions:
+            error("Cannot register a intermediate a derivative "\
+                  "has been registered.")
 
-            # Check that attribute is not a state, variable or parameter
-            attr = getattr(self, name)
-
-            # If ModelSymbol 
-            if not isinstance(attr, ModelSymbol):
-                error("Illeagal name '{0}'. It is already an attribute "\
-                      "of '{1}'".format(name, self.name))
-
-            # If name is a ModelSymbol and not in intermediates it
-            # state, variable or parameter
-            # FIXME: Should not be nessesary to check...
-            if name not in self._intermediates:
-                obj = self.get_object(attr)
-                assert(obj)
-                error("Illeagal name '{0}'. It is already a registered {1} "\
-                      "of '{2}'".format(name, obj.__class__.__name__, \
-                                        self.name))
-
-            # Register intermediate duplicate
-            if name not in self._intermediates_duplicates:
-                self._intermediates_duplicates[name] = deque()
-            self._intermediates_duplicates[name].append(expr)
-            self._intermediates["_duplicate_{0}".format(\
-                self._duplicate_num)] = name
-            self._duplicate_num += 1
-
-        else:
-            self._intermediates[name] = expr
-            #print name, "=", expr
-            sym = ModelSymbol(name, "{0}.{1}".format(self.name, name))
-            setattr(self, name, sym)
-
-        # Update namespace
-        try:
-            # Evaluate expression in expansion namespace. Remove the ode
-            # name prefix in any included ModelSymbols
-
-            self._expansion_namespace[name] = eval(
-                sympycode(expr).replace(self.name+".",""), \
-                self._expansion_namespace, {})
-        except NameError, e:
-            raise NameError("{0}. Registering an intermediate failed because"\
-                            " of missmatch between \nthe ode's expansion "\
-                            "namespace and the global namespace. If needed "\
-                            "update the \node's namespace using, "\
-                            "ode.update_expansion_namespace()".format(e))
-
-    def _register_object(self, obj):
-        """
-        Register an object to the ODE
-        """
-        assert(isinstance(obj, ODEObject))
+        # Create an intermediate in the present component
+        intermediate = Intermediate(name, expr, self, \
+                                    self._present_component.value)
         
-        # Register the object
-        # FIXME: Add possibilities to add duplicates of an Intermediate
-        if obj.name in self._all_objects:
-            obj = self._all_objects[obj.name]
-            error("Illeagal name '{0}'. It is already a registered {1} "\
-                  "of '{2}'".format(obj.name, obj.__class__.__name__, \
-                                    self.name))
-        self._all_objects[obj.name] = obj
+        # Store the intermediate
+        self._intermediates.append(intermediate)
 
-        # Make object available as an attribute
-        setattr(self, obj.name, obj.sym)
+        # Add to component
+        self._present_component.append(intermediate)
 
-        # FIXME: Should we add the name of the ode pointing to self, in
-        # FIXME: the expansion namespace, making it possible to access
-        # FIXME: names through attributes?
-        # Register symbol in the expansion namespace
-        self._expansion_namespace[obj.name] = obj.sym
+        # Register symbol, overwrite any already excisting symbol
+        self.__dict__[name] = intermediate.sym
+
+        # Update expansion subs
+        self._expansion_subs.append((intermediate.sym, 
+                                     intermediate.expanded_expr))
 
     def __setattr__(self, name, value):
+        """
+        A magic function which will register intermediates and simpler
+        derivative expressions
+        """
+
+        # If we are registering a protected attribute, just add it to
+        # the dict
         if name[0] == "_":
             self.__dict__[name] = value
-        elif name in self._all_objects:
+            return
+        
+        # Check if name is a registered SingleODEObject
+        obj = self.get_object(name)
+
+        # If the object is already registered
+        if obj is not None:
             
-            # Called when registering the ODEObject
-            if hasattr(self, name):
-                obj = self.get_object(name)
-                error("Illeagal name '{0}'. It is already a registered {1} "\
-                      "of '{2}'".format(name, obj.__class__.__name__, \
-                                        self.name))
-            self.__dict__[name] = value
-        elif isinstance(value, ModelSymbol) and value.name == name:
-            self.__dict__[name] = value
-        else:
+            # If state derivative we call diff with the state derivative
+            # symbol as first argument
+            if isinstance(obj, StateDerivative):
+                self.diff(obj.sym, value)
+                return True
+
+            error("{0} is already a registerd ODEObject, which cannot "\
+                  "be overwritten.".format(name))
+
+        # Assume that we are registering an intermediate
+        if isinstance(value, sp.Basic) and any(isinstance(atom, ModelSymbol)\
+                                               for atom in value.atoms()):
             self._register_intermediate(name, value)
-            
+            return True
+
+        # If not registering Intermediate or doing a shorthand
+        # diff expression we silently leave.
+        
+
     def __eq__(self, other):
         """
         x.__eq__(y) <==> x==y
@@ -786,7 +779,7 @@ class ODE(object):
         
         # Compare all registered attributes
         subs = {}
-        for what, item in self._all_objects.items():
+        for what, item in self._all_single_ode_objects.items():
             if not hasattr(other, what):
                 return False
             if getattr(self, what) != getattr(other, what):
