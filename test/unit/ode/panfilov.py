@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2012-11-28"
+__date__ = "2012-05-07 -- 2012-12-07"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -14,34 +14,33 @@ class Creation(unittest.TestCase):
         ode.clear()
         
         # States
-        e = ode.add_state("e", 0.0)
-        g = ode.add_state("g", 0.0)
+        ode.add_state("e", 0.0)
+        ode.add_state("g", 0.0)
         
         # parameters
-        v_rest = ode.add_parameter("v_rest", -85.0)
-        v_peak = ode.add_parameter("v_peak", 35.0)
-        time_constant = ode.add_parameter("time_constant", 1.0)
+        ode.add_parameter("v_rest", -85.0)
+        ode.add_parameter("v_peak", 35.0)
+        ode.add_parameter("time_constant", 1.0)
         
         # Local Python variables
-        ode.a = 0.1
-        ode.gs = 8.0
-        ode.ga = ode.gs
-        ode.M1 = 0.07
-        ode.M2 = 0.3
-        ode.eps1 = 0.01
+        a = 0.1
+        gs = 8.0
+        ga = gs
+        M1 = 0.07
+        M2 = 0.3
+        eps1 = 0.01
         
         # Local compuations
         ode.E = (ode.e-ode.v_rest)/(ode.v_peak-ode.v_rest)
-        ode.eps = ode.eps1 + ode.M1*ode.g/(ode.e+ode.M2)
+        ode.eps = eps1 + M1*ode.g/(ode.e + M2)
         
         # Time differentials
-        ode.diff(e, -ode.time_constant*(ode.v_peak-ode.v_rest)*\
-                 (ode.ga*ode.E*(ode.E-ode.a)*(ode.E-1) + ode.E*ode.g))
-        ode.diff(g, 0.25*ode.time_constant*ode.eps*(-g - ode.gs*e*(ode.E-ode.a-1)))
+        ode.diff(ode.de_dt, -ode.time_constant*(ode.v_peak - ode.v_rest)*\
+                 (ga*ode.E*(ode.E - a)*(ode.E-1) + ode.E*ode.g))
+        ode.diff(ode.dg_dt, 0.25*ode.time_constant*ode.eps*(-ode.g - gs*ode.e*(ode.E-a-1)))
         
-        assert(ode.is_complete)
         self.ode = ode
-
+        assert(ode.is_complete)
 
     def test_load_and_equality(self):
         """
@@ -85,9 +84,9 @@ class Creation(unittest.TestCase):
         E = (ode.e-ode.v_rest)/(ode.v_peak-ode.v_rest)
         eps = eps1 + M1*ode.g/(ode.e+M2)
         
-        ode.diff(ode.e, -ode.time_constant*(ode.v_peak-ode.v_rest)*\
+        ode.diff(ode.de_dt, -ode.time_constant*(ode.v_peak-ode.v_rest)*\
                  (ga*E*(E-a)*(E-1) + E*ode.g))
-        ode.diff(ode.g, 0.25*ode.time_constant*eps*(-ode.g - gs*ode.e*(E-a-1)))
+        ode.diff(ode.dg_dt, 0.25*ode.time_constant*eps*(-ode.g - gs*ode.e*(E-a-1)))
 
         self.assertTrue(ode == self.ode)
 

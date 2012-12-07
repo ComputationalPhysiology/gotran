@@ -128,7 +128,7 @@ class CodeGenerator(object):
         # Add dy[i] lines
         for ind, (state, (derivative, expr)) in enumerate(\
             zip(ode.states, self.oderepr.iter_derivative_expr())):
-            assert(state.sym == derivative[0])
+            assert(state.sym == derivative[0].sym)
             body_lines.append(pythoncode(expr, "dy[{0}]".format(ind)))
 
         # Return body lines 
@@ -544,7 +544,7 @@ class CCodeGenerator(CodeGenerator):
                 body_lines.append("")
                 body_lines.append("// " + expr)
             else:
-                if name in ode._intermediates_duplicates:
+                if name in ode._intermediate_duplicates:
                     if name not in declared_duplicates:
                         declared_duplicates.append(name)
                         name = "double " + name
@@ -557,7 +557,7 @@ class CCodeGenerator(CodeGenerator):
         # Add dy[i] lines
         for ind, (state, (derivative, expr)) in enumerate(\
             zip(ode.states, self.oderepr.iter_derivative_expr())):
-            assert(state.sym == derivative[0])
+            assert(state.sym == derivative[0].sym)
             body_lines.append(self.to_code(expr, "{0}[{1}]".format(result_name, ind)))
 
         body_lines.append("")
@@ -831,7 +831,8 @@ class MatlabCodeGenerator(CodeGenerator):
         body_lines.append("dy = zeros({0}, 1)".format(ode.num_states))
         for ind, (state, (derivative, expr)) in enumerate(\
             zip(ode.states, self.oderepr.iter_derivative_expr())):
-            assert(state.sym == derivative[0]), "{0}!={1}".format(state.sym, derivative[0])
+            assert(state.sym == derivative[0].sym), "{0}!={1}".format(\
+                state.sym, derivative[0].sym)
             body_lines.append(self.to_code(expr, "dy({0})".format(ind+1)))
         
         body_lines = self.wrap_body_with_function_prototype( \

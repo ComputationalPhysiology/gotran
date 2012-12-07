@@ -33,7 +33,7 @@ from modelparameters.sympytools import sp, ModelSymbol, \
 from modelparameters.parameters import *
 
 from gotran.common import error, check_arg, scalars, debug, DEBUG, \
-     get_log_level
+     get_log_level, Timer
 
 class ODEObject(object):
     """
@@ -89,7 +89,7 @@ class ODEObject(object):
             if isinstance(value, SlaveParam):
                 debug("{0}: {1} {2:.3f}".format(name, value.expr, value.value))
             else:
-                debug("{0}: {1:.3f}".format(name, value.value))
+                debug("{0}: {1}".format(name, value.value))
             
         # Create a symname based on the name of the ODE
         if ode_name:
@@ -125,17 +125,33 @@ class ODEObject(object):
     def component(self):
         return self._component
 
-    @property
     def __eq__(self, other):
         """
         x.__eq__(y) <==> x==y
         """
-        check_arg(other, (str, ODEObject, ModelSymbol))
+        
+        if not isinstance(other, type(self)):
+            return False
+        
         # FIXME: Should this be more restrictive? Only comparing ODEObjects,
         # FIXME: and then comparing name and component?
         # FIXME: Yes, might be some side effects though...
         # FIXME: Need to do change when things are stable
         return self.name == str(other)
+
+    def __ne__(self, other):
+        """
+        x.__neq__(y) <==> x==y
+        """
+        
+        if not isinstance(other, type(self)):
+            return True
+        
+        # FIXME: Should this be more restrictive? Only comparing ODEObjects,
+        # FIXME: and then comparing name and component?
+        # FIXME: Yes, might be some side effects though...
+        # FIXME: Need to do change when things are stable
+        return self.name != str(other)
 
     def __str__(self):
         """
@@ -347,6 +363,7 @@ class Expression(ODEObject):
         super(Expression, self).__init__(name, expr, component, ode.name)
 
         # Create and store expanded expression
+        timer = Timer("subs")
         self._expanded_expr = expr.subs(ode.expansion_subs)
 
     @property
@@ -562,7 +579,7 @@ class Comment(ODEObject):
         """
         
         # Call super class
-        super(Comment, self).__init__("comment", comment, component)
+        super(Comment, self).__init__(comment, "", component)
 
     @property
     def value(self):

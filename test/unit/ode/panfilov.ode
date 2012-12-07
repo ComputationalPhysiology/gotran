@@ -21,10 +21,10 @@ E = (e-v_rest)/(v_peak-v_rest)
 eps = eps1 + M1*g/(e+M2)
 
 # Time derivatives
-diff(e, -time_constant*(v_peak-v_rest)*(ga*E*(E-a)*(E-1) + E*g))
+de_dt = -time_constant*(v_peak-v_rest)*(ga*E*(E-a)*(E-1) + E*g)
 
 if small_change:
-    diff(g, time_constant*eps*(-g - gs*e*(E-a-1)))
+    dg_dt = time_constant*eps*(-g - gs*e*(E-a-1))
 else:
-    diff(g, 0.25*time_constant*eps*(-g - gs*e*(E-a-1)))
+    dg_dt = 0.25*time_constant*eps*(-g - gs*e*(E-a-1))
     

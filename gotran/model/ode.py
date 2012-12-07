@@ -28,7 +28,7 @@ from modelparameters.codegeneration import sympycode
 
 # Gotran imports
 from gotran.common import type_error, value_error, error, check_arg, \
-     check_kwarg, scalars, listwrap, info, debug
+     check_kwarg, scalars, listwrap, info, debug, Timer
 from gotran.model.odeobjects import *
 
 class ODE(object):
@@ -36,7 +36,7 @@ class ODE(object):
     Basic class for storying information of an ODE
     """
         
-    def __init__(self, name):
+    def __init__(self, name, with_components=True):
         """
         Initialize an ODE
         
@@ -50,6 +50,9 @@ class ODE(object):
         # Initialize attributes
         self._name = name
 
+        # Store if using components
+        self._with_components = with_components
+
         # Initialize all variables
         self._all_single_ode_objects = OrderedDict()
         self._states = ODEObjectList()
@@ -61,6 +64,7 @@ class ODE(object):
         # FIXME: Move to list when we have a dedicated Intermediate class
         # FIXME: Change name to body?
         self._intermediates = ODEObjectList()
+        self._intermediate_duplicates = set()
         self._monitored_intermediates = OrderedDict()
 
         # Add components
@@ -93,6 +97,7 @@ class ODE(object):
         >>> ode.add_state("e", 1)
         """
 
+        timer = Timer("Add state")
         # Create the state and derivative
         state = State(name, init, component, self.name)
         state_der = StateDerivative(state, der_init, component, self.name)
@@ -128,6 +133,8 @@ class ODE(object):
         >>> ode.add_parameter("c0", 5.0)
         """
         
+        timer = Timer("Add parameter")
+        
         # Create the parameter
         parameter = Parameter(name, init, component, self.name)
         
@@ -160,6 +167,8 @@ class ODE(object):
         >>> ode.add_variable("c0", 5.0)
         """
         
+        timer = Timer("Add variable")
+
         # Create the variable
         variable = Variable(name, init, component, self.name)
         
@@ -338,6 +347,7 @@ class ODE(object):
             DerivativeExpression is an Algebraic expression
         """
 
+        timer = Timer("diff")
         derivative_expression = DerivativeExpression(\
             derivatives, expr, self, component)
         
@@ -370,7 +380,8 @@ class ODE(object):
             self._components[comp_name] = comp
 
         # Add object to component
-        comp.append(derivative_expression)
+        if self._with_components:
+            comp.append(derivative_expression)
 
     def get_derivative_expr(self, expanded=False):
         """
@@ -567,6 +578,8 @@ class ODE(object):
         """
         states = self._states
 
+        timer = Timer("Is complete")
+
         if not states:
             return False
 
@@ -615,7 +628,7 @@ class ODE(object):
 
             for state in states:
                 for ind, (derivative, expr) in enumerate(derivative_expr):
-                    if derivative[0] == state.sym:
+                    if derivative[0].sym == state.sym:
                         derivative_expr_sorted.append(derivative_expr.pop(ind))
                         derivative_expr_expanded_sorted.append(\
                             derivative_expr_expanded.pop(ind))
@@ -688,6 +701,7 @@ class ODE(object):
         and state_derivatives)
         """
         
+        timer = Timer("Register obj")
         assert(isinstance(obj, (State, Parameter, Variable, StateDerivative)))
 
         # Check for existing object
@@ -711,8 +725,9 @@ class ODE(object):
         self._present_component = comp
 
         # Add object to component if not StateDerivative
-        if not isinstance(obj, StateDerivative):
-            comp.append(obj)
+        if self._with_components:
+            if not isinstance(obj, StateDerivative):
+                comp.append(obj)
 
         # Register the object
         self._all_single_ode_objects[obj.name] = obj
@@ -725,6 +740,8 @@ class ODE(object):
         Register an intermediate
         """
 
+        timer = Timer("Add intermediate")
+        
         # Check that we have not started registering derivatives
         if self._derivative_expressions:
             error("Cannot register an Intermediate after "\
@@ -733,19 +750,33 @@ class ODE(object):
         # Create an intermediate in the present component
         intermediate = Intermediate(name, expr, self, \
                                     self._present_component.name)
+
+        # Check for duplicates
+        if intermediate.name in self._intermediates:
+            self._intermediate_duplicates.add(intermediate.name)
+
+            # Remove old registration in expansion subs
+            for ind, (sym, expr) in enumerate(self._expansion_subs):
+                if sym.name == intermediate.name:
+                    break
+            else:
+                error("Did mot find duplicate in expansion subs")
+            
+            self._expansion_subs.pop(ind)
         
         # Store the intermediate
         self._intermediates.append(intermediate)
 
+        # Update expansion subs
+        self._expansion_subs.append((intermediate.sym, 
+                                     intermediate.expanded_expr))
         # Add to component
-        self._present_component.append(intermediate)
+        if self._with_components:
+            self._present_component.append(intermediate)
 
         # Register symbol, overwrite any already excisting symbol
         self.__dict__[name] = intermediate.sym
 
-        # Update expansion subs
-        self._expansion_subs.append((intermediate.sym, 
-                                     intermediate.expanded_expr))
 
     def __setattr__(self, name, value):
         """
@@ -769,7 +800,7 @@ class ODE(object):
             # symbol as first argument
             if isinstance(obj, StateDerivative):
                 self.diff(obj.sym, value)
-                return True
+                return
 
             error("{0} is already a registerd ODEObject, which cannot "\
                   "be overwritten.".format(name))
@@ -778,7 +809,9 @@ class ODE(object):
         if isinstance(value, sp.Basic) and any(isinstance(atom, ModelSymbol)\
                                                for atom in value.atoms()):
             self._register_intermediate(name, value)
-            return True
+        else:
+            debug("Not registering: {0} as attribut. It does not contain "\
+                  "any symbols.".format(name))
 
         # If not registering Intermediate or doing a shorthand
         # diff expression we silently leave.
@@ -795,22 +828,20 @@ class ODE(object):
             return True
         
         # Compare all registered attributes
-        subs = {}
-        for what, item in self._all_single_ode_objects.items():
-            if not hasattr(other, what):
+        for mine in self._all_single_ode_objects:
+            if mine not in other._all_single_ode_objects:
                 return False
-            if getattr(self, what) != getattr(other, what):
-                return False
-            subs[getattr(self, what)] = getattr(other, what)
 
-        for what, item in self._intermediates.items():
-            if what[0] == "_":
-                continue
-            if not hasattr(other, what):
+        for mine_inter, other_inter in zip(\
+            self.intermediates, other.intermediates):
+            if mine_inter != other_inter:
                 return False
-            if getattr(self, what) != getattr(other, what):
+
+        for mine_der, other_der in zip(\
+            self._derivative_expressions, \
+            other._derivative_expressions):
+            if mine_der != other_der:
                 return False
-            subs[getattr(self, what)] = getattr(other, what)
 
         # FIXME: Fix comparison of expressions
         #print "self:", self._derivative_expr

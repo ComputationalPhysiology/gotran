@@ -47,8 +47,13 @@ class IntermediateDispatcher(dict):
         ode = _get_load_ode()
 
         # Set the attr of the ODE
-        if setattr(ode, name, value):
-            # Populate the name space with attr
+        if isinstance(value, sp.Basic) and any(isinstance(atom, ModelSymbol)\
+                                               for atom in value.atoms()):
+
+            # Set attribute
+            setattr(ode, name, value)
+        
+            # Populate the name space with symbol attribute
             dict.__setitem__(self, name, getattr(ode, name))
         else:
 
@@ -128,6 +133,8 @@ def load_ode(filename, name=None, **kwargs):
     name : str (optional)
         Set the name of ODE (defaults to filename)
     """
+
+    timer = Timer("Load ODE")
 
     # If a Param is provided turn it into its value
     for key, value in kwargs.items():

@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2012-10-24"
+__date__ = "2012-05-07 -- 2012-12-07"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -17,32 +17,25 @@ class Creation(unittest.TestCase):
 
         ode.add_states("Membrane",
                        V=ScalarParam(-35, ge=-200, le=50))
-        ode.add_states("Na+ current I_Na",
+        ode.add_states("Na current I_Na",
                        m=2.4676e-4, h=0.99869, j=0.99887)
-        ode.add_states("Rapid-activating delayed rectifier K+ current I_Kr",
+        ode.add_states("Rapid-activating delayed rectifier K current I_Kr",
                        xKr=0.6935)
-        ode.add_states("Slow-activating delayed rectifier K+ current I_Ks",
+        ode.add_states("Slow-activating delayed rectifier K current I_Ks",
                        xKs=1.4589e-4)
-        ode.add_states("Transient outward K+ current I_to",
+        ode.add_states("Transient outward K current I_to",
                        xto1=3.742e-5, yto1=1)
-        ode.add_states("Intracellular K fluxes",
+        ode.add_states("Intracellular K",
                        K_i=159.48)
-        ode.add_states("Intracellular Ca fluxes",
+        ode.add_states("Intracellular Ca",
                        Ca_i=8.464e-5, Ca_NSR=0.2620, Ca_ss=1.315e-4, Ca_JSR=0.2616)
         ode.add_states("RyR Channel",
                        C1_RyR=0.4929, O1_RyR=6.027e-4, O2_RyR=2.882e-9, C2_RyR=0.5065)
         ode.add_states("L-type Ca Channel", 
                        C0=0.99802, C1=1.9544e-6, C2=0, C3=0, C4=0, Open=0,
                        CCa0=1.9734e-3, CCa1=0, CCa2=0, CCa3=0, CCa4=0, yCa=0.7959)
-        ode.add_states("Ca buffers",
+        ode.add_states("Buffers",
                        LTRPNCa=5.5443e-3, HTRPNCa=136.64e-3)
-        
-        ode.add_comment("Constants")
-        ode.F       = 96.500
-        ode.T       = 310
-        ode.R       = 8.314
-        ode.RTonF   = ode.R*ode.T/ode.F
-        ode.FonRT   = ode.F/(ode.R*ode.T)
         
         ode.add_parameters("Cell geometry parameters",
                            ist=0,
@@ -104,7 +97,7 @@ class Creation(unittest.TestCase):
                            mcoop   = 3.0,
                            )
         
-        ode.add_parameters("L-type Ca Channel parameters",
+        ode.add_parameters("L-type Ca Channel",
                            fL     = 0.3,
                            gL     = 2.0,
                            bL     = 2.0,
@@ -130,19 +123,24 @@ class Creation(unittest.TestCase):
                            KmEGTA     = 0.15e-3,
                            )
         
-        ode.add_comment("Help variables")
-        ode.VFonRT = ode.V*ode.FonRT
+        ode.add_comment("Constants")
+        F       = 96.500
+        T       = 310.
+        R       = 8.314
+        RTonF   = R*T/F
+        FonRT   = F/(R*T)
+        
+        ode.set_component("Help variables")
+        ode.VFonRT = ode.V*FonRT
         ode.expVFonRT = exp(ode.VFonRT)
         
-        ode.add_comment("I Membrane currents")
+        ode.set_component("Na current I_Na")
         
-        ode.add_comment("Na+ current I_Na")
-        
-        ode.E_Na = ode.RTonF*log(ode.Na_o/ode.Na_i)
+        ode.E_Na = RTonF*log(ode.Na_o/ode.Na_i)
         ode.I_Na = ode.G_NaMax*ode.m**3*ode.h*ode.j*(ode.V-ode.E_Na)
         
         ode.a_h = Conditional(Ge(ode.V, -40), 0.0, 0.135*exp((80+ode.V)/(-6.8)))
-        ode.b_h = Conditional(Ge(ode.V, -40), 1/(0.13*(1+exp((ode.V+10.66)/(-11.1)))), \
+        ode.b_h = Conditional(Ge(ode.V, -40), 1./(0.13*(1+exp((ode.V+10.66)/(-11.1)))), \
                               3.56*exp(0.079*ode.V)+3.1e5*exp(0.35*ode.V))
         
         ode.a_j = Conditional(Ge(ode.V, -40), 0.0, (-1.2714e5*exp(0.2444*ode.V)-\
@@ -157,7 +155,7 @@ class Creation(unittest.TestCase):
         ode.b_m = 0.08*exp(-ode.V/11)
         ode.dm = Conditional(Ge(ode.V, -90), ode.a_m*(1-ode.m)-ode.b_m*ode.m, 0.0)
         
-        ode.add_comment("Rapid-activating delayed rectifier K+ current I_Kr")
+        ode.set_component("Rapid-activating delayed rectifier K current I_Kr")
         
         ode.k12 = exp(-5.495+0.1691*ode.V)
         ode.k21 = exp(-7.677-0.0128*ode.V)
@@ -165,24 +163,24 @@ class Creation(unittest.TestCase):
         ode.tau_xKr = 1.0/(ode.k12+ode.k21) + 27.0
         ode.dxKr = (ode.xKr_inf-ode.xKr)/ode.tau_xKr
         
-        ode.E_k  = ode.RTonF*log(ode.K_o/ode.K_i)
-        ode.R_V  = 1/(1+1.4945*exp(0.0446*ode.V))
+        ode.E_k  = RTonF*log(ode.K_o/ode.K_i)
+        ode.R_V  = 1./(1+1.4945*exp(0.0446*ode.V))
         ode.f_k  = sqrt(ode.K_o/4)
         
         ode.I_Kr = ode.G_KrMax*ode.f_k*ode.R_V*ode.xKr*(ode.V-ode.E_k)
         
-        ode.add_comment("Slow-activating delayed rectifier K+ current I_Ks")
+        ode.set_component("Slow-activating delayed rectifier K current I_Ks")
         ode.xKs_inf = 1.0/(1.0+exp(-(ode.V-24.70)/13.60))
         ode.tau_xKs = 1.0/( 7.19e-5*(ode.V-10.0)/(1.0-exp(-0.1480*(ode.V-10.0))) \
                             + 1.31e-4*(ode.V-10.0)/(exp(0.06870*(ode.V-10.0))-1.0))
         ode.dxKs = (ode.xKs_inf-ode.xKs)/ode.tau_xKs
         
-        ode.E_Ks = ode.RTonF*log((ode.K_o+0.01833*ode.Na_o)/(ode.K_i+0.01833*ode.Na_i))
+        ode.E_Ks = RTonF*log((ode.K_o+0.01833*ode.Na_o)/(ode.K_i+0.01833*ode.Na_i))
         
         ode.I_Ks = ode.G_KsMax*(ode.xKs**2)*(ode.V-ode.E_Ks)
         
         
-        ode.add_comment("Transient outward K+ current I_to")
+        ode.set_component("Transient outward K current I_to")
         ode.alpha_xto1 = 0.04516*exp(0.03577*ode.V)
         ode.beta_xto1  = 0.0989*exp(-0.06237*ode.V)
         ode.a1 = 1.0+0.051335*exp(-(ode.V+33.5)/5.0)
@@ -195,44 +193,42 @@ class Creation(unittest.TestCase):
         
         ode.I_to = ode.G_toMax*ode.xto1*ode.yto1*(ode.V-ode.E_k)
                 
-        ode.add_comment("Time-Independent K+ current I_ti")
-        ode.K_tiUnlim = 1/(2+exp(1.5*(ode.V-ode.E_k)*ode.FonRT))
+        ode.set_component("Time-Independent K current I_ti")
+        ode.K_tiUnlim = 1./(2+exp(1.5*(ode.V-ode.E_k)*FonRT))
         
         ode.I_ti = ode.G_tiMax*ode.K_tiUnlim*(ode.K_o/(ode.K_o+ode.K_mK1))*(ode.V-ode.E_k)
         
-        ode.add_comment("Plateau current I_Kp")
-        ode.K_p  = 1/(1+exp((7.488-ode.V)/5.98))
+        ode.set_component("Plateau current I_Kp")
+        ode.K_p  = 1./(1+exp((7.488-ode.V)/5.98))
         ode.I_Kp = ode.G_KpMax*ode.K_p*(ode.V-ode.E_k)
         
-        ode.add_comment("NCX Current I_NaCa")
-        ode.I_NaCa = ode.k_NaCa*(5000/(ode.K_mNa**3+ode.Na_o**3))*(1/(ode.K_mCa+ode.Ca_o))*\
-                 (1/(1+ode.k_sat*exp((ode.eta-1)*ode.VFonRT)))*\
+        ode.set_component("NCX Current I_NaCa")
+        ode.I_NaCa = ode.k_NaCa*(5000/(ode.K_mNa**3+ode.Na_o**3))*(1./(ode.K_mCa+ode.Ca_o))*\
+                 (1./(1+ode.k_sat*exp((ode.eta-1)*ode.VFonRT)))*\
                  (exp(ode.eta*ode.VFonRT)*ode.Na_i**3*ode.Ca_o-\
                   exp((ode.eta-1)*ode.VFonRT)*ode.Na_o**3*ode.Ca_i)
         
         
-        ode.add_comment("Na+-K+ pump current I_NaK")
-        ode.sigma = 1/7*(exp(ode.Na_o/67.3)-1)
-        ode.f_NaK = 1/(1+0.1245*exp(-0.1*ode.VFonRT)+0.0365*ode.sigma*exp(-ode.VFonRT))
+        ode.set_component("Na-K pump current I_NaK")
+        ode.sigma = 1./7*(exp(ode.Na_o/67.3)-1)
+        ode.f_NaK = 1./(1+0.1245*exp(-0.1*ode.VFonRT)+0.0365*ode.sigma*exp(-ode.VFonRT))
         
-        ode.I_NaK = ode.I_NaKMax*ode.f_NaK*1/(1+(ode.K_mNai/ode.Na_i)**1.5)*\
+        ode.I_NaK = ode.I_NaKMax*ode.f_NaK*1./(1+(ode.K_mNai/ode.Na_i)**1.5)*\
                     ode.K_o/(ode.K_o+ode.K_mKo)
         
         
-        ode.add_comment("Sarcolemmal Ca2+ pump current I_pCa")
+        ode.set_component("Sarcolemmal Ca pump current I_pCa")
         ode.I_pCa = ode.I_pCaMax*ode.Ca_i/(ode.K_mpCa+ode.Ca_i)
         
-        ode.add_comment("Ca2+ background current I_bCa")
-        ode.E_Ca  = ode.RTonF/2*log(ode.Ca_o/ode.Ca_i)
+        ode.set_component("Ca background current I_bCa")
+        ode.E_Ca  = RTonF/2*log(ode.Ca_o/ode.Ca_i)
         ode.I_bCa = ode.G_bCaMax*(ode.V-ode.E_Ca)
         
         
-        ode.add_comment("Na+ background current I_bNa")
+        ode.set_component("Na background current I_bNa")
         ode.I_bNa = ode.G_bNaMax*(ode.V-ode.E_Na)
         
-        
-        ode.add_comment("II Ca2+ handling mechanisms")
-        ode.add_comment("L-type Ca2+ current I_Ca")
+        ode.set_component("L-type Ca Channel")
         
         ode.alpha      = 0.4*exp((ode.V+2.0)/10.0)
         ode.beta       = 0.05*exp(-(ode.V+2.0)/13.0)
@@ -320,7 +316,7 @@ class Creation(unittest.TestCase):
         ode.tau_yCa = 20.0 + 600.0 / (1.0 + exp((ode.V+20.0)/9.50))
         ode.dyCa = (ode.yCa_inf-ode.yCa)/ode.tau_yCa
         
-        ode.VFsqonRT=(1000.0*ode.F)*ode.VFonRT
+        ode.VFsqonRT=(1000.0*F)*ode.VFonRT
         
         ode.a1 =  1.0e-3*exp(2.0*ode.VFonRT)-ode.Ca_o*0.341 
         ode.a2 =  exp(2.0*ode.VFonRT)-1.0
@@ -332,7 +328,7 @@ class Creation(unittest.TestCase):
         ode.a2 = ode.expVFonRT-1.0
         ode.I_CaK = ode.PKprime*ode.Open*ode.yCa*ode.VFsqonRT*(ode.a1/ode.a2)
         
-        ode.add_comment("RyR Channel")
+        ode.set_component("RyR Channel")
         ode.a1 = (ode.Ca_ss*1000.0)**ode.mcoop
         ode.a2 = (ode.Ca_ss*1000.0)**ode.ncoop
         ode.dC1_RyR = -ode.kaplus*ode.a2*ode.C1_RyR + ode.kaminus*ode.O1_RyR
@@ -343,13 +339,13 @@ class Creation(unittest.TestCase):
         ode.J_rel = ode.v_1*(ode.O1_RyR+ode.O2_RyR)*(ode.Ca_JSR-ode.Ca_ss)
         
         
-        ode.add_comment("SERCA2a Pump")
+        ode.set_component("SERCA2a Pump")
         ode.f_b = (ode.Ca_i/ode.K_fb)**ode.N_fb
         ode.r_b = (ode.Ca_NSR/ode.K_rb)**ode.N_rb
         
         ode.J_up = ode.K_SR*(ode.v_maxf*ode.f_b-ode.v_maxr*ode.r_b)/(1+ode.f_b+ode.r_b)
         
-        ode.add_comment("Intracellular Ca fluxes")
+        ode.set_component("Intracellular Ca")
         ode.J_tr = (ode.Ca_NSR-ode.Ca_JSR)/ode.tau_tr
         ode.J_xfer = (ode.Ca_ss-ode.Ca_i)/ode.tau_xfer
         
@@ -373,46 +369,44 @@ class Creation(unittest.TestCase):
         #a2 = 0
         ode.beta_i = 1.0/(1.0+ode.a1)#+a2)
         
-        ode.add_comment("initial stimulating current I_st")
-        
         ode.add_comment("The ODE system")
 
-        ode.diff(ode.V      , -(ode.I_Na+ode.I_Ca+ode.I_CaK+ode.I_Kr+ode.I_Ks+ode.I_to+ode.I_ti+ode.I_Kp+ode.I_NaCa+ode.I_NaK+ode.I_pCa+ode.I_bCa+ode.I_bNa+ode.ist))
-        ode.diff(ode.m      , ode.dm)
-        ode.diff(ode.h      , ode.a_h*(1-ode.h)-ode.b_h*ode.h)
-        ode.diff(ode.j      , ode.a_j*(1-ode.j)-ode.b_j*ode.j)
-        ode.diff(ode.xKr    , ode.dxKr)
-        ode.diff(ode.xKs    , ode.dxKs)
-        ode.diff(ode.xto1   , ode.dxto1)
-        ode.diff(ode.yto1   , ode.dyto1)
-        ode.diff(ode.K_i    , -(ode.I_Kr+ode.I_Ks+ode.I_to+ode.I_ti+ode.I_Kp+ode.I_CaK-2*ode.I_NaK)*ode.A_cap*ode.C_sc/(ode.V_myo*1000*ode.F))
-        ode.diff(ode.Ca_i   , ode.beta_i*(ode.J_xfer-ode.J_up-ode.J_trpn-(ode.I_bCa-2*ode.I_NaCa+ode.I_pCa)*ode.A_cap*ode.C_sc/(2*ode.V_myo*1000*ode.F)))
-        ode.diff(ode.Ca_NSR , ode.J_up*ode.V_myo/ode.V_NSR-ode.J_tr*ode.V_JSR/ode.V_NSR)
-        ode.diff(ode.Ca_ss  , ode.beta_ss*(ode.J_rel*ode.V_JSR/ode.V_ss-ode.J_xfer*ode.V_myo/ode.V_ss-ode.I_Ca*ode.A_cap*ode.C_sc/(2*ode.V_ss*1000*ode.F)))
-        ode.diff(ode.Ca_JSR , ode.beta_JSR*(ode.J_tr-ode.J_rel))
-        ode.diff(ode.C1_RyR , ode.dC1_RyR)
-        ode.diff(ode.O1_RyR , ode.dO1_RyR)
-        ode.diff(ode.O2_RyR , ode.dO2_RyR)
-        ode.diff(ode.C2_RyR , ode.dC2_RyR)
-        ode.diff(ode.C0     , ode.dC0)
-        ode.diff(ode.C1     , ode.dC1)
-        ode.diff(ode.C2     , ode.dC2)
-        ode.diff(ode.C3     , ode.dC3)
-        ode.diff(ode.C4     , ode.dC4)
-        ode.diff(ode.Open   , ode.dOpen)
-        ode.diff(ode.CCa0   , ode.dCCa0)
-        ode.diff(ode.CCa1   , ode.dCCa1)
-        ode.diff(ode.CCa2   , ode.dCCa2)
-        ode.diff(ode.CCa3   , ode.dCCa3)
-        ode.diff(ode.CCa4   , ode.dCCa4)
-        ode.diff(ode.yCa    , ode.dyCa)
-        ode.diff(ode.LTRPNCa, ode.dLTRPNCa)
-        ode.diff(ode.HTRPNCa, ode.dHTRPNCa)
+        ode.dV_dt = -(ode.I_Na+ode.I_Ca+ode.I_CaK+ode.I_Kr+ode.I_Ks+ode.I_to+ode.I_ti+ode.I_Kp+ode.I_NaCa+ode.I_NaK+ode.I_pCa+ode.I_bCa+ode.I_bNa+ode.ist)
+        ode.dm_dt = ode.dm
+        ode.dh_dt = ode.a_h*(1-ode.h)-ode.b_h*ode.h
+        ode.dj_dt = ode.a_j*(1-ode.j)-ode.b_j*ode.j
+        ode.dxKr_dt = ode.dxKr
+        ode.dxKs_dt = ode.dxKs
+        ode.dxto1_dt = ode.dxto1
+        ode.dyto1_dt = ode.dyto1
+        ode.dK_i_dt = -(ode.I_Kr+ode.I_Ks+ode.I_to+ode.I_ti+ode.I_Kp+ode.I_CaK-2*ode.I_NaK)*ode.A_cap*ode.C_sc/(ode.V_myo*1000*F)
+        ode.dCa_i_dt = ode.beta_i*(ode.J_xfer-ode.J_up-ode.J_trpn-(ode.I_bCa-2*ode.I_NaCa+ode.I_pCa)*ode.A_cap*ode.C_sc/(2*ode.V_myo*1000*F))
+        ode.dCa_NSR_dt = ode.J_up*ode.V_myo/ode.V_NSR-ode.J_tr*ode.V_JSR/ode.V_NSR
+        ode.dCa_ss_dt = ode.beta_ss*(ode.J_rel*ode.V_JSR/ode.V_ss-ode.J_xfer*ode.V_myo/ode.V_ss-ode.I_Ca*ode.A_cap*ode.C_sc/(2*ode.V_ss*1000*F))
+        ode.dCa_JSR_dt = ode.beta_JSR*(ode.J_tr-ode.J_rel)
+        ode.dC1_RyR_dt = ode.dC1_RyR
+        ode.dO1_RyR_dt = ode.dO1_RyR
+        ode.dO2_RyR_dt = ode.dO2_RyR
+        ode.dC2_RyR_dt = ode.dC2_RyR
+        ode.dC0_dt = ode.dC0
+        ode.dC1_dt = ode.dC1
+        ode.dC2_dt = ode.dC2
+        ode.dC3_dt = ode.dC3
+        ode.dC4_dt = ode.dC4
+        ode.dOpen_dt = ode.dOpen
+        ode.dCCa0_dt = ode.dCCa0
+        ode.dCCa1_dt = ode.dCCa1
+        ode.dCCa2_dt = ode.dCCa2
+        ode.dCCa3_dt = ode.dCCa3
+        ode.dCCa4_dt = ode.dCCa4
+        ode.dyCa_dt = ode.dyCa
+        ode.dLTRPNCa_dt = ode.dLTRPNCa
+        ode.dHTRPNCa_dt = ode.dHTRPNCa
 
         assert(ode.is_complete)
         self.ode = ode
 
-    def bla_test_load_and_equality(self):
+    def xtest_load_and_equality(self):
         """
         Test ODE loading from file and its equality with python created ones
         """
@@ -460,7 +454,7 @@ class Creation(unittest.TestCase):
     #
     #    self.assertTrue(ode == self.ode)
 
-    def bla_test_completness(self):
+    def xtest_completness(self):
         """
         Test copletness of an ODE
         """
@@ -469,7 +463,7 @@ class Creation(unittest.TestCase):
         ode = ODE("winslow")
         self.assertTrue(ode.is_empty)
         
-    def bla_test_members(self):
+    def xtest_members(self):
         """
         Test that ODE has the correct members
         """
@@ -492,11 +486,11 @@ class Creation(unittest.TestCase):
                       "CSQNtot", "EGTAtot", "KmCMDN", "KmCSQN", "KmEGTA"]
 
         
-        #self.assertTrue(all(ode.has_state(state) for state in states))
-        #self.assertTrue(all(ode.has_parameter(param) for param in \
-        #                    parameters))
+        self.assertTrue(all(ode.has_state(state) for state in states))
+        self.assertTrue(all(ode.has_parameter(param) for param in \
+                            parameters))
         
-    def bla_test_python_code_gen(self):
+    def xtest_python_code_gen(self):
         """
         Test generation of code
         """
@@ -551,8 +545,6 @@ class Creation(unittest.TestCase):
 
             self.assertTrue(np.sum(np.abs((dy_eval-dy_correct))) < 1e-12)
             self.assertTrue(np.sum(np.abs((dy_jit-dy_correct))) < 1e-12)
-            
-            
             
     def test_matlab_python_code(self):
         from gotran.codegeneration.codegenerator import \

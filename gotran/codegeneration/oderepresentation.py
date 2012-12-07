@@ -24,6 +24,7 @@ from modelparameters.sympytools import sp, iter_symbol_params_from_expr
 
 # Local gotran imports
 from gotran.model.ode import ODE
+from gotran.model.odeobjects import ODEComponent, Comment
 from gotran.common import check_arg, check_kwarg, info
 
 import sys
@@ -218,29 +219,29 @@ class ODERepresentation(object):
         """
         if self._symbol_subs is None:
 
-            subs = {}
+            subs = []
             
             # Deal with parameter subs first
             if self.optimization.parameter_numerals:
-                subs.update((param.sym, param.init) \
+                subs.extend((param.sym, param.init) \
                             for param in self.ode.parameters)
             elif not self.optimization.use_parameter_names:
-                subs.update((param.sym, sp.Symbol("parameters"+self.index(\
+                subs.extend((param.sym, sp.Symbol("parameters"+self.index(\
                     ind))) for ind, param in enumerate(\
                                 self.ode.parameters))
             elif self._parameter_prefix:
-                subs.update((param.sym, sp.Symbol("{0}{1}".format(\
+                subs.extend((param.sym, sp.Symbol("{0}{1}".format(\
                     self._parameter_prefix, param.name))) \
                             for param in self.ode.parameters)
 
             # Deal with state subs
             if not self.optimization.use_state_names:
-                subs.update((state.sym, sp.Symbol("states"+self.index(ind)))\
+                subs.extend((state.sym, sp.Symbol("states"+self.index(ind)))\
                             for ind, state in enumerate(\
                                 self.ode.states))
 
             elif self._state_prefix:
-                subs.update((param.sym, sp.Symbol("{0}{1}".format(\
+                subs.extend((param.sym, sp.Symbol("{0}{1}".format(\
                     self._state_prefix, param.name))) \
                             for param in self.ode.states)
 
@@ -284,21 +285,12 @@ class ODERepresentation(object):
         if self.optimization.keep_intermediates:
 
             # Iterate over the intermediates
-            intermediates_duplicates = dict((intermediate, deque(duplicates))\
-                                    for intermediate, duplicates in \
-                                    self.ode._intermediates_duplicates.items())
-            for intermediate, expr in self.ode._intermediates.items():
-                if "_comment_" in intermediate:
-                    yield expr, "COMMENT"
+            for intermediate in self.ode.intermediates:
+                if isinstance(intermediate, (Comment, ODEComponent)):
+                    yield intermediate.name, "COMMENT"
                     continue
                 
-                if "_duplicate_" in intermediate:
-                    # expr is here a str of the name which can be used as key
-                    # in duplicate dictionary
-                    intermediate = expr
-                    expr = intermediates_duplicates[intermediate].popleft()
-
-                yield self.subs(expr), intermediate
+                yield self.subs(intermediate.expr), intermediate.name
                     
         elif self.optimization.use_cse:
             yield "Common Sub Expressions", "COMMENT"
