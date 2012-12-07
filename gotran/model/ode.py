@@ -287,7 +287,7 @@ class ODE(object):
         """
         check_arg(comment_str, str, context=ODE.add_comment)
         self._intermediates.append(\
-            Comment(comment_str, self._present_component.value))
+            Comment(comment_str, self._present_component.name))
 
     def set_component(self, component):
         """
@@ -301,6 +301,9 @@ class ODE(object):
             comp = ODEComponent(component, self)
             self._components[component] = comp
         self._present_component = comp
+
+        # Update list of intermediates
+        self._intermediates.append(comp)
 
     def get_object(self, name):
         """
@@ -423,12 +426,26 @@ class ODE(object):
         """
         return self._variables
 
-    def iter_monitored_intermediates(self):
+    @property
+    def components(self):
         """
-        Return an iterator over registered monitored intermediates
+        Return a all components
         """
-        for name, intermediate in self._monitored_intermediates.items():
-            yield name, intermediate
+        return self._components
+
+    @property
+    def intermediates(self):
+        """
+        Return a all components
+        """
+        return self._intermediates
+
+    @property
+    def monitored_intermediates(self):
+        """
+        Return an dict over registered monitored intermediates
+        """
+        return _monitored_intermediates
 
     def has_state(self, state):
         """
@@ -710,12 +727,12 @@ class ODE(object):
 
         # Check that we have not started registering derivatives
         if self._derivative_expressions:
-            error("Cannot register a intermediate a derivative "\
-                  "has been registered.")
+            error("Cannot register an Intermediate after "\
+                  "a DerivativeExpression has been registered.")
 
         # Create an intermediate in the present component
         intermediate = Intermediate(name, expr, self, \
-                                    self._present_component.value)
+                                    self._present_component.name)
         
         # Store the intermediate
         self._intermediates.append(intermediate)

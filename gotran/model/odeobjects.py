@@ -101,7 +101,6 @@ class ODEObject(object):
         self._param = value 
 
         # Store field
-        # FIXME: Is this nesesary
         self._field = isinstance(value, ArrayParam)
         self._component = component
         self._ode_name = ode_name
@@ -155,7 +154,7 @@ class ODEObject(object):
         Return a formated str of __init__ arguments
         """
         return "'{0}', {1}{2}{3}".format(\
-            self.name, repr(self.init),
+            self.name, repr(self._param.getvalue()),
             ", component='{0}'".format(self._component) \
             if self._component else "",
             ", ode_name='{0}'".format(self._ode_name) \
@@ -594,7 +593,7 @@ class ODEComponent(ODEObject):
         check_arg(ode, ODE, 1, ODEComponent)
         
         # Call super class
-        super(ODEComponent, self).__init__("component", component, "")
+        super(ODEComponent, self).__init__(component, "", "")
 
         # Store ode
         self._ode = ode
@@ -617,7 +616,7 @@ class ODEComponent(ODEObject):
         
         check_arg(obj, ODEObject, 0, ODEComponent.append)
 
-        assert(obj.component == self.value)
+        assert(obj.component == self.name)
 
         # If SingleODEObject we need to check that no Expressions has been added
         if isinstance(obj, SingleODEObject):
@@ -644,7 +643,7 @@ class ODEComponent(ODEObject):
             # has been added
             if isinstance(obj, Intermediate):
                 if self.derivatives:
-                    error("Cannot register an Intermediate to '{1}' after "\
+                    error("Cannot register an Intermediate after"\
                           "a DerivativeExpression has been registered.")
             
             # We have an expression and we need to figure out dependencies
