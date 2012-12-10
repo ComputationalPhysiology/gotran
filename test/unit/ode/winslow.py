@@ -787,7 +787,7 @@ class Creation(unittest.TestCase):
                     else:
                         print "NO!"
         
-    def xtest_python_code_gen(self):
+    def test_python_code_gen(self):
         """
         Test generation of code
         """
@@ -843,7 +843,7 @@ class Creation(unittest.TestCase):
             self.assertTrue(np.sum(np.abs((dy_eval-dy_correct))) < 1e-12)
             self.assertTrue(np.sum(np.abs((dy_jit-dy_correct))) < 1e-12)
             
-    def xtest_matlab_python_code(self):
+    def test_matlab_python_code(self):
         from gotran.codegeneration.codegenerator import \
              MatlabCodeGenerator, ODERepresentation
         
