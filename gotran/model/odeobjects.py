@@ -669,15 +669,6 @@ class ODEComponent(ODEObject):
                     error("Cannot register an Intermediate after"\
                           "a DerivativeExpression has been registered.")
             
-            # We have an expression and we need to figure out dependencies
-            for sym in iter_symbol_params_from_expr(obj.expr):
-                dep_obj = self._ode.get_object(sym) or \
-                          self._ode.get_intermediate(sym)
-                assert(dep_obj)
-                assert(not isinstance(dep_obj, DerivativeExpression))
-                self.external_object_dep.add(dep_obj)
-                self.external_component_dep.add(dep_obj.component)
-
             if isinstance(obj, Intermediate):
                 self.intermediates.append(obj)
             elif isinstance(obj, DerivativeExpression):
@@ -685,7 +676,26 @@ class ODEComponent(ODEObject):
             else:
                 error("Not recognised Expression: {0}".format(\
                     type(obj).__name__))
+
+            own_obj = self.states.keys() + self.parameters.keys() + \
+                      self.variables.keys()
+
+            # We have an expression and we need to figure out dependencies
+            for sym in iter_symbol_params_from_expr(obj.expr):
+                dep_obj = self._ode.get_object(sym) or \
+                          self._ode.get_intermediate(sym)
+                assert(dep_obj)
+                assert(not isinstance(dep_obj, DerivativeExpression))
+
+                if dep_obj in self.intermediates:
+                    continue
+
+                if dep_obj.name in own_obj:
+                    continue
                 
+                self.external_object_dep.add(dep_obj)
+                self.external_component_dep.add(dep_obj.component)
+
         elif isinstance(object, Comment):
             self.intermediates.append(obj)
 
