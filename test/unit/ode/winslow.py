@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2012-12-07"
+__date__ = "2012-05-07 -- 2012-12-10"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -406,7 +406,7 @@ class Creation(unittest.TestCase):
         assert(ode.is_complete)
         self.ode = ode
 
-    def xtest_load_and_equality(self):
+    def test_load_and_equality(self):
         """
         Test ODE loading from file and its equality with python created ones
         """
@@ -454,7 +454,7 @@ class Creation(unittest.TestCase):
     #
     #    self.assertTrue(ode == self.ode)
 
-    def xtest_completness(self):
+    def test_completness(self):
         """
         Test copletness of an ODE
         """
@@ -463,7 +463,7 @@ class Creation(unittest.TestCase):
         ode = ODE("winslow")
         self.assertTrue(ode.is_empty)
         
-    def xtest_members(self):
+    def test_members(self):
         """
         Test that ODE has the correct members
         """
@@ -490,7 +490,7 @@ class Creation(unittest.TestCase):
         self.assertTrue(all(ode.has_parameter(param) for param in \
                             parameters))
         
-    def xtest_python_code_gen(self):
+    def test_python_code_gen(self):
         """
         Test generation of code
         """

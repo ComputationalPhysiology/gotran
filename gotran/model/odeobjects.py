@@ -350,6 +350,7 @@ class Expression(ODEObject):
                   "ModelSymbol or Number.")
 
         # Check that we are not using a DerivativeExpressions in expression
+        intermediate_obj = []
         for sym in iter_symbol_params_from_expr(expr):
             dep_obj = ode.get_object(sym) or ode._intermediates.get(sym)
             if dep_obj is None:
@@ -359,12 +360,17 @@ class Expression(ODEObject):
                 error("An expression cannot include a StateDerivative or "\
                       "DerivativeExpression")
 
+            # Collect intermediates to be used in substitutions below
+            if isinstance(dep_obj, Intermediate):
+                intermediate_obj.append(dep_obj)
+
         # Call super class with expression as the "value"
         super(Expression, self).__init__(name, expr, component, ode.name)
 
         # Create and store expanded expression
         timer = Timer("subs")
-        self._expanded_expr = expr.subs(ode.expansion_subs)
+        self._expanded_expr = expr.subs((dep_obj.sym, dep_obj.expanded_expr) \
+                                        for dep_obj in intermediate_obj)
 
     @property
     def value(self):

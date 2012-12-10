@@ -568,10 +568,6 @@ class ODE(object):
         return len(self._monitored_intermediates)
 
     @property
-    def expansion_subs(self):
-        return self._expansion_subs
-
-    @property
     def is_complete(self):
         """
         Check that the ODE is complete
@@ -676,7 +672,6 @@ class ODE(object):
         self._algebraic_states = set()
 
         # Collection of intermediate stuff
-        self._expansion_subs = []
         self._intermediates = ODEObjectList()
         self._comment_num = 0
         self._duplicate_num = 0
@@ -755,21 +750,9 @@ class ODE(object):
         if intermediate.name in self._intermediates:
             self._intermediate_duplicates.add(intermediate.name)
 
-            # Remove old registration in expansion subs
-            for ind, (sym, expr) in enumerate(self._expansion_subs):
-                if sym.name == intermediate.name:
-                    break
-            else:
-                error("Did mot find duplicate in expansion subs")
-            
-            self._expansion_subs.pop(ind)
-        
         # Store the intermediate
         self._intermediates.append(intermediate)
 
-        # Update expansion subs
-        self._expansion_subs.append((intermediate.sym, 
-                                     intermediate.expanded_expr))
         # Add to component
         if self._with_components:
             self._present_component.append(intermediate)
@@ -846,17 +829,6 @@ class ODE(object):
         # FIXME: Fix comparison of expressions
         #print "self:", self._derivative_expr
         #print "other:", other._derivative_expr
-
-        #for derivatives, expr in self._derivative_expr:
-        #    if (derivatives, expr.subs(subs)) not in other._derivative_expr:
-        #        print "Nope..."
-        #        return False
-        #
-        #for derivatives, expr in self._derivative_expr_expanded:
-        #    if (derivatives, expr.subs(subs)) not in \
-        #               other._derivative_expr_expanded:
-        #        print "Nopeidope..."
-        #        return False
 
         return True
 
