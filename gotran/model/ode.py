@@ -527,6 +527,14 @@ class ODE(object):
                 return False
 
         return variable in self._variables
+    
+    def has_component(self, component):
+        """
+        Return True if component is a registered ODEComponent
+        """
+        check_arg(component, str)
+
+        return component in self._components
         
     @property
     def name(self):
@@ -687,8 +695,8 @@ class ODE(object):
         self._linear_dependencies = {}
 
         # Add time as a variable
-        self.add_variable("time", 0.0, self._default_component.value)
-        self.add_variable("dt", 0.1, self._default_component.value)
+        self.add_variable("time", 0.0, self._default_component.name)
+        self.add_variable("dt", 0.1, self._default_component.name)
         
     def _register_object(self, obj):
         """
