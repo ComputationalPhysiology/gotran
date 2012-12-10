@@ -24,7 +24,7 @@ import algorithms
 
 # Import classes and routines from gotran modules
 from common import DEBUG, INFO, WARNING, ERROR, CRITICAL, \
-     info, debug, warning, error, set_log_level
+     info, debug, warning, error, set_log_level, list_timings
 from model import *
 from algorithms import *
 
