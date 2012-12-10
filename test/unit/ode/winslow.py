@@ -28,16 +28,15 @@ class Creation(unittest.TestCase):
         ode.add_states("Intracellular K",
                        K_i=159.48)
         ode.add_states("Intracellular Ca",
-                       Ca_i=8.464e-5, Ca_NSR=0.2620, Ca_ss=1.315e-4, Ca_JSR=0.2616)
+                       Ca_i=8.464e-5, Ca_NSR=0.2620, Ca_ss=1.315e-4, Ca_JSR=0.2616, \
+                       LTRPNCa=5.5443e-3, HTRPNCa=136.64e-3)
         ode.add_states("RyR Channel",
                        C1_RyR=0.4929, O1_RyR=6.027e-4, O2_RyR=2.882e-9, C2_RyR=0.5065)
         ode.add_states("L-type Ca Channel", 
                        C0=0.99802, C1=1.9544e-6, C2=0, C3=0, C4=0, Open=0,
                        CCa0=1.9734e-3, CCa1=0, CCa2=0, CCa3=0, CCa4=0, yCa=0.7959)
-        ode.add_states("Buffers",
-                       LTRPNCa=5.5443e-3, HTRPNCa=136.64e-3)
-        
-        ode.add_parameters("Cell geometry parameters",
+
+        ode.add_parameters("Cell geometry",
                            ist=0,
                            C_sc  = 1.00,
                            A_cap = 1.534e-4,
@@ -47,68 +46,68 @@ class Creation(unittest.TestCase):
                            V_ss  = 1.2e-9,
                            )
         
-        ode.add_parameters("Standard ionic concentrations",
+        ode.add_parameters("Ionic concentrations",
                            K_o  = 4.0,
                            Na_o = 138.0,
                            Ca_o = 2.0,
                            Na_i = 10.0,
                            )
         
-        ode.add_parameters("Membrane current parameters",
-                           G_KrMax = 0.0034,
-                           G_KsMax = 0.00271,
-                           G_toMax = 0.23815,
-                           G_tiMax = 2.8,
-                           G_KpMax = 0.002216,
+        ode.add_parameters("Na current I_Na",
                            G_NaMax = 12.8,
+                           )          
+        
+        ode.add_parameters("Rapid-activating delayed rectifier K current I_Kr",
+                           G_KrMax = 0.0034,
+                           )
+        
+        ode.add_parameters("Slow-activating delayed rectifier K current I_Ks",
+                           G_KsMax = 0.00271,
+                           )
+        
+        ode.add_parameters("Transient outward K current I_to",
+                           G_toMax = 0.23815,
+                           )
+        
+        ode.add_parameters("Time-Independent K current I_ti",
+                           G_tiMax = 2.8,
+                           K_mK1   = 13.0,
+                           )
+        
+        ode.add_parameters("Plateau current I_Kp",
+                           G_KpMax = 0.002216,
+                           )
+        
+        ode.add_parameters("NCX Current I_NaCa",
                            k_NaCa  = 0.30,
                            K_mNa   = 87.5,
                            K_mCa   = 1.38,
-                           K_mK1   = 13.0,
                            k_sat   = 0.2,
                            eta     = 0.35,
+                           )
+        
+        ode.add_parameters("Na-K pump current I_NaK",
                            I_NaKMax= 0.693,
                            K_mNai  = 10.0,
                            K_mKo   = 1.5,
+                           )
+        
+        ode.add_parameters("Sarcolemmal Ca pump current I_pCa",
                            I_pCaMax= 0.05,
                            K_mpCa  = 0.00005,
+                           )
+        
+        ode.add_parameters("Ca background current I_bCa",
                            G_bCaMax= 0.0003842,
+                           )
+        
+        ode.add_parameters("Na background current I_bNa",
                            G_bNaMax= 0.0031,
                            )
         
-        ode.add_parameters("SR parameters", 
-                           v_1     = 1.8,
-                           K_fb    = 0.168e-3,
-                           K_rb    = 3.29,
-                           K_SR    = 1.0,
-                           N_fb    = 1.2,
-                           N_rb    = 1.0,
-                           v_maxf  = 0.813e-4,
-                           v_maxr  = 0.318e-3,
+        ode.add_parameters("Intracellular Ca", 
                            tau_tr  = 0.5747,
                            tau_xfer= 26.7,
-                           kaplus = 0.01215,
-                           kaminus= 0.576,
-                           kbplus = 0.00405,
-                           kbminus= 1.930,
-                           kcplus = 0.100,
-                           kcminus= 0.0008,
-                           ncoop   = 4.0,
-                           mcoop   = 3.0,
-                           )
-        
-        ode.add_parameters("L-type Ca Channel",
-                           fL     = 0.3,
-                           gL     = 2.0,
-                           bL     = 2.0,
-                           aL     = 2.0,
-                           omega   = 0.01,
-                           PCa = 3.125e-4,
-                           PK  = 5.79e-7,
-                           ICahalf= -0.265,
-                           )
-        
-        ode.add_parameters("Buffering parameters",
                            LTRPNtot   = 70e-3,
                            HTRPNtot   = 140e-3,
                            khtrpn_plus = 20.0,
@@ -123,6 +122,38 @@ class Creation(unittest.TestCase):
                            KmEGTA     = 0.15e-3,
                            )
         
+        ode.add_parameters("L-type Ca Channel",
+                           fL     = 0.3,
+                           gL     = 2.0,
+                           bL     = 2.0,
+                           aL     = 2.0,
+                           omega   = 0.01,
+                           PCa = 3.125e-4,
+                           PK  = 5.79e-7,
+                           ICahalf= -0.265,
+                           )
+        
+        ode.add_parameters("RyR Channel",
+                           kaplus = 0.01215,
+                           kaminus= 0.576,
+                           kbplus = 0.00405,
+                           kbminus= 1.930,
+                           kcplus = 0.100,
+                           kcminus= 0.0008,
+                           v_1     = 1.8,
+                           ncoop   = 4.0,
+                           mcoop   = 3.0,
+                           )
+        ode.add_parameters("SERCA2a Pump",
+                           K_fb    = 0.168e-3,
+                           K_rb    = 3.29,
+                           K_SR    = 1.0,
+                           N_fb    = 1.2,
+                           N_rb    = 1.0,
+                           v_maxf  = 0.813e-4,
+                           v_maxr  = 0.318e-3,
+                           )
+        
         ode.add_comment("Constants")
         F       = 96.500
         T       = 310.
@@ -130,13 +161,17 @@ class Creation(unittest.TestCase):
         RTonF   = R*T/F
         FonRT   = F/(R*T)
         
-        ode.set_component("Help variables")
+        ode.set_component("Membrane")
         ode.VFonRT = ode.V*FonRT
         ode.expVFonRT = exp(ode.VFonRT)
         
+        ode.set_component("Ionic concentrations")
+        ode.E_Na = RTonF*log(ode.Na_o/ode.Na_i)
+        ode.E_k  = RTonF*log(ode.K_o/ode.K_i)
+        ode.E_Ca  = RTonF/2*log(ode.Ca_o/ode.Ca_i)
+
         ode.set_component("Na current I_Na")
         
-        ode.E_Na = RTonF*log(ode.Na_o/ode.Na_i)
         ode.I_Na = ode.G_NaMax*ode.m**3*ode.h*ode.j*(ode.V-ode.E_Na)
         
         ode.a_h = Conditional(Ge(ode.V, -40), 0.0, 0.135*exp((80+ode.V)/(-6.8)))
@@ -150,10 +185,8 @@ class Creation(unittest.TestCase):
                               0.3*exp(-2.535e-7*ode.V)/(1+exp(-0.1*(ode.V+32))),
                               0.1212*exp(-0.01052*ode.V)/(1+exp(-0.1378*(ode.V+40.14))))
 
-
         ode.a_m = 0.32*(ode.V+47.13)/(1-exp(-0.1*(ode.V+47.13)))
         ode.b_m = 0.08*exp(-ode.V/11)
-        ode.dm = Conditional(Ge(ode.V, -90), ode.a_m*(1-ode.m)-ode.b_m*ode.m, 0.0)
         
         ode.set_component("Rapid-activating delayed rectifier K current I_Kr")
         
@@ -163,7 +196,6 @@ class Creation(unittest.TestCase):
         ode.tau_xKr = 1.0/(ode.k12+ode.k21) + 27.0
         ode.dxKr = (ode.xKr_inf-ode.xKr)/ode.tau_xKr
         
-        ode.E_k  = RTonF*log(ode.K_o/ode.K_i)
         ode.R_V  = 1./(1+1.4945*exp(0.0446*ode.V))
         ode.f_k  = sqrt(ode.K_o/4)
         
@@ -178,7 +210,6 @@ class Creation(unittest.TestCase):
         ode.E_Ks = RTonF*log((ode.K_o+0.01833*ode.Na_o)/(ode.K_i+0.01833*ode.Na_i))
         
         ode.I_Ks = ode.G_KsMax*(ode.xKs**2)*(ode.V-ode.E_Ks)
-        
         
         ode.set_component("Transient outward K current I_to")
         ode.alpha_xto1 = 0.04516*exp(0.03577*ode.V)
@@ -221,7 +252,6 @@ class Creation(unittest.TestCase):
         ode.I_pCa = ode.I_pCaMax*ode.Ca_i/(ode.K_mpCa+ode.Ca_i)
         
         ode.set_component("Ca background current I_bCa")
-        ode.E_Ca  = RTonF/2*log(ode.Ca_o/ode.Ca_i)
         ode.I_bCa = ode.G_bCaMax*(ode.V-ode.E_Ca)
         
         
@@ -338,7 +368,6 @@ class Creation(unittest.TestCase):
         
         ode.J_rel = ode.v_1*(ode.O1_RyR+ode.O2_RyR)*(ode.Ca_JSR-ode.Ca_ss)
         
-        
         ode.set_component("SERCA2a Pump")
         ode.f_b = (ode.Ca_i/ode.K_fb)**ode.N_fb
         ode.r_b = (ode.Ca_NSR/ode.K_rb)**ode.N_rb
@@ -372,7 +401,7 @@ class Creation(unittest.TestCase):
         ode.add_comment("The ODE system")
 
         ode.dV_dt = -(ode.I_Na+ode.I_Ca+ode.I_CaK+ode.I_Kr+ode.I_Ks+ode.I_to+ode.I_ti+ode.I_Kp+ode.I_NaCa+ode.I_NaK+ode.I_pCa+ode.I_bCa+ode.I_bNa+ode.ist)
-        ode.dm_dt = ode.dm
+        ode.dm_dt = Conditional(Ge(ode.V, -90), ode.a_m*(1-ode.m)-ode.b_m*ode.m, 0.0)
         ode.dh_dt = ode.a_h*(1-ode.h)-ode.b_h*ode.h
         ode.dj_dt = ode.a_j*(1-ode.j)-ode.b_j*ode.j
         ode.dxKr_dt = ode.dxKr
@@ -485,12 +514,280 @@ class Creation(unittest.TestCase):
                       "khtrpn_minus", "kltrpn_plus", "kltrpn_minus", "CMDNtot", \
                       "CSQNtot", "EGTAtot", "KmCMDN", "KmCSQN", "KmEGTA"]
 
+        components = ["winslow", "Membrane", "Na current I_Na", \
+                      "Rapid-activating delayed rectifier K current I_Kr", \
+                      "Slow-activating delayed rectifier K current I_Ks", \
+                      "Transient outward K current I_to", "Intracellular K", \
+                      "Intracellular Ca", "RyR Channel", "L-type Ca Channel", \
+                      "Cell geometry", "Ionic concentrations", \
+                      "Time-Independent K current I_ti", "Plateau current I_Kp", \
+                      "NCX Current I_NaCa", "Na-K pump current I_NaK", \
+                      "Sarcolemmal Ca pump current I_pCa", \
+                      "Ca background current I_bCa", "Na background current I_bNa", \
+                      "SERCA2a Pump"]
         
         self.assertTrue(all(ode.has_state(state) for state in states))
+        self.assertTrue(all(state.name in states for state in ode.states))
+        
         self.assertTrue(all(ode.has_parameter(param) for param in \
                             parameters))
+        self.assertTrue(all(param.name in parameters for param in \
+                            ode.parameters))
+
+        self.assertTrue(all(ode.has_component(comp) for comp in components))
+        self.assertTrue(all(comp in components for comp in ode.components))
+
+    def test_components(self):
         
-    def test_python_code_gen(self):
+        ode = self.ode
+        components = {"winslow":
+                      dict(states=[], parameters=[], variables=["time", "dt"],
+                           intermediates=[], derivatives=[],
+                           external_object_dep=[], external_component_dep=[]),
+                      
+                      "Membrane":
+                      dict(states=["V"],
+                           parameters=[],
+                           variables=[],
+                           intermediates=["VFonRT", "expVFonRT"],
+                           derivatives=["dV_dt"],
+                           external_object_dep=["I_Ca", "I_NaCa", "I_Ks", "I_to",
+                                                "I_CaK", "I_NaK", "I_Kp", "I_ti",
+                                                "I_bNa", "ist", "I_pCa", "I_Kr",
+                                                "I_Na", "I_bCa"],
+                           external_component_dep=['Time-Independent K current I_ti',
+                            'Cell geometry', 'L-type Ca Channel', 'Plateau current I_Kp',
+                            'Sarcolemmal Ca pump current I_pCa', 'Na-K pump current I_NaK',
+                            'Transient outward K current I_to', 'Na current I_Na',
+                            'Rapid-activating delayed rectifier K current I_Kr',
+                            'NCX Current I_NaCa', 'Ca background current I_bCa',
+                            'Na background current I_bNa',
+                            'Slow-activating delayed rectifier K current I_Ks']), 
+
+                      "Na current I_Na":
+                      dict(states=["m", "h", "j"],
+                           parameters=["G_NaMax"],
+                           variables=[],
+                           intermediates=['I_Na', 'a_h', 'b_h', 'a_j', 'b_j', 'a_m',
+                                          'b_m'],
+                           derivatives=['dm_dt', 'dh_dt', 'dj_dt'],
+                           external_object_dep=["E_Na", "V"],
+                           external_component_dep=['Ionic concentrations', 'Membrane']), 
+
+                      "Rapid-activating delayed rectifier K current I_Kr":
+                      dict(states=['xKr'],
+                           parameters=['G_KrMax'],
+                           variables=[],
+                           intermediates=['k12', 'k21', 'xKr_inf', 'tau_xKr', 'dxKr',
+                                          'R_V', 'f_k', 'I_Kr'],
+                           derivatives=['dxKr_dt'],
+                           external_object_dep=['E_k', 'V', 'K_o'],
+                           external_component_dep=['Ionic concentrations', 'Membrane']),
+                      
+                      "Slow-activating delayed rectifier K current I_Ks":
+                      dict(states=['xKs'],
+                           parameters=['G_KsMax'],
+                           variables=[],
+                           intermediates=['xKs_inf', 'tau_xKs', 'dxKs', 'E_Ks', 'I_Ks'],
+                           derivatives=['dxKs_dt'],
+                           external_object_dep=['K_i', 'Na_i', 'Na_o', 'V', 'K_o'],
+                           external_component_dep=['Ionic concentrations',
+                                                   'Intracellular K', 'Membrane']),  
+
+                      "Transient outward K current I_to":
+                      dict(states=['xto1', 'yto1'],
+                           parameters=['G_toMax'],
+                           variables=[],
+                           intermediates=['alpha_xto1', 'beta_xto1', 'a1', 'alpha_yto1',
+                                          'a1', 'beta_yto1', 'dxto1', 'dyto1', 'I_to'],
+                           derivatives=['dxto1_dt', 'dyto1_dt'],
+                           external_object_dep=['V', 'E_k'],
+                           external_component_dep=['Ionic concentrations', 'Membrane']), 
+
+                      "Intracellular K":
+                      dict(states=['K_i'],
+                           parameters=[],
+                           variables=[],
+                           intermediates=[],
+                           derivatives=['dK_i_dt'],
+                           external_object_dep=['I_Ks', 'C_sc', 'I_Kp', 'I_to',
+                                                'V_myo', 'I_NaK', 'A_cap', 'I_CaK',
+                                                'I_Kr', 'I_ti'],
+                           external_component_dep=['Time-Independent K current I_ti',
+                            'Cell geometry', 'L-type Ca Channel', 'Plateau current I_Kp',
+                            'Na-K pump current I_NaK', 'Transient outward K current I_to',
+                            'Rapid-activating delayed rectifier K current I_Kr',
+                            'Slow-activating delayed rectifier K current I_Ks']),  
+
+                      "Intracellular Ca":
+                      dict(states=['Ca_JSR', 'Ca_NSR', 'Ca_i', 'Ca_ss', 'HTRPNCa', 
+                                   'LTRPNCa'],
+                           parameters=['CMDNtot', 'CSQNtot', 'EGTAtot', 'HTRPNtot',
+                                       'KmCMDN', 'KmCSQN', 'KmEGTA', 'LTRPNtot',
+                                       'khtrpn_minus', 'khtrpn_plus', 'kltrpn_minus',
+                                       'kltrpn_plus', 'tau_tr', 'tau_xfer'],
+                           variables=[],
+                           intermediates=['J_tr', 'J_xfer', 'a1', 'dLTRPNCa', 'a1',
+                                          'dHTRPNCa', 'J_trpn', 'a1', 'beta_ss', 'a1',
+                                          'beta_JSR', 'a1', 'beta_i'],
+                           derivatives=['dCa_i_dt', 'dCa_NSR_dt', 'dCa_ss_dt',
+                                        'dCa_JSR_dt', 'dLTRPNCa_dt', 'dHTRPNCa_dt'],
+                           external_object_dep=['J_up', 'I_bCa', 'I_Ca', 'V_JSR',
+                                                'V_myo', 'V_ss', 'A_cap', 'C_sc',
+                                                'V_NSR', 'I_pCa', 'J_rel', 'I_NaCa'],
+                           external_component_dep=['Cell geometry', 'L-type Ca Channel',
+                            'Sarcolemmal Ca pump current I_pCa', 'SERCA2a Pump',
+                            'RyR Channel', 'Ca background current I_bCa',
+                            'NCX Current I_NaCa']), 
+
+                      "RyR Channel":
+                      dict(states=['C1_RyR', 'C2_RyR', 'O1_RyR', 'O2_RyR'],
+                           parameters=['kaminus', 'kaplus', 'kbminus', 'kbplus',
+                                       'kcminus', 'kcplus', 'mcoop', 'ncoop', 'v_1'],
+                           variables=[],
+                           intermediates=['a1', 'a2', 'dC1_RyR', 'dO2_RyR', 'dC2_RyR',
+                                          'dO1_RyR', 'J_rel'],
+                           derivatives=['dC1_RyR_dt', 'dO1_RyR_dt', 'dO2_RyR_dt',
+                                        'dC2_RyR_dt'],
+                           external_object_dep=['Ca_ss', 'Ca_JSR'],
+                           external_component_dep=['Intracellular Ca']),
+
+                      "L-type Ca Channel":
+                      dict(states=['C0', 'C1', 'C2', 'C3', 'C4', 'CCa0', 'CCa1',
+                                   'CCa2', 'CCa3', 'CCa4', 'Open', 'yCa'],
+                           parameters=['ICahalf', 'PCa', 'PK', 'aL', 'bL', 'fL',
+                                       'gL', 'omega'],
+                           variables=[],
+                           intermediates=['alpha', 'beta', 'alpha_prime', 'beta_prime',
+                            'gamma', 'C0_to_C1', 'C1_to_C2', 'C2_to_C3', 'C3_to_C4',
+                            'CCa0_to_CCa1', 'CCa1_to_CCa2', 'CCa2_to_CCa3',
+                            'CCa3_to_CCa4', 'C1_to_C0', 'C2_to_C1', 'C3_to_C2',
+                            'C4_to_C3', 'CCa1_to_CCa0', 'CCa2_to_CCa1', 'CCa3_to_CCa2',
+                            'CCa4_to_CCa3', 'gamma', 'C0_to_CCa0', 'C1_to_CCa1',
+                            'C2_to_CCa2', 'C3_to_CCa3', 'C4_to_CCa4', 'CCa0_to_C0',
+                            'CCa1_to_C1', 'CCa2_to_C2', 'CCa3_to_C3', 'CCa4_to_C4',
+                            'a1', 'a2', 'dC0', 'a1', 'a2', 'dC1', 'a1', 'a2', 'dC2',
+                            'a1', 'a2', 'dC3', 'a1', 'a2', 'dC4', 'dOpen', 'a1', 'a2',
+                            'dCCa0', 'a1', 'a2', 'dCCa1', 'a1', 'a2', 'dCCa2', 'a1',
+                            'a2', 'dCCa3', 'a1', 'a2', 'dCCa4', 'yCa_inf', 'tau_yCa',
+                            'dyCa', 'VFsqonRT', 'a1', 'a2', 'ICamax', 'I_Ca',
+                            'PKprime', 'a1', 'a2', 'I_CaK'],
+                           derivatives=['dC0_dt', 'dC1_dt', 'dC2_dt', 'dC3_dt',
+                                        'dC4_dt', 'dOpen_dt', 'dCCa0_dt', 'dCCa1_dt',
+                                        'dCCa2_dt', 'dCCa3_dt', 'dCCa4_dt', 'dyCa_dt'],
+                           external_object_dep=['VFonRT', 'expVFonRT', 'Ca_o',
+                                                'Ca_ss', 'K_i', 'K_o', 'V'],
+                           external_component_dep=['Ionic concentrations',
+                            'Intracellular K', 'Intracellular Ca', 'Membrane']),  
+
+                      "Cell geometry":
+                      dict(states=[],
+                           parameters=['A_cap', 'C_sc', 'V_JSR', 'V_NSR', 'V_myo',
+                                       'V_ss', 'ist'],
+                           variables=[],
+                           intermediates=[],
+                           derivatives=[],
+                           external_object_dep=[],
+                           external_component_dep=[]), 
+
+                      "Ionic concentrations":
+                      dict(states=[],
+                           parameters=['Ca_o', 'K_o', 'Na_i', 'Na_o'],
+                           variables=[],
+                           intermediates=['E_Na', 'E_k', 'E_Ca'],
+                           derivatives=[],
+                           external_object_dep=['K_i', 'Ca_i'],
+                           external_component_dep=['Intracellular K', 'Intracellular Ca']),  
+
+                      "Time-Independent K current I_ti":
+                      dict(states=[],
+                           parameters=['G_tiMax', 'K_mK1'],
+                           variables=[],
+                           intermediates=['K_tiUnlim', 'I_ti'],
+                           derivatives=[],
+                           external_object_dep=['K_o', 'V', 'E_k'],
+                           external_component_dep=['Ionic concentrations', 'Membrane']), 
+
+                      "Plateau current I_Kp":
+                      dict(states=[],
+                           parameters=['G_KpMax'],
+                           variables=[],
+                           intermediates=['K_p', 'I_Kp'],
+                           derivatives=[],
+                           external_object_dep=['V', 'E_k'],
+                           external_component_dep=['Ionic concentrations', 'Membrane']),  
+
+                      "NCX Current I_NaCa":
+                      dict(states=[],
+                           parameters=['K_mCa', 'K_mNa', 'eta', 'k_NaCa', 'k_sat'],
+                           variables=[],
+                           intermediates=['I_NaCa'],
+                           derivatives=[],
+                           external_object_dep=['Na_i', 'VFonRT', 'Ca_i',
+                                                'Na_o', 'Ca_o', 'V'],
+                           external_component_dep=['Ionic concentrations',
+                            'Intracellular Ca', 'Membrane']),
+
+                      "Na-K pump current I_NaK":
+                      dict(states=[],
+                           parameters=['I_NaKMax', 'K_mKo', 'K_mNai'],
+                           variables=[],
+                           intermediates=['sigma', 'f_NaK', 'I_NaK'],
+                           derivatives=[],
+                           external_object_dep=['Na_o', 'Na_i', 'VFonRT', 'K_o'],
+                           external_component_dep=['Ionic concentrations', 'Membrane']),  
+
+                      "Sarcolemmal Ca pump current I_pCa":
+                      dict(states=[],
+                           parameters=['I_pCaMax', 'K_mpCa'],
+                           variables=[],
+                           intermediates=['I_pCa'],
+                           derivatives=[],
+                           external_object_dep=["Ca_i"],
+                           external_component_dep=['Intracellular Ca']),  
+
+                      "Ca background current I_bCa":
+                      dict(states=[],
+                           parameters=['G_bCaMax'],
+                           variables=[],
+                           intermediates=['I_bCa'],
+                           derivatives=[],
+                           external_object_dep=['E_Ca', 'V'],
+                           external_component_dep=['Ionic concentrations', 'Membrane']), 
+
+                      "Na background current I_bNa":
+                      dict(states=[],
+                           parameters=['G_bNaMax'],
+                           variables=[],
+                           intermediates=['I_bNa'],
+                           derivatives=[],
+                           external_object_dep=['E_Na', 'V'],
+                           external_component_dep=['Ionic concentrations', 'Membrane']),  
+
+                      "SERCA2a Pump":
+                      dict(states=[],
+                           parameters=['K_SR', 'K_fb', 'K_rb', 'N_fb', 'N_rb',
+                                       'v_maxf', 'v_maxr'],
+                           variables=[],
+                           intermediates=['f_b', 'r_b', 'J_up'],
+                           derivatives=[],
+                           external_object_dep=['Ca_i', 'Ca_NSR'],
+                           external_component_dep=['Intracellular Ca']), 
+                      }
+
+        for comp_name, dep in components.items():
+            for what in ["states", "parameters", "variables",
+                         "intermediates", "derivatives",
+                         "external_object_dep", "external_component_dep"]:
+                for obj in getattr(ode.components[comp_name], what):
+                    if isinstance(obj, ODEObject):
+                        self.assertTrue(obj.name in dep[what])
+                    elif isinstance(obj, str):
+                        self.assertTrue(obj in dep[what])
+                    else:
+                        print "NO!"
+        
+    def xtest_python_code_gen(self):
         """
         Test generation of code
         """
@@ -546,7 +843,7 @@ class Creation(unittest.TestCase):
             self.assertTrue(np.sum(np.abs((dy_eval-dy_correct))) < 1e-12)
             self.assertTrue(np.sum(np.abs((dy_jit-dy_correct))) < 1e-12)
             
-    def test_matlab_python_code(self):
+    def xtest_matlab_python_code(self):
         from gotran.codegeneration.codegenerator import \
              MatlabCodeGenerator, ODERepresentation
         

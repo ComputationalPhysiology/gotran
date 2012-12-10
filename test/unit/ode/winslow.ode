@@ -11,16 +11,14 @@ states("Transient outward K current I_to",
 states("Intracellular K",
        K_i=159.48)
 states("Intracellular Ca",
-       Ca_i=8.464e-5, Ca_NSR=0.2620, Ca_ss=1.315e-4, Ca_JSR=0.2616)
+       Ca_i=8.464e-5, Ca_NSR=0.2620, Ca_ss=1.315e-4, Ca_JSR=0.2616, \
+       LTRPNCa=5.5443e-3, HTRPNCa=136.64e-3)
 states("RyR Channel",
        C1_RyR=0.4929, O1_RyR=6.027e-4, O2_RyR=2.882e-9, C2_RyR=0.5065)
 states("L-type Ca Channel", 
        C0=0.99802, C1=1.9544e-6, C2=0, C3=0, C4=0, Open=0,
        CCa0=1.9734e-3, CCa1=0, CCa2=0, CCa3=0, CCa4=0, yCa=0.7959)
-states("Buffers",
-       LTRPNCa=5.5443e-3, HTRPNCa=136.64e-3)
-
-parameters("Cell geometry parameters",
+parameters("Cell geometry",
            ist=0,
            C_sc  = 1.00,
            A_cap = 1.534e-4,
@@ -30,68 +28,68 @@ parameters("Cell geometry parameters",
            V_ss  = 1.2e-9,
            )
 
-parameters("Standard ionic concentrations",
+parameters("Ionic concentrations",
            K_o  = 4.0,
            Na_o = 138.0,
            Ca_o = 2.0,
            Na_i = 10.0,
            )
 
-parameters("Membrane current parameters",
-           G_KrMax = 0.0034,
-           G_KsMax = 0.00271,
-           G_toMax = 0.23815,
-           G_tiMax = 2.8,
-           G_KpMax = 0.002216,
+parameters("Na current I_Na",
            G_NaMax = 12.8,
+           )          
+
+parameters("Rapid-activating delayed rectifier K current I_Kr",
+           G_KrMax = 0.0034,
+           )
+
+parameters("Slow-activating delayed rectifier K current I_Ks",
+           G_KsMax = 0.00271,
+           )
+
+parameters("Transient outward K current I_to",
+           G_toMax = 0.23815,
+           )
+
+parameters("Time-Independent K current I_ti",
+           G_tiMax = 2.8,
+           K_mK1   = 13.0,
+           )
+
+parameters("Plateau current I_Kp",
+           G_KpMax = 0.002216,
+           )
+
+parameters("NCX Current I_NaCa",
            k_NaCa  = 0.30,
            K_mNa   = 87.5,
            K_mCa   = 1.38,
-           K_mK1   = 13.0,
            k_sat   = 0.2,
            eta     = 0.35,
+           )
+
+parameters("Na-K pump current I_NaK",
            I_NaKMax= 0.693,
            K_mNai  = 10.0,
            K_mKo   = 1.5,
+           )
+
+parameters("Sarcolemmal Ca pump current I_pCa",
            I_pCaMax= 0.05,
            K_mpCa  = 0.00005,
+           )
+
+parameters("Ca background current I_bCa",
            G_bCaMax= 0.0003842,
+           )
+
+parameters("Na background current I_bNa",
            G_bNaMax= 0.0031,
            )
 
-parameters("SR parameters", 
-           v_1     = 1.8,
-           K_fb    = 0.168e-3,
-           K_rb    = 3.29,
-           K_SR    = 1.0,
-           N_fb    = 1.2,
-           N_rb    = 1.0,
-           v_maxf  = 0.813e-4,
-           v_maxr  = 0.318e-3,
+parameters("Intracellular Ca", 
            tau_tr  = 0.5747,
            tau_xfer= 26.7,
-           kaplus = 0.01215,
-           kaminus= 0.576,
-           kbplus = 0.00405,
-           kbminus= 1.930,
-           kcplus = 0.100,
-           kcminus= 0.0008,
-           ncoop   = 4.0,
-           mcoop   = 3.0,
-           )
-
-parameters("L-type Ca Channel",
-           fL     = 0.3,
-           gL     = 2.0,
-           bL     = 2.0,
-           aL     = 2.0,
-           omega   = 0.01,
-           PCa = 3.125e-4,
-           PK  = 5.79e-7,
-           ICahalf= -0.265,
-           )
-
-parameters("Buffers",
            LTRPNtot   = 70e-3,
            HTRPNtot   = 140e-3,
            khtrpn_plus = 20.0,
@@ -106,6 +104,38 @@ parameters("Buffers",
            KmEGTA     = 0.15e-3,
            )
 
+parameters("L-type Ca Channel",
+           fL     = 0.3,
+           gL     = 2.0,
+           bL     = 2.0,
+           aL     = 2.0,
+           omega   = 0.01,
+           PCa = 3.125e-4,
+           PK  = 5.79e-7,
+           ICahalf= -0.265,
+           )
+
+parameters("RyR Channel",
+           kaplus = 0.01215,
+           kaminus= 0.576,
+           kbplus = 0.00405,
+           kbminus= 1.930,
+           kcplus = 0.100,
+           kcminus= 0.0008,
+           v_1     = 1.8,
+           ncoop   = 4.0,
+           mcoop   = 3.0,
+           )
+parameters("SERCA2a Pump",
+           K_fb    = 0.168e-3,
+           K_rb    = 3.29,
+           K_SR    = 1.0,
+           N_fb    = 1.2,
+           N_rb    = 1.0,
+           v_maxf  = 0.813e-4,
+           v_maxr  = 0.318e-3,
+           )
+
 comment("Constants")
 F       = 96.500
 T       = 310
@@ -113,13 +143,16 @@ R       = 8.314
 RTonF   = R*T/F
 FonRT   = F/(R*T)
 
-component("Help variables")
+component("Membrane")
 VFonRT = V*FonRT
 expVFonRT = exp(VFonRT)
 
-component("Na current I_Na")
-
+component("Ionic concentrations")
 E_Na = RTonF*log(Na_o/Na_i)
+E_k  = RTonF*log(K_o/K_i)
+E_Ca  = RTonF/2*log(Ca_o/Ca_i)
+
+component("Na current I_Na")
 I_Na = G_NaMax*m**3*h*j*(V-E_Na)
 
 a_h = Conditional(Ge(V, -40), 0.0, 0.135*exp((80+V)/(-6.8)))
@@ -131,27 +164,21 @@ a_j = Conditional(Ge(V, -40), 0.0, (-1.2714e5*exp(0.2444*V)-3.474e-5*exp(-0.0439
 b_j = Conditional(Ge(V, -40), 0.3*exp(-2.535e-7*V)/(1+exp(-0.1*(V+32))),
                   0.1212*exp(-0.01052*V)/(1+exp(-0.1378*(V+40.14))))
 
-#if (abs(V+47.13)<=1e-3)
-#  a_m = 1.0/(0.1-0.005*(V+47.13))
-#else
-#  a_m = 0.32*(V+47.13)/(1-exp(-0.1*(V+47.13)))
-#end
-
 a_m = 0.32*(V+47.13)/(1-exp(-0.1*(V+47.13)))
 b_m = 0.08*exp(-V/11)
-dm = Conditional(Ge(V, -90), a_m*(1-m)-b_m*m, 0.0)
 
 component("Rapid-activating delayed rectifier K current I_Kr")
 
 k12 = exp(-5.495+0.1691*V)
 k21 = exp(-7.677-0.0128*V)
+
 xKr_inf = k12/(k12+k21)
 tau_xKr = 1.0/(k12+k21) + 27.0
+
 dxKr = (xKr_inf-xKr)/tau_xKr
 
-E_k  = RTonF*log(K_o/K_i)
 R_V  = 1./(1+1.4945*exp(0.0446*V))
-f_k  = sqrt(K_o/4)
+f_k  = sqrt(K_o/4.)
 
 I_Kr = G_KrMax*f_k*R_V*xKr*(V-E_k)
 
@@ -162,7 +189,6 @@ dxKs = (xKs_inf-xKs)/tau_xKs
 
 E_Ks = RTonF*log((K_o+0.01833*Na_o)/(K_i+0.01833*Na_i))
 I_Ks = G_KsMax*(xKs**2)*(V-E_Ks)
-
 
 component("Transient outward K current I_to")
 alpha_xto1 = 0.04516*exp(0.03577*V)
@@ -191,7 +217,6 @@ I_NaCa = k_NaCa*(5000/(K_mNa**3+Na_o**3))*(1./(K_mCa+Ca_o))*\
          (1./(1+k_sat*exp((eta-1)*V*FonRT)))*\
          (exp(eta*VFonRT)*Na_i**3*Ca_o-exp((eta-1)*VFonRT)*Na_o**3*Ca_i)
 
-
 component("Na-K pump current I_NaK")
 sigma = 1./7*(exp(Na_o/67.3)-1)
 f_NaK = 1./(1+0.1245*exp(-0.1*VFonRT)+0.0365*sigma*exp(-VFonRT))
@@ -203,7 +228,6 @@ component("Sarcolemmal Ca pump current I_pCa")
 I_pCa = I_pCaMax*Ca_i/(K_mpCa+Ca_i)
 
 component("Ca background current I_bCa")
-E_Ca  = RTonF/2*log(Ca_o/Ca_i)
 I_bCa = G_bCaMax*(V-E_Ca)
 
 component("Na background current I_bNa")
@@ -352,7 +376,7 @@ beta_i = 1.0/(1.0+a1)#+a2)
 comment("The ODE system")
 
 dV_dt = -(I_Na+I_Ca+I_CaK+I_Kr+I_Ks+I_to+I_ti+I_Kp+I_NaCa+I_NaK+I_pCa+I_bCa+I_bNa+ist)
-dm_dt = dm
+dm_dt = Conditional(Ge(V, -90), a_m*(1-m)-b_m*m, 0.0)
 dh_dt = a_h*(1-h)-b_h*h
 dj_dt = a_j*(1-j)-b_j*j
 dxKr_dt = dxKr
