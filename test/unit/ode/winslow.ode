@@ -16,10 +16,10 @@ states("Intracellular Ca",
 states("RyR Channel",
        C1_RyR=0.4929, O1_RyR=6.027e-4, O2_RyR=2.882e-9, C2_RyR=0.5065)
 states("L-type Ca Channel", 
-       C0=0.99802, C1=1.9544e-6, C2=0, C3=0, C4=0, Open=0,
-       CCa0=1.9734e-3, CCa1=0, CCa2=0, CCa3=0, CCa4=0, yCa=0.7959)
+       C0=0.99802, C1=1.9544e-6, C2=0., C3=0., C4=0., Open=0.,
+       CCa0=1.9734e-3, CCa1=0., CCa2=0., CCa3=0., CCa4=0., yCa=0.7959)
 parameters("Cell geometry",
-           ist=0,
+           ist=0.,
            C_sc  = 1.00,
            A_cap = 1.534e-4,
            V_myo = 25.84e-6,
@@ -136,14 +136,13 @@ parameters("SERCA2a Pump",
            v_maxr  = 0.318e-3,
            )
 
+component("Membrane")
 comment("Constants")
 F       = 96.500
 T       = 310
 R       = 8.314
 RTonF   = R*T/F
 FonRT   = F/(R*T)
-
-component("Membrane")
 VFonRT = V*FonRT
 expVFonRT = exp(VFonRT)
 
