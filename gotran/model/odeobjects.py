@@ -341,8 +341,10 @@ class Expression(ODEObject):
 
         # Check arguments
         from gotran.model.ode import ODE
-        check_arg(expr, sp.Basic, 0, Expression)
-        check_arg(ode, ODE, 1, Expression)
+        check_arg(expr, scalars + (sp.Basic,), 1, Expression)
+        check_arg(ode, ODE, 2, Expression)
+        
+        expr = sp.sympify(expr)
         
         if not any(isinstance(atom, (ModelSymbol, sp.Number)) \
                    for atom in expr.atoms()):
@@ -507,8 +509,9 @@ class DerivativeExpression(Expression):
             # Create name based on derivatives
             name = str(derivatives)
 
-        # Store stripped_derivatives
-        self._derivatives = stripped_derivatives
+        # Store derivatives
+        self._stripped_derivatives = stripped_derivatives
+        self._derivatives = derivatives
 
         # Check that all derivative states belong to the same component
         if len(stripped_derivatives) == 1:
@@ -532,18 +535,25 @@ class DerivativeExpression(Expression):
         """
         Return the number of derivatives
         """
-        return len(self._derivatives)
+        return len(self._stripped_derivatives)
+
+    @property
+    def derivatives(self):
+        """
+        Return the derivatives
+        """
+        return self._derivatives
 
     @property
     def states(self):
         """
         Return the derivative states
         """
-        return [der.state for der in self._derivatives]
+        return [der.state for der in self._stripped_derivatives]
 
     @property
     def is_algebraic(self):
-        return not bool(self._derivatives)
+        return not bool(self._stripped_derivatives)
     
 class Intermediate(Expression):
     """

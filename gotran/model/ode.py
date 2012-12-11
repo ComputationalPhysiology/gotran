@@ -575,6 +575,79 @@ class ODE(object):
         """
         return len(self._monitored_intermediates)
 
+    def save(self, basename):
+        """
+        Save ODE to file
+
+        Arguments
+        ---------
+        basename : str
+            The basename of the file which the ode will be saved to
+        """
+        from modelparameters.codegeneration import sympycode
+        
+        if not self.is_complete:
+            error("ODE need to be complete to be saved to file.")
+
+        lines = []
+
+        # Write all states
+        for comp in self.components.values():
+            if not comp.states:
+                continue
+            lines.append("states(\"{0}\", ".format(comp.name))
+            for state in comp.states.values():
+
+                # Param repr and strip name and symname
+                param_repr = repr(state.param)
+                param_repr = param_repr.split(", name=")[0] + ")"
+                
+                lines.append("       {0}={1},".format(state.name, param_repr))
+            lines[-1] += ")"
+            lines.append("")
+
+        # Write all parameters
+        for comp in self.components.values():
+            if not comp.parameters:
+                continue
+            lines.append("parameters(\"{0}\", ".format(comp.name))
+            for param in comp.parameters.values():
+
+                # Param repr and strip name and symname
+                param_repr = repr(param.param)
+                param_repr = param_repr.split(", name=")[0] + ")"
+                
+                lines.append("       {0}={1},".format(param.name, param_repr))
+            lines[-1] += ")"
+
+            lines.append("")
+
+        # Write all Intermediates
+        for intermediate in self.intermediates:
+
+            if isinstance(intermediate, ODEComponent):
+                lines.append("")
+                lines.append("component(\"{0}\")".format(intermediate.name))
+            elif isinstance(intermediate, Comment):
+                lines.append("comment(\"{0}\")".format(intermediate.name))
+            elif isinstance(intermediate, Intermediate):
+                lines.append(sympycode(intermediate.expr, intermediate.name))
+                
+        lines.append("")
+
+        # Write all Derivatives
+        for comp in self.components.values():
+            if not comp.derivatives:
+                continue
+            for der in comp.derivatives:
+                if der.num_derivatives == 1:
+                    lines.append(sympycode(der.expr, der.name))
+                else:
+                    lines.append("diff({0}, {1})".format(der.name, der.expr))
+
+        # Write to file
+        open(basename+".ode", "w").write("\n".join(lines))
+        
     @property
     def is_complete(self):
         """
@@ -797,8 +870,9 @@ class ODE(object):
                   "be overwritten.".format(name))
 
         # Assume that we are registering an intermediate
-        if isinstance(value, sp.Basic) and any(isinstance(atom, ModelSymbol)\
-                                               for atom in value.atoms()):
+        if isinstance(value, scalars) or (isinstance(value, sp.Basic) \
+                                and any(isinstance(atom, ModelSymbol)\
+                                        for atom in value.atoms())):
             self._register_intermediate(name, value)
         else:
             debug("Not registering: {0} as attribut. It does not contain "\
@@ -828,15 +902,9 @@ class ODE(object):
             if mine_inter != other_inter:
                 return False
 
-        for mine_der, other_der in zip(\
-            self._derivative_expressions, \
-            other._derivative_expressions):
-            if mine_der != other_der:
+        for mine_der in self._derivative_expressions:
+            if mine_der not in other._derivative_expressions:
                 return False
-
-        # FIXME: Fix comparison of expressions
-        #print "self:", self._derivative_expr
-        #print "other:", other._derivative_expr
 
         return True
 

@@ -23,7 +23,7 @@ from collections import OrderedDict
 
 # modelparameters import
 from modelparameters.parameters import Param, ScalarParam, ArrayParam, \
-     ConstParam
+     ConstParam, scalars
 from modelparameters.sympytools import sp_namespace, sp, ModelSymbol
 
 # gotran imports
@@ -47,8 +47,9 @@ class IntermediateDispatcher(dict):
         ode = _get_load_ode()
 
         # Set the attr of the ODE
-        if isinstance(value, sp.Basic) and any(isinstance(atom, ModelSymbol)\
-                                               for atom in value.atoms()):
+        if isinstance(value, scalars) or (isinstance(value, sp.Basic) and \
+                                          any(isinstance(atom, ModelSymbol)\
+                                              for atom in value.atoms())):
 
             # Set attribute
             setattr(ode, name, value)
