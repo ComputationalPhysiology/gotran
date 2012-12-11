@@ -21,7 +21,6 @@ __all__ = ["ODE"]
 import inspect
 from collections import OrderedDict, deque
 
-
 # ModelParameter imports
 from modelparameters.sympytools import ModelSymbol, sp, sp_namespace
 from modelparameters.codegeneration import sympycode
@@ -98,9 +97,12 @@ class ODE(object):
         """
 
         timer = Timer("Add state")
+
         # Create the state and derivative
         state = State(name, init, component, self.name)
         state_der = StateDerivative(state, der_init, component, self.name)
+        
+        state.derivative = state_der
             
         self._register_object(state)
         self._register_object(state_der)
@@ -647,6 +649,108 @@ class ODE(object):
 
         # Write to file
         open(basename+".ode", "w").write("\n".join(lines))
+
+    def extract_components(self, name, *components):
+        """
+        Create an ODE from a number of components
+
+        Returns an ODE including the components
+
+        Argument
+        --------
+        name : str
+            The name of the created ODE
+        components : str
+            A variable len tuple of str describing the components
+        """
+        check_arg(name, str, 0)
+        check_arg(components, tuple, 1, itemtypes=str)
+
+        components = list(components)
+
+        collected_components = ODEObjectList()
+        
+        # Collect components and check that the ODE has the components
+        for original_component in self._components.values():
+
+            if original_component.name in components:
+                components.pop(components.index(original_component.name))
+                collected_components.append(original_component)
+
+        # Check that there are no components left
+        if components:
+            if len(components)>1:
+                error("{0} are not a components of this ODE.".format(\
+                    ", ".join("'{0}'".format(comp) for comp in components)))
+            else:
+                error("'{0}' is not a component of this ODE.".format(\
+                    components[0]))
+                
+        # Collect intermediates
+        intermediates = ODEObjectList()
+        for intermediate in self.intermediates:
+            
+            # If Component 
+            if isinstance(intermediate, ODEComponent):
+                
+                # Check if component is in components
+                if intermediate.name in collected_components:
+                    intermediates.append(intermediate)
+            
+            # Check of intermediate is in components
+            elif intermediate.component in collected_components:
+                intermediates.append(intermediate)
+
+        # FIXME: What with Variables....
+        # Collect states, parameters and derivatives
+        states, parameters, derivatives = ODEObjectList(), ODEObjectList(), \
+                                          ODEObjectList()
+        external_object_dep = set()
+        for comp in collected_components:
+            states.extend(comp.states.values())
+            parameters.extend(comp.parameters.values())
+            derivatives.extend(comp.derivatives)
+            external_object_dep.update(comp.external_object_dep)
+            
+        # Check for dependencies
+        for obj in external_object_dep:
+            if (obj not in states) and (obj not in parameters) and \
+                   (obj not in intermediates):
+                if isinstance(obj, SingleODEObject):
+                    parameters.append(Parameter(obj.name, obj.init, \
+                                                obj.component, self.name))
+                else:
+                    parameters.append(Parameter(obj.name, obj.value, \
+                                                obj.component, self.name))
+
+        # Create return ODE
+        ode = ODE(name)
+
+        # Add states
+        for state in states:
+            ode.add_state(state.name, state.init, state.derivative.init, \
+                          state.component)
+
+        # Add parameters
+        for param in parameters:
+            ode.add_parameter(param.name, param.init, param.component)
+
+        # Add intermediates
+        for intermediate in intermediates:
+            if isinstance(intermediate, ODEComponent):
+                ode.set_component(intermediate.name)
+            elif isinstance(intermediate, Comment):
+                ode.add_comment(intermediate.name)
+            else:
+                ode._register_intermediate(intermediate.name,\
+                                           intermediate.expr)
+
+        # Add derviatives
+        for derivative in derivatives:
+            ode.diff(derivative.derivatives, derivative.expr)
+
+        # Return the ode
+        return ode
         
     @property
     def is_complete(self):
@@ -784,7 +888,7 @@ class ODE(object):
         dup_obj = self._all_single_ode_objects.get(obj.name)
         if dup_obj is not None:
             error("A '{0}' with name '{1}' is already registered in this "\
-                  "ODE.".format(dup_obj, obj.name))
+                  "ODE.".format(type(dup_obj).__name__, obj.name))
 
         # Check that we have not started registering intermediates
         if (len(self._intermediates) + len(self._derivative_expressions)) > 0:
