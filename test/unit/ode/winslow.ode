@@ -1,23 +1,32 @@
 states("Membrane",
        V=ScalarParam(-35, ge=-200, le=50))
+
 states("Na current I_Na",
        m=2.4676e-4, h=0.99869, j=0.99887)
+
 states("Rapid-activating delayed rectifier K current I_Kr",
        xKr=0.6935)
+
 states("Slow-activating delayed rectifier K current I_Ks",
        xKs=1.4589e-4)
+
 states("Transient outward K current I_to",
        xto1=3.742e-5, yto1=1)
+
 states("Intracellular K",
        K_i=159.48)
+
 states("Intracellular Ca",
        Ca_i=8.464e-5, Ca_NSR=0.2620, Ca_ss=1.315e-4, Ca_JSR=0.2616, \
        LTRPNCa=5.5443e-3, HTRPNCa=136.64e-3)
+
 states("RyR Channel",
        C1_RyR=0.4929, O1_RyR=6.027e-4, O2_RyR=2.882e-9, C2_RyR=0.5065)
+
 states("L-type Ca Channel", 
        C0=0.99802, C1=1.9544e-6, C2=0., C3=0., C4=0., Open=0.,
        CCa0=1.9734e-3, CCa1=0., CCa2=0., CCa3=0., CCa4=0., yCa=0.7959)
+
 parameters("Cell geometry",
            ist=0.,
            C_sc  = 1.00,

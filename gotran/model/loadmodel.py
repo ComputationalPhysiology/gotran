@@ -78,6 +78,7 @@ def _init_namespace(ode):
                           comment=ode.add_comment,
                           component=ode.set_component,
                           monitor=ode.add_monitored,
+                          subode=ode.add_subode,
                           sp=sp,
                           model_arguments=_model_arguments))
     return namespace

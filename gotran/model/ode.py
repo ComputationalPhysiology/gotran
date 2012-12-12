@@ -47,7 +47,7 @@ class ODE(object):
         check_arg(name, str, 0)
 
         # Initialize attributes
-        self._name = name
+        self._name = name.strip().replace(" ", "_")
 
         # Store if using components
         self._with_components = with_components
@@ -103,7 +103,7 @@ class ODE(object):
         state_der = StateDerivative(state, der_init, component, self.name)
         
         state.derivative = state_der
-            
+        
         self._register_object(state)
         self._register_object(state_der)
         
@@ -593,36 +593,57 @@ class ODE(object):
 
         lines = []
 
-        # Write all states
+        # Write all States, Parameters and Variables
         for comp in self.components.values():
-            if not comp.states:
-                continue
-            lines.append("states(\"{0}\", ".format(comp.name))
-            for state in comp.states.values():
 
-                # Param repr and strip name and symname
-                param_repr = repr(state.param)
-                param_repr = param_repr.split(", name=")[0] + ")"
+            # States
+            if comp.states:
+                lines.append("states(\"{0}\", ".format(comp.name))
+                for state in comp.states.values():
+
+                    # Param repr and strip name and symname
+                    param_repr = repr(state.param)
+                    param_repr = param_repr.split(", name=")[0] + ")"
                 
-                lines.append("       {0}={1},".format(state.name, param_repr))
-            lines[-1] += ")"
-            lines.append("")
+                    lines.append("       {0}={1},".format(state.name, param_repr))
+                lines[-1] += ")"
+                lines.append("")
 
-        # Write all parameters
-        for comp in self.components.values():
-            if not comp.parameters:
-                continue
-            lines.append("parameters(\"{0}\", ".format(comp.name))
-            for param in comp.parameters.values():
+            # Parameters
+            if comp.parameters:
+                lines.append("parameters(\"{0}\", ".format(comp.name))
+                for param in comp.parameters.values():
 
-                # Param repr and strip name and symname
-                param_repr = repr(param.param)
-                param_repr = param_repr.split(", name=")[0] + ")"
+                    # Param repr and strip name and symname
+                    param_repr = repr(param.param)
+                    param_repr = param_repr.split(", name=")[0] + ")"
                 
-                lines.append("       {0}={1},".format(param.name, param_repr))
-            lines[-1] += ")"
+                    lines.append("       {0}={1},".format(param.name, param_repr))
+                lines[-1] += ")"
+                lines.append("")
 
-            lines.append("")
+            # Check for component containing time and dt
+            # These should not be extracted
+            if comp.name == self.name and len(comp.variables) == 2:
+                continue
+
+            # Variables
+            if comp.variables:
+                lines.append("variables(\"{0}\", ".format(comp.name))
+                for variable in comp.variables.values():
+
+                    # Do not include time or dt variables
+                    if comp.name == self.name and variable.name in \
+                           ["time", "dt"]:
+                        continue
+                    
+                    # Param repr and strip name and symname
+                    param_repr = repr(variable.param)
+                    param_repr = param_repr.split(", name=")[0] + ")"
+                
+                    lines.append("       {0}={1},".format(variable.name, param_repr))
+                lines[-1] += ")"
+                lines.append("")
 
         # Write all Intermediates
         for intermediate in self.intermediates:
@@ -650,6 +671,133 @@ class ODE(object):
         # Write to file
         open(basename+".ode", "w").write("\n".join(lines))
 
+    def add_subode(self, subode, prefix=None, components=None):
+        """
+        Load an ODE and add it to the present ODE
+
+        Argument
+        --------
+        subode : str, ODE
+            The subode which should be added. If subode is a str an
+            ODE stored in that file will be loaded. If it is an ODE it will be
+            added directly to the present ODE.
+        prefix : str (optional)
+            A prefix which all state and parameters are prefixed with. If not
+            given the name of the subode will be used as prefix. If set to
+            empty string, no prefix will be used.
+        components : list, tuple of str (optional)
+            A list of components which will be extracted and added to the present
+            ODE. If not given the whole ODE will be added.
+        """
+
+        # If ode is given directly 
+        if isinstance(subode, ODE):
+            ode = subode
+            
+        else:
+            # If not load external ODE
+            from loadmodel import load_ode
+            ode = load_ode(filename)
+        
+        components = components or []
+        prefix = ode.name if prefix is None else prefix
+
+        # Postfix prefix with "_" if prefix is not ""
+        if prefix:
+            prefix += "_"
+        
+        # If extracting only a certain components
+        if components:
+            ode = ode.extract_components(ode.name, *components)
+
+        # Collect prefixed states and parameters to be used to substitute
+        # the intermediate and derivative expressions
+        prefix_subs = {}
+
+        # Add prefixed states
+        for state in ode.states:
+            prefix_subs[state.sym] = ModelSymbol(prefix+state.name, self.name)
+            prefix_subs[state.derivative.sym] = ModelSymbol(\
+                "d"+prefix+state.name+"_dt", self.name)
+            
+            if prefix+state.name in self._states:
+                error("State with name {0} already exist in ODE".format(\
+                    prefix+state.name))
+
+            # Add the state
+            self.add_state(prefix+state.name, state.param, \
+                           state.derivative.param, state.component)
+
+        # Add prefixed parameters
+        for parameter in ode.parameters:
+            prefix_subs[parameter.sym] = ModelSymbol(prefix+parameter.name, \
+                                                     self.name)
+        
+            if prefix+parameter.name in self._parameters:
+                error("Parameter with name {0} already exist in ODE".format(\
+                    prefix+parameter.name))
+
+            # Add the parameter
+            self.add_parameter(prefix+parameter.name, parameter.param, \
+                               parameter.component)
+
+        # Add variables if not name already excisting in this ODE
+        for variable in ode.variables:
+
+            # If variable name already excist in this ODE do not add it
+            # This will implicitly exchange all variables with corresponding
+            # states and parameters from this ODE
+            obj = self.get_object(variable.name) or self._intermediates.get(\
+                variable.name)
+            if obj is not None:
+                info("Skipping Variable {0} as a {1} with same name already "\
+                     "excists.".format(variable.name, type(obj).__name__))
+                continue
+
+            # If component name is the same as the ode name, change
+            # component name to this ODE name
+            component = self.name if variable.component == ode.name \
+                        else variable.component
+            
+            # Add the un-prefixed variable
+            self.add_variable(variable.name, variable.param, component)
+
+        # Add intermediates
+        for intermediate in ode.intermediates:
+            if isinstance(intermediate, ODEComponent):
+                self.set_component(intermediate.name)
+            elif isinstance(intermediate, Comment):
+                self.add_comment(intermediate.name)
+            else:
+                # Iterate over dependencies and check if we need to subs name
+                # with prefixed name
+                subs_list = []
+                if prefix != "":
+                    for obj_dep in intermediate.object_dependencies:
+                        if obj_dep.sym in prefix_subs:
+                            subs_list.append((obj_dep.sym, \
+                                              prefix_subs[obj_dep.sym]))
+
+                self._register_intermediate(intermediate.name, \
+                                            intermediate.expr.subs(subs_list))
+        
+        # Add derivatives
+        for derivative in ode._derivative_expressions:
+            # Iterate over dependencies and check if we need to subs name
+            # with prefixed name
+            subs_list = []
+            der_subs_list = []
+            if prefix != "":
+                for obj_dep in derivative.object_dependencies:
+                    if obj_dep.sym in prefix_subs:
+                        subs_list.append((obj_dep.sym, \
+                                          prefix_subs[obj_dep.sym]))
+                for der in derivative.stripped_derivatives:
+                    der_subs_list.apped((der, prefix_subs[der]))
+
+            self.diff(derivative.derivatives.subs(der_subs_list), \
+                      derivative.expr.subs(subs_list))
+        
     def extract_components(self, name, *components):
         """
         Create an ODE from a number of components
@@ -701,14 +849,14 @@ class ODE(object):
             elif intermediate.component in collected_components:
                 intermediates.append(intermediate)
 
-        # FIXME: What with Variables....
         # Collect states, parameters and derivatives
-        states, parameters, derivatives = ODEObjectList(), ODEObjectList(), \
-                                          ODEObjectList()
+        states, parameters, derivatives, variables = ODEObjectList(), \
+                            ODEObjectList(), ODEObjectList(), ODEObjectList()
         external_object_dep = set()
         for comp in collected_components:
             states.extend(comp.states.values())
             parameters.extend(comp.parameters.values())
+            variables.extend(comp.variables.values())
             derivatives.extend(comp.derivatives)
             external_object_dep.update(comp.external_object_dep)
             
@@ -716,12 +864,15 @@ class ODE(object):
         for obj in external_object_dep:
             if (obj not in states) and (obj not in parameters) and \
                    (obj not in intermediates):
+
+                # Create a Variable to replace an external object dependency
+                # Put the Variable in the main ODE component
                 if isinstance(obj, SingleODEObject):
-                    parameters.append(Parameter(obj.name, obj.init, \
-                                                obj.component, self.name))
+                    variables.append(Variable(obj.name, obj.param, \
+                                              name, name))
                 else:
-                    parameters.append(Parameter(obj.name, obj.value, \
-                                                obj.component, self.name))
+                    variables.append(Variable(obj.name, obj.value, \
+                                              name, name))
 
         # Create return ODE
         ode = ODE(name)
@@ -730,10 +881,16 @@ class ODE(object):
         for state in states:
             ode.add_state(state.name, state.init, state.derivative.init, \
                           state.component)
-
+        
         # Add parameters
         for param in parameters:
             ode.add_parameter(param.name, param.init, param.component)
+
+        # Add variables
+        for variable in variables:
+            if variable.name in ["time", "dt"]:
+                continue
+            ode.add_variable(variable.name, variable.init, variable.component)
 
         # Add intermediates
         for intermediate in intermediates:
@@ -885,15 +1042,25 @@ class ODE(object):
         assert(isinstance(obj, (State, Parameter, Variable, StateDerivative)))
 
         # Check for existing object
-        dup_obj = self._all_single_ode_objects.get(obj.name)
+        dup_obj = self._all_single_ode_objects.get(obj.name) or \
+                  self._intermediates.get(obj.name)
+        
+        # If the name of the registered object is the same as a Variable in
+        # the component with the same name as the ODE, we overwrite that
+        # Variable with the new object
+        if dup_obj and isinstance(dup_obj, Variable) and \
+               dup_obj.component == self.name:
+            info("Overwriting Variable: '{0}' with {1} with same name".format(\
+                dup_obj.name, type(obj).__name__))
+            self._all_single_ode_objects.pop(dup_obj.name)
+            self._variables.remove(dup_obj)
+            self._components[dup_obj.component].variables.pop(dup_obj.name)
+            dup_obj = None
+        
         if dup_obj is not None:
-            error("A '{0}' with name '{1}' is already registered in this "\
-                  "ODE.".format(type(dup_obj).__name__, obj.name))
-
-        # Check that we have not started registering intermediates
-        if (len(self._intermediates) + len(self._derivative_expressions)) > 0:
-            error("Cannot register a {0} after an intermediate or derivative "\
-                  "have been registered.".format(type(obj).__name__))
+            error("Cannot register a {0}. A {1} with name '{2}' is already "\
+                  "registered in this ODE.".format(\
+                      type(obj).__name__, type(dup_obj).__name__, obj.name))
 
         # Register obj in component
         comp = self._components.get(obj.component)
@@ -922,14 +1089,29 @@ class ODE(object):
 
         timer = Timer("Add intermediate")
         
-        # Check that we have not started registering derivatives
-        if self._derivative_expressions:
-            error("Cannot register an Intermediate after "\
-                  "a DerivativeExpression has been registered.")
-
         # Create an intermediate in the present component
         intermediate = Intermediate(name, expr, self, \
                                     self._present_component.name)
+
+        # Check for existing object
+        dup_obj = self._all_single_ode_objects.get(name)
+
+        # If the name of the registered object is the same as a Variable in
+        # the component with the same name as the ODE, we overwrite that
+        # Variable with the new object
+        if dup_obj and isinstance(dup_obj, Variable) and \
+               dup_obj.component == self.name:
+            info("Overwriting Variable: '{0}' with an Intermediate with "\
+                 "same name".format(dup_obj.name))
+            self._all_single_ode_objects.pop(dup_obj.name)
+            self._variables.remove(dup_obj)
+            self._components[dup_obj.component].variables.pop(dup_obj.name)
+            dup_obj = None
+        
+        if dup_obj is not None:
+            error("Cannot register an Intermediate. A '{0}' with name '{1}' ",
+                  "is already registered in this ODE.".format(\
+                      type(dup_obj).__name__, obj.name))
 
         # Check for duplicates
         if intermediate.name in self._intermediates:
@@ -997,17 +1179,51 @@ class ODE(object):
             return True
         
         # Compare all registered attributes
-        for mine in self._all_single_ode_objects:
+        for mine, obj in self._all_single_ode_objects.items():
+
+            # Check that all mine obj excist in other
             if mine not in other._all_single_ode_objects:
+                info("{0} {1} not in {1}".format(type(obj).__name__, \
+                                                 mine, other.name))
                 return False
 
-        for mine_inter, other_inter in zip(\
-            self.intermediates, other.intermediates):
-            if mine_inter != other_inter:
+            # Check same Type
+            other_obj = other._all_single_ode_objects[mine]
+            if not isinstance(other_obj, type(obj)):
+                info("{0} in {1} is a {2} and in {3} it is a {4}".format(\
+                    mine, self.name, type(obj).__name__), other.name, \
+                     type(other_obj).__name__)
                 return False
 
-        for mine_der in self._derivative_expressions:
-            if mine_der not in other._derivative_expressions:
+        # Check that all other obj excist in mine
+        for other_name, obj in other._all_single_ode_objects.items():
+            if other_name not in self._all_single_ode_objects:
+                info("{0} {1} not in {2}".format(type(obj).__name__, \
+                                                 other_name, self.name))
+                return False
+
+        for mine in self.intermediates:
+            if mine not in other.intermediates:
+                info("{1} not an intermediate in  {1}".format(\
+                         mine.name, other.name))
+                return False
+
+        for other_inter in self.intermediates:
+            if other_inter not in self.intermediates:
+                info("{1} not an intermediate in  {1}".format(\
+                         other_inter.name, self.name))
+                return False
+
+        for mine in self._derivative_expressions:
+            if mine not in other._derivative_expressions:
+                info("{1} not a derivative in  {1}".format(\
+                         mine.name, other.name))
+                return False
+
+        for other_der in other._derivative_expressions:
+            if other_der not in self._derivative_expressions:
+                info("{1} not a derivative in  {1}".format(\
+                         other_der.name, self.name))
                 return False
 
         return True

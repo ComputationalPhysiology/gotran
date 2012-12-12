@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2012-12-10"
+__date__ = "2012-05-07 -- 2012-12-12"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -154,26 +154,24 @@ class Creation(unittest.TestCase):
                            v_maxr  = 0.318e-3,
                            )
         
-        ode.add_comment("Constants")
-        F       = 96.500
-        T       = 310.
-        R       = 8.314
-        RTonF   = R*T/F
-        FonRT   = F/(R*T)
-        
         ode.set_component("Membrane")
-        ode.VFonRT = ode.V*FonRT
+        ode.add_comment("Constants")
+        ode.F       = 96.500
+        ode.T       = 310.
+        ode.R       = 8.314
+        ode.RTonF   = ode.R*ode.T/ode.F
+        ode.FonRT   = ode.F/(ode.R*ode.T)
+        ode.VFonRT = ode.V*ode.FonRT
         ode.expVFonRT = exp(ode.VFonRT)
         
         ode.set_component("Ionic concentrations")
-        ode.E_Na = RTonF*log(ode.Na_o/ode.Na_i)
-        ode.E_k  = RTonF*log(ode.K_o/ode.K_i)
-        ode.E_Ca  = RTonF/2*log(ode.Ca_o/ode.Ca_i)
+        ode.E_Na = ode.RTonF*log(ode.Na_o/ode.Na_i)
+        ode.E_k  = ode.RTonF*log(ode.K_o/ode.K_i)
+        ode.E_Ca  = ode.RTonF/2*log(ode.Ca_o/ode.Ca_i)
 
         ode.set_component("Na current I_Na")
-        
         ode.I_Na = ode.G_NaMax*ode.m**3*ode.h*ode.j*(ode.V-ode.E_Na)
-        
+
         ode.a_h = Conditional(Ge(ode.V, -40), 0.0, 0.135*exp((80+ode.V)/(-6.8)))
         ode.b_h = Conditional(Ge(ode.V, -40), 1./(0.13*(1+exp((ode.V+10.66)/(-11.1)))), \
                               3.56*exp(0.079*ode.V)+3.1e5*exp(0.35*ode.V))
@@ -207,7 +205,7 @@ class Creation(unittest.TestCase):
                             + 1.31e-4*(ode.V-10.0)/(exp(0.06870*(ode.V-10.0))-1.0))
         ode.dxKs = (ode.xKs_inf-ode.xKs)/ode.tau_xKs
         
-        ode.E_Ks = RTonF*log((ode.K_o+0.01833*ode.Na_o)/(ode.K_i+0.01833*ode.Na_i))
+        ode.E_Ks = ode.RTonF*log((ode.K_o+0.01833*ode.Na_o)/(ode.K_i+0.01833*ode.Na_i))
         
         ode.I_Ks = ode.G_KsMax*(ode.xKs**2)*(ode.V-ode.E_Ks)
         
@@ -225,7 +223,7 @@ class Creation(unittest.TestCase):
         ode.I_to = ode.G_toMax*ode.xto1*ode.yto1*(ode.V-ode.E_k)
                 
         ode.set_component("Time-Independent K current I_ti")
-        ode.K_tiUnlim = 1./(2+exp(1.5*(ode.V-ode.E_k)*FonRT))
+        ode.K_tiUnlim = 1./(2+exp(1.5*(ode.V-ode.E_k)*ode.FonRT))
         
         ode.I_ti = ode.G_tiMax*ode.K_tiUnlim*(ode.K_o/(ode.K_o+ode.K_mK1))*(ode.V-ode.E_k)
         
@@ -346,7 +344,7 @@ class Creation(unittest.TestCase):
         ode.tau_yCa = 20.0 + 600.0 / (1.0 + exp((ode.V+20.0)/9.50))
         ode.dyCa = (ode.yCa_inf-ode.yCa)/ode.tau_yCa
         
-        ode.VFsqonRT=(1000.0*F)*ode.VFonRT
+        ode.VFsqonRT=(1000.0*ode.F)*ode.VFonRT
         
         ode.a1 =  1.0e-3*exp(2.0*ode.VFonRT)-ode.Ca_o*0.341 
         ode.a2 =  exp(2.0*ode.VFonRT)-1.0
@@ -408,10 +406,10 @@ class Creation(unittest.TestCase):
         ode.dxKs_dt = ode.dxKs
         ode.dxto1_dt = ode.dxto1
         ode.dyto1_dt = ode.dyto1
-        ode.dK_i_dt = -(ode.I_Kr+ode.I_Ks+ode.I_to+ode.I_ti+ode.I_Kp+ode.I_CaK-2*ode.I_NaK)*ode.A_cap*ode.C_sc/(ode.V_myo*1000*F)
-        ode.dCa_i_dt = ode.beta_i*(ode.J_xfer-ode.J_up-ode.J_trpn-(ode.I_bCa-2*ode.I_NaCa+ode.I_pCa)*ode.A_cap*ode.C_sc/(2*ode.V_myo*1000*F))
+        ode.dK_i_dt = -(ode.I_Kr+ode.I_Ks+ode.I_to+ode.I_ti+ode.I_Kp+ode.I_CaK-2*ode.I_NaK)*ode.A_cap*ode.C_sc/(ode.V_myo*1000*ode.F)
+        ode.dCa_i_dt = ode.beta_i*(ode.J_xfer-ode.J_up-ode.J_trpn-(ode.I_bCa-2*ode.I_NaCa+ode.I_pCa)*ode.A_cap*ode.C_sc/(2*ode.V_myo*1000*ode.F))
         ode.dCa_NSR_dt = ode.J_up*ode.V_myo/ode.V_NSR-ode.J_tr*ode.V_JSR/ode.V_NSR
-        ode.dCa_ss_dt = ode.beta_ss*(ode.J_rel*ode.V_JSR/ode.V_ss-ode.J_xfer*ode.V_myo/ode.V_ss-ode.I_Ca*ode.A_cap*ode.C_sc/(2*ode.V_ss*1000*F))
+        ode.dCa_ss_dt = ode.beta_ss*(ode.J_rel*ode.V_JSR/ode.V_ss-ode.J_xfer*ode.V_myo/ode.V_ss-ode.I_Ca*ode.A_cap*ode.C_sc/(2*ode.V_ss*1000*ode.F))
         ode.dCa_JSR_dt = ode.beta_JSR*(ode.J_tr-ode.J_rel)
         ode.dC1_RyR_dt = ode.dC1_RyR
         ode.dO1_RyR_dt = ode.dO1_RyR
@@ -549,7 +547,8 @@ class Creation(unittest.TestCase):
                       dict(states=["V"],
                            parameters=[],
                            variables=[],
-                           intermediates=["VFonRT", "expVFonRT"],
+                           intermediates=["F", "T", "R", "RTonF", "FonRT", 
+                                          "VFonRT", "expVFonRT"],
                            derivatives=["dV_dt"],
                            external_object_dep=["I_Ca", "I_NaCa", "I_Ks", "I_to",
                                                 "I_CaK", "I_NaK", "I_Kp", "I_ti",
@@ -590,7 +589,7 @@ class Creation(unittest.TestCase):
                            variables=[],
                            intermediates=['xKs_inf', 'tau_xKs', 'dxKs', 'E_Ks', 'I_Ks'],
                            derivatives=['dxKs_dt'],
-                           external_object_dep=['K_i', 'Na_i', 'Na_o', 'V', 'K_o'],
+                           external_object_dep=['RTonF', 'K_i', 'Na_i', 'Na_o', 'V', 'K_o'],
                            external_component_dep=['Ionic concentrations',
                                                    'Intracellular K', 'Membrane']),  
 
@@ -610,14 +609,15 @@ class Creation(unittest.TestCase):
                            variables=[],
                            intermediates=[],
                            derivatives=['dK_i_dt'],
-                           external_object_dep=['I_Ks', 'C_sc', 'I_Kp', 'I_to',
+                           external_object_dep=['F', 'I_Ks', 'C_sc', 'I_Kp', 'I_to',
                                                 'V_myo', 'I_NaK', 'A_cap', 'I_CaK',
                                                 'I_Kr', 'I_ti'],
                            external_component_dep=['Time-Independent K current I_ti',
                             'Cell geometry', 'L-type Ca Channel', 'Plateau current I_Kp',
                             'Na-K pump current I_NaK', 'Transient outward K current I_to',
                             'Rapid-activating delayed rectifier K current I_Kr',
-                            'Slow-activating delayed rectifier K current I_Ks']),  
+                            'Slow-activating delayed rectifier K current I_Ks',
+                            'Membrane']),  
 
                       "Intracellular Ca":
                       dict(states=['Ca_JSR', 'Ca_NSR', 'Ca_i', 'Ca_ss', 'HTRPNCa', 
@@ -632,12 +632,12 @@ class Creation(unittest.TestCase):
                                           'beta_JSR', 'a1', 'beta_i'],
                            derivatives=['dCa_i_dt', 'dCa_NSR_dt', 'dCa_ss_dt',
                                         'dCa_JSR_dt', 'dLTRPNCa_dt', 'dHTRPNCa_dt'],
-                           external_object_dep=['J_up', 'I_bCa', 'I_Ca', 'V_JSR',
+                           external_object_dep=['F', 'J_up', 'I_bCa', 'I_Ca', 'V_JSR',
                                                 'V_myo', 'V_ss', 'A_cap', 'C_sc',
                                                 'V_NSR', 'I_pCa', 'J_rel', 'I_NaCa'],
-                           external_component_dep=['Cell geometry', 'L-type Ca Channel',
-                            'Sarcolemmal Ca pump current I_pCa', 'SERCA2a Pump',
-                            'RyR Channel', 'Ca background current I_bCa',
+                           external_component_dep=['Membrane', 'Cell geometry',
+                            'L-type Ca Channel', 'Sarcolemmal Ca pump current I_pCa',
+                            'SERCA2a Pump', 'RyR Channel', 'Ca background current I_bCa',
                             'NCX Current I_NaCa']), 
 
                       "RyR Channel":
@@ -675,7 +675,7 @@ class Creation(unittest.TestCase):
                            derivatives=['dC0_dt', 'dC1_dt', 'dC2_dt', 'dC3_dt',
                                         'dC4_dt', 'dOpen_dt', 'dCCa0_dt', 'dCCa1_dt',
                                         'dCCa2_dt', 'dCCa3_dt', 'dCCa4_dt', 'dyCa_dt'],
-                           external_object_dep=['VFonRT', 'expVFonRT', 'Ca_o',
+                           external_object_dep=['F', 'VFonRT', 'expVFonRT', 'Ca_o',
                                                 'Ca_ss', 'K_i', 'K_o', 'V'],
                            external_component_dep=['Ionic concentrations',
                             'Intracellular K', 'Intracellular Ca', 'Membrane']),  
@@ -696,8 +696,9 @@ class Creation(unittest.TestCase):
                            variables=[],
                            intermediates=['E_Na', 'E_k', 'E_Ca'],
                            derivatives=[],
-                           external_object_dep=['K_i', 'Ca_i'],
-                           external_component_dep=['Intracellular K', 'Intracellular Ca']),  
+                           external_object_dep=['RTonF', 'K_i', 'Ca_i'],
+                           external_component_dep=['Membrane', 'Intracellular K',
+                                                   'Intracellular Ca']),  
 
                       "Time-Independent K current I_ti":
                       dict(states=[],
@@ -705,7 +706,7 @@ class Creation(unittest.TestCase):
                            variables=[],
                            intermediates=['K_tiUnlim', 'I_ti'],
                            derivatives=[],
-                           external_object_dep=['K_o', 'V', 'E_k'],
+                           external_object_dep=['K_o', 'V', 'E_k', 'FonRT'],
                            external_component_dep=['Ionic concentrations', 'Membrane']), 
 
                       "Plateau current I_Kp":
@@ -787,6 +788,36 @@ class Creation(unittest.TestCase):
                     else:
                         print "NO!"
         
+
+    def test_extraction(self):
+        ode = self.ode
+        odek = ode.extract_components(\
+            "K_comp", "Rapid-activating delayed rectifier K current I_Kr", \
+            "Slow-activating delayed rectifier K current I_Ks", \
+            "Transient outward K current I_to", "Intracellular K",\
+            "Time-Independent K current I_ti", "Plateau current I_Kp")
+
+        odeca = ode.extract_components(\
+            "Ca_comp", "Intracellular Ca", "RyR Channel", "L-type Ca Channel", \
+            "Sarcolemmal Ca pump current I_pCa", \
+            "Ca background current I_bCa", "SERCA2a Pump")
+
+        odena = ode.extract_components(\
+            "Na_comp", "Na current I_Na", "NCX Current I_NaCa", "Na-K pump current I_NaK", \
+            "Na background current I_bNa")
+
+        ode_dup = ode.extract_components("winslow_dup", "Membrane", "Cell geometry", \
+                                         "Ionic concentrations")
+        
+        ode_dup.save("winslow_dup_0")
+        ode_dup.add_subode(odek, prefix="")
+        ode_dup.add_subode(odeca, prefix="")
+        ode_dup.add_subode(odena, prefix="")
+
+        ode_dup.save("winslow_dup")
+        self.assertTrue(ode_dup.is_complete)
+        self.assertTrue(ode==ode_dup)
+        
     def test_python_code_gen(self):
         """
         Test generation of code
@@ -843,7 +874,7 @@ class Creation(unittest.TestCase):
             self.assertTrue(np.sum(np.abs((dy_eval-dy_correct))) < 1e-12)
             self.assertTrue(np.sum(np.abs((dy_jit-dy_correct))) < 1e-12)
             
-    def test_matlab_python_code(self):
+    def xtest_matlab_python_code(self):
         from gotran.codegeneration.codegenerator import \
              MatlabCodeGenerator, ODERepresentation
         

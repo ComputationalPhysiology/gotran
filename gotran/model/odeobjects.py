@@ -66,6 +66,9 @@ class ODEObject(object):
             error("No ODEObject names can start with an underscore: "\
                   "'{0}'".format(name))
 
+        # Strip name for spaces
+        _name = name.strip().replace(" ", "_")
+
         if isinstance(value, ScalarParam):
 
             # If Param already has a symbol
@@ -318,7 +321,6 @@ class Variable(SingleODEObject):
         self.sym_0 = ModelSymbol("{0}_0".format(name), \
                                  "{0}.{1}_0".format(ode_name, name))
 
-
 class Expression(ODEObject):
     """
     class for all expressions such as intermediates and diff 
@@ -351,20 +353,26 @@ class Expression(ODEObject):
             error("expected the expression to contain at least one "\
                   "ModelSymbol or Number.")
 
-        # Check that we are not using a DerivativeExpressions in expression
-        intermediate_obj = []
+        # Iterate over dependencies in the expression
+        intermediate_objects = []
+        object_dependencies = ODEObjectList()
         for sym in iter_symbol_params_from_expr(expr):
             dep_obj = ode.get_object(sym) or ode._intermediates.get(sym)
             if dep_obj is None:
                 error("The symbol '{0}' is not declared within the '{1}' "\
                       "ODE.".format(sym, ode.name))
+
+            # Store object dependencies
+            object_dependencies.append(dep_obj)
+            
+            # Check that we are not using a DerivativeExpressions in expression
             if isinstance(dep_obj, (StateDerivative, DerivativeExpression)):
                 error("An expression cannot include a StateDerivative or "\
                       "DerivativeExpression")
 
             # Collect intermediates to be used in substitutions below
             if isinstance(dep_obj, Intermediate):
-                intermediate_obj.append(dep_obj)
+                intermediate_objects.append(dep_obj)
 
         # Call super class with expression as the "value"
         super(Expression, self).__init__(name, expr, component, ode.name)
@@ -372,7 +380,9 @@ class Expression(ODEObject):
         # Create and store expanded expression
         timer = Timer("subs")
         self._expanded_expr = expr.subs((dep_obj.sym, dep_obj.expanded_expr) \
-                                        for dep_obj in intermediate_obj)
+                                        for dep_obj in intermediate_objects)
+
+        self._object_dependencies = object_dependencies
 
     @property
     def value(self):
@@ -395,6 +405,13 @@ class Expression(ODEObject):
         Return the stored expression
         """
         return self._expanded_expr
+
+    @property
+    def object_dependencies(self):
+        """
+        Return the object dependencies
+        """
+        return self._object_dependencies
 
 class DerivativeExpression(Expression):
     """
@@ -543,6 +560,12 @@ class DerivativeExpression(Expression):
         Return the derivatives
         """
         return self._derivatives
+
+    def stripped_derivatives(self):
+        """
+        Return a list of all derivatives
+        """
+        return self._stripped_derivatives
 
     @property
     def states(self):
@@ -788,13 +811,23 @@ class ODEObjectList(list):
         raise ValueError("Item '{0}' not part of this ODEObjectList.".format(str(item)))
 
     def sort(self):
-        error("Cannot alter ODEObjectList, other than adding ODEObjects.")
+        error("Cannot sort ODEObjectList.")
 
-    def pop(self, item):
-        error("Cannot alter ODEObjectList, other than adding ODEObjects.")
+    def pop(self, index):
+
+        check_arg(index, int)
+        if index >= len(self):
+            raise IndexError("pop index out of range")
+        obj=super(ODEObjectList, self).pop(index)
+        self._objects.pop(obj.name)
 
     def remove(self, item):
-        error("Cannot alter ODEObjectList, other than adding ODEObjects.")
+        try:
+            index = self.index(item)
+        except ValueError:
+            raise ValueError("ODEObjectList.remove(x): x not in list")
+        
+        self.pop(index)
 
     def reverse(self, item):
         error("Cannot alter ODEObjectList, other than adding ODEObjects.")
