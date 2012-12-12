@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2012-09-11"
+__date__ = "2012-05-07 -- 2012-12-12"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -61,7 +61,7 @@ class CellMLTester(unittest.TestCase):
         ode = cellml2ode("irvine_jafri_winslow_1999.cellml")
         self.assertEqual(ode.num_states, 13)
     
-    def test_grandi_2010(self):
+    def xtest_grandi_2010(self):
         ode = cellml2ode("grandi_pasqualini_bers_2010.cellml")
         self.assertEqual(ode.num_states, 39)
     
