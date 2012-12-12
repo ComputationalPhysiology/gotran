@@ -789,34 +789,40 @@ class Creation(unittest.TestCase):
                         print "NO!"
         
 
-    def test_extraction(self):
+    def test_extraction_and_subode(self):
         ode = self.ode
+
+        # Extract all K related stuff
         odek = ode.extract_components(\
             "K_comp", "Rapid-activating delayed rectifier K current I_Kr", \
             "Slow-activating delayed rectifier K current I_Ks", \
             "Transient outward K current I_to", "Intracellular K",\
             "Time-Independent K current I_ti", "Plateau current I_Kp")
 
+        # Extract all Na related stuff
         odeca = ode.extract_components(\
             "Ca_comp", "Intracellular Ca", "RyR Channel", "L-type Ca Channel", \
             "Sarcolemmal Ca pump current I_pCa", \
             "Ca background current I_bCa", "SERCA2a Pump")
 
+        # Extract all Ca related stuff
         odena = ode.extract_components(\
             "Na_comp", "Na current I_Na", "NCX Current I_NaCa", "Na-K pump current I_NaK", \
             "Na background current I_bNa")
-
+        
         ode_dup = ode.extract_components("winslow_dup", "Membrane", "Cell geometry", \
                                          "Ionic concentrations")
         
-        ode_dup.save("winslow_dup_0")
         ode_dup.add_subode(odek, prefix="")
         ode_dup.add_subode(odeca, prefix="")
         ode_dup.add_subode(odena, prefix="")
 
-        ode_dup.save("winslow_dup")
         self.assertTrue(ode_dup.is_complete)
         self.assertTrue(ode==ode_dup)
+
+        ode_subode = load_ode("winslow_subode")
+        self.assertTrue(ode==ode_subode)
+        
         
     def test_python_code_gen(self):
         """
@@ -874,7 +880,7 @@ class Creation(unittest.TestCase):
             self.assertTrue(np.sum(np.abs((dy_eval-dy_correct))) < 1e-12)
             self.assertTrue(np.sum(np.abs((dy_jit-dy_correct))) < 1e-12)
             
-    def xtest_matlab_python_code(self):
+    def test_matlab_python_code(self):
         from gotran.codegeneration.codegenerator import \
              MatlabCodeGenerator, ODERepresentation
         

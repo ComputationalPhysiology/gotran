@@ -754,6 +754,9 @@ class ODEObjectList(list):
         super(ODEObjectList, self).__init__()
         self._objects = {}
 
+    def keys(self):
+        return self._objects.keys()
+
     def append(self, item):
         check_arg(item, ODEObject, 0, ODEObjectList.append)
         super(ODEObjectList, self).append(item)

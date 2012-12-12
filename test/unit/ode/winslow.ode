@@ -222,7 +222,7 @@ I_Kp = G_KpMax*K_p*(V-E_k)
 
 component("NCX Current I_NaCa")
 I_NaCa = k_NaCa*(5000/(K_mNa**3+Na_o**3))*(1./(K_mCa+Ca_o))*\
-         (1./(1+k_sat*exp((eta-1)*V*FonRT)))*\
+         (1./(1+k_sat*exp((eta-1)*VFonRT)))*\
          (exp(eta*VFonRT)*Na_i**3*Ca_o-exp((eta-1)*VFonRT)*Na_o**3*Ca_i)
 
 component("Na-K pump current I_NaK")

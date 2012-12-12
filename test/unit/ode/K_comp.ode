@@ -1,0 +1,86 @@
+variables("K_comp", 
+       RTonF=ScalarParam(26.7081865285),
+       Na_o=ScalarParam(138.0),
+       F=ScalarParam(96.5),
+       K_o=ScalarParam(4.0),
+       FonRT=ScalarParam(0.0374417034617),
+       V=ScalarParam(-35),
+       I_NaK=ScalarParam(0.197979231816),
+       A_cap=ScalarParam(0.0001534),
+       I_CaK=ScalarParam(-0.0),
+       E_k=ScalarParam(-98.4363375764),
+       C_sc=ScalarParam(1.0),
+       V_myo=ScalarParam(2.584e-05),
+       Na_i=ScalarParam(10.0),)
+
+states("Rapid-activating delayed rectifier K current I_Kr", 
+       xKr=ScalarParam(0.6935),)
+
+parameters("Rapid-activating delayed rectifier K current I_Kr", 
+       G_KrMax=ScalarParam(0.0034),)
+
+states("Slow-activating delayed rectifier K current I_Ks", 
+       xKs=ScalarParam(0.00014589),)
+
+parameters("Slow-activating delayed rectifier K current I_Ks", 
+       G_KsMax=ScalarParam(0.00271),)
+
+states("Transient outward K current I_to", 
+       xto1=ScalarParam(3.742e-05),
+       yto1=ScalarParam(1),)
+
+parameters("Transient outward K current I_to", 
+       G_toMax=ScalarParam(0.23815),)
+
+states("Intracellular K", 
+       K_i=ScalarParam(159.48),)
+
+parameters("Time-Independent K current I_ti", 
+       G_tiMax=ScalarParam(2.8),
+       K_mK1=ScalarParam(13.0),)
+
+parameters("Plateau current I_Kp", 
+       G_KpMax=ScalarParam(0.002216),)
+
+
+component("Rapid-activating delayed rectifier K current I_Kr")
+k12 = 0.00410725646554697*exp(0.1691*V)
+k21 = 0.000463362904445488*exp(-0.0128*V)
+xKr_inf = k12/(k12 + k21)
+tau_xKr = 27.0 + 1.0/(k12 + k21)
+dxKr = (-xKr + xKr_inf)/tau_xKr
+R_V = 1.0/(1.4945*exp(0.0446*V) + 1.0)
+f_k = sqrt(K_o)/2.0
+I_Kr = G_KrMax*R_V*f_k*xKr*(-E_k + V)
+
+component("Slow-activating delayed rectifier K current I_Ks")
+xKs_inf = 1.0/(6.14830522449463*exp(-0.0735294117647059*V) + 1.0)
+tau_xKs = 1.0/((7.19e-5*V - 0.000719)/(-4.39294568091876*exp(-0.148*V) + 1.0) + (0.000131*V - 0.00131)/(0.503083056624351*exp(0.0687*V) - 1.0))
+dxKs = (-xKs + xKs_inf)/tau_xKs
+E_Ks = RTonF*log((K_o + 0.01833*Na_o)/(K_i + 0.01833*Na_i))
+I_Ks = G_KsMax*xKs**2.0*(-E_Ks + V)
+
+component("Transient outward K current I_to")
+alpha_xto1 = 0.04516*exp(0.03577*V)
+beta_xto1 = 0.0989*exp(-0.06237*V)
+a1 = 6.31888625237431e-5*exp(-0.2*V) + 1.0
+alpha_yto1 = 6.6653879529769e-6*exp(-0.2*V)/a1
+a1 = 41.7048530349758*exp(0.2*V) + 1.0
+beta_yto1 = 4.39917754328225*exp(0.2*V)/a1
+dxto1 = alpha_xto1*(-xto1 + 1.0) - beta_xto1*xto1
+dyto1 = alpha_yto1*(-yto1 + 1.0) - beta_yto1*yto1
+I_to = G_toMax*xto1*yto1*(-E_k + V)
+
+component("Time-Independent K current I_ti")
+K_tiUnlim = 1.0/(exp(FonRT*(-1.5*E_k + 1.5*V)) + 2.0)
+I_ti = G_tiMax*K_o*K_tiUnlim*(-E_k + V)/(K_mK1 + K_o)
+
+component("Plateau current I_Kp")
+K_p = 1.0/(3.49793891302524*exp(-0.167224080267559*V) + 1.0)
+I_Kp = G_KpMax*K_p*(-E_k + V)
+
+dxKr_dt = dxKr
+dxKs_dt = dxKs
+dxto1_dt = dxto1
+dyto1_dt = dyto1
+dK_i_dt = A_cap*C_sc*(-I_CaK - I_Kp - I_Kr - I_Ks + 2.0*I_NaK - I_ti - I_to)/(1000.0*F*V_myo)

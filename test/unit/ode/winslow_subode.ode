@@ -1,0 +1,39 @@
+states("Membrane", 
+       V=ScalarParam(-35),)
+
+parameters("Cell geometry", 
+       A_cap=ScalarParam(0.0001534),
+       C_sc=ScalarParam(1.0),
+       V_JSR=ScalarParam(1.6e-07),
+       V_NSR=ScalarParam(2.1e-06),
+       V_myo=ScalarParam(2.584e-05),
+       V_ss=ScalarParam(1.2e-09),
+       ist=ScalarParam(0),)
+
+parameters("Ionic concentrations", 
+       Ca_o=ScalarParam(2.0),
+       K_o=ScalarParam(4.0),
+       Na_i=ScalarParam(10.0),
+       Na_o=ScalarParam(138.0),)
+
+
+component("Membrane")
+comment("Constants")
+F = 96.5000000000000
+T = 310.000000000000
+R = 8.31400000000000
+RTonF = R*T/F
+FonRT = F/(R*T)
+VFonRT = FonRT*V
+expVFonRT = exp(VFonRT)
+
+subode("K_comp", prefix="")
+subode("Na_comp", prefix="")
+subode("Ca_comp", prefix="")
+
+component("Ionic concentrations")
+E_Na = RTonF*log(Na_o/Na_i)
+E_k = RTonF*log(K_o/K_i)
+E_Ca = RTonF*log(Ca_o/Ca_i)/2.0
+
+dV_dt = -I_Ca - I_CaK - I_Kp - I_Kr - I_Ks - I_Na - I_NaCa - I_NaK - I_bCa - I_bNa - I_pCa - I_ti - I_to - ist

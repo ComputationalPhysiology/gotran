@@ -99,6 +99,7 @@ class ODE(object):
         timer = Timer("Add state")
 
         # Create the state and derivative
+        component = component or self.name
         state = State(name, init, component, self.name)
         state_der = StateDerivative(state, der_init, component, self.name)
         
@@ -138,6 +139,7 @@ class ODE(object):
         timer = Timer("Add parameter")
         
         # Create the parameter
+        component = component or self.name
         parameter = Parameter(name, init, component, self.name)
         
         # Register the parameter
@@ -172,6 +174,7 @@ class ODE(object):
         timer = Timer("Add variable")
 
         # Create the variable
+        component = component or self.name
         variable = Variable(name, init, component, self.name)
         
         # Register the variable
@@ -255,12 +258,6 @@ class ODE(object):
             
             # Register the expanded monitored intermediate
             self._monitored_intermediates[name] = obj
-
-    def add_intermediate(self, name, expr):
-        """
-        Add an Intermediate to present 
-        """
-        # FIXME: Add stuff...
 
     def _add_entities(self, component, kwargs, entity):
         """
@@ -697,7 +694,7 @@ class ODE(object):
         else:
             # If not load external ODE
             from loadmodel import load_ode
-            ode = load_ode(filename)
+            ode = load_ode(subode)
         
         components = components or []
         prefix = ode.name if prefix is None else prefix
@@ -778,8 +775,8 @@ class ODE(object):
                             subs_list.append((obj_dep.sym, \
                                               prefix_subs[obj_dep.sym]))
 
-                self._register_intermediate(intermediate.name, \
-                                            intermediate.expr.subs(subs_list))
+                self.add_intermediate(intermediate.name, \
+                                      intermediate.expr.subs(subs_list))
         
         # Add derivatives
         for derivative in ode._derivative_expressions:
@@ -899,8 +896,8 @@ class ODE(object):
             elif isinstance(intermediate, Comment):
                 ode.add_comment(intermediate.name)
             else:
-                ode._register_intermediate(intermediate.name,\
-                                           intermediate.expr)
+                ode.add_intermediate(intermediate.name,\
+                                     intermediate.expr)
 
         # Add derviatives
         for derivative in derivatives:
@@ -1009,7 +1006,7 @@ class ODE(object):
                 pass
             
         self._all_single_ode_objects = OrderedDict()
-        self._derivative_expressions = []
+        self._derivative_expressions = ODEObjectList()
         self._derivative_states = set() # FIXME: No need for a set here...
         self._algebraic_states = set()
 
@@ -1082,7 +1079,7 @@ class ODE(object):
         # Register the symbol of the Object as an attribute
         self.__dict__[obj.name] = obj.sym
 
-    def _register_intermediate(self, name, expr):
+    def add_intermediate(self, name, expr):
         """
         Register an intermediate
         """
@@ -1107,11 +1104,16 @@ class ODE(object):
             self._variables.remove(dup_obj)
             self._components[dup_obj.component].variables.pop(dup_obj.name)
             dup_obj = None
+
+        # If the object already exists and is a StateDerivative
+        if dup_obj is not None and isinstance(dup_obj, StateDerivative):
+            self.diff(dup_obj.sym, expr)
+            return
         
         if dup_obj is not None:
-            error("Cannot register an Intermediate. A '{0}' with name '{1}' ",
+            error("Cannot register an Intermediate. A '{0}' with name '{1}' "\
                   "is already registered in this ODE.".format(\
-                      type(dup_obj).__name__, obj.name))
+                      type(dup_obj).__name__, dup_obj.name))
 
         # Check for duplicates
         if intermediate.name in self._intermediates:
@@ -1127,6 +1129,9 @@ class ODE(object):
         # Register symbol, overwrite any already excisting symbol
         self.__dict__[name] = intermediate.sym
 
+        # Return symbol
+        return intermediate.sym
+
 
     def __setattr__(self, name, value):
         """
@@ -1140,29 +1145,14 @@ class ODE(object):
             self.__dict__[name] = value
             return
         
-        # Check if name is a registered SingleODEObject
-        obj = self.get_object(name)
-
-        # If the object is already registered
-        if obj is not None:
-            
-            # If state derivative we call diff with the state derivative
-            # symbol as first argument
-            if isinstance(obj, StateDerivative):
-                self.diff(obj.sym, value)
-                return
-
-            error("{0} is already a registerd ODEObject, which cannot "\
-                  "be overwritten.".format(name))
-
         # Assume that we are registering an intermediate
         if isinstance(value, scalars) or (isinstance(value, sp.Basic) \
                                 and any(isinstance(atom, ModelSymbol)\
                                         for atom in value.atoms())):
-            self._register_intermediate(name, value)
+            self.add_intermediate(name, value)
         else:
             debug("Not registering: {0} as attribut. It does not contain "\
-                  "any symbols.".format(name))
+                  "any symbols or scalars.".format(name))
 
         # If not registering Intermediate or doing a shorthand
         # diff expression we silently leave.
@@ -1204,26 +1194,43 @@ class ODE(object):
 
         for mine in self.intermediates:
             if mine not in other.intermediates:
-                info("{1} not an intermediate in  {1}".format(\
+                info("{0} not an intermediate in  {1}".format(\
                          mine.name, other.name))
                 return False
 
-        for other_inter in self.intermediates:
+        for other_inter in other.intermediates:
             if other_inter not in self.intermediates:
-                info("{1} not an intermediate in  {1}".format(\
+                info("{0} not an intermediate in  {1}".format(\
                          other_inter.name, self.name))
+                return False
+
+            if not isinstance(other_inter, Expression):
+                continue
+
+            # Compare the last intermediate
+            mine_inter = self.intermediates.get(other_inter.name)
+            other_inter = other.intermediates.get(other_inter.name)
+            if abs(other_inter.param.value - mine_inter.param.value) > 1e-6:
+                info("{0} : {1} != {2}".format(\
+                    other_inter.name, other_inter.expr, mine_inter.expr))
                 return False
 
         for mine in self._derivative_expressions:
             if mine not in other._derivative_expressions:
-                info("{1} not a derivative in  {1}".format(\
+                info("{0} not a derivative in  {1}".format(\
                          mine.name, other.name))
                 return False
 
         for other_der in other._derivative_expressions:
             if other_der not in self._derivative_expressions:
-                info("{1} not a derivative in  {1}".format(\
+                info("{0} not a derivative in  {1}".format(\
                          other_der.name, self.name))
+                return False
+
+            mine_der = self._derivative_expressions.get(other_der.name)
+            if abs(mine_der.param.value - other_der.param.value) > 1e-6:
+                info("{0} : {1} != {2}".format(\
+                         mine_der.name, mine_der.expr, other_der.expr))
                 return False
 
         return True
