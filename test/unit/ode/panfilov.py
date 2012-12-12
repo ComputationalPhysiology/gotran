@@ -14,8 +14,8 @@ class Creation(unittest.TestCase):
         ode.clear()
         
         # States
-        ode.add_state("e", 0.0)
-        ode.add_state("g", 0.0)
+        ode.add_state("e", 0.1)
+        ode.add_state("g", 0.1)
         
         # parameters
         ode.add_parameter("v_rest", -85.0)
@@ -48,12 +48,12 @@ class Creation(unittest.TestCase):
         """
 
         ode = load_ode("panfilov")
+        
         self.assertTrue(ode == self.ode)
         self.assertNotEqual(id(ode), id(self.ode))
         
         ode = load_ode("panfilov", small_change=True)
-
-        # FIXME: Comment in when comparison works
+        
         self.assertFalse(ode == self.ode)
 
     def test_completness(self):
@@ -131,7 +131,7 @@ class Creation(unittest.TestCase):
             self.assertTrue(np.sum(np.abs((dy_jit-dy_correct))) < 1e-12)
             
             
-    def test_matlab_python_code(self):
+    def xtest_matlab_python_code(self):
         from gotran.codegeneration.codegenerator import \
              MatlabCodeGenerator, ODERepresentation
         

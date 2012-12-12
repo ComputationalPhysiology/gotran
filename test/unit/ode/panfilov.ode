@@ -3,7 +3,7 @@
 model_arguments(small_change=False)
 
 # States with initial conditions
-states(e=0.0, g=0.0)
+states(e=0.1, g=0.1)
 parameters(v_rest=-85.0,
            v_peak=35.0,
            time_constant=1.0)
