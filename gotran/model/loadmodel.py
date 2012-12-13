@@ -88,7 +88,7 @@ def exec_ode(ode_str, name):
     Execute an ode given by a str
     """
     # Create an ODE which will be populated with data when ode file is loaded
-    ode = ODE(name)
+    ode = ODE(name, return_namespace=True)
 
     debug("Loading {}".format(ode.name))
 
@@ -144,7 +144,7 @@ def load_ode(filename, name=None, **arguments):
         name = filename[:-4]
 
     # Create an ODE which will be populated with data when ode file is loaded
-    ode = ODE(name)
+    ode = ODE(name, return_namespace=True)
 
     debug("Loading {}".format(ode.name))
 
@@ -179,7 +179,7 @@ def _namespace_binder(namespace, ode, load_arguments):
     Add functions all bound to current ode, namespace and arguments
     """
 
-    def _add_subode(subode, prefix=None, components=None):
+    def subode(subode, prefix=None, components=None):
         """
         Load an ODE and add it to the present ODE
 
@@ -195,59 +195,15 @@ def _namespace_binder(namespace, ode, load_arguments):
             A list of components which will be extracted and added to the present
             ODE. If not given the whole ODE will be added.
         """
-        from odeobjects import Expression
+        from gotran.model.expressions import Expression
         
         check_arg(subode, str, 0)
 
-        subode = load_ode(subode)
-        components = components or []
-        
-        # If extracting only a certain components
-        if components:
-            subode = subode.extract_components(ode.name, *components)
-        
-        # Collect what names should be added to namespace after sub ode was added
-        names = [name for name in subode._all_single_ode_objects]
-        names.extend(intermediate.name for intermediate in subode.intermediates \
-                     if isinstance(intermediate, Expression))
-
-        # Actually add the subode
-        ode.add_subode(subode, prefix=prefix)
-
-        # Add variables to namespace
-        for name in names:
-            namespace[name] = getattr(ode, name)
+        # Add the subode and update namespace
+        namespace.update(ode.add_subode(subode, prefix=prefix, \
+                                        components=components))
     
-    def _add_entities(component, kwargs, entity):
-        """
-        Help function for determine if each entity in the kwargs is unique
-        and to check the type of the given default value
-        """
-        assert(entity in ["state", "parameter", "variable"])
-    
-        # Get add method
-        add = getattr(ode, "add_{0}".format(entity))
-        
-        # Symbol and value dicts
-        for name in sorted(kwargs.keys()):
-    
-            # Get value
-            value = kwargs[name]
-    
-            # Add the symbol
-            sym = add(name, value, component=component)
-            
-            # Add symbol to caller frames namespace
-            try:
-                debug("Adding {0} '{1}' to namespace".format(entity, name))
-                if name in namespace:
-                    warning("Symbol with name: '{0}' already in namespace.".\
-                            format(name))
-                namespace[name] = sym
-            except:
-                error("Not able to add '{0}' to namespace".format(name))
-    
-    def _states(component="", **kwargs):
+    def states(component="", **kwargs):
         """
         Add a number of states to the current ODE
     
@@ -261,10 +217,10 @@ def _namespace_binder(namespace, ode, load_arguments):
         if not kwargs:
             error("expected at least one state")
         
-        # Check values and create sympy Symbols
-        _add_entities(component, kwargs, "state")
+        # Add the states and update namespace
+        namespace.update(ode.add_states(component, **kwargs))
     
-    def _parameters(component="", **kwargs):
+    def parameters(component="", **kwargs):
         """
         Add a number of parameters to the current ODE
     
@@ -280,10 +236,10 @@ def _namespace_binder(namespace, ode, load_arguments):
         if not kwargs:
             error("expected at least one state")
         
-        # Check values and create sympy Symbols
-        _add_entities(component, kwargs, "parameter")
+        # Add the parameters and update namespace
+        namespace.update(ode.add_parameters(component, **kwargs))
         
-    def _variables(component="", **kwargs):
+    def variables(component="", **kwargs):
         """
         Add a number of variables to the current ODE
     
@@ -298,10 +254,10 @@ def _namespace_binder(namespace, ode, load_arguments):
         if not kwargs:
             error("expected at least one variable")
         
-        # Check values and create sympy Symbols
-        _add_entities(component, kwargs, "variable")
+        # Add the variables and update namespace
+        namespace.update(ode.add_variables(component, **kwargs))
     
-    def _model_arguments(**kwargs):
+    def model_arguments(**kwargs):
         """
         Defines arguments that can be altered while the ODE is loaded
         
@@ -338,11 +294,11 @@ def _namespace_binder(namespace, ode, load_arguments):
 
     # Update provided namespace
     namespace.update(dict(
-        states=_states,
-        parameters=_parameters,
-        variables=_variables,
-        model_arguments=_model_arguments,
-        subode=_add_subode,
+        states=states,
+        parameters=parameters,
+        variables=variables,
+        model_arguments=model_arguments,
+        subode=subode,
         )
                          )
                     

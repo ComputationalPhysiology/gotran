@@ -24,7 +24,7 @@ from modelparameters.sympytools import sp, iter_symbol_params_from_expr
 
 # Local gotran imports
 from gotran.model.ode import ODE
-from gotran.model.odeobjects import ODEComponent, Comment
+from gotran.model.odecomponents import ODEComponent, Comment
 from gotran.common import check_arg, check_kwarg, info
 
 import sys

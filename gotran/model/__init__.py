@@ -16,11 +16,15 @@
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
 import odeobjects
+import expressions
+import odecomponents
 import ode
 import loadmodel
 
 # gotran imports
 from odeobjects import *
+from odecomponents import *
+from expressions import *
 from ode import *
 from loadmodel import *
 
