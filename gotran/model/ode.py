@@ -323,6 +323,144 @@ class ODE(object):
         self._intermediates.append(\
             Comment(comment_str, self._present_component.name))
 
+    def add_subode(self, subode, prefix=None, components=None):
+        """
+        Load an ODE and add it to the present ODE
+
+        Argument
+        --------
+        subode : str, ODE
+            The subode which should be added. If subode is a str an
+            ODE stored in that file will be loaded. If it is an ODE it will be
+            added directly to the present ODE.
+        prefix : str (optional)
+            A prefix which all state and parameters are prefixed with. If not
+            given the name of the subode will be used as prefix. If set to
+            empty string, no prefix will be used.
+        components : list, tuple of str (optional)
+            A list of components which will be extracted and added to the present
+            ODE. If not given the whole ODE will be added.
+        """
+
+        # If ode is given directly 
+        if isinstance(subode, ODE):
+            ode = subode
+            
+        else:
+            # If not load external ODE
+            from loadmodel import load_ode
+            ode = load_ode(subode)
+        
+        components = components or []
+        prefix = ode.name if prefix is None else prefix
+
+        # Postfix prefix with "_" if prefix is not ""
+        if prefix:
+            prefix += "_"
+        
+        # If extracting only a certain components
+        if components:
+            ode = ode.extract_components(ode.name, *components)
+
+        # Namespace for returning new symbols
+        ns = {}
+
+        # Collect prefixed states and parameters to be used to substitute
+        # the intermediate and derivative expressions
+        prefix_subs = {}
+        
+        # Add prefixed states
+        for state in ode.states:
+            prefix_subs[state.sym] = ModelSymbol(prefix+state.name, self.name)
+            prefix_subs[state.derivative.sym] = ModelSymbol(\
+                "d"+prefix+state.name+"_dt", self.name)
+            
+            if prefix+state.name in self._states:
+                error("State with name {0} already exist in ODE".format(\
+                    prefix+state.name))
+
+            # Add the state
+            sym = self.add_state(prefix+state.name, state.param, \
+                                 state.derivative.param, state.component)
+            ns[prefix+state.name] = sym
+
+        # Add prefixed parameters
+        for parameter in ode.parameters:
+            prefix_subs[parameter.sym] = ModelSymbol(prefix+parameter.name, \
+                                                     self.name)
+        
+            if prefix+parameter.name in self._parameters:
+                error("Parameter with name {0} already exist in ODE".format(\
+                    prefix+parameter.name))
+
+            # Add the parameter
+            sym = self.add_parameter(prefix+parameter.name, parameter.param, \
+                                     parameter.component)
+            ns[prefix+parameter.name] = sym
+
+        # Add variables if not name already excisting in this ODE
+        for variable in ode.variables:
+
+            # If variable name already excist in this ODE do not add it
+            # This will implicitly exchange all variables with corresponding
+            # states and parameters from this ODE
+            obj = self.get_object(variable.name) or self._intermediates.get(\
+                variable.name)
+            if obj is not None:
+                info("Skipping Variable {0} as a {1} with same name already "\
+                     "excists.".format(variable.name, type(obj).__name__))
+                continue
+
+            # If component name is the same as the ode name, change
+            # component name to this ODE name
+            component = self.name if variable.component == ode.name \
+                        else variable.component
+            
+            # Add the un-prefixed variable
+            sym = self.add_variable(variable.name, variable.param, component)
+            ns[variable.name] = sym
+
+        # Add intermediates
+        for intermediate in ode.intermediates:
+            if isinstance(intermediate, ODEComponent):
+                self.set_component(intermediate.name)
+            elif isinstance(intermediate, Comment):
+                self.add_comment(intermediate.name)
+            else:
+                # Iterate over dependencies and check if we need to subs name
+                # with prefixed name
+                subs_list = []
+                if prefix != "":
+                    for obj_dep in intermediate.object_dependencies:
+                        if obj_dep.sym in prefix_subs:
+                            subs_list.append((obj_dep.sym, \
+                                              prefix_subs[obj_dep.sym]))
+
+                sym = self.add_intermediate(intermediate.name, \
+                                            intermediate.expr.subs(subs_list))
+                ns[intermediate.name] = sym
+        
+        # Add derivatives
+        for derivative in ode._derivative_expressions:
+            # Iterate over dependencies and check if we need to subs name
+            # with prefixed name
+            subs_list = []
+            der_subs_list = []
+            if prefix != "":
+                for obj_dep in derivative.object_dependencies:
+                    if obj_dep.sym in prefix_subs:
+                        subs_list.append((obj_dep.sym, \
+                                          prefix_subs[obj_dep.sym]))
+                for der in derivative.stripped_derivatives:
+                    der_subs_list.apped((der, prefix_subs[der]))
+
+            self.diff(derivative.derivatives.subs(der_subs_list), \
+                      derivative.expr.subs(subs_list))
+            
+        # If set to return namespace
+        if self._return_namespace:
+            return ns
+        
     def set_component(self, component):
         """
         Set present component
@@ -520,144 +658,6 @@ class ODE(object):
         # Write to file
         open(basename+".ode", "w").write("\n".join(lines))
 
-    def add_subode(self, subode, prefix=None, components=None):
-        """
-        Load an ODE and add it to the present ODE
-
-        Argument
-        --------
-        subode : str, ODE
-            The subode which should be added. If subode is a str an
-            ODE stored in that file will be loaded. If it is an ODE it will be
-            added directly to the present ODE.
-        prefix : str (optional)
-            A prefix which all state and parameters are prefixed with. If not
-            given the name of the subode will be used as prefix. If set to
-            empty string, no prefix will be used.
-        components : list, tuple of str (optional)
-            A list of components which will be extracted and added to the present
-            ODE. If not given the whole ODE will be added.
-        """
-
-        # If ode is given directly 
-        if isinstance(subode, ODE):
-            ode = subode
-            
-        else:
-            # If not load external ODE
-            from loadmodel import load_ode
-            ode = load_ode(subode)
-        
-        components = components or []
-        prefix = ode.name if prefix is None else prefix
-
-        # Postfix prefix with "_" if prefix is not ""
-        if prefix:
-            prefix += "_"
-        
-        # If extracting only a certain components
-        if components:
-            ode = ode.extract_components(ode.name, *components)
-
-        # Namespace for returning new symbols
-        ns = {}
-
-        # Collect prefixed states and parameters to be used to substitute
-        # the intermediate and derivative expressions
-        prefix_subs = {}
-        
-        # Add prefixed states
-        for state in ode.states:
-            prefix_subs[state.sym] = ModelSymbol(prefix+state.name, self.name)
-            prefix_subs[state.derivative.sym] = ModelSymbol(\
-                "d"+prefix+state.name+"_dt", self.name)
-            
-            if prefix+state.name in self._states:
-                error("State with name {0} already exist in ODE".format(\
-                    prefix+state.name))
-
-            # Add the state
-            sym = self.add_state(prefix+state.name, state.param, \
-                                 state.derivative.param, state.component)
-            ns[prefix+state.name] = sym
-
-        # Add prefixed parameters
-        for parameter in ode.parameters:
-            prefix_subs[parameter.sym] = ModelSymbol(prefix+parameter.name, \
-                                                     self.name)
-        
-            if prefix+parameter.name in self._parameters:
-                error("Parameter with name {0} already exist in ODE".format(\
-                    prefix+parameter.name))
-
-            # Add the parameter
-            sym = self.add_parameter(prefix+parameter.name, parameter.param, \
-                                     parameter.component)
-            ns[prefix+parameter.name] = sym
-
-        # Add variables if not name already excisting in this ODE
-        for variable in ode.variables:
-
-            # If variable name already excist in this ODE do not add it
-            # This will implicitly exchange all variables with corresponding
-            # states and parameters from this ODE
-            obj = self.get_object(variable.name) or self._intermediates.get(\
-                variable.name)
-            if obj is not None:
-                info("Skipping Variable {0} as a {1} with same name already "\
-                     "excists.".format(variable.name, type(obj).__name__))
-                continue
-
-            # If component name is the same as the ode name, change
-            # component name to this ODE name
-            component = self.name if variable.component == ode.name \
-                        else variable.component
-            
-            # Add the un-prefixed variable
-            sym = self.add_variable(variable.name, variable.param, component)
-            ns[variable.name] = sym
-
-        # Add intermediates
-        for intermediate in ode.intermediates:
-            if isinstance(intermediate, ODEComponent):
-                self.set_component(intermediate.name)
-            elif isinstance(intermediate, Comment):
-                self.add_comment(intermediate.name)
-            else:
-                # Iterate over dependencies and check if we need to subs name
-                # with prefixed name
-                subs_list = []
-                if prefix != "":
-                    for obj_dep in intermediate.object_dependencies:
-                        if obj_dep.sym in prefix_subs:
-                            subs_list.append((obj_dep.sym, \
-                                              prefix_subs[obj_dep.sym]))
-
-                sym = self.add_intermediate(intermediate.name, \
-                                            intermediate.expr.subs(subs_list))
-                ns[intermediate.name] = sym
-        
-        # Add derivatives
-        for derivative in ode._derivative_expressions:
-            # Iterate over dependencies and check if we need to subs name
-            # with prefixed name
-            subs_list = []
-            der_subs_list = []
-            if prefix != "":
-                for obj_dep in derivative.object_dependencies:
-                    if obj_dep.sym in prefix_subs:
-                        subs_list.append((obj_dep.sym, \
-                                          prefix_subs[obj_dep.sym]))
-                for der in derivative.stripped_derivatives:
-                    der_subs_list.apped((der, prefix_subs[der]))
-
-            self.diff(derivative.derivatives.subs(der_subs_list), \
-                      derivative.expr.subs(subs_list))
-            
-        # If set to return namespace
-        if self._return_namespace:
-            return ns
-        
     def extract_components(self, name, *components):
         """
         Create an ODE from a number of components
