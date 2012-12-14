@@ -15,8 +15,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ["ODEObject", "SingleODEObject", "Parameter", "State", \
-           "StateDerivative", "Variable"]
+__all__ = ["ODEObject", "ValueODEObject", "Parameter", "State", \
+           "StateDerivative", "Variable", "SingleODEObjects"]
 
 # System imports
 import numpy as np
@@ -34,6 +34,97 @@ class ODEObject(object):
     """
     Base container class for all ODEObjects
     """
+    def __init__(self, name, component="", ode_name=""):
+        """
+        Create ODEObject instance
+
+        Arguments
+        ---------
+        name : str
+            The name of the ODEObject
+        component : str (optional)
+            A component about the ODEObject
+        ode_name : str (optional)
+            The name of the ODE the ODEObject belongs to
+        """
+
+        check_arg(name, str, 0, ODEObject)
+        check_arg(component, str, 1, ODEObject)
+        check_arg(ode_name, str, 2, ODEObject)
+
+        # Check for underscore in name
+        if len(name) > 0 and name[0] == "_":
+            error("No ODEObject names can start with an underscore: "\
+                  "'{0}'".format(name))
+
+        # Strip name for spaces
+        self._name = name
+
+        self._component = component
+        self._ode_name = ode_name
+
+    @property
+    def component(self):
+        return self._component
+
+    def __eq__(self, other):
+        """
+        x.__eq__(y) <==> x==y
+        """
+        
+        if not isinstance(other, type(self)):
+            return False
+        
+        # FIXME: Should this be more restrictive? Only comparing ODEObjects,
+        # FIXME: and then comparing name and component?
+        # FIXME: Yes, might be some side effects though...
+        # FIXME: Need to do change when things are stable
+        return self._name == str(other)
+
+    def __ne__(self, other):
+        """
+        x.__neq__(y) <==> x==y
+        """
+        
+        if not isinstance(other, type(self)):
+            return True
+        
+        # FIXME: Should this be more restrictive? Only comparing ODEObjects,
+        # FIXME: and then comparing name and component?
+        # FIXME: Yes, might be some side effects though...
+        # FIXME: Need to do change when things are stable
+        return self._name != str(other)
+
+    def __str__(self):
+        """
+        x.__str__() <==> str(x)
+        """
+        return self._name
+
+    def __repr__(self):
+        """
+        x.__repr__() <==> repr(x)
+        """
+        return "{0}({1})".format(self.__class__.__name__, self._args_str())
+
+    @property
+    def name(self):
+        return self._name
+
+    def _args_str(self):
+        """
+        Return a formated str of __init__ arguments
+        """
+        return "'{0}', {1}{2}".format(self._name,\
+            ", component='{0}'".format(self._component) \
+            if self._component else "",
+            ", ode_name='{0}'".format(self._ode_name) \
+            if self._ode_name else "")
+
+class ValueODEObject(ODEObject):
+    """
+    A class for all ODE objects which has a value
+    """
     def __init__(self, name, value, component="", ode_name=""):
         """
         Create ODEObject instance
@@ -42,7 +133,7 @@ class ODEObject(object):
         ---------
         name : str
             The name of the ODEObject
-        value : scalar, ScalarParam, np.ndarray, sp. Basic, str
+        value : scalar, ScalarParam, np.ndarray, sp. Basic
             The value of this ODEObject
         component : str (optional)
             A component about the ODEObject
@@ -50,19 +141,14 @@ class ODEObject(object):
             The name of the ODE the ODEObject belongs to
         """
 
-        check_arg(name, str, 0, ODEObject)
-        check_arg(value, scalars + (ScalarParam, list, np.ndarray, sp.Basic, str), \
-                  1, ODEObject)
-        check_arg(component, str, 2, ODEObject)
-        check_arg(ode_name, str, 3, ODEObject)
+        check_arg(name, str, 0, ValueODEObject)
+        check_arg(value, scalars + (ScalarParam, list, np.ndarray, sp.Basic), \
+                  1, ValueODEObject)
 
-        # Check for underscore in name
-        if len(name) > 0 and name[0] == "_":
-            error("No ODEObject names can start with an underscore: "\
-                  "'{0}'".format(name))
-
-        # Strip name for spaces
-        _name = name.strip().replace(" ", "_")
+        name = name.strip().replace(" ", "_")
+        
+        # Init super class
+        super(ValueODEObject, self).__init__(name, component, ode_name)
 
         if isinstance(value, ScalarParam):
 
@@ -85,7 +171,7 @@ class ODEObject(object):
         # Debug
         if get_log_level() <= DEBUG:
             if isinstance(value, SlaveParam):
-                debug("{0}: {1} {2:.3f}".format(name, value.expr, value.value))
+                debug("{0}: {1} {2:.3f}".format(self.name, value.expr, value.value))
             else:
                 debug("{0}: {1}".format(name, value.value))
             
@@ -100,8 +186,15 @@ class ODEObject(object):
 
         # Store field
         self._field = isinstance(value, ArrayParam)
-        self._component = component
-        self._ode_name = ode_name
+
+    @property
+    def value(self):
+        return self._param.getvalue()
+
+    @value.setter
+    def value(self, value):
+        self._param.setvalue(value)
+
 
     @property
     def is_field(self):
@@ -112,56 +205,8 @@ class ODEObject(object):
         return self._param.sym
 
     @property
-    def name(self):
-        return self._param.name
-
-    @property
     def param(self):
         return self._param
-
-    @property
-    def component(self):
-        return self._component
-
-    def __eq__(self, other):
-        """
-        x.__eq__(y) <==> x==y
-        """
-        
-        if not isinstance(other, type(self)):
-            return False
-        
-        # FIXME: Should this be more restrictive? Only comparing ODEObjects,
-        # FIXME: and then comparing name and component?
-        # FIXME: Yes, might be some side effects though...
-        # FIXME: Need to do change when things are stable
-        return self.name == str(other)
-
-    def __ne__(self, other):
-        """
-        x.__neq__(y) <==> x==y
-        """
-        
-        if not isinstance(other, type(self)):
-            return True
-        
-        # FIXME: Should this be more restrictive? Only comparing ODEObjects,
-        # FIXME: and then comparing name and component?
-        # FIXME: Yes, might be some side effects though...
-        # FIXME: Need to do change when things are stable
-        return self.name != str(other)
-
-    def __str__(self):
-        """
-        x.__str__() <==> str(x)
-        """
-        return self.name
-
-    def __repr__(self):
-        """
-        x.__repr__() <==> repr(x)
-        """
-        return "{0}({1})".format(self.__class__.__name__, self._args_str())
 
     def _args_str(self):
         """
@@ -174,43 +219,11 @@ class ODEObject(object):
             ", ode_name='{0}'".format(self._ode_name) \
             if self._ode_name else "",)
 
-class SingleODEObject(ODEObject):
-    """
-    A class for all ODE objects which are not compound
-    """
-    
-    def __init__(self, name, init, component="", ode_name=""):
-        """
-        Create ODEObject instance
-
-        Arguments
-        ---------
-        name : str
-            The name of the ODEObject
-        init : scalar, ScalarParam, np.ndarray
-            The init value of this ODEObject
-        component : str (optional)
-            A component about the ODEObject
-        ode_name : str (optional)
-            The name of the ODE the ODEObject belongs to
-        """
-
-        # Init super class
-        super(SingleODEObject, self).__init__(name, init, component, ode_name)
-
-    @property
-    def init(self):
-        return self._param.getvalue()
-
-    @init.setter
-    def init(self, value):
-        self._param.setvalue(value)
-
-class State(SingleODEObject):
+class State(ValueODEObject):
     """
     Container class for a State variable
     """
-    def __init__(self, name, init, component="", ode_name=""):
+    def __init__(self, name, init, component="", ode_name="", slaved=False):
         """
         Create a state variable with an assosciated initial value
 
@@ -224,6 +237,9 @@ class State(SingleODEObject):
             A component for which the State should be associated with.
         ode_name : str (optional)
             The name of the ODE the ODEObject belongs to
+        slaved : bool
+            If True the creation and differentiation is controlled by
+            other entity, like a Markov model.
         """
         
         # Call super class
@@ -231,14 +247,19 @@ class State(SingleODEObject):
 
         self.derivative = None
 
+        check_arg(slaved, bool, 4)
+        self._slaved = slaved
+
         # Add previous value symbol
         if ode_name:
             self.sym_0 = ModelSymbol("{0}_0".format(name), \
                                      "{0}.{1}_0".format(ode_name, name))
         else:
             self.sym_0 = ModelSymbol("{0}_0".format(name))
+
+    init = ValueODEObject.value
     
-class StateDerivative(SingleODEObject):
+class StateDerivative(ValueODEObject):
     """
     Container class for a StateDerivative variable
     """
@@ -266,7 +287,9 @@ class StateDerivative(SingleODEObject):
         
         self.state = state
     
-class Parameter(SingleODEObject):
+    init = ValueODEObject.value
+
+class Parameter(ValueODEObject):
     """
     Container class for a Parameter
     """
@@ -288,8 +311,10 @@ class Parameter(SingleODEObject):
         
         # Call super class
         super(Parameter, self).__init__(name, init, component, ode_name)
+    
+    init = ValueODEObject.value
 
-class Variable(SingleODEObject):
+class Variable(ValueODEObject):
     """
     Container class for a Variable
     """
@@ -316,3 +341,7 @@ class Variable(SingleODEObject):
         self.sym_0 = ModelSymbol("{0}_0".format(name), \
                                  "{0}.{1}_0".format(ode_name, name))
 
+    init = ValueODEObject.value
+
+# Tuple with single ODE Objects, for type checking
+SingleODEObjects = (State, StateDerivative, Parameter, Variable)

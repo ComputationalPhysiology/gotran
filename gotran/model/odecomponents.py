@@ -45,15 +45,8 @@ class Comment(ODEObject):
         """
         
         # Call super class
-        super(Comment, self).__init__(comment, "", component)
+        super(Comment, self).__init__(comment, component, "")
 
-    @property
-    def value(self):
-        """
-        Return the value of the Comment, which is the stored comment
-        """
-        return self._param.getvalue()
-    
 class ODEComponent(ODEObject):
     """
     A Component class. To keep track of Components in an ODE
@@ -104,12 +97,12 @@ class ODEComponent(ODEObject):
         assert(obj.component == self.name)
 
         # If SingleODEObject we need to check that no Expressions has been added
-        if isinstance(obj, SingleODEObject):
+        if isinstance(obj, SingleODEObjects):
 
-            if (len(self.intermediates) + len(self.derivatives))>0:
-                error("Cannot register a {0} to '{1}' after an expression"\
-                      " has been register.".format(\
-                          type(obj).__name__, self.name, ))
+            #if (len(self.intermediates) + len(self.derivatives))>0:
+            #    error("Cannot register a {0} to '{1}' after an expression"\
+            #          " has been register.".format(\
+            #              type(obj).__name__, self.name, ))
 
             # Store object
             if isinstance(obj, State):
@@ -165,13 +158,6 @@ class ODEComponent(ODEObject):
             error("Not recognised ODEObject: {0}".format(\
                 type(obj).__name__))
 
-    @property
-    def value(self):
-        """
-        Return the value of the Component, which is the str representation of it
-        """
-        return self._param.getvalue()
-    
 class ODEObjectList(list):
     """
     Specialized container for ODEObjects
@@ -213,7 +199,7 @@ class ODEObjectList(list):
         if isinstance(item, str):
             return any(item == obj.name for obj in self)
         elif isinstance(item, ModelSymbol):
-            return any(item == obj.sym for obj in self)
+            return any(item.name == obj.name for obj in self)
         elif (item, ODEObject):
             return super(ODEObjectList, self).__contains__(item)
         return False
@@ -222,7 +208,7 @@ class ODEObjectList(list):
         if isinstance(item, str):
             return sum(item == obj.name for obj in self)
         elif isinstance(item, ModelSymbol):
-            return sum(item == obj.sym for obj in self)
+            return sum(item.name == obj.name for obj in self)
         elif (item, ODEObject):
             return super(ODEObjectList, self).count(item)
         return 0
@@ -234,7 +220,7 @@ class ODEObjectList(list):
                     return ind
         elif isinstance(item, ModelSymbol):
             for ind, obj in enumerate(self):
-                if item == obj.sym:
+                if item.name == obj.name:
                     return ind
         elif (item, ODEObject):
             for ind, obj in enumerate(self):
@@ -296,6 +282,7 @@ class MarkovModel(object):
 
         self._name = name
         self._ode = ode
+        self._is_finalized = False
 
         # Check states kwargs
         state_sum = 0.0
@@ -308,11 +295,142 @@ class MarkovModel(object):
             if state_sum != self._algebraic_sum:
                 error("The given algebraic sum does not match the sum of "\
                       "the initial state values ")
+            
+            # Find the state which will be excluded from the states
+            for name in states:
+                if "O" not in name:
+                    break
+
+            algebraic_state = name
+        else:
+            algebraic_state = ""
+
+        # Add states to ode
+        collected_states = ODEObjectList()
+        for name, init in states.items():
+
+            # If we are not going to add the state
+            if name == algebraic_state:
+                continue
+            
+            sym = ode.add_state(name, init, component=name)
+            collected_states.append(ode.get_object(sym))
+
+        # Add an intermediate for the algebraic state
+        if self._algebraic_sum is not None:
+            sym = ode.add_intermediate(algebraic_state, 1 - reduce(\
+                lambda x,y:x+y, (state.sym for state in collected_states), 0))
+            inter_obj = ode.get_object(sym)
+            collected_states.append(inter_obj)
+        
+        # Store state attributes
+        self._states = collected_states
+
+        # Rate attributes
+        self._rates = {}
+
+    def __setitem__(self, states, rate):
+        """
+        Set a rate between states given in states
+
+        Arguments
+        ---------
+        states : tuple of size two
+            A tuple of two states for which the rate is going to be between
+        rate : scalar or sympy expression
+            An expression of the rate between the two states
+        """
+        check_arg(states, tuple, 0, MarkovModel.__setitem__, int)
+
+        if self._is_finalized:
+            error("The Markov model is finalized. No more rates can be added.")
+            
+        if len(states) != 2:
+            error("Expected the states argument to be a tuple of two states")
+
+        if not all(state in self._states for state in states):
+            error("Expected the states arguments to be States in "\
+                  "the Markov model")
+            
+        if states[0] == states[1]:
+            error("The two states cannot be the same.")
+
+        if states in self._rates:
+            error("Rate between state {0} and {1} is already "\
+                  "registered.".format(*states))
+
+        # Create an Expression of the rate and store it
+        self._rate[states] = Expression("{0}-{1}".format(*states), rate)
+
+        # Check that the states are not used in the rates
+        for dep_obj in self._rate[states].object_dependencies:
+            if dep_obj in self._states:
+                error("Markov model rate cannot include state variables in the "\
+                      "same Markov model: {0}".format(dep_obj))
+    
+    def finalize(self):
+        """
+        Finalize the Markov model.
+
+        This will add the derivatives to the ode model. After this is
+        done no more rates can be added to the Markov model.
+        """
+        if self._is_finalized:
+            return
+        
+        self._is_finalized = True
+
+        # Derivatives
+        derivatives = OrderedDict((state, 0.0) for state in self._states)
+        rate_check = {}
+
+        # Build rate information and check that each rate is added in a
+        # symetric way
+        used_states = [0]*len(self._states)
+        for states, rate in self._rates:
+            from_state, to_state = states
+
+            # Add to derivatives of the two states
+            derivatives[from_state] -= rate*from_state
+            derivatives[to_state] += rate*from_state
+
+            # Register rate
+            ind_from = self._states.index(from_state)
+            ind_to = self._states.index(to_state)
+            ind_tuple = (min(ind_from, ind_to), max(ind_from, ind_to))
+            if ind_tuple not in rate_check:
+                rate_check[ind_tuple] = 0
+            rate_check[ind_tuple] += 1
+
+            used_states[ind_from] = 1
+            used_states[ind_to] = 1
+
+        # Check used states
+        if 0 in used_states:
+            error("No rate registered for state {0}".format(\
+                self._states[used_states.find(0)]))
+
+        # Check rate symetry
+        for (ind_from, ind_to), times in rate_check.items():
+            if time != 2:
+                error("Only one rate between the states {0} and {1} was "\
+                      "registered, expected two.".format(\
+                          self._states[ind_from], self._states[ind_to]))
+
+        # Add derivatives
+        for state in self._states:
+            if isinstance(state, State):
+                self._ode.diff(state.derivative.sym, derivatives[state])
+        
+
+    @property
+    def is_finalized(self):
+        return self._is_finalized
 
     @property
     def name(self):
         return self._name
 
-
-#Fortsätt här!
-#Kanske ett flag till ODE om att returnera en dict med symboler, slik att man kan lägga till dessa i ett namnrum. Slipper då krångliga funktioner i load_ode.
+    @property
+    def num_states(self):
+        return len(self._states)

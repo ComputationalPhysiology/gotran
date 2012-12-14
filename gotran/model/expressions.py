@@ -26,7 +26,7 @@ from gotran.common import error, check_arg, scalars, Timer
 from gotran.model.odeobjects import *
 from gotran.model.odecomponents import *
 
-class Expression(ODEObject):
+class Expression(ValueODEObject):
     """
     class for all expressions such as intermediates and diff 
     """
@@ -88,14 +88,6 @@ class Expression(ODEObject):
                                         for dep_obj in intermediate_objects)
 
         self._object_dependencies = object_dependencies
-
-    @property
-    def value(self):
-        return self._param.getvalue()
-
-    @value.setter
-    def value(self, value):
-        self._param.setvalue(value)
 
     @property
     def expr(self):

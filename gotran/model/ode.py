@@ -69,6 +69,7 @@ class ODE(object):
         self._intermediates = ODEObjectList()
         self._intermediate_duplicates = set()
         self._monitored_intermediates = OrderedDict()
+        self._comments = ODEObjectList()
 
         # Add components
         self._default_component = ODEComponent(name, self)
@@ -78,7 +79,7 @@ class ODE(object):
         
         self.clear()
 
-    def add_state(self, name, init, der_init=0.0, component=""):
+    def add_state(self, name, init, der_init=0.0, component="", slaved=False):
         """
         Add a state to the ODE
 
@@ -92,6 +93,9 @@ class ODE(object):
             The initial value of the state derivative
         component : str (optional)
             Add state to a particular component
+        slaved : bool
+            If True the creation and differentiation is controlled by
+            other entity, like a Markov model.
             
         Example:
         ========
@@ -104,7 +108,7 @@ class ODE(object):
 
         # Create the state and derivative
         component = component or self.name
-        state = State(name, init, component, self.name)
+        state = State(name, init, component, self.name, slaved)
         state_der = StateDerivative(state, der_init, component, self.name)
         
         state.derivative = state_der
@@ -320,8 +324,9 @@ class ODE(object):
         Add comment to ODE
         """
         check_arg(comment_str, str, context=ODE.add_comment)
-        self._intermediates.append(\
-            Comment(comment_str, self._present_component.name))
+        comment = Comment(comment_str, self._present_component.name)
+        self._intermediates.append(comment)
+        self._comments.append(comment)
 
     def add_subode(self, subode, prefix=None, components=None):
         """
@@ -727,12 +732,8 @@ class ODE(object):
 
                 # Create a Variable to replace an external object dependency
                 # Put the Variable in the main ODE component
-                if isinstance(obj, SingleODEObject):
-                    variables.append(Variable(obj.name, obj.param, \
-                                              name, name))
-                else:
-                    variables.append(Variable(obj.name, obj.value, \
-                                              name, name))
+                variables.append(Variable(obj.name, obj.value, \
+                                          name, name))
 
         # Create return ODE
         ode = ODE(name)
@@ -1041,6 +1042,13 @@ class ODE(object):
         Return a all components
         """
         return self._components
+
+    @property
+    def comments(self):
+        """
+        Return a all comments
+        """
+        return self._comments
 
     @property
     def intermediates(self):
