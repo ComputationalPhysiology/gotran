@@ -125,7 +125,7 @@ class ValueODEObject(ODEObject):
     """
     A class for all ODE objects which has a value
     """
-    def __init__(self, name, value, component="", ode_name=""):
+    def __init__(self, name, value, component="", ode_name="", slaved=False):
         """
         Create ODEObject instance
 
@@ -139,6 +139,9 @@ class ValueODEObject(ODEObject):
             A component about the ODEObject
         ode_name : str (optional)
             The name of the ODE the ODEObject belongs to
+        slaved : bool
+            If True the creation and differentiation is controlled by
+            other entity, like a Markov model.
         """
 
         check_arg(name, str, 0, ValueODEObject)
@@ -187,6 +190,12 @@ class ValueODEObject(ODEObject):
         # Store field
         self._field = isinstance(value, ArrayParam)
 
+        self._slaved = slaved
+
+    @property
+    def slaved(self):
+        return self._slaved
+    
     @property
     def value(self):
         return self._param.getvalue()
@@ -243,7 +252,7 @@ class State(ValueODEObject):
         """
         
         # Call super class
-        super(State, self).__init__(name, init, component, ode_name)
+        super(State, self).__init__(name, init, component, ode_name, slaved)
 
         self.derivative = None
 
@@ -258,7 +267,7 @@ class State(ValueODEObject):
             self.sym_0 = ModelSymbol("{0}_0".format(name))
 
     init = ValueODEObject.value
-    
+
 class StateDerivative(ValueODEObject):
     """
     Container class for a StateDerivative variable

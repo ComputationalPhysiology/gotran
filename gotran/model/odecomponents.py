@@ -252,7 +252,7 @@ class ODEObjectList(list):
 
     
 
-class MarkovModel(object):
+class MarkovModel(ODEObject):
     """
     A Markov model class
     """
@@ -264,13 +264,18 @@ class MarkovModel(object):
         ---------
         name : str
             Name of Markov model
+        ode : ODE
+            The ode the Markov Model should be added to
         algebraic_sum : scalar (optional)
             If the algebraic sum of all states should be constant,
             give the value here.
         states : dict
             A dict with all states defined in this Markov model
         """
-        check_arg(name, str, 0)
+
+        # Call super class
+        super(MarkovModel, self).__init__(name, name, "")
+
         check_arg(ode, ODE, 1)
 
         if len(states) < 2:
@@ -279,15 +284,17 @@ class MarkovModel(object):
         if algebraic_sum is not None:
             check_arg(algebraic_sum, scalars)
         self._algebraic_sum = algebraic_sum
+        self._algebraic_expr = None
+        self._algebraic_name = None
 
-        self._name = name
         self._ode = ode
         self._is_finalized = False
 
         # Check states kwargs
         state_sum = 0.0
-        for name, init in states.items():
-            check_kwargs(init, name, scalars)
+        for stat_name, init in states.items():
+            # FIXME: Allow Parameter as init
+            check_kwargs(init, stat_name, scalars)
             state_sum += init
 
         # Check algebraic sum agains initial values
@@ -297,37 +304,37 @@ class MarkovModel(object):
                       "the initial state values ")
             
             # Find the state which will be excluded from the states
-            for name in states:
-                if "O" not in name:
+            for stat_name in states:
+                if "O" not in stat_name:
                     break
 
-            algebraic_state = name
+            algebraic_name = stat_name
         else:
-            algebraic_state = ""
+            algebraic_name = ""
 
         # Add states to ode
         collected_states = ODEObjectList()
         for name, init in states.items():
 
             # If we are not going to add the state
-            if name == algebraic_state:
+            if name == algebraic_name:
                 continue
-            
-            sym = ode.add_state(name, init, component=name)
+
+            # Add a slaved state
+            sym = ode.add_state(name, init, component=name, slaved=True)
             collected_states.append(ode.get_object(sym))
 
         # Add an intermediate for the algebraic state
         if self._algebraic_sum is not None:
-            sym = ode.add_intermediate(algebraic_state, 1 - reduce(\
-                lambda x,y:x+y, (state.sym for state in collected_states), 0))
-            inter_obj = ode.get_object(sym)
-            collected_states.append(inter_obj)
+            self._algebraic_expr = 1 - reduce(lambda x,y:x+y, \
+                                (state.sym for state in collected_states), 0)
+            self._algebraic_name = algebraic_name
         
         # Store state attributes
         self._states = collected_states
 
         # Rate attributes
-        self._rates = {}
+        self._rates = OrderedDict()
 
     def __setitem__(self, states, rate):
         """
@@ -426,10 +433,6 @@ class MarkovModel(object):
     @property
     def is_finalized(self):
         return self._is_finalized
-
-    @property
-    def name(self):
-        return self._name
 
     @property
     def num_states(self):

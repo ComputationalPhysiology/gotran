@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2012-12-12"
+__date__ = "2012-05-07 -- 2012-12-17"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -61,9 +61,6 @@ class Creation(unittest.TestCase):
         Test copletness of an ODE
         """
         self.assertTrue(self.ode.is_complete)
-        
-        ode = ODE("panfilov")
-        self.assertTrue(ode.is_empty)
         
     def test_members(self):
         """
@@ -131,7 +128,7 @@ class Creation(unittest.TestCase):
             self.assertTrue(np.sum(np.abs((dy_jit-dy_correct))) < 1e-12)
             
             
-    def xtest_matlab_python_code(self):
+    def test_matlab_python_code(self):
         from gotran.codegeneration.codegenerator import \
              MatlabCodeGenerator, ODERepresentation
         

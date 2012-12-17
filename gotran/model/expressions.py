@@ -30,7 +30,7 @@ class Expression(ValueODEObject):
     """
     class for all expressions such as intermediates and diff 
     """
-    def __init__(self, name, expr, ode, component=""):
+    def __init__(self, name, expr, ode, component="", slaved=False):
         """
         Create an Exression with an assosciated name
 
@@ -44,6 +44,9 @@ class Expression(ValueODEObject):
             The ODE which the expression is declared within
         component : str (optional)
             A component for which the Expression should be associated with.
+        slaved : bool
+            If True the creation and differentiation is controlled by
+            other entity, like a Markov model.
         """
 
         # Check arguments
@@ -80,7 +83,7 @@ class Expression(ValueODEObject):
                 intermediate_objects.append(dep_obj)
 
         # Call super class with expression as the "value"
-        super(Expression, self).__init__(name, expr, component, ode.name)
+        super(Expression, self).__init__(name, expr, component, ode.name, slaved)
 
         # Create and store expanded expression
         timer = Timer("subs")
@@ -240,9 +243,11 @@ class DerivativeExpression(Expression):
             # No derivative expression, use component passed to
             # constructor
             pass
+
+        slaved = any(der.state.slaved for der in stripped_derivatives)
         
         # Call super class with expression as the "init" value
-        super(DerivativeExpression, self).__init__(name, expr, ode, component)
+        super(DerivativeExpression, self).__init__(name, expr, ode, component, slaved)
 
     @property
     def num_derivatives(self):
@@ -279,7 +284,7 @@ class Intermediate(Expression):
     """
     class for all Intermediates 
     """
-    def __init__(self, name, expr, ode, component=""):
+    def __init__(self, name, expr, ode, component="", slaved=False):
         """
         Create an Intermediate with an assosciated name
 
@@ -293,8 +298,11 @@ class Intermediate(Expression):
             The expanded verision of the intermediate 
         component : str (optional)
             A component for which the Intermediate should be associated with.
+        slaved : bool
+            If True the creation and differentiation is controlled by
+            other entity, like a Markov model.
         """
 
         # Call super class with expression as the "init" value
-        super(Intermediate, self).__init__(name, expr, ode, component)
+        super(Intermediate, self).__init__(name, expr, ode, component, slaved)
 

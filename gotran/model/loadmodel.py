@@ -292,6 +292,28 @@ def _namespace_binder(namespace, ode, load_arguments):
             else:
                 namespace[key] = load_arguments[key]
 
+    def markov_model(name, algrebraic_sum=None, **states):
+        """        
+        Initalize a Markov model
+
+        Arguments
+        ---------
+        name : str
+            Name of Markov model
+        algebraic_sum : scalar (optional)
+            If the algebraic sum of all states should be constant,
+            give the value here.
+        states : dict
+            A dict with all states defined in this Markov model
+        """
+
+        # Create Markov model
+        mm = ode.add_markov_model(name, algrebraic_sum=None, **states)
+
+        # Add symbols to namespace
+        for state in mm._states:
+            namespace[state.name] = state.sym
+
     # Update provided namespace
     namespace.update(dict(
         states=states,
