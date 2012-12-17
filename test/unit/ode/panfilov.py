@@ -23,7 +23,7 @@ class Creation(unittest.TestCase):
         ode.add_parameter("time_constant", 1.0)
         
         # Local Python variables
-        ode.a = 0.1
+        a = 0.1
         ode.gs = 8.0
         ode.ga = ode.gs
         ode.M1 = 0.07
@@ -36,8 +36,8 @@ class Creation(unittest.TestCase):
         
         # Time differentials
         ode.de_dt = -ode.time_constant*(ode.v_peak - ode.v_rest)*\
-                 (ode.ga*ode.E*(ode.E - ode.a)*(ode.E-1) + ode.E*ode.g)
-        ode.dg_dt = 0.25*ode.time_constant*ode.eps*(-ode.g - ode.gs*ode.e*(ode.E-ode.a-1))
+                 (ode.ga*ode.E*(ode.E - a)*(ode.E-1) + ode.E*ode.g)
+        ode.dg_dt = 0.25*ode.time_constant*ode.eps*(-ode.g - ode.gs*ode.e*(ode.E-a-1))
         
         self.ode = ode
         assert(ode.is_complete)

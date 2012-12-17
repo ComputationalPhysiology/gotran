@@ -18,7 +18,9 @@
 __all__ = ["load_ode", "exec_ode"]
 
 # System imports
+import inspect
 import os
+import re
 from collections import OrderedDict
 
 # modelparameters import
@@ -29,6 +31,9 @@ from modelparameters.sympytools import sp_namespace, sp, ModelSymbol
 # gotran imports
 from gotran.common import *
 from gotran.model.ode import ODE
+
+_for_template = re.compile("for.*in .*:\n")
+_no_intermediate_template = re.compile(".*# NO INTERMEDIATE.*\n")
 
 class IntermediateDispatcher(dict):
     """
@@ -44,17 +49,33 @@ class IntermediateDispatcher(dict):
         self._ode = ode
 
     def __setitem__(self, name, value):
-        
+
         # Set the attr of the ODE
         if isinstance(value, scalars) or (isinstance(value, sp.Basic) and \
                                           any(isinstance(atom, ModelSymbol)\
                                               for atom in value.atoms())):
 
-            # Add intermediate
-            sym = self._ode.add_intermediate(name, value)
+            # Get source which triggers the insertion to the global namespace
+            frame = inspect.currentframe().f_back
+            lines, lnum = inspect.findsource(frame)
+            code = lines[frame.f_lineno-1]
+
+            # Check if the line includes a for statement
+            if re.search(_for_template, code) or \
+                   re.search(_no_intermediate_template, code):
+
+                debug("Not registering '{0}' as an intermediate.".format(name))
+                # If so just add the value to the namespace without
+                # registering the intermediate
+                dict.__setitem__(self, name, value)
+                
+            else:
+                
+                # Add intermediate
+                sym = self._ode.add_intermediate(name, value)
         
-            # Populate the name space with symbol attribute
-            dict.__setitem__(self, name, sym)
+                # Populate the name space with symbol attribute
+                dict.__setitem__(self, name, sym)
         else:
 
             # If no ode attr was generated we just add the value to the

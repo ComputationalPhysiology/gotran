@@ -9,7 +9,7 @@ parameters(v_rest=-85.0,
            time_constant=1.0)
 
 # Local Python variables
-a = 0.1
+a = 0.1  # NO INTERMEDIATE
 gs = 8.0
 ga = gs
 M1 = 0.07
