@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2012-12-17"
+__date__ = "2012-05-07 -- 2012-12-18"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -32,9 +32,22 @@ class Creation(unittest.TestCase):
                        LTRPNCa=5.5443e-3, HTRPNCa=136.64e-3)
         ode.add_states("RyR Channel",
                        C1_RyR=0.4929, O1_RyR=6.027e-4, O2_RyR=2.882e-9, C2_RyR=0.5065)
+
         ode.add_states("L-type Ca Channel", 
-                       C0=0.99802, C1=1.9544e-6, C2=0, C3=0, C4=0, Open=0,
-                       CCa0=1.9734e-3, CCa1=0, CCa2=0, CCa3=0, CCa4=0, yCa=0.7959)
+                       yCa=0.7959)
+        
+        lcc = ode.add_markov_model("lcc", "L-type Ca Channel", algebraic_sum=1.0,
+                                   C0=0.99802,
+                                   C1=4.6456e-6,
+                                   C2=1.9544e-6,
+                                   C3=0,
+                                   C4=0,
+                                   Open=0,
+                                   CCa0=1.9734e-3,
+                                   CCa1=0,
+                                   CCa2=0,
+                                   CCa3=0,
+                                   CCa4=0)
 
         ode.add_parameters("Cell geometry",
                            ist=0,
@@ -127,7 +140,7 @@ class Creation(unittest.TestCase):
                            gL     = 2.0,
                            bL     = 2.0,
                            aL     = 2.0,
-                           omega   = 0.01,
+                           omega  = 0.01,
                            PCa = 3.125e-4,
                            PK  = 5.79e-7,
                            ICahalf= -0.265,
@@ -260,85 +273,30 @@ class Creation(unittest.TestCase):
         
         ode.alpha      = 0.4*exp((ode.V+2.0)/10.0)
         ode.beta       = 0.05*exp(-(ode.V+2.0)/13.0)
-        ode.alpha_prime = ode.alpha * ode.aL
-        ode.beta_prime  = ode.beta/ode.bL
         ode.gamma = 0.10375*ode.Ca_ss
 
-        ode.C0_to_C1 = 4.e0*ode.alpha
-        ode.C1_to_C2 = 3.e0*ode.alpha
-        ode.C2_to_C3 = 2.e0*ode.alpha
-        ode.C3_to_C4 =      ode.alpha
+        # Help list of LCC closed state variables
+        normal_mode_states = [ode.C0, ode.C1, ode.C2, ode.C3, ode.C4]
+        Ca_mode_states = [ode.CCa0, ode.CCa1, ode.CCa2, ode.CCa3, ode.CCa4]
         
-        ode.CCa0_to_CCa1 = 4.e0*ode.alpha_prime
-        ode.CCa1_to_CCa2 = 3.e0*ode.alpha_prime
-        ode.CCa2_to_CCa3 = 2.e0*ode.alpha_prime
-        ode.CCa3_to_CCa4 =      ode.alpha_prime
+        for ind, (s0, s1) in enumerate(zip(normal_mode_states[:-1], \
+                                           normal_mode_states[1:])):
+            lcc[s0, s1] = (4-ind)*ode.alpha
+            lcc[s1, s0] = (1+ind)*ode.beta
         
-        ode.C1_to_C0 =      ode.beta
-        ode.C2_to_C1 = 2.e0*ode.beta
-        ode.C3_to_C2 = 3.e0*ode.beta
-        ode.C4_to_C3 = 4.e0*ode.beta
+        for ind, (s0, s1) in enumerate(zip(Ca_mode_states[:-1], \
+                                           Ca_mode_states[1:])):
+            lcc[s0, s1] = (4-ind)*ode.alpha*ode.aL
+            lcc[s1, s0] = (1+ind)*ode.beta/ode.bL
         
-        ode.CCa1_to_CCa0 =      ode.beta_prime
-        ode.CCa2_to_CCa1 = 2.e0*ode.beta_prime
-        ode.CCa3_to_CCa2 = 3.e0*ode.beta_prime
-        ode.CCa4_to_CCa3 = 4.e0*ode.beta_prime
-        		
-        ode.gamma =   0.10375e0*ode.Ca_ss
+        for ind, (normal, Ca_mode) in enumerate(zip(normal_mode_states, \
+                                                    Ca_mode_states)):
         
-        ode.C0_to_CCa0 = ode.gamma		
-        ode.C1_to_CCa1 = ode.aL*ode.C0_to_CCa0	
-        ode.C2_to_CCa2 = ode.aL*ode.C1_to_CCa1	
-        ode.C3_to_CCa3 = ode.aL*ode.C2_to_CCa2	
-        ode.C4_to_CCa4 = ode.aL*ode.C3_to_CCa3	
-        		
-        ode.CCa0_to_C0 = ode.omega		
-        ode.CCa1_to_C1 = ode.CCa0_to_C0/ode.bL	
-        ode.CCa2_to_C2 = ode.CCa1_to_C1/ode.bL	
-        ode.CCa3_to_C3 = ode.CCa2_to_C2/ode.bL	
-        ode.CCa4_to_C4 = ode.CCa3_to_C3/ode.bL	
-        
-        ode.a1 = (ode.C0_to_C1+ode.C0_to_CCa0)*ode.C0
-        ode.a2 = ode.C1_to_C0*ode.C1 + ode.CCa0_to_C0*ode.CCa0
-        ode.dC0 = ode.a2 - ode.a1
-        
-        ode.a1 = (ode.C1_to_C0+ode.C1_to_C2+ode.C1_to_CCa1)*ode.C1
-        ode.a2 = ode.C0_to_C1*ode.C0 + ode.C2_to_C1*ode.C2 + ode.CCa1_to_C1*ode.CCa1
-        ode.dC1 = ode.a2 - ode.a1
-        
-        ode.a1 = (ode.C2_to_C1+ode.C2_to_C3+ode.C2_to_CCa2)*ode.C2
-        ode.a2 = ode.C1_to_C2*ode.C1 + ode.C3_to_C2*ode.C3 + ode.CCa2_to_C2*ode.CCa2
-        ode.dC2 = ode.a2 - ode.a1
-        
-        ode.a1 = (ode.C3_to_C2+ode.C3_to_C4+ode.C3_to_CCa3)*ode.C3
-        ode.a2 = ode.C2_to_C3*ode.C2 + ode.C4_to_C3*ode.C4 + ode.CCa3_to_C3*ode.CCa3
-        ode.dC3 = ode.a2 - ode.a1
-        
-        ode.a1 = (ode.C4_to_C3+ode.fL+ode.C4_to_CCa4)*ode.C4
-        ode.a2 = ode.C3_to_C4*ode.C3 + ode.gL*ode.Open + ode.CCa4_to_C4*ode.CCa4
-        ode.dC4 = ode.a2 - ode.a1
-        
-        ode.dOpen =  ode.fL*ode.C4 - ode.gL*ode.Open
-        
-        ode.a1 = (ode.CCa0_to_CCa1+ode.CCa0_to_C0)*ode.CCa0
-        ode.a2 = ode.CCa1_to_CCa0*ode.CCa1 + ode.C0_to_CCa0*ode.C0
-        ode.dCCa0 = ode.a2 - ode.a1
-        
-        ode.a1 = (ode.CCa1_to_CCa0+ode.CCa1_to_CCa2+ode.CCa1_to_C1)*ode.CCa1
-        ode.a2 = ode.CCa0_to_CCa1*ode.CCa0 + ode.CCa2_to_CCa1*ode.CCa2 + ode.C1_to_CCa1*ode.C1
-        ode.dCCa1 = ode.a2 - ode.a1
-        
-        ode.a1 = (ode.CCa2_to_CCa1+ode.CCa2_to_CCa3+ode.CCa2_to_C2)*ode.CCa2
-        ode.a2 = ode.CCa1_to_CCa2*ode.CCa1 + ode.CCa3_to_CCa2*ode.CCa3 + ode.C2_to_CCa2*ode.C2
-        ode.dCCa2 = ode.a2 - ode.a1
-        
-        ode.a1 = (ode.CCa3_to_CCa2+ode.CCa3_to_CCa4+ode.CCa3_to_C3)*ode.CCa3
-        ode.a2 = ode.CCa2_to_CCa3*ode.CCa2 + ode.CCa4_to_CCa3*ode.CCa4 + ode.C3_to_CCa3*ode.C3
-        ode.dCCa3 = ode.a2 - ode.a1
-        
-        ode.a1 = (ode.CCa4_to_CCa3+ode.CCa4_to_C4)*ode.CCa4
-        ode.a2 = ode.CCa3_to_CCa4*ode.CCa3 + ode.C4_to_CCa4*ode.C4
-        ode.dCCa4 = ode.a2 - ode.a1
+            lcc[normal, Ca_mode] = ode.gamma*ode.aL**ind
+            lcc[Ca_mode, normal] = ode.omega/ode.bL**ind
+            
+        lcc[ode.C4, ode.Open] = ode.fL
+        lcc[ode.Open, ode.C4] = ode.gL
         
         ode.yCa_inf = 0.80/(1.0+exp((ode.V + 12.5)/5.0)) + 0.2
         ode.tau_yCa = 20.0 + 600.0 / (1.0 + exp((ode.V+20.0)/9.50))
@@ -396,8 +354,6 @@ class Creation(unittest.TestCase):
         #a2 = 0
         ode.beta_i = 1.0/(1.0+ode.a1)#+a2)
         
-        ode.add_comment("The ODE system")
-
         ode.dV_dt = -(ode.I_Na+ode.I_Ca+ode.I_CaK+ode.I_Kr+ode.I_Ks+ode.I_to+ode.I_ti+ode.I_Kp+ode.I_NaCa+ode.I_NaK+ode.I_pCa+ode.I_bCa+ode.I_bNa+ode.ist)
         ode.dm_dt = Conditional(Ge(ode.V, -90), ode.a_m*(1-ode.m)-ode.b_m*ode.m, 0.0)
         ode.dh_dt = ode.a_h*(1-ode.h)-ode.b_h*ode.h
@@ -415,17 +371,6 @@ class Creation(unittest.TestCase):
         ode.dO1_RyR_dt = ode.dO1_RyR
         ode.dO2_RyR_dt = ode.dO2_RyR
         ode.dC2_RyR_dt = ode.dC2_RyR
-        ode.dC0_dt = ode.dC0
-        ode.dC1_dt = ode.dC1
-        ode.dC2_dt = ode.dC2
-        ode.dC3_dt = ode.dC3
-        ode.dC4_dt = ode.dC4
-        ode.dOpen_dt = ode.dOpen
-        ode.dCCa0_dt = ode.dCCa0
-        ode.dCCa1_dt = ode.dCCa1
-        ode.dCCa2_dt = ode.dCCa2
-        ode.dCCa3_dt = ode.dCCa3
-        ode.dCCa4_dt = ode.dCCa4
         ode.dyCa_dt = ode.dyCa
         ode.dLTRPNCa_dt = ode.dLTRPNCa
         ode.dHTRPNCa_dt = ode.dHTRPNCa
@@ -442,45 +387,6 @@ class Creation(unittest.TestCase):
         self.assertTrue(ode == self.ode)
         self.assertNotEqual(id(ode), id(self.ode))
         
-        ode = load_ode("winslow", small_change=True)
-
-        # FIXME: Comment in when comparison works
-        #self.assertFalse(ode == self.ode)
-
-    #def test_attributes(self):
-    #    """
-    #    Test ODE definition using attributes
-    #    """
-    #    ode = ODE("winslow2")
-    #    ode.clear()
-    #    
-    #    # States
-    #    ode.add_state("e", 0.0)
-    #    ode.add_state("g", 0.0)
-    #    
-    #    # parameters
-    #    ode.add_parameter("v_rest", -85.0)
-    #    ode.add_parameter("v_peak", 35.0)
-    #    ode.add_parameter("time_constant", 1.0)
-    #    
-    #    # Local Python variables
-    #    a = 0.1
-    #    gs = 8.0
-    #    ga = gs
-    #    M1 = 0.07
-    #    M2 = 0.3
-    #    eps1 = 0.01
-    #    
-    #    # Local compuations
-    #    E = (ode.e-ode.v_rest)/(ode.v_peak-ode.v_rest)
-    #    eps = eps1 + M1*ode.g/(ode.e+M2)
-    #    
-    #    ode.diff(ode.e, -ode.time_constant*(ode.v_peak-ode.v_rest)*\
-    #             (ga*E*(E-a)*(E-1) + E*ode.g))
-    #    ode.diff(ode.g, 0.25*ode.time_constant*eps*(-ode.g - gs*ode.e*(E-a-1)))
-    #
-    #    self.assertTrue(ode == self.ode)
-
     def test_completness(self):
         """
         Test copletness of an ODE
@@ -494,7 +400,7 @@ class Creation(unittest.TestCase):
         ode = self.ode
         states = ["V", "m", "h", "j", "xKr", "xKs", "xto1", "yto1", "K_i", "Ca_i", \
                   "Ca_NSR", "Ca_ss", "Ca_JSR", "C1_RyR", "O1_RyR", "O2_RyR", \
-                  "C2_RyR", "C0", "C1", "C2", "C3", "C4", "Open", "CCa0", "CCa1", \
+                  "C2_RyR", "C1", "C2", "C3", "C4", "Open", "CCa0", "CCa1", \
                   "CCa2", "CCa3", "CCa4", "yCa", "LTRPNCa", "HTRPNCa"]
 
         parameters = ["ist", "C_sc", "A_cap", "V_myo", "V_JSR", "V_NSR", "V_ss", \
@@ -650,12 +556,12 @@ class Creation(unittest.TestCase):
                            external_component_dep=['Intracellular Ca']),
 
                       "L-type Ca Channel":
-                      dict(states=['C0', 'C1', 'C2', 'C3', 'C4', 'CCa0', 'CCa1',
+                      dict(states=['C1', 'C2', 'C3', 'C4', 'CCa0', 'CCa1',
                                    'CCa2', 'CCa3', 'CCa4', 'Open', 'yCa'],
                            parameters=['ICahalf', 'PCa', 'PK', 'aL', 'bL', 'fL',
                                        'gL', 'omega'],
                            variables=[],
-                           intermediates=['alpha', 'beta', 'alpha_prime', 'beta_prime',
+                           intermediates=['C0', 'alpha', 'beta', 'alpha_prime', 'beta_prime',
                             'gamma', 'C0_to_C1', 'C1_to_C2', 'C2_to_C3', 'C3_to_C4',
                             'CCa0_to_CCa1', 'CCa1_to_CCa2', 'CCa2_to_CCa3',
                             'CCa3_to_CCa4', 'C1_to_C0', 'C2_to_C1', 'C3_to_C2',
@@ -779,7 +685,8 @@ class Creation(unittest.TestCase):
                          "external_object_dep", "external_component_dep"]:
                 for obj in getattr(ode.components[comp_name], what):
                     if isinstance(obj, ODEObject):
-                        self.assertTrue(obj.name in dep[what])
+                        self.assertTrue(obj.name in dep[what], \
+                                        msg="{0}!={1}".format(obj.name,dep[what]))
                     elif isinstance(obj, str):
                         self.assertTrue(obj in dep[what])
                     else:
@@ -819,7 +726,6 @@ class Creation(unittest.TestCase):
 
         ode_subode = load_ode("winslow_subode")
         self.assertTrue(ode==ode_subode)
-        
         
     def xtest_python_code_gen(self):
         """

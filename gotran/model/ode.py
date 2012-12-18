@@ -24,6 +24,7 @@ from collections import OrderedDict, deque
 # ModelParameter imports
 from modelparameters.sympytools import ModelSymbol, sp, sp_namespace
 from modelparameters.codegeneration import sympycode
+from modelparameters.parameters import ScalarParam
 
 # Gotran imports
 from gotran.common import type_error, value_error, error, check_arg, \
@@ -77,6 +78,7 @@ class ODE(object):
         self._present_component = self._default_component
         self._components = OrderedDict()
         self._components[name] = self._default_component
+        self._components_set = []
         
         self.clear()
 
@@ -274,7 +276,7 @@ class ODE(object):
             # Register the expanded monitored intermediate
             self._monitored_intermediates[name] = obj
 
-    def add_markov_model(self, name, algrebraic_sum=None, **states):
+    def add_markov_model(self, name, component="", algebraic_sum=None, **states):
         """        
         Initalize a Markov model
 
@@ -282,6 +284,8 @@ class ODE(object):
         ---------
         name : str
             Name of Markov model
+        component : str (optional)
+            Add state to a particular component
         algebraic_sum : scalar (optional)
             If the algebraic sum of all states should be constant,
             give the value here.
@@ -290,36 +294,18 @@ class ODE(object):
         """
 
         # Create and store the markov model
-        mm = MarkovModel(name, self, algebraic_sum, **states)
-        self._markov_models.append(mm)
-        self._intermediates.append(mm)
-
-        # Add algebraic state to intermediates
-        if self._algebraic_name is not None:
-            
-            # Add a slaved intermediate. Slaved here means that it will be
-            # registered globally bu controlled by the MarkovModel
-            sym = self.add_intermediate(mm._algebraic_name,
-                                        mm._algebraic_expr,
-                                        slaved=True)
-            mm._states.append(self._intermediates[-1])
+        mm = MarkovModel(name, self, component=component, \
+                         algebraic_sum=algebraic_sum, **states)
         
-        # Register Markov model in component
-        comp = self._components.get(mm.component)
-        if comp is None:
-            comp = ODEComponent(mm.component, self)
-            self._components[mm.component] = comp
+        self._markov_models.append(mm)
 
-        # Update present component
-        self._present_component = comp
-
-        # Add to component
-        self._present_component.append(mm)
+        # Register Markov model
+        self._register_object(mm)
 
         # Return the markov model
         return mm
         
-    def add_intermediate(self, name, expr, slaved=False):
+    def add_intermediate(self, name, expr, component=None, slaved=False):
         """
         Register an intermediate
 
@@ -328,17 +314,21 @@ class ODE(object):
         name : str
             The name of the Intermediate
         expr : sympy.Basic
-            The expression 
+            The expression
+        component : str (optional)
+            A component name. If not given the present component will be used.
         slaved : bool
             If True the creation and differentiation is controlled by
             other entity, like a Markov model.
         """
 
         timer = Timer("Add intermediate")
+
+        component_name = component if component else \
+                         self._present_component.name
         
         # Create an intermediate in the present component
-        intermediate = Intermediate(name, expr, self, \
-                                    self._present_component.name, slaved)
+        intermediate = Intermediate(name, expr, self, component_name, slaved)
 
         # Check for existing object
         dup_obj = self._all_single_ode_objects.get(name)
@@ -435,6 +425,28 @@ class ODE(object):
         # Collect prefixed states and parameters to be used to substitute
         # the intermediate and derivative expressions
         prefix_subs = {}
+
+        # Add Markov models
+        markov_model_actions = []
+        for mm in ode.markov_models:
+            
+            # FIXME: Allow propagating of Parameter information
+            mm_states = {}
+            for state in mm.states:
+                prefix_subs[state.sym] = ModelSymbol(prefix+state.name, self.name)
+                param_repr = repr(state.param).replace("Slave", "Scalar")
+                param_repr = param_repr.split(", name=")[0] + ")"
+                mm_states[prefix+state.name] = eval(param_repr)
+            
+            obj = self.add_markov_model(prefix+mm.name, mm.component,
+                                        mm._algebraic_sum, **mm_states)
+
+            # Add rates (to be added later)
+            for mm_states, expr in mm._rates.items():
+                markov_model_actions.append((obj, mm_states, expr.expr))
+
+            # Update namespace
+            ns.update((state.name, state.sym) for state in obj.states)
         
         # Add prefixed states
         for state in ode.states:
@@ -501,17 +513,6 @@ class ODE(object):
                 self.set_component(intermediate.name)
             elif isinstance(intermediate, Comment):
                 self.add_comment(intermediate.name)
-            elif isinstance(intermediate, MarkovModel):
-                # FIXME: Allow propagating of Parameter information
-                states = dict((state.name, state.value) \
-                              for state in intermediate.states)
-                mm = self.add_markov_model(intermediate.name, \
-                                           intermediate._algebraic_sum,
-                                           **states)
-
-                # Add rates
-                for states, expr in intermediate._rates.items():
-                    mm[states] = expr.expr
 
             # Do not add slaved intermediates
             elif intermediate.slaved:
@@ -530,6 +531,17 @@ class ODE(object):
                                             intermediate.expr.subs(subs_list))
                 ns[intermediate.name] = sym
         
+        # Add all rates for the markov models
+        for mm, states, expr in markov_model_actions:
+            if prefix != "":
+                subs_list = []
+                for sym in iter_symbol_params_from_expr(expr):
+                    if sym in prefix_subs:
+                        subs_list.append((sym, prefix_subs[sym]))
+                expr = expr.subs(subs_list)
+            
+            mm[states] = expr
+
         # Add derivatives
         for derivative in ode._derivative_expressions:
 
@@ -561,12 +573,18 @@ class ODE(object):
         """
         check_arg(component, str, 0, ODE.set_component)
 
+        if component in self._components_set:
+            error("Component can only be set once per ODE")
+
         # Check if component is already registered
         comp = self._components.get(component)
         if comp is None:
             comp = ODEComponent(component, self)
             self._components[component] = comp
         self._present_component = comp
+
+        # Register that this component has been set
+        self._components_set.append(comp.name)
 
         # Update list of intermediates
         self._intermediates.append(comp)
@@ -668,19 +686,55 @@ class ODE(object):
             The basename of the file which the ode will be saved to
         """
         from modelparameters.codegeneration import sympycode
-        
+        from gotran.codegeneration.codegenerator import CodeGenerator
+
         if not self.is_complete:
             error("ODE need to be complete to be saved to file.")
 
         lines = []
 
+        # Add Markov models
+        markov_model_actions = dict()
+
         # Write all States, Parameters and Variables
         for comp in self.components.values():
 
+            # Markov models
+            if comp.markov_models:
+                for mm in comp.markov_models:
+                    lines.append("markov_model(\"{0}\", \"{1}\",{2}".format(\
+                        mm.name, mm.component, \
+                        "" if mm._algebraic_sum is None else \
+                        " algebraic_sum={0},".format(mm._algebraic_sum)))
+
+                    # Add states
+                    for state in sorted(mm.states, \
+                                        lambda x,y:cmp(x.name, y.name)):
+                        
+                        # Get param repr and replace possible Slave with Scalar
+                        param_repr = repr(state.param).replace("Slave", \
+                                                               "Scalar")
+                        param_repr = param_repr.split(", name=")[0] + ")"
+                        lines.append("             {0}={1},".format(\
+                            state.name, param_repr))
+
+                    lines[-1] += ")"
+                    lines.append("")
+
+                    # Add the actions, to be added later
+                    markov_model_actions[mm.component] = []
+                    for states, expr in mm._rates.items():
+                        markov_model_actions[mm.component].append((\
+                            mm.name, states, expr.expr))
+
             # States
             if comp.states:
+
                 lines.append("states(\"{0}\", ".format(comp.name))
                 for state in comp.states.values():
+
+                    if state.slaved:
+                        continue
 
                     # Param repr and strip name and symname
                     param_repr = repr(state.param)
@@ -694,6 +748,9 @@ class ODE(object):
             if comp.parameters:
                 lines.append("parameters(\"{0}\", ".format(comp.name))
                 for param in comp.parameters.values():
+
+                    if param.slaved:
+                        continue
 
                     # Param repr and strip name and symname
                     param_repr = repr(param.param)
@@ -718,6 +775,9 @@ class ODE(object):
                            ["time", "dt"]:
                         continue
                     
+                    if variable.slaved:
+                        continue
+
                     # Param repr and strip name and symname
                     param_repr = repr(variable.param)
                     param_repr = param_repr.split(", name=")[0] + ")"
@@ -727,30 +787,57 @@ class ODE(object):
                 lines.append("")
 
         # Write all Intermediates
+        present_component = None
         for intermediate in self.intermediates:
 
             if isinstance(intermediate, ODEComponent):
+
+                # Add Markov model rates at end of component
+                if present_component in markov_model_actions:
+                    lines.append("")
+                    mm_actions = markov_model_actions.pop(present_component)
+                    for mm, states, expr in mm_actions:
+                        lines.append("{0}[{1}, {2}] = {3}".format(\
+                            mm, states[0], states[1], sympycode(expr)))
+
+                # Add next component
                 lines.append("")
                 lines.append("component(\"{0}\")".format(intermediate.name))
+                present_component = intermediate.name
+                
             elif isinstance(intermediate, Comment):
                 lines.append("comment(\"{0}\")".format(intermediate.name))
+
             elif isinstance(intermediate, Intermediate):
-                lines.append(sympycode(intermediate.expr, intermediate.name))
+                if not intermediate.slaved:
+                    lines.append(sympycode(intermediate.expr, \
+                                           intermediate.name))
                 
+        # Add any Markov models that is left
+        for mm_actions in markov_model_actions.values():
+            lines.append("")
+            for mm, states, expr in mm_actions:
+                lines.append("{0}[{1}, {2}] = {3}".format(\
+                    mm, states[0], states[1], sympycode(expr)))
+
         lines.append("")
 
         # Write all Derivatives
-        for comp in self.components.values():
-            if not comp.derivatives:
-                continue
-            for der in comp.derivatives:
-                if der.num_derivatives == 1:
-                    lines.append(sympycode(der.expr, der.name))
-                else:
-                    lines.append("diff({0}, {1})".format(der.name, der.expr))
+        for der in self._derivative_expressions:
 
+            # Do not write slaved derivatives
+            if der.slaved:
+                continue
+            
+            if der.num_derivatives == 1:
+                lines.append(sympycode(der.expr, der.name))
+            else:
+                lines.append("diff({0}, {1})".format(der.name, der.expr))
+
+        # Use Python code generator to indent outputted code
         # Write to file
-        open(basename+".ode", "w").write("\n".join(lines))
+        open(basename+".ode", "w").write("\n".join(\
+            CodeGenerator.indent_and_split_lines(lines)))
 
     def extract_components(self, name, *components):
         """
@@ -804,16 +891,18 @@ class ODE(object):
                 intermediates.append(intermediate)
 
         # Collect states, parameters and derivatives
-        states, parameters, derivatives, variables = ODEObjectList(), \
-                            ODEObjectList(), ODEObjectList(), ODEObjectList()
+        states, parameters, derivatives, variables, markov_models = \
+                ODEObjectList(), ODEObjectList(), ODEObjectList(), \
+                ODEObjectList(), ODEObjectList()
         external_object_dep = set()
         for comp in collected_components:
+            markov_models.extend(comp.markov_models)
             states.extend(comp.states.values())
             parameters.extend(comp.parameters.values())
             variables.extend(comp.variables.values())
             derivatives.extend(comp.derivatives)
             external_object_dep.update(comp.external_object_dep)
-            
+
         # Check for dependencies
         for obj in external_object_dep:
             if (obj not in states) and (obj not in parameters) and \
@@ -826,6 +915,22 @@ class ODE(object):
 
         # Create return ODE
         ode = ODE(name)
+
+        # Add Markov models
+        markov_model_actions = []
+        for mm in markov_models:
+
+            # FIXME: Allow propagating of Parameter information
+            mm_states = dict((state.name, state.value) \
+                             for state in mm.states)
+            ode.add_markov_model(mm.name, mm.component, mm._algebraic_sum,
+                                 **mm_states)
+
+            obj = ode.get_object(mm.name)
+
+            # Add rates
+            for mm_states, expr in mm._rates.items():
+                markov_model_actions.append((obj, mm_states, expr.expr))
 
         # Add states
         for state in states:
@@ -841,7 +946,7 @@ class ODE(object):
         for param in parameters:
 
             # Do not add slaved parameters
-            if state.slaved:
+            if param.slaved:
                 continue
             
             ode.add_parameter(param.name, param.init, param.component)
@@ -850,11 +955,12 @@ class ODE(object):
         for variable in variables:
 
             # Do not add slaved variables
-            if state.slaved:
+            if variable.slaved:
                 continue
             
             if variable.name in ["time", "dt"]:
                 continue
+            
             ode.add_variable(variable.name, variable.init, variable.component)
 
         # Add intermediates
@@ -864,18 +970,6 @@ class ODE(object):
                 ode.set_component(intermediate.name)
             elif isinstance(intermediate, Comment):
                 ode.add_comment(intermediate.name)
-            elif isinstance(intermediate, MarkovModel):
-
-                # FIXME: Allow propagating of Parameter information
-                states = dict((state.name, state.value) \
-                              for state in intermediate.states)
-                mm = ode.add_markov_model(intermediate.name, \
-                                          intermediate._algebraic_sum,
-                                          **states)
-
-                # Add rates
-                for states, expr in intermediate._rates.items():
-                    mm[states] = expr.expr
 
             # Do not add slaved intermediates
             elif intermediate.slaved:
@@ -883,6 +977,10 @@ class ODE(object):
             else:
                 ode.add_intermediate(intermediate.name,\
                                      intermediate.expr)
+
+        # Add all rates for the markov models
+        for mm, states, expr in markov_model_actions:
+            mm[states] = expr
 
         # Add derviatives
         for derivative in derivatives:
@@ -894,7 +992,7 @@ class ODE(object):
 
         # Finalize the ode before returning it
         ode.finalize()
-
+        
         # Return the ode
         return ode
         
@@ -972,7 +1070,8 @@ class ODE(object):
         """
         
         timer = Timer("Register obj")
-        assert(isinstance(obj, (State, Parameter, Variable, StateDerivative)))
+        assert(isinstance(obj, (State, Parameter, Variable, StateDerivative, \
+                                MarkovModel)))
 
         # Check for existing object
         dup_obj = self._all_single_ode_objects.get(obj.name) or \
@@ -1011,9 +1110,12 @@ class ODE(object):
         # Register the object
         self._all_single_ode_objects[obj.name] = obj
 
-        # Register the symbol of the Object as an attribute
-        self.__dict__[obj.name] = obj.sym
-
+        # Register the symbol of the Object or just the object as an attribute
+        if isinstance(obj, ValueODEObject):
+            self.__dict__[obj.name] = obj.sym
+        else:
+            self.__dict__[obj.name] = obj
+            
     def __setattr__(self, name, value):
         """
         A magic function which will register intermediates and simpler
@@ -1186,6 +1288,13 @@ class ODE(object):
         return self._intermediates
 
     @property
+    def markov_models(self):
+        """
+        Return a all Markov models
+        """
+        return self._markov_models
+
+    @property
     def monitored_intermediates(self):
         """
         Return an dict over registered monitored intermediates
@@ -1314,6 +1423,10 @@ class ODE(object):
         """
         Check that the ODE is complete
         """
+
+        # Finalize before checking for completness
+        self.finalize()
+        
         states = self._states
 
         timer = Timer("Is complete")
@@ -1323,14 +1436,17 @@ class ODE(object):
 
         if len(states) > self.num_derivative_expr + self.num_algebraic_expr:
             # FIXME: Need a better name instead of xpressions...
+            
+            
             info("The ODE is under determined. The number of States are more "\
-                 "than the number of expressions.")
+                 "than the number of derivative expressions.")
+            
             return False
 
         if len(states) < self.num_derivative_expr + self.num_algebraic_expr:
             # FIXME: Need a better name instead of xpressions...
             info("The ODE is over determined. The number of States are less "\
-                 "than the number of expressions.")
+                 "than the number of derivative expressions.")
             return False
         
         # Grab algebraic states

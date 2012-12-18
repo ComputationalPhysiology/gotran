@@ -23,9 +23,10 @@ from collections import OrderedDict
 # ModelParameters imports
 from modelparameters.sympytools import sp, ModelSymbol, \
      iter_symbol_params_from_expr
+from modelparameters.parameters import ScalarParam
 
 # Local imports
-from gotran.common import error, check_arg, scalars
+from gotran.common import error, check_arg, check_kwarg, scalars
 from gotran.model.odeobjects import *
 
 class Comment(ODEObject):
@@ -80,6 +81,7 @@ class ODEComponent(ODEObject):
         self.variables = OrderedDict()
         self.intermediates = ODEObjectList()
         self.derivatives = ODEObjectList()
+        self.markov_models = ODEObjectList()
 
         # Store external dependencies
         self.external_object_dep = set()
@@ -154,6 +156,8 @@ class ODEComponent(ODEObject):
         elif isinstance(object, Comment):
             self.intermediates.append(obj)
 
+        elif isinstance(obj, MarkovModel):
+            self.markov_models.append(obj)
         else:
             error("Not recognised ODEObject: {0}".format(\
                 type(obj).__name__))
@@ -256,7 +260,7 @@ class MarkovModel(ODEObject):
     """
     A Markov model class
     """
-    def __init__(self, name, ode, algrebraic_sum=None, **states):
+    def __init__(self, name, ode, component="", algebraic_sum=None, **states):
         """
         Initalize a Markov model
 
@@ -266,6 +270,8 @@ class MarkovModel(ODEObject):
             Name of Markov model
         ode : ODE
             The ode the Markov Model should be added to
+        component : str (optional)
+            Add state to a particular component
         algebraic_sum : scalar (optional)
             If the algebraic sum of all states should be constant,
             give the value here.
@@ -273,16 +279,19 @@ class MarkovModel(ODEObject):
             A dict with all states defined in this Markov model
         """
 
-        # Call super class
-        super(MarkovModel, self).__init__(name, name, "")
+        from ode import ODE
 
         check_arg(ode, ODE, 1)
+
+        # Call super class
+        super(MarkovModel, self).__init__(name, component, ode.name)
 
         if len(states) < 2:
             error("Expected at least two states in a Markov model")
 
         if algebraic_sum is not None:
             check_arg(algebraic_sum, scalars)
+        
         self._algebraic_sum = algebraic_sum
         self._algebraic_expr = None
         self._algebraic_name = None
@@ -292,44 +301,51 @@ class MarkovModel(ODEObject):
 
         # Check states kwargs
         state_sum = 0.0
-        for stat_name, init in states.items():
+        for state_name, init in states.items():
             # FIXME: Allow Parameter as init
-            check_kwargs(init, stat_name, scalars)
-            state_sum += init
+            check_kwarg(init, state_name, scalars + (ScalarParam,))
+            state_sum += init if isinstance(init, scalars) else init.value
 
         # Check algebraic sum agains initial values
         if self._algebraic_sum is not None:
-            if state_sum != self._algebraic_sum:
+            if abs(state_sum - self._algebraic_sum) > 1e-8 :
                 error("The given algebraic sum does not match the sum of "\
-                      "the initial state values ")
+                      "the initial state values: {0}!={1}.".format(\
+                          self._algebraic_sum, state_sum))
             
             # Find the state which will be excluded from the states
-            for stat_name in states:
-                if "O" not in stat_name:
+            for state_name in sorted(states.keys()):
+                if "O" not in state_name:
                     break
 
-            algebraic_name = stat_name
+            algebraic_name = state_name
         else:
             algebraic_name = ""
 
         # Add states to ode
         collected_states = ODEObjectList()
-        for name, init in states.items():
+        for state_name, init in sorted(states.items()):
 
             # If we are not going to add the state
-            if name == algebraic_name:
+            if state_name == algebraic_name:
                 continue
 
             # Add a slaved state
-            sym = ode.add_state(name, init, component=name, slaved=True)
+            sym = ode.add_state(state_name, init, component=component, slaved=True)
             collected_states.append(ode.get_object(sym))
 
         # Add an intermediate for the algebraic state
         if self._algebraic_sum is not None:
-            self._algebraic_expr = 1 - reduce(lambda x,y:x+y, \
+
+            algebraic_expr = 1 - reduce(lambda x,y:x+y, \
                                 (state.sym for state in collected_states), 0)
-            self._algebraic_name = algebraic_name
-        
+            
+            # Add a slaved intermediate
+            sym = ode.add_intermediate(algebraic_name, algebraic_expr, \
+                                       component=component, slaved=True)
+
+            collected_states.append(ode.intermediates.get(sym))
+
         # Store state attributes
         self._states = collected_states
 
@@ -347,7 +363,9 @@ class MarkovModel(ODEObject):
         rate : scalar or sympy expression
             An expression of the rate between the two states
         """
-        check_arg(states, tuple, 0, MarkovModel.__setitem__, int)
+        from gotran.model.expressions import Expression
+
+        check_arg(states, tuple, 0, MarkovModel.__setitem__)
 
         if self._is_finalized:
             error("The Markov model is finalized. No more rates can be added.")
@@ -367,13 +385,14 @@ class MarkovModel(ODEObject):
                   "registered.".format(*states))
 
         # Create an Expression of the rate and store it
-        self._rate[states] = Expression("{0}-{1}".format(*states), rate)
+        self._rates[states] = Expression("{0}-{1}".format(*states), rate, \
+                                         self._ode)
 
         # Check that the states are not used in the rates
-        for dep_obj in self._rate[states].object_dependencies:
+        for dep_obj in self._rates[states].object_dependencies:
             if dep_obj in self._states:
-                error("Markov model rate cannot include state variables in the "\
-                      "same Markov model: {0}".format(dep_obj))
+                error("Markov model rate cannot include state variables "\
+                      "in the same Markov model: {0}".format(dep_obj))
     
     def finalize(self):
         """
@@ -388,18 +407,17 @@ class MarkovModel(ODEObject):
         self._is_finalized = True
 
         # Derivatives
-        derivatives = OrderedDict((state, 0.0) for state in self._states)
+        derivatives = OrderedDict((state.sym, 0.0) for state in self._states)
         rate_check = {}
 
         # Build rate information and check that each rate is added in a
         # symetric way
         used_states = [0]*len(self._states)
-        for states, rate in self._rates:
-            from_state, to_state = states
+        for (from_state, to_state), rate in self._rates.items():
 
             # Add to derivatives of the two states
-            derivatives[from_state] -= rate*from_state
-            derivatives[to_state] += rate*from_state
+            derivatives[from_state] -= rate.expr*from_state
+            derivatives[to_state] += rate.expr*from_state
 
             # Register rate
             ind_from = self._states.index(from_state)
@@ -419,7 +437,7 @@ class MarkovModel(ODEObject):
 
         # Check rate symetry
         for (ind_from, ind_to), times in rate_check.items():
-            if time != 2:
+            if times != 2:
                 error("Only one rate between the states {0} and {1} was "\
                       "registered, expected two.".format(\
                           self._states[ind_from], self._states[ind_to]))
@@ -427,7 +445,8 @@ class MarkovModel(ODEObject):
         # Add derivatives
         for state in self._states:
             if isinstance(state, State):
-                self._ode.diff(state.derivative.sym, derivatives[state])
+                self._ode.diff(state.derivative.sym, derivatives[state.sym], \
+                               self.component)
         
 
     @property
@@ -437,3 +456,7 @@ class MarkovModel(ODEObject):
     @property
     def num_states(self):
         return len(self._states)
+
+    @property
+    def states(self):
+        return self._states

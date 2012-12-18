@@ -1,19 +1,45 @@
 variables("Ca_comp", 
-       VFonRT=ScalarParam(-1.31045962116),
-       F=ScalarParam(96.5),
-       E_Ca=ScalarParam(134.479067982),
-       K_o=ScalarParam(4.0),
-       V=ScalarParam(-35),
-       V_JSR=ScalarParam(1.6e-07),
        A_cap=ScalarParam(0.0001534),
-       V_NSR=ScalarParam(2.1e-06),
-       expVFonRT=ScalarParam(0.269696069873),
-       C_sc=ScalarParam(1.0),
        K_i=ScalarParam(159.48),
-       Ca_o=ScalarParam(2.0),
-       V_ss=ScalarParam(1.2e-09),
+       E_Ca=ScalarParam(134.479067982),
+       C_sc=ScalarParam(1.0),
        V_myo=ScalarParam(2.584e-05),
-       I_NaCa=ScalarParam(0.0680605650624),)
+       K_o=ScalarParam(4.0),
+       F=ScalarParam(96.5),
+       V_ss=ScalarParam(1.2e-09),
+       V_JSR=ScalarParam(1.6e-07),
+       expVFonRT=ScalarParam(0.269696069873),
+       V=ScalarParam(-35),
+       VFonRT=ScalarParam(-1.31045962116),
+       Ca_o=ScalarParam(2.0),
+       I_NaCa=ScalarParam(0.0680605650624),
+       V_NSR=ScalarParam(2.1e-06),)
+
+markov_model("lcc", "L-type Ca Channel", algebraic_sum=1.0,
+             C0=ScalarParam(0.99802),
+             C1=ScalarParam(4.6456e-06),
+             C2=ScalarParam(1.9544e-06),
+             C3=ScalarParam(0),
+             C4=ScalarParam(0),
+             CCa0=ScalarParam(0.0019734),
+             CCa1=ScalarParam(0),
+             CCa2=ScalarParam(0),
+             CCa3=ScalarParam(0),
+             CCa4=ScalarParam(0),
+             Open=ScalarParam(0),)
+
+states("L-type Ca Channel", 
+       yCa=ScalarParam(0.7959),)
+
+parameters("L-type Ca Channel", 
+       ICahalf=ScalarParam(-0.265),
+       PCa=ScalarParam(0.0003125),
+       PK=ScalarParam(5.79e-07),
+       aL=ScalarParam(2.0),
+       bL=ScalarParam(2.0),
+       fL=ScalarParam(0.3),
+       gL=ScalarParam(2.0),
+       omega=ScalarParam(0.01),)
 
 states("Intracellular Ca", 
        Ca_JSR=ScalarParam(0.2616),
@@ -56,30 +82,6 @@ parameters("RyR Channel",
        ncoop=ScalarParam(4.0),
        v_1=ScalarParam(1.8),)
 
-states("L-type Ca Channel", 
-       C0=ScalarParam(0.99802),
-       C1=ScalarParam(1.9544e-06),
-       C2=ScalarParam(0),
-       C3=ScalarParam(0),
-       C4=ScalarParam(0),
-       CCa0=ScalarParam(0.0019734),
-       CCa1=ScalarParam(0),
-       CCa2=ScalarParam(0),
-       CCa3=ScalarParam(0),
-       CCa4=ScalarParam(0),
-       Open=ScalarParam(0),
-       yCa=ScalarParam(0.7959),)
-
-parameters("L-type Ca Channel", 
-       ICahalf=ScalarParam(-0.265),
-       PCa=ScalarParam(0.0003125),
-       PK=ScalarParam(5.79e-07),
-       aL=ScalarParam(2.0),
-       bL=ScalarParam(2.0),
-       fL=ScalarParam(0.3),
-       gL=ScalarParam(2.0),
-       omega=ScalarParam(0.01),)
-
 parameters("Sarcolemmal Ca pump current I_pCa", 
        I_pCaMax=ScalarParam(0.05),
        K_mpCa=ScalarParam(5e-05),)
@@ -106,67 +108,7 @@ I_bCa = G_bCaMax*(-E_Ca + V)
 component("L-type Ca Channel")
 alpha = 0.488561103264068*exp(0.1*V)
 beta = 0.0428701959580221*exp(-0.0769230769230769*V)
-alpha_prime = aL*alpha
-beta_prime = beta/bL
 gamma = 0.10375*Ca_ss
-C0_to_C1 = 4.0*alpha
-C1_to_C2 = 3.0*alpha
-C2_to_C3 = 2.0*alpha
-C3_to_C4 = alpha
-CCa0_to_CCa1 = 4.0*alpha_prime
-CCa1_to_CCa2 = 3.0*alpha_prime
-CCa2_to_CCa3 = 2.0*alpha_prime
-CCa3_to_CCa4 = alpha_prime
-C1_to_C0 = beta
-C2_to_C1 = 2.0*beta
-C3_to_C2 = 3.0*beta
-C4_to_C3 = 4.0*beta
-CCa1_to_CCa0 = beta_prime
-CCa2_to_CCa1 = 2.0*beta_prime
-CCa3_to_CCa2 = 3.0*beta_prime
-CCa4_to_CCa3 = 4.0*beta_prime
-gamma = 0.10375*Ca_ss
-C0_to_CCa0 = gamma
-C1_to_CCa1 = C0_to_CCa0*aL
-C2_to_CCa2 = C1_to_CCa1*aL
-C3_to_CCa3 = C2_to_CCa2*aL
-C4_to_CCa4 = C3_to_CCa3*aL
-CCa0_to_C0 = omega
-CCa1_to_C1 = CCa0_to_C0/bL
-CCa2_to_C2 = CCa1_to_C1/bL
-CCa3_to_C3 = CCa2_to_C2/bL
-CCa4_to_C4 = CCa3_to_C3/bL
-a1 = C0*(C0_to_C1 + C0_to_CCa0)
-a2 = C1*C1_to_C0 + CCa0*CCa0_to_C0
-dC0 = -a1 + a2
-a1 = C1*(C1_to_C0 + C1_to_C2 + C1_to_CCa1)
-a2 = C0*C0_to_C1 + C2*C2_to_C1 + CCa1*CCa1_to_C1
-dC1 = -a1 + a2
-a1 = C2*(C2_to_C1 + C2_to_C3 + C2_to_CCa2)
-a2 = C1*C1_to_C2 + C3*C3_to_C2 + CCa2*CCa2_to_C2
-dC2 = -a1 + a2
-a1 = C3*(C3_to_C2 + C3_to_C4 + C3_to_CCa3)
-a2 = C2*C2_to_C3 + C4*C4_to_C3 + CCa3*CCa3_to_C3
-dC3 = -a1 + a2
-a1 = C4*(C4_to_C3 + C4_to_CCa4 + fL)
-a2 = C3*C3_to_C4 + CCa4*CCa4_to_C4 + Open*gL
-dC4 = -a1 + a2
-dOpen = C4*fL - Open*gL
-a1 = CCa0*(CCa0_to_C0 + CCa0_to_CCa1)
-a2 = C0*C0_to_CCa0 + CCa1*CCa1_to_CCa0
-dCCa0 = -a1 + a2
-a1 = CCa1*(CCa1_to_C1 + CCa1_to_CCa0 + CCa1_to_CCa2)
-a2 = C1*C1_to_CCa1 + CCa0*CCa0_to_CCa1 + CCa2*CCa2_to_CCa1
-dCCa1 = -a1 + a2
-a1 = CCa2*(CCa2_to_C2 + CCa2_to_CCa1 + CCa2_to_CCa3)
-a2 = C2*C2_to_CCa2 + CCa1*CCa1_to_CCa2 + CCa3*CCa3_to_CCa2
-dCCa2 = -a1 + a2
-a1 = CCa3*(CCa3_to_C3 + CCa3_to_CCa2 + CCa3_to_CCa4)
-a2 = C3*C3_to_CCa3 + CCa2*CCa2_to_CCa3 + CCa4*CCa4_to_CCa3
-dCCa3 = -a1 + a2
-a1 = CCa4*(CCa4_to_C4 + CCa4_to_CCa3)
-a2 = C4*C4_to_CCa4 + CCa3*CCa3_to_CCa4
-dCCa4 = -a1 + a2
 yCa_inf = 0.2 + 0.8/(12.1824939607035*exp(0.2*V) + 1.0)
 tau_yCa = 20.0 + 600.0/(8.2092630577501*exp(0.105263157894737*V) + 1.0)
 dyCa = (-yCa + yCa_inf)/tau_yCa
@@ -179,6 +121,35 @@ PKprime = PK/(1.0 + Min(0.0, ICamax)/ICahalf)
 a1 = K_i*expVFonRT - K_o
 a2 = expVFonRT - 1.0
 I_CaK = Open*PKprime*VFsqonRT*a1*yCa/a2
+
+lcc[C0, C1] = 4.0*alpha
+lcc[C1, C0] = beta
+lcc[C1, C2] = 3.0*alpha
+lcc[C2, C1] = 2.0*beta
+lcc[C2, C3] = 2.0*alpha
+lcc[C3, C2] = 3.0*beta
+lcc[C3, C4] = alpha
+lcc[C4, C3] = 4.0*beta
+lcc[CCa0, CCa1] = 4.0*aL*alpha
+lcc[CCa1, CCa0] = beta/bL
+lcc[CCa1, CCa2] = 3.0*aL*alpha
+lcc[CCa2, CCa1] = 2.0*beta/bL
+lcc[CCa2, CCa3] = 2.0*aL*alpha
+lcc[CCa3, CCa2] = 3.0*beta/bL
+lcc[CCa3, CCa4] = aL*alpha
+lcc[CCa4, CCa3] = 4.0*beta/bL
+lcc[C0, CCa0] = gamma
+lcc[CCa0, C0] = omega
+lcc[C1, CCa1] = aL*gamma
+lcc[CCa1, C1] = omega/bL
+lcc[C2, CCa2] = aL**2.0*gamma
+lcc[CCa2, C2] = omega/bL**2.0
+lcc[C3, CCa3] = aL**3.0*gamma
+lcc[CCa3, C3] = omega/bL**3.0
+lcc[C4, CCa4] = aL**4.0*gamma
+lcc[CCa4, C4] = omega/bL**4.0
+lcc[C4, Open] = fL
+lcc[Open, C4] = gL
 
 component("RyR Channel")
 a1 = (1000.0*Ca_ss)**mcoop
@@ -208,7 +179,6 @@ a1 = CSQNtot*KmCSQN*(Ca_JSR + KmCSQN)**(-2.0)
 beta_JSR = 1.0/(a1 + 1.0)
 a1 = CMDNtot*KmCMDN*(Ca_i + KmCMDN)**(-2.0)
 beta_i = 1.0/(a1 + 1.0)
-comment("The ODE system")
 
 dCa_i_dt = beta_i*(-A_cap*C_sc*(-2.0*I_NaCa + I_bCa + I_pCa)/(2000.0*F*V_myo) - J_trpn - J_up + J_xfer)
 dCa_NSR_dt = -J_tr*V_JSR/V_NSR + J_up*V_myo/V_NSR
@@ -220,15 +190,4 @@ dC1_RyR_dt = dC1_RyR
 dO1_RyR_dt = dO1_RyR
 dO2_RyR_dt = dO2_RyR
 dC2_RyR_dt = dC2_RyR
-dC0_dt = dC0
-dC1_dt = dC1
-dC2_dt = dC2
-dC3_dt = dC3
-dC4_dt = dC4
-dOpen_dt = dOpen
-dCCa0_dt = dCCa0
-dCCa1_dt = dCCa1
-dCCa2_dt = dCCa2
-dCCa3_dt = dCCa3
-dCCa4_dt = dCCa4
 dyCa_dt = dyCa

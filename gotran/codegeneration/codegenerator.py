@@ -21,6 +21,8 @@ import re
 
 # Model parameters imports
 from modelparameters.parameters import *
+from modelparameters.codegeneration import ccode, cppcode, pythoncode, \
+     sympycode, matlabcode
 
 # Gotran imports
 from gotran.common import check_arg
@@ -29,23 +31,24 @@ from oderepresentation import ODERepresentation
 _re_str = re.compile(".*\"([\w\s]+)\".*")
 
 class CodeGenerator(object):
+    
+    # Class attributes
+    language = "python"
+    line_ending = ""
+    closure_start = ""
+    closure_end = ""
+    line_cont = "\\"
+    comment = "#"
+    index = lambda i : "[{0}]".format(i)
+    indent = 4
+    indent_str = " "
+    max_line_length = 79
+    to_code = pythoncode
+
     def __init__(self, oderepr):
         check_arg(oderepr, ODERepresentation, 0)
         self.oderepr = oderepr
-        self.max_line_length = 79
-        self.init_language_specific_syntax()
         self.oderepr.update_index(self.index)
-
-    def init_language_specific_syntax(self):
-        self.language = "python"
-        self.line_ending = ""
-        self.closure_start = ""
-        self.closure_end = ""
-        self.line_cont = "\\"
-        self.comment = "#"
-        self.index = lambda i : "[{0}]".format(i)
-        self.indent = 4
-        self.indent_str = " "
 
     def wrap_body_with_function_prototype(self, body_lines, name, args, \
                                           return_arg="", comment=""):
@@ -349,7 +352,8 @@ class CodeGenerator(object):
         
         return "\n".join(self.indent_and_split_lines(function))
 
-    def indent_and_split_lines(self, code_lines, indent=0, ret_lines=None, \
+    @classmethod
+    def indent_and_split_lines(cls, code_lines, indent=0, ret_lines=None, \
                                no_line_ending=False):
         """
         Combine a set of lines into a single string
@@ -366,28 +370,28 @@ class CodeGenerator(object):
             if isinstance(line, list):
 
                 # Add start closure sign if any
-                if self.closure_start:
-                    ret_lines.append(self.indent*indent*self.indent_str + \
-                                     self.closure_start)
+                if cls.closure_start:
+                    ret_lines.append(cls.indent*indent*cls.indent_str + \
+                                     cls.closure_start)
                 
-                ret_lines = self.indent_and_split_lines(\
+                ret_lines = cls.indent_and_split_lines(\
                     line, indent+1, ret_lines)
                 
                 # Add closure if any
-                if self.closure_end:
-                    ret_lines.append(self.indent*indent*self.indent_str + \
-                                     self.closure_end)
+                if cls.closure_end:
+                    ret_lines.append(cls.indent*indent*cls.indent_str + \
+                                     cls.closure_end)
                 continue
             
-            line_ending = "" if no_line_ending else self.line_ending
+            line_ending = "" if no_line_ending else cls.line_ending
             # Do not use line endings the line before and after a closure
             if line_ind + 1 < len(code_lines):
                 if isinstance(code_lines[line_ind+1], list):
                     line_ending = ""
 
             # Check if we parse a comment line
-            if len(line) > len(self.comment) and self.comment == \
-               line[:len(self.comment)]:
+            if len(line) > len(cls.comment) and cls.comment == \
+               line[:len(cls.comment)]:
                 is_comment = True
                 line_ending = ""
             else:
@@ -399,8 +403,8 @@ class CodeGenerator(object):
                 continue
 
             # Check for long lines
-            if self.indent*indent + len(line) + len(line_ending) > \
-                   self.max_line_length:
+            if cls.indent*indent + len(line) + len(line_ending) > \
+                   cls.max_line_length:
 
                 # Divide along white spaces
                 splitted_line = deque(line.split(" "))
@@ -408,7 +412,7 @@ class CodeGenerator(object):
                 # If no split
                 if splitted_line == line:
                     ret_lines.append("{0}{1}{2}".format(\
-                        self.indent*indent*self.indent_str, line, \
+                        cls.indent*indent*cls.indent_str, line, \
                         line_ending))
                     continue
                     
@@ -417,7 +421,7 @@ class CodeGenerator(object):
                 
                 while splitted_line:
                     line_stump = []
-                    indent_length = self.indent*(indent if first_line or \
+                    indent_length = cls.indent*(indent if first_line or \
                                                  is_comment else indent + 1)
                     line_length = indent_length
 
@@ -425,7 +429,7 @@ class CodeGenerator(object):
                     # FIXME: linelength
                     while splitted_line and \
                               (((line_length + len(splitted_line[0]) \
-                                 + 1 + inside_str) < self.max_line_length) \
+                                 + 1 + inside_str) < cls.max_line_length) \
                                or not line_stump):
                         line_stump.append(splitted_line.popleft())
 
@@ -443,45 +447,44 @@ class CodeGenerator(object):
                         # Check line length
                         line_length += len(line_stump[-1]) + 1 + \
                                 (is_comment and not first_line)*(len(\
-                            self.comment) + 1)
+                            cls.comment) + 1)
 
                     # If we are inside a str and at the end of line add
                     if inside_str and not is_comment:
                         line_stump[-1] = line_stump[-1]+"\""
                         
                     # Join line stump and add indentation
-                    ret_lines.append(indent_length*self.indent_str + \
+                    ret_lines.append(indent_length*cls.indent_str + \
                                      (is_comment and not first_line)* \
-                                     (self.comment+" ") + " ".join(line_stump))
+                                     (cls.comment+" ") + " ".join(line_stump))
 
                     # If it is the last line stump add line ending otherwise
                     # line continuation sign
                     ret_lines[-1] = ret_lines[-1] + (not is_comment)*\
-                                    (self.line_cont if splitted_line else \
+                                    (cls.line_cont if splitted_line else \
                                      line_ending)
                 
                     first_line = False
             else:
                 ret_lines.append("{0}{1}{2}".format(\
-                    self.indent*indent*self.indent_str, line, \
+                    cls.indent*indent*cls.indent_str, line, \
                     line_ending))
 
         return ret_lines
 
 class CCodeGenerator(CodeGenerator):
-    def init_language_specific_syntax(self):
-        from modelparameters.codegeneration import ccode
 
-        self.language = "C"
-        self.line_ending = ";"
-        self.closure_start = "{"
-        self.closure_end = "}"
-        self.line_cont = ""
-        self.comment = "//"
-        self.index = lambda i : "[{0}]".format(i)
-        self.indent = 2
-        self.indent_str = " "
-        self.to_code = ccode
+    # Class attributes
+    language = "C"
+    line_ending = ";"
+    closure_start = "{"
+    closure_end = "}"
+    line_cont = ""
+    comment = "//"
+    index = lambda i : "[{0}]".format(i)
+    indent = 2
+    indent_str = " "
+    to_code = ccode
     
     def wrap_body_with_function_prototype(self, body_lines, name, args, \
                                           return_type="", comment=""):
@@ -663,28 +666,25 @@ class CCodeGenerator(CodeGenerator):
 
 class CppCodeGenerator(CCodeGenerator):
     
-    def init_language_specific_syntax(self):
-        from modelparameters.codegeneration import cppcode
-        super(CppCodeGenerator, self).init_language_specific_syntax()
-        self.to_code = cppcode
+    # Class attributes
+    to_code = cppcode
 
 class MatlabCodeGenerator(CodeGenerator):
     """
     A Matlab Code generator
     """
-    def init_language_specific_syntax(self):
-        from modelparameters.codegeneration import matlabcode
 
-        self.language = "Matlab"
-        self.line_ending = ";"
-        self.closure_start = ""
-        self.closure_end = "end"
-        self.line_cont = "..."
-        self.comment = "%"
-        self.index = lambda i : "({0})".format(i)
-        self.indent = 2
-        self.indent_str = " "
-        self.to_code = matlabcode
+    # Class attributes
+    language = "Matlab"
+    line_ending = ";"
+    closure_start = ""
+    closure_end = "end"
+    line_cont = "..."
+    comment = "%"
+    index = lambda i : "({0})".format(i)
+    indent = 2
+    indent_str = " "
+    to_code = matlabcode
 
     def wrap_body_with_function_prototype(self, body_lines, name, args, \
                                           return_args="", comment=""):
@@ -828,6 +828,8 @@ class MatlabCodeGenerator(CodeGenerator):
                 body_lines.append(self.to_code(expr, name))
 
         # Add dy(i) lines
+        body_lines.append("")
+        body_lines.append("% Right hand side")
         body_lines.append("dy = zeros({0}, 1)".format(ode.num_states))
         for ind, (state, (derivative, expr)) in enumerate(\
             zip(ode.states, self.oderepr.iter_derivative_expr())):

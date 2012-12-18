@@ -32,7 +32,7 @@ from modelparameters.sympytools import sp_namespace, sp, ModelSymbol
 from gotran.common import *
 from gotran.model.ode import ODE
 
-_for_template = re.compile("for.*in .*:\n")
+_for_template = re.compile("for.*in .*:")
 _no_intermediate_template = re.compile(".*# NO INTERMEDIATE.*\n")
 
 class IntermediateDispatcher(dict):
@@ -58,13 +58,24 @@ class IntermediateDispatcher(dict):
             # Get source which triggers the insertion to the global namespace
             frame = inspect.currentframe().f_back
             lines, lnum = inspect.findsource(frame)
-            code = lines[frame.f_lineno-1]
+            code = lines[frame.f_lineno-1].strip()
+
+            # Concatenate lines with line continuation symbols
+            prev = 2
+            while frame.f_lineno-prev >=0 and \
+                      len(lines[frame.f_lineno-prev]) >= 2 and \
+                      lines[frame.f_lineno-prev][-2:] == "\\\n":
+                code = lines[frame.f_lineno-prev][:-2].strip() + code
+                prev +=1
 
             # Check if the line includes a for statement
-            if re.search(_for_template, code) or \
+            # Here we strip op potiential code comments after the main for
+            # statement.
+            if re.search(_for_template, code.split("#")[0].strip()) or \
                    re.search(_no_intermediate_template, code):
 
                 debug("Not registering '{0}' as an intermediate.".format(name))
+                
                 # If so just add the value to the namespace without
                 # registering the intermediate
                 dict.__setitem__(self, name, value)
@@ -77,6 +88,7 @@ class IntermediateDispatcher(dict):
                 # Populate the name space with symbol attribute
                 dict.__setitem__(self, name, sym)
         else:
+            debug("Not registering '{0}' as an intermediate.".format(name))
 
             # If no ode attr was generated we just add the value to the
             # namespace
@@ -121,6 +133,9 @@ def exec_ode(ode_str, name):
 
     # Execute file and collect 
     exec(ode_str, namespace, intermediate_dispatcher)
+
+    # Finalize ODE
+    ode.finalize()
     
     # Check for completeness
     if not ode.is_complete:
@@ -181,6 +196,9 @@ def load_ode(filename, name=None, **arguments):
 
     # Execute file and collect 
     execfile(filename, namespace, intermediate_dispatcher)
+    
+    # Finalize ODE
+    ode.finalize()
     
     # Check for completeness
     if not ode.is_complete:
@@ -313,7 +331,7 @@ def _namespace_binder(namespace, ode, load_arguments):
             else:
                 namespace[key] = load_arguments[key]
 
-    def markov_model(name, algrebraic_sum=None, **states):
+    def markov_model(name, component="", algebraic_sum=None, **states):
         """        
         Initalize a Markov model
 
@@ -321,6 +339,8 @@ def _namespace_binder(namespace, ode, load_arguments):
         ---------
         name : str
             Name of Markov model
+        component : str (optional)
+            Add state to a particular component
         algebraic_sum : scalar (optional)
             If the algebraic sum of all states should be constant,
             give the value here.
@@ -329,7 +349,12 @@ def _namespace_binder(namespace, ode, load_arguments):
         """
 
         # Create Markov model
-        mm = ode.add_markov_model(name, algrebraic_sum=None, **states)
+        mm = ode.add_markov_model(name, component=component, \
+                                  algebraic_sum=algebraic_sum, \
+                                  **states)
+        
+        # Add Markov model to namespace
+        namespace[mm.name] = mm
 
         # Add symbols to namespace
         for state in mm._states:
@@ -342,6 +367,7 @@ def _namespace_binder(namespace, ode, load_arguments):
         variables=variables,
         model_arguments=model_arguments,
         subode=subode,
+        markov_model=markov_model,
         )
                          )
                     
