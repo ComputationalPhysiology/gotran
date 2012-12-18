@@ -39,11 +39,11 @@ class CodeGenerator(object):
     closure_end = ""
     line_cont = "\\"
     comment = "#"
-    index = lambda i : "[{0}]".format(i)
+    index = lambda x, i : "[{0}]".format(i)
     indent = 4
     indent_str = " "
     max_line_length = 79
-    to_code = pythoncode
+    to_code = lambda a,b,c,d="math" : pythoncode(b,c,d)
 
     def __init__(self, oderepr):
         check_arg(oderepr, ODERepresentation, 0)
@@ -481,10 +481,10 @@ class CCodeGenerator(CodeGenerator):
     closure_end = "}"
     line_cont = ""
     comment = "//"
-    index = lambda i : "[{0}]".format(i)
+    index = lambda x, i : "[{0}]".format(i)
     indent = 2
     indent_str = " "
-    to_code = ccode
+    to_code = lambda a,b,c : ccode(b,c)
     
     def wrap_body_with_function_prototype(self, body_lines, name, args, \
                                           return_type="", comment=""):
@@ -667,7 +667,7 @@ class CCodeGenerator(CodeGenerator):
 class CppCodeGenerator(CCodeGenerator):
     
     # Class attributes
-    to_code = cppcode
+    to_code = lambda a,b,c : cppcode(b,c)
 
 class MatlabCodeGenerator(CodeGenerator):
     """
@@ -681,10 +681,10 @@ class MatlabCodeGenerator(CodeGenerator):
     closure_end = "end"
     line_cont = "..."
     comment = "%"
-    index = lambda i : "({0})".format(i)
+    index = lambda x, i : "({0})".format(i)
     indent = 2
     indent_str = " "
-    to_code = matlabcode
+    to_code = lambda a,b,c : matlabcode(b,c)
 
     def wrap_body_with_function_prototype(self, body_lines, name, args, \
                                           return_args="", comment=""):

@@ -727,7 +727,7 @@ class Creation(unittest.TestCase):
         ode_subode = load_ode("winslow_subode")
         self.assertTrue(ode==ode_subode)
         
-    def xtest_python_code_gen(self):
+    def test_python_code_gen(self):
         """
         Test generation of code
         """

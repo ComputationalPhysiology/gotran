@@ -33,7 +33,7 @@ from gotran.common import *
 from gotran.model.ode import ODE
 
 _for_template = re.compile("for.*in .*:")
-_no_intermediate_template = re.compile(".*# NO INTERMEDIATE.*\n")
+_no_intermediate_template = re.compile(".*# NO INTERMEDIATE.*")
 
 class IntermediateDispatcher(dict):
     """
