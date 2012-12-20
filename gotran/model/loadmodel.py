@@ -21,6 +21,7 @@ __all__ = ["load_ode", "exec_ode"]
 import inspect
 import os
 import re
+import tempfile
 from collections import OrderedDict
 
 # modelparameters import
@@ -58,16 +59,21 @@ class IntermediateDispatcher(dict):
             # Get source which triggers the insertion to the global namespace
             frame = inspect.currentframe().f_back
             lines, lnum = inspect.findsource(frame)
-            code = lines[frame.f_lineno-1].strip()
 
-            # Concatenate lines with line continuation symbols
-            prev = 2
-            while frame.f_lineno-prev >=0 and \
-                      len(lines[frame.f_lineno-prev]) >= 2 and \
-                      lines[frame.f_lineno-prev][-2:] == "\\\n":
-                code = lines[frame.f_lineno-prev][:-2].strip() + code
-                prev +=1
+            # Try getting the code
+            try:
+                code = lines[frame.f_lineno-1].strip()
 
+                # Concatenate lines with line continuation symbols
+                prev = 2
+                while frame.f_lineno-prev >=0 and \
+                          len(lines[frame.f_lineno-prev]) >= 2 and \
+                          lines[frame.f_lineno-prev][-2:] == "\\\n":
+                    code = lines[frame.f_lineno-prev][:-2].strip() + code
+                    prev +=1
+            except :
+                code = ""
+            
             # Check if the line includes a for statement
             # Here we strip op potiential code comments after the main for
             # statement.
@@ -131,8 +137,12 @@ def exec_ode(ode_str, name):
     # Dict to collect declared intermediates
     intermediate_dispatcher = IntermediateDispatcher(ode)
 
+    # Write str to file
+    open("_tmp_gotrand.ode", "w").write(ode_str)
+    
     # Execute file and collect 
-    exec(ode_str, namespace, intermediate_dispatcher)
+    execfile("_tmp_gotrand.ode", namespace, intermediate_dispatcher)
+    os.unlink("_tmp_gotrand.ode")
 
     # Finalize ODE
     ode.finalize()
