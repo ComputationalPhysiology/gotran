@@ -24,6 +24,7 @@ _class_template = """#ifndef {MODELNAME}_H_IS_INCLUDED
 #define {MODELNAME}_H_IS_INCLUDED
 
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include <stdexcept>
 #include <cmath>
 
@@ -61,7 +62,7 @@ namespace goss {{
     // Return a copy of the ODE
     boost::shared_ptr<ODE> copy() const
     {{
-      return new {ModelName}(*this);
+      return boost::make_shared<{ModelName}>(*this);
     }}
 
     // Evaluate the monitored intermediates
