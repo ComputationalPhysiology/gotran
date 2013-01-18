@@ -114,7 +114,7 @@ class ODERepresentation(object):
             cse_counts = [[] for i in range(len(self._cse_subs))]
             for i in range(len(self._cse_subs)):
                 for j in range(i+1, len(self._cse_subs)):
-                    if self._cse_subs[i][0] in self._cse_subs[j][1]:
+                    if self._cse_subs[i][0] in self._cse_subs[j][1].atoms():
                         cse_counts[i].append(j)
                 
                 for j in range(len(self._cse_derivative_expr)):
