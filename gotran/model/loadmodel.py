@@ -52,9 +52,12 @@ class IntermediateDispatcher(dict):
     def __setitem__(self, name, value):
 
         # Set the attr of the ODE
-        if isinstance(value, scalars) or (isinstance(value, sp.Basic) and \
-                                          any(isinstance(atom, ModelSymbol)\
-                                              for atom in value.atoms())):
+        # If a scalar or a sympy number or it is a sympy.Basic consisting of
+        # ModelSymbols
+        if isinstance(value, scalars) or isinstance(value, sp.Number) or \
+               (isinstance(value, sp.Basic) and \
+                any(isinstance(atom, ModelSymbol)\
+                    for atom in value.atoms())):
 
             # Get source which triggers the insertion to the global namespace
             frame = inspect.currentframe().f_back

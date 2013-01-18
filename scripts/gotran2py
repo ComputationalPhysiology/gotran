@@ -15,6 +15,10 @@ def main(filename, parameters):
     # Load Gotran model
     ode = load_ode(filename)
 
+    # Check for completness
+    if ode.is_complete:
+        return 
+
     # Create an ODE representation
     oderepr = ODERepresentation(ode, **parameters)
 

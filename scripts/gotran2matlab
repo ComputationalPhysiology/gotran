@@ -13,6 +13,10 @@ def main(filename):
     # Load Gotran model
     ode = load_ode(filename)
 
+    # Check for completness
+    if ode.is_complete:
+        return 
+
     # Create an ODE representation
     keep, use_cse, numerals, use_names = (1,0,0,1)
     oderepr = ODERepresentation(ode,
