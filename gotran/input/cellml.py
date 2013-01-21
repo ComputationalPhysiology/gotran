@@ -326,7 +326,12 @@ class MathMLBaseParser(object):
             if len(root) == 1:
                 # Special case if operator is "minus"
                 if op == "minus":
-                    use_parent = False
+                    
+                    # If an unary minus is infront of a cn or ci we skip
+                    # parenthesize
+                    if self._gettag(root[0]) in ["ci", "cn"]:
+                        use_parent = False
+
                     eq += ["-"]
                 else:
                     
@@ -388,9 +393,8 @@ class MathMLBaseParser(object):
     
     def _parse_cn(self, var, parent):
         value = var.text.strip()
-
         # Fix possible strangeness with integer division in Python...
-        if "." not in value:
+        if parent == "divide" and "." not in value:
             value += ".0"
         return [value]
     

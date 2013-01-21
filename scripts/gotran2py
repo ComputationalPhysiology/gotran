@@ -7,7 +7,7 @@ from gotran.codegeneration.oderepresentation import ODERepresentation, \
 from gotran.codegeneration.codegenerator import CodeGenerator
 from gotran.model import load_ode
 
-def main(filename, parameters):
+def main(filename, params):
     """
     Create a beat cell model from a gotran model
     """
@@ -16,11 +16,11 @@ def main(filename, parameters):
     ode = load_ode(filename)
 
     # Check for completness
-    if ode.is_complete:
+    if not ode.is_complete:
         return 
 
     # Create an ODE representation
-    oderepr = ODERepresentation(ode, **parameters)
+    oderepr = ODERepresentation(ode, **params.copy(True))
 
     # Create a Beat Cell model code generator
     gen = CodeGenerator(oderepr)
@@ -34,21 +34,14 @@ def main(filename, parameters):
 if __name__ == "__main__":
     import sys
     
+    params = _default_params()
+    params.parse_args(usage="usage: %prog FILE [options]")#sys.argv[2:])
+    
     if len(sys.argv) < 2:
-        raise RuntimeError("Expected a gotran file argument")
+        raise RuntimeError("Expected a single gotran file argument")
+
+    if not os.path.isfile(sys.argv[1]):
+        raise IOError("Expected the argument to be a file")
 	 
-    parameters = _default_params()
-    filename = sys.argv[-1]
-    if filename not in ["--help", "-h"] and not (os.path.isfile(filename) \
-                                    or os.path.isfile(filename+".ode")):
-        raise IOError("{0} is not a gotran file.".format(filename))
-        
-    if filename in ["--help", "-h"]:
-        parameters.parse_args(sys.argv[1:])
-    if len(sys.argv) > 2:
-        print sys.argv[1:-1]
-        parameters.parse_args(sys.argv[1:-1])
-
-    print parameters
-
-    main(filename, parameters.copy(True))
+    file_name = sys.argv[1]
+    main(file_name, params)

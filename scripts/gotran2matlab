@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-from gotran.codegeneration.codegenerator import \
-     MatlabCodeGenerator, ODERepresentation
+from gotran.codegeneration.oderepresentation import ODERepresentation, \
+     _default_params
+from gotran.codegeneration.codegenerator import MatlabCodeGenerator
 from gotran.model import load_ode
 from gotran import info
 
-def main(filename):
+def main(filename, params):
     """
     Create a matlab cell model file from a gotran model
     """
@@ -14,16 +15,11 @@ def main(filename):
     ode = load_ode(filename)
 
     # Check for completness
-    if ode.is_complete:
+    if not ode.is_complete:
         return 
 
     # Create an ODE representation
-    keep, use_cse, numerals, use_names = (1,0,0,1)
-    oderepr = ODERepresentation(ode,
-                                keep_intermediates=keep, \
-                                use_cse=use_cse,
-                                parameter_numerals=numerals,\
-                                use_names=use_names)
+    oderepr = ODERepresentation(ode, **params.copy(True))
 
     # Create a Matlab Cell model code generator
     gen = MatlabCodeGenerator(oderepr)
@@ -37,6 +33,9 @@ def main(filename):
 if __name__ == "__main__":
     import os
     import sys
+
+    params = _default_params()
+    params.parse_args(usage="usage: %prog FILE [options]")#sys.argv[2:])
     
     if len(sys.argv) < 2:
         raise RuntimeError("Expected a single gotran file argument")
@@ -45,4 +44,4 @@ if __name__ == "__main__":
         raise IOError("Expected the argument to be a file")
 	 
     file_name = sys.argv[1]
-    main(file_name)
+    main(file_name, params)
