@@ -579,7 +579,7 @@ class CCodeGenerator(CodeGenerator):
         parameters = "" if not parameters_in_signature or \
                      self.oderepr.optimization.parameter_numerals \
                      else "double* parameters, "
-        args = "double t, const double* states, {0}double* {1}".format(\
+        args = "double time, const double* states, {0}double* {1}".format(\
             parameters, result_name)
         dy_function = self.wrap_body_with_function_prototype(\
             body_lines, "rhs", args, \

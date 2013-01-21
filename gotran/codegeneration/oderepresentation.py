@@ -33,32 +33,42 @@ def _default_params():
     return ParameterDict(
 
         # Use state names in code (compared to array with indices)
-        use_state_names = 1,
+        use_state_names = Param(True, description="Use state names in code "\
+                                "(compared to array with indices)"),
 
         # Use parameter names in code (compared to array with indices)
-        use_parameter_names = 1,
+        use_parameter_names = Param(True, description="Use parameter names "\
+                                    "in code (compared to array with indices)"),
 
         # Keep all intermediates
-        keep_intermediates = 1, 
+        keep_intermediates = Param(True, description="Keep intermediates "\
+                                    "in code"),
 
         # If True, code for altering variables are created
         # FIXME: Not used
-        use_variables = 0,
+        use_variables = Param(False, description="If True, code for altering"\
+                              " variables are created"),
 
         # Find sub expressions of only parameters and create a dummy parameter
         # FIXME: Not used
-        parameter_contraction = 0,
+        parameter_contraction = Param(False, description="Find sub expressions "\
+                                      "of only parameters and create a dummy"\
+                                      " parameter"),
 
         # Exchange all parameters with their initial numerical values
-        parameter_numerals = 0,
+        parameter_numerals = Param(False, description="Exchange all parameters"\
+                                   " with their initial numerical values"),
 
         # Split terms with more than max_terms into several evaluations
         # FIXME: Not used
-        max_terms = ScalarParam(5, ge=2),
+        max_terms = ScalarParam(5, ge=2, description="Split terms with more "\
+                                "than max_terms into several evaluations"),
 
         # Use sympy common sub expression simplifications,
         # only when keep_intermediates is false
-        use_cse = 0,
+        use_cse = Param(False, description="Use sympy common sub expression "\
+                        "simplifications, only when keep_intermediates "\
+                        "is false"),
         )
 
 class ODERepresentation(object):

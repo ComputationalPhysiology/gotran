@@ -21,12 +21,14 @@ __version__ = "2.0"
 import common
 import model
 import algorithms
+import codegeneration
 
 # Import classes and routines from gotran modules
 from common import DEBUG, INFO, WARNING, ERROR, CRITICAL, \
      info, debug, warning, error, set_log_level, list_timings
 from model import *
 from algorithms import *
+from codegeneration import jit
 
 # Model parameters
 from modelparameters.parameters import ScalarParam

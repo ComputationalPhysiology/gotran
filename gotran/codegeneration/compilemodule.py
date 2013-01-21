@@ -25,9 +25,23 @@ import types
 
 import gotran
 from gotran.common import check_arg, push_log_level, pop_log_level, info, INFO
-from oderepresentation import ODERepresentation
-from codegenerator import CCodeGenerator
+from gotran.model.ode import ODE
+from oderepresentation import ODERepresentation, _default_params
+from codegenerator import CodeGenerator, CCodeGenerator
 
+# Create doc string to jit
+_jit_doc_str = "\n".join("    {0} : bool\n       {1}".format(\
+    param.name, param.description) for param in _default_params().values())
+
+_jit_doc_str = """
+    JIT compile an ode
+
+    Arguments:
+    ----------
+    ode : ODE, ODERepresentation
+       The gotran ode
+{0}
+    """.format(_jit_doc_str)
 
 # Set log level of instant
 instant.set_logging_level("WARNING")
@@ -35,8 +49,6 @@ instant.set_logging_level("WARNING")
 __all__ = ["jit"]
 
 _additional_declarations = r"""
-%module {module_name}
-
 %init%{{
 import_array();
 %}}
@@ -123,25 +135,38 @@ import_array();
     $1 = PyArray_Check($input) ? 1 : 0;
 }}
 
+%pythoncode%{{
+{python_code}
+%}}
+
 """
 
-def jit(oderepr):
-    """
-    JIT compile an ode 
-    """
+def jit(ode, **options):
 
-    # FIXME: Very rudimentary implementation
-    # FIXME: Make more versatil
-    check_arg(oderepr, ODERepresentation)
+    check_arg(ode, (ODERepresentation, ODE))
 
-    gen = CCodeGenerator(oderepr)
+    if isinstance(ode, ODE):
+        params = _default_params()
+        params.update(options)
+        oderepr = ODERepresentation(ode, **params.copy(True))
+    else:
+        oderepr = ode
 
-    code = gen.dy_code(parameters_in_signature=True)
-    
+    cgen = CCodeGenerator(oderepr)
+    pgen = CodeGenerator(oderepr)
+
+    ccode = cgen.dy_code(parameters_in_signature=True)
+
+    pcode = "\n\n" + pgen.init_states_code() + "\n\n" + \
+            pgen.init_param_code() + "\n\n"
+
     # Compile module
-    return compile_extension_module(code, oderepr.ode)
+    return compile_extension_module(ccode, pcode, ode)
 
-def compile_extension_module(code, ode):
+# Assign docstring
+jit.func_doc = _jit_doc_str
+
+def compile_extension_module(code, pcode, ode):
     """
     Compile an extension module, based on the C code from the ode
     """
@@ -150,7 +175,7 @@ def compile_extension_module(code, ode):
     module_name = "gotran_compiled_module_{0}_{1}".format(\
         ode.name, hashlib.md5(repr(code) + instant.get_swig_version() + \
                               gotran.__version__).hexdigest())
-        
+    
     # Check cache
     compiled_module = instant.import_module(module_name)
 
@@ -166,9 +191,9 @@ def compile_extension_module(code, ode):
     instant_kwargs = configure_instant()
 
     declaration_form = dict(\
-        module_name = ode.name,
         num_states = ode.num_states,
         num_parameters = ode.num_parameters,
+        python_code = pcode,
         )
 
     # Compile extension module with instant
@@ -200,5 +225,3 @@ def configure_instant():
     instant_kwargs['cppargs'] = ['-O2']
 
     return instant_kwargs
-
-
