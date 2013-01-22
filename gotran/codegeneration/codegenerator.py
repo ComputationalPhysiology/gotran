@@ -137,7 +137,7 @@ class CodeGenerator(object):
         # Return body lines 
         return body_lines
         
-    def dy_code(self):
+    def dy_code(self, rhs_args):
         """
         Generate code for evaluating state derivatives
         """
@@ -148,16 +148,23 @@ class CodeGenerator(object):
         body_lines.append("# Return dy")
 
         # Add function prototype
-        args = "states, time"
-        if not self.oderepr.optimization.parameter_numerals:
-            args += ", parameters"
+        args=[]
+        for arg in rhs_args:
+            if arg == "s":
+                args.append("states")
+            elif arg == "t":
+                args.append("time")
+            elif arg == "p" and \
+                 not self.oderepr.optimization.parameter_numerals:
+                args.append("parameters")
+        
+        args = ", ".join(args)
         
         dy_function = self.wrap_body_with_function_prototype(\
             body_lines, "rhs", args, \
             "dy", "Calculate right hand side")
         
         return "\n".join(self.indent_and_split_lines(dy_function))
-
 
     def monitored_body(self):
         """

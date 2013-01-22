@@ -29,47 +29,68 @@ from gotran.common import check_arg, check_kwarg, info
 
 import sys
 
-def _default_params():
-    return ParameterDict(
+def _default_params(exclude=None):
+    exclude = exclude or []
+    check_arg(exclude, list, itemtypes=str)
 
+    # Add not implemented parameters to excludes
+    exclude += ["max_terms", "parameter_contraction", "use_variables"]
+
+    # Build a dict with allowed parameters
+    params = {}
+    
+    if "use_state_names" not in exclude:
         # Use state names in code (compared to array with indices)
-        use_state_names = Param(True, description="Use state names in code "\
-                                "(compared to array with indices)"),
+        params["use_state_names"] = Param(True, \
+                                          description="Use state names in code "\
+                                          "(compared to array with indices)")
 
+    if "use_parameter_names" not in exclude:
         # Use parameter names in code (compared to array with indices)
-        use_parameter_names = Param(True, description="Use parameter names "\
-                                    "in code (compared to array with indices)"),
+        params["use_parameter_names"] = Param(\
+            True, description="Use parameter names "\
+            "in code (compared to array with indices)")
 
+    if "keep_intermediates" not in exclude:
         # Keep all intermediates
-        keep_intermediates = Param(True, description="Keep intermediates "\
-                                    "in code"),
+        params["keep_intermediates"] = Param(\
+            True, description="Keep intermediates in code")
 
+    if "use_variables" not in exclude:
         # If True, code for altering variables are created
         # FIXME: Not used
-        use_variables = Param(False, description="If True, code for altering"\
-                              " variables are created"),
+        params["use_variables"] = Param(\
+            False, description="If True, code for altering variables are created")
 
+    if "parameter_contraction" not in exclude:
         # Find sub expressions of only parameters and create a dummy parameter
         # FIXME: Not used
-        parameter_contraction = Param(False, description="Find sub expressions "\
-                                      "of only parameters and create a dummy"\
-                                      " parameter"),
+        params["parameter_contraction"] = Param(\
+            False, description="Find sub expressions of only parameters "\
+            "and create a dummy parameter")
 
+    if "parameter_numerals" not in exclude:
         # Exchange all parameters with their initial numerical values
-        parameter_numerals = Param(False, description="Exchange all parameters"\
-                                   " with their initial numerical values"),
+        params["parameter_numerals"] = Param(\
+            False, description="Exchange all parameters with their initial"\
+            " numerical values")
 
+    if "max_terms" not in exclude:
         # Split terms with more than max_terms into several evaluations
         # FIXME: Not used
-        max_terms = ScalarParam(5, ge=2, description="Split terms with more "\
-                                "than max_terms into several evaluations"),
+        params["max_terms"] = ScalarParam(\
+            5, ge=2, description="Split terms with more than max_terms "\
+            "into several evaluations")
 
+    if "use_cse" not in exclude:
         # Use sympy common sub expression simplifications,
         # only when keep_intermediates is false
-        use_cse = Param(False, description="Use sympy common sub expression "\
-                        "simplifications, only when keep_intermediates "\
-                        "is false"),
-        )
+        params["use_cse"] = Param(\
+            False, description="Use sympy common sub expression "\
+            "simplifications, only when keep_intermediates is false")
+
+    # Return the ParameterDict
+    return ParameterDict(**params)
 
 class ODERepresentation(object):
     """

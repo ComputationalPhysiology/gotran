@@ -29,12 +29,16 @@ def main(filename, params):
     f.write("# Gotran generated code for: " + ode.name + "\n\n")
     f.write(gen.init_states_code() + "\n\n")
     f.write(gen.init_param_code() + "\n\n")
-    f.write(gen.dy_code() + "\n\n")
+    f.write(gen.dy_code(params.rhs_args) + "\n\n")
 
 if __name__ == "__main__":
     import sys
+    from modelparameters.parameterdict import ParameterDict, OptionParam
     
     params = _default_params()
+    params = ParameterDict(rhs_args = OptionParam("stp", ["tsp", "stp", "spt"], \
+                    description="Argument order of the generated rhs function. "\
+                    "s=states, p=parameters, t=time"), **params)
     params.parse_args(usage="usage: %prog FILE [options]")#sys.argv[2:])
     
     if len(sys.argv) < 2:
