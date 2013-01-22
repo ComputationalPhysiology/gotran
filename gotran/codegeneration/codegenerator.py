@@ -148,7 +148,7 @@ class CodeGenerator(object):
         body_lines.append("# Return dy")
 
         # Add function prototype
-        args = "time, states"
+        args = "states, time"
         if not self.oderepr.optimization.parameter_numerals:
             args += ", parameters"
         
@@ -241,7 +241,7 @@ class CodeGenerator(object):
         body_lines.append("# Return monitored")
 
         # Add function prototype
-        args = "time, states"
+        args = "states, time"
         if not self.oderepr.optimization.parameter_numerals:
             args += ", parameters"
         
@@ -579,7 +579,7 @@ class CCodeGenerator(CodeGenerator):
         parameters = "" if not parameters_in_signature or \
                      self.oderepr.optimization.parameter_numerals \
                      else "double* parameters, "
-        args = "double time, const double* states, {0}double* {1}".format(\
+        args = "const double* states, double time, {0}double* {1}".format(\
             parameters, result_name)
         dy_function = self.wrap_body_with_function_prototype(\
             body_lines, "rhs", args, \
