@@ -161,7 +161,7 @@ def jit(ode, **options):
             pgen.init_param_code() + "\n\n"
 
     # Compile module
-    return compile_extension_module(ccode, pcode, ode)
+    return compile_extension_module(ccode, pcode, oderepr.ode)
 
 # Assign docstring
 jit.func_doc = _jit_doc_str
