@@ -233,7 +233,7 @@ def _create_newton_system(ode, theta=1):
         return reduce(lambda x, y: x+y, ders, 0)
     
     # Substitution dict between sym and previous sym value
-    subs = dict(syms for syms in zip(states + vars_, states_0 + vars_0))
+    subs = [syms for syms in zip(states + vars_, states_0 + vars_0)]
 
     # Generate F using theta rule
     F_expr = [theta*expr+(1-theta)*expr.subs(subs) - \

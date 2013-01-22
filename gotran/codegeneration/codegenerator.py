@@ -137,7 +137,7 @@ class CodeGenerator(object):
         # Return body lines 
         return body_lines
         
-    def dy_code(self, rhs_args):
+    def dy_code(self, rhs_args="stp"):
         """
         Generate code for evaluating state derivatives
         """
