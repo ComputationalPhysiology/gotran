@@ -281,6 +281,19 @@ class MathMLBaseParser(object):
             "arctan": 'atan',
             }
 
+    def use_parenthesis(self, child, parent):
+        """
+        Return true if child operation need parenthesis
+        """
+        if parent is None:
+            return False
+
+        parent_prec = self._precedence[parent]
+        if parent == "minus":
+            parent_prec -= 0.5
+        
+        return parent_prec < self._precedence[child]
+
     def __getitem__(self, operator):
         return self._operators[operator]
     
@@ -319,8 +332,7 @@ class MathMLBaseParser(object):
             eq  = []
             
             # Check if we need parenthesis
-            use_parent = (parent is not None) and \
-                         (self._precedence[parent] < self._precedence[op])
+            use_parent = self.use_parenthesis(op, parent)
             
             # If unary operator
             if len(root) == 1:
@@ -425,20 +437,20 @@ class MathMLBaseParser(object):
         else:
             error("ERROR: No support for higher order derivatives.")
             
-    def _parse_piecewise(self, cases, parent):
+    def _parse_piecewise(self, cases, parent=None):
         if len(cases) == 2:
             piece_children = cases[0].getchildren()
             cond  = self._parse_subtree(piece_children[1], "piecewise")
-            true  = self._parse_subtree(piece_children[0], "piecewise")
-            false = self._parse_subtree(cases[1].getchildren()[0], "piecewise")
+            true  = self._parse_subtree(piece_children[0])
+            false = self._parse_subtree(cases[1].getchildren()[0])
             return ["Conditional", "("] + cond + [", "] + true + [", "] + \
                    false + [")"]
         else:
             piece_children = cases[0].getchildren()
             cond  = self._parse_subtree(piece_children[1], "piecewise")
-            true  = self._parse_subtree(piece_children[0], "piecewise")
+            true  = self._parse_subtree(piece_children[0])
             return ["Conditional", "("] + cond + [", "] + true + [", "] + \
-                   self._parse_piecewise(cases[1:], "piecewise") + [")"]
+                   self._parse_piecewise(cases[1:]) + [")"]
     
 class MathMLCPPParser(MathMLBaseParser):
     def _parse_power(self, operands):
