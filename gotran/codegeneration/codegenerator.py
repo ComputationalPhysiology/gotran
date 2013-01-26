@@ -330,7 +330,7 @@ class CodeGenerator(object):
                       "value {maxop} {maxvalue}"
         body_lines.append("# Parameter indices and limit checker")
 
-        body_lines.append("state_ind = dict({0})".format(\
+        body_lines.append("param_ind = dict({0})".format(\
             ", ".join("{0}=({1}, {2})".format(\
                 state.param.name, i, repr(state.param._range))\
                 for i, state in enumerate(\
