@@ -174,7 +174,8 @@ def compile_extension_module(code, pcode, ode):
     # Create unique module name for this application run
     module_name = "gotran_compiled_module_{0}_{1}".format(\
         ode.name, hashlib.md5(repr(code) + instant.get_swig_version() + \
-                              gotran.__version__).hexdigest())
+                              gotran.__version__ + \
+                              instant.__version__).hexdigest())
     
     # Check cache
     compiled_module = instant.import_module(module_name)
