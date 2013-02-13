@@ -534,7 +534,8 @@ class CCodeGenerator(CodeGenerator):
         """
 
         body_lines = []
-        body_lines = ["values[{0}] = {1};".format(i, state.param.value)\
+        body_lines = ["values[{0}] = {1}; // {2}".format(i, state.param.value,
+                                                         state.name)\
                       for i, state in enumerate(self.oderepr.ode.states)]
 
         # Add function prototype
@@ -550,8 +551,9 @@ class CCodeGenerator(CodeGenerator):
         """
 
         body_lines = []
-        body_lines = ["values[{0}] = {1};".format(i, state.param.value)\
-                      for i, state in enumerate(self.oderepr.ode.parameters)]
+        body_lines = ["values[{0}] = {1}; // {2}".format(i, param.param.value, \
+                                                         param.name)\
+                      for i, param in enumerate(self.oderepr.ode.parameters)]
 
         # Add function prototype
         init_function = self.wrap_body_with_function_prototype(\
