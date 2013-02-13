@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+
+import os
+
+from gotran.codegeneration.oderepresentation import ODERepresentation, \
+     _default_params
+from gotran.codegeneration.codegenerator import CCodeGenerator
+from gotran.model import load_ode
+
+def main(filename, params):
+    """
+    Create a beat cell model from a gotran model
+    """
+
+    # Load Gotran model
+    ode = load_ode(filename)
+
+    # Check for completness
+    if not ode.is_complete:
+        return 
+
+    # Create an ODE representation
+    oderepr = ODERepresentation(ode, **params.copy(True))
+
+    # Create a Beat Cell model code generator
+    gen = CCodeGenerator(oderepr)
+
+    f = open(filename.replace(".ode", "")+".h", "w")
+    f.write("// Gotran generated code for: " + ode.name + "\n\n")
+    f.write("#include \"math.h\"\n\n")
+    f.write(gen.init_states_code() + "\n\n")
+    f.write(gen.init_param_code() + "\n\n")
+    f.write(gen.dy_code(parameters_in_signature=True) + "\n\n")
+
+if __name__ == "__main__":
+    import sys
+    from modelparameters.parameterdict import ParameterDict, OptionParam
+    
+    params = _default_params()
+    #params = ParameterDict(rhs_args = OptionParam("stp", ["tsp", "stp", "spt"], \
+    #                description="Argument order of the generated rhs function. "\
+    #                "s=states, p=parameters, t=time"), **params)
+    params.parse_args(usage="usage: %prog FILE [options]")#sys.argv[2:])
+    
+    if len(sys.argv) < 2:
+        raise RuntimeError("Expected a single gotran file argument")
+
+    if not os.path.isfile(sys.argv[1]):
+        raise IOError("Expected the argument to be a file")
+	 
+    file_name = sys.argv[1]
+    main(file_name, params)

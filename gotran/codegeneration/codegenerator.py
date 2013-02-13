@@ -30,6 +30,16 @@ from oderepresentation import ODERepresentation
 
 _re_str = re.compile(".*\"([\w\s]+)\".*")
 
+def _is_number(num_str):
+    """
+    A hack to check wether a str is a number
+    """
+    try:
+        float(num_str)
+        return True
+    except:
+        return False
+
 class CodeGenerator(object):
     
     # Class attributes
@@ -391,6 +401,7 @@ class CodeGenerator(object):
                 continue
             
             line_ending = "" if no_line_ending else cls.line_ending
+            
             # Do not use line endings the line before and after a closure
             if line_ind + 1 < len(code_lines):
                 if isinstance(code_lines[line_ind+1], list):
@@ -437,7 +448,7 @@ class CodeGenerator(object):
                     while splitted_line and \
                               (((line_length + len(splitted_line[0]) \
                                  + 1 + inside_str) < cls.max_line_length) \
-                               or not line_stump):
+                               or not line_stump or _is_number(line_stump[-1][-1])):
                         line_stump.append(splitted_line.popleft())
 
                         # Add a \" char to first stub if inside str
@@ -517,6 +528,38 @@ class CCodeGenerator(CodeGenerator):
         prototype.append(body_lines)
         return prototype
     
+    def init_states_code(self):
+        """
+        Generate code for setting initial condition
+        """
+
+        body_lines = []
+        body_lines = ["values[{0}] = {1};".format(i, state.param.value)\
+                      for i, state in enumerate(self.oderepr.ode.states)]
+
+        # Add function prototype
+        init_function = self.wrap_body_with_function_prototype(\
+            body_lines, "init_values", "double* values", "", \
+            "Init values")
+        
+        return "\n".join(self.indent_and_split_lines(init_function))
+
+    def init_param_code(self):
+        """
+        Generate code for setting  parameters
+        """
+
+        body_lines = []
+        body_lines = ["values[{0}] = {1};".format(i, state.param.value)\
+                      for i, state in enumerate(self.oderepr.ode.parameters)]
+
+        # Add function prototype
+        init_function = self.wrap_body_with_function_prototype(\
+            body_lines, "parameter_values", "double* values", "", \
+            "Default parameter values")
+        
+        return "\n".join(self.indent_and_split_lines(init_function))
+
     def dy_body(self, parameters_in_signature=False, result_name="dy"):
         """
         Generate body lines of code for evaluating state derivatives

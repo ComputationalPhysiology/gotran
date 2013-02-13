@@ -16,6 +16,8 @@ minor = 0
 
 scripts = [pjoin("scripts", "gotran2"),
            pjoin("scripts", "gotran2py"),
+           pjoin("scripts", "gotran2cpp"),
+           pjoin("scripts", "gotran2c"),
            pjoin("scripts", "gotran2matlab"),
            pjoin("scripts", "cellml2gotran")]
 
