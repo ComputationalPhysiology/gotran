@@ -19,6 +19,7 @@ scripts = [pjoin("scripts", "gotran2"),
            pjoin("scripts", "gotran2cpp"),
            pjoin("scripts", "gotran2c"),
            pjoin("scripts", "gotran2matlab"),
+           pjoin("scripts", "gotran2latex"),
            pjoin("scripts", "cellml2gotran")]
 
 if platform.system() == "Windows" or "bdist_wininst" in sys.argv:

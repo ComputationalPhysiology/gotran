@@ -1,0 +1,393 @@
+#!/usr/bin/env python
+
+from gotran.codegeneration.oderepresentation import ODERepresentation, \
+    _default_params as _default_gotran_params
+from gotran.model import load_ode
+from gotran.common import check_arg
+from gotran import info
+from collections import OrderedDict
+from modelparameters.codegeneration import latex as mp_latex
+from modelparameters.parameters import Param, ScalarParam
+from modelparameters.parameterdict import ParameterDict
+import sympy
+import re
+
+params = None
+_packages = [("fullpage", ""), ("longtable", ""), ("multicol", ""), \
+             ("amsmath", ""), ("mathpazo", ""), ("flexisym", "[mathpazo]"), \
+             ("breqn", "")]
+_global_opts = "\\setkeys{breqn}{breakdepth={1}}"
+
+_latex_template = """\\documentclass[a4paper,{FONTSIZE}pt]{{article}}
+{PKGS}
+{PREOPTS}
+
+\\begin{{document}}
+{OPTS}
+{BODY}
+{ENDOPTS}
+
+\\end{{document}}"""
+
+_param_table_template = """
+% ---------------- BEGIN PARAMETERS ---------------- %
+
+\\section*{{Parameters}}\n
+{OPTS}
+\\begin{{longtable}}{{| l l p{{4cm}} |}}
+\\caption[Parameter Table]{{\\textbf{{Parameter Table}}}}\\\\
+\\hline
+\\multicolumn{{1}}{{|c}}{{\\textbf{{Parameter\\hspace{{0.5cm}}}}}} &
+\\multicolumn{{1}}{{c}}{{\\textbf{{Value\\hspace{{0.5cm}}}}}} &
+\\multicolumn{{1}}{{c|}}{{\\textbf{{Description}}}}\\\\ \\hline
+\\endfirsthead
+\\multicolumn{{3}}{{c}}%
+{{{{\\bfseries \\tablename\\ \\thetable{{}} --- continued from previous page}}}}
+\\\\ \hline
+\\multicolumn{{1}}{{|c}}{{\\textbf{{Parameter\\hspace{{0.5cm}}}}}} &
+\\multicolumn{{1}}{{c}}{{\\textbf{{Value\\hspace{{0.5cm}}}}}} &
+\\multicolumn{{1}}{{c|}}{{\\textbf{{Description}}}}\\\\ \\hline
+\\endhead
+\\hline
+\\multicolumn{{3}}{{|r|}}{{{{Continued on next page}}}}\\\\ \\hline
+\\endfoot
+\\hline \\hline
+\\endlastfoot
+{BODY}\\\\
+\\hline
+\\end{{longtable}}
+{ENDOPTS}
+
+% ----------------- END PARAMETERS ----------------- %
+"""
+
+_state_table_template = """
+% ---------------- BEGIN STATES ---------------- %
+
+\\section*{{Initial Values}}\n
+{OPTS}
+\\begin{{longtable}}{{| l l |}}
+\\caption[State Table]{{\\textbf{{State Table}}}}\\\\
+\\hline
+\\multicolumn{{1}}{{|c}}{{\\textbf{{State\\hspace{{0.5cm}}}}}} &
+\\multicolumn{{1}}{{c|}}{{\\textbf{{Value}}}}\\\\ \\hline
+\\endfirsthead
+\\multicolumn{{2}}{{c}}%
+{{{{\\bfseries \\tablename\\ \\thetable{{}} --- continued from previous page}}}}
+\\\\ \hline
+\\multicolumn{{1}}{{|c}}{{\\textbf{{State\\hspace{{0.5cm}}}}}} &
+\\multicolumn{{1}}{{c|}}{{\\textbf{{Value}}}}\\\\ \\hline
+\\endhead
+\\hline
+\\multicolumn{{2}}{{|r|}}{{{{Continued on next page}}}}\\\\ \\hline
+\\endfoot
+\\hline \\hline
+\\endlastfoot
+{BODY}\\\\
+\\hline
+\\end{{longtable}}
+{ENDOPTS}
+
+% ----------------- END STATES ----------------- %
+"""
+
+_components_template = """
+% ---------------- BEGIN COMPONENTS ---------------- %
+
+\\section*{{Components}}
+{OPTS}
+{BODY}
+{ENDOPTS}
+
+% ----------------- END COMPONENTS ----------------- %
+"""
+
+def main(ode_file):
+    """
+    Writes a LaTeX document decribing given gotran model.
+    """
+
+    # Initialize parameters to default if they have not been set
+    global _params
+    _params = _params or _default_params()
+
+    # Load Gotran model
+    ode = load_ode(ode_file)
+
+    # Check for completeness
+    # TODO: Should raise a more descriptive exception?
+    if not ode.is_complete:
+        raise Exception('Incomplete ODE')
+
+    latex_file = _params.latex_output or '{0}.tex'.format(ode.name)
+
+    # Create ODE representation
+    oderepr = ODERepresentation(ode, **_params.copy(True))
+
+    # Create a LaTeX document generator
+    info("")
+    info("Generating a LaTeX document for the {0} ode...".format(ode.name))
+
+    # Parameter table:
+    param_str = "\\\\\n".join(_format_param_table_row(par.name, \
+                                                      par.param.description, \
+                                                      par.value, \
+                                                      par.param.unit) \
+                              for par in ode.parameters)
+    param_table_opts = _format_options(exclude=["page_columns"])
+    param_table_output = _param_table_template.format( \
+        OPTS=param_table_opts['begin'], BODY=param_str, \
+        ENDOPTS=param_table_opts['end'])
+
+    # State table:
+    state_str = "\\\\\n".join(_format_state_table_row(state.name, \
+                                                      state.value, \
+                                                      state.param.unit) \
+                              for state in ode.states)
+    state_table_opts = _format_options(exclude=["page_columns"])
+    state_table_output = _state_table_template.format( \
+        OPTS=state_table_opts['begin'], BODY=state_str, \
+        ENDOPTS=param_table_opts['end'])
+
+    # Components:
+    comp_template = "{LABEL}\n\\begin{{dgroup*}}\n{BODY}\\end{{dgroup*}}\n"
+    eqn_template = "  \\begin{{dmath}}\n    {0} = {1}\\\\\n  \\end{{dmath}}\n"
+    components_str = ""
+    for name, comp in ode.components.items():
+        if not (comp.intermediates or comp.derivatives):
+            continue
+        format_label = _format_component_label(name)
+        format_body = ""
+        for intermediate in comp.intermediates:
+            format_body += eqn_template.format( \
+                _format_expr(intermediate.name), \
+                _format_expr(intermediate.expr))
+        for derivative in comp.derivatives:
+            if len(derivative.states) == 1:
+                format_body += eqn_template.format( \
+                    "\\frac{{d{0}}}{{dt}}".format( \
+                        _format_expr(derivative.states[0].name)), \
+                    _format_expr(derivative.expr))
+            else:
+                format_body += eqn_template.format( \
+                    _format_expr(derivative.expr), \
+                    _format_expr(derivative.expr))
+        components_str += comp_template.format(LABEL=format_label, \
+                                               BODY=format_body)
+    components_opts = \
+        _format_options(override=["page_columns", "math_font_size"])
+    components_output = _components_template.format( \
+        OPTS=components_opts['begin'], BODY=components_str, \
+        ENDOPTS=components_opts['end'])
+
+    latex_output = ""
+    if _params.no_preamble:
+        latex_output = param_table_output + state_table_output \
+                       + components_output
+    else:
+        document_opts = _format_options(override=["font_size", "landscape"])
+        latex_output = _latex_template.format( \
+            FONTSIZE=_params.font_size, PKGS=_format_packages(_packages), \
+            PREOPTS=_global_opts, OPTS=document_opts['begin'], \
+            BODY=param_table_output + state_table_output + components_output, \
+            ENDOPTS=document_opts['end'])
+    open(latex_file, "w").write(latex_output)
+    info("  done.")
+    if _params.no_preamble:
+        info("Note: Document generated without preamble. Required packages:")
+        info("\n".join("    {0}{{{1}}}".format(package[1], package[0]) \
+                       for package in _packages))
+
+def _format_options(exclude=None, override=None):
+    """
+    Wrap options around a LaTeX string.
+    Note: If override contains elements, only these will be used, ignoring
+    exclude.
+    """
+    exclude = exclude if exclude and not override else []
+    override = override or []
+    opts = _default_params()
+    opts.update(_params)
+
+    begin_str = end_str = ""
+
+    if opts.page_columns > 1 \
+            and (("page_columns" not in exclude and not override) \
+                 or "page_columns" in override):
+        begin_str = "\\begin{{multicols}}{{{0}}}\n".format(opts.page_columns) \
+                    + begin_str
+        end_str += "\\end{multicols}\n"
+
+    # Non-standard options -- only include if specified in override:
+
+    if "font_size" in override:
+        begin_str = "{{\\fontsize{{{0}}}{{{1:.1f}}}\n".format( \
+            opts.font_size, opts.font_size*1.2) + begin_str
+        end_str += "}% end fontsize\n"
+
+    if "math_font_size" in override and opts.math_font_size:
+        begin_str = "{{\\fontsize{{{0}}}{{{1:.1f}}}\n".format( \
+            opts.math_font_size, opts.math_font_size*1.2) + begin_str
+        end_str += "}% end fontsize\n"
+
+    if "bold_equation_labels" in override and opts.bold_equation_labels:
+        begin_str = "\\textbf{" + begin_str
+        end_str += "}"
+
+    if "landscape" in override and opts.landscape:
+        _packages.append(("pdflscape", ""))
+        begin_str = "\\begin{landscape}\n" + begin_str
+        end_str += "\\end{landscape}\n"
+
+    return {'begin':begin_str, 'end':end_str}
+
+def _format_packages(package_list):
+    """
+    Returns list of packages and options as a LaTeX-formatted string.
+    """
+    return '\n'.join('\\usepackage{0}{{{1}}}'.format(option, package) \
+                     for package, option in package_list)
+
+def _format_expr(expr):
+    """
+    Returns a LaTeX-formatted string for a sympy expression.
+    E.g.:
+    >>> _format_expr("exp(i*pi) + 1")
+    'e^{i \\pi} + 1'
+    """
+    # Some values are treated as special cases by sympy.sympify.
+    # Return these as they are.
+    if isinstance(expr, str) and expr in ["beta", "gamma"]:
+        return "\\{0}".format(expr)
+    if isinstance(expr, str) and expr in ["I", "O"]:
+        return expr
+    return mp_latex(sympy.sympify(expr))
+
+def _format_unit(unit):
+    """
+    Returns sympified and LaTeX-formatted string describing given unit.
+    E.g.:
+    >>> _format_unit("m/s**2")
+    '\\mathrm{\\frac{m}{s^{2}}}'
+    """
+    atomic_units = re.findall("([a-zA-Z]+)", unit)
+    atomic_dict = dict((au, sympy.Symbol(au)) for au in atomic_units)
+    sympified_unit = eval(unit, atomic_dict, {})
+    return "\\mathrm{{{0}}}".format(mp_latex(sympified_unit))
+
+def _format_param_table_row(param_name, description, value, unit='1'):
+    """
+    Returns LaTeX-formatted string for a longtable row describing a parameter.
+    E.g.:
+    >>> _format_param_table_row("g_earth", "Surface gravity", 9.81, "m/s**2")
+    '  $g_{earth}$\\hspace{0.5cm} & $9.81 \\mathrm{\\frac{m}{s^{2}}}$
+    \\hspace{0.5cm} & Surface gravity'
+    """
+    return "  ${NAME}$\\hspace{{0.5cm}} & ${VAL}{UNIT}$" \
+           "\\hspace{{0.5cm}} & {DESC}".format( \
+                NAME=_format_expr(param_name), VAL=value, \
+                DESC=description, \
+                UNIT=' ' + _format_unit(unit) if unit != '1' else '')
+
+def _format_state_table_row(state_name, value, unit='1'):
+    """
+    Returns LaTeX-formatted string for a longtable row describing a state's
+    initial value.
+    E.g.:
+    >>> _format_state_table_row("amu", 931.46, "MeV/c**2")
+    '  $amu$\\hspace{0.5cm} & $931.46 \\mathrm{\\frac{MeV}{c^{2}}}$'
+    """
+    return "  ${NAME}$\\hspace{{0.5cm}} & ${VAL}{UNIT}$".format( \
+        NAME=_format_expr(state_name), VAL=value, \
+        UNIT=' ' + _format_unit(unit) if unit != '1' else '')
+
+def _format_component_label(label):
+    label_opts = _format_options(override=["bold_equation_labels"])
+    return "{0}{1}{2}\\\\".format(label_opts['begin'], \
+                                  label.replace('_', '\\_'), \
+                                  label_opts['end'])
+
+def _default_params(exclude=None):
+    """
+    Initializes default parameters.
+    """
+    exclude = exclude or []
+    check_arg(exclude, list, itemtypes=str)
+
+    # Add unimplemented parameters to exclude list
+    exclude += []
+
+    # Load Gotran parameters:
+    params = _default_gotran_params(exclude).copy(True)
+
+    if "latex_output" not in exclude:
+        # Specify output file
+        params["latex_output"] = Param( \
+            "", description="Specify LaTeX output file")
+
+    if "page_columns" not in exclude:
+        # Set number of columns per page
+        # FIXME: ScalarParam causes parse_args() to crash due to non-ASCII
+        # symbols.
+        # params["page_columns"] = ScalarParam( \
+        #     1, ge=1, description="Set number of columns per page in " \
+        #     "LaTeX document")
+        params["page_columns"] = Param( \
+            1, description="Set number of columns per page in " \
+            "LaTeX document")
+
+    if "font_size" not in exclude:
+        # Set equation font size
+        # FIXME: ScalarParam causes parse_args() to crash due to non-ASCII
+        # symbols.
+        # params["font_size"] = ScalarParam( \
+        #     10, ge=1, description="Set global font size for LaTeX document")
+        params["font_size"] = Param( \
+            10, description="Set global font size for LaTeX document")
+
+    if "math_font_size" not in exclude:
+        # Set font size for mathematical expressions.
+        # FIXME: ScalarParam causes parse_args() to crash due to non-ASCII
+        # symbols.
+        # params["math_font_size"] = ScalarParam( \
+        #     0, ge=1, description="Set font size for mathematical expressions"\
+        #     " in LaTeX document. Uses global font size if left blank")
+        params["math_font_size"] = Param( \
+            0, description="Set font size for mathematical expressions in " \
+            "LaTeX document. Uses global font size if left blank")
+
+    if "bold_equation_labels" not in exclude:
+        # Toggle bold equation labels
+        params["bold_equation_labels"] = Param( \
+            False, description="Give equation labels a bold typeface in " \
+            "LaTeX document")
+
+    if "no_preamble" not in exclude:
+        # If set to True, does not generate the preamble
+        params["no_preamble"] = Param( \
+            False, description="If set to True, LaTeX document will be " \
+                "be generated without the preamble")
+
+    if "landspace" not in exclude:
+        # If set to true, sets document to a landscape page layout
+        params["landscape"] = Param( \
+            False, description="Set LaTeX document to landscape layout")
+
+    # Return the ParameterDict
+    return ParameterDict(**params)
+
+if __name__ == '__main__':
+    import os
+    import sys
+
+    _params = _default_params()
+    _params.parse_args(usage="usage: %prog FILE [options]")
+
+    if len(sys.argv) < 2:
+        raise RuntimeError("Expected a single gotran file argument")
+
+    if not os.path.isfile(sys.argv[1]):
+        raise IOError("Expected the argument to be a file")
+
+    file_name = sys.argv[1]
+    main(file_name)
