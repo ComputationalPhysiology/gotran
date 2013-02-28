@@ -4,7 +4,7 @@ Dependencies
 Gotran depends on Instant, SymPy, NumPy and ModelParameters.
 
   - Instant:          <https://launchpad.net/instant>
-  - SymPy:            <http://sympy.org>
+  - SymPy:            <http://sympy.org> (0.7.2 version)
   - NumPy:            <http://numpy.scipy.org>
   - ModelParameters:  <https://launchpad.net/modelparameters>
 
