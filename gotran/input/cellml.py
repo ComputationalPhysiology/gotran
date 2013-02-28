@@ -406,7 +406,12 @@ class MathMLBaseParser(object):
     def _parse_cn(self, var, parent):
         value = var.text.strip()
         # Fix possible strangeness with integer division in Python...
-        if parent == "divide" and "." not in value:
+        nums = [1.0, 2.0, 3.0, 4.0, 5.0, 10.0]
+        num_strs = ["one", "two", "three", "four", "five", "ten"]
+        
+        if eval(value) in nums:
+            value = dict(t for t in zip(nums, num_strs))[eval(value)]
+        elif parent == "divide" and "." not in value:
             value += ".0"
         return [value]
     
