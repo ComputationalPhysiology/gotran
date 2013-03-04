@@ -24,7 +24,7 @@ exec(gen.dy_code())
 parameters = default_parameters()
 states = init_values()
 dy = np.asarray(states).copy()
-dy_correct = rhs(0.0, states, parameters)
+dy_correct = rhs(states, 0.0, parameters)
 
 for keep, use_cse, numerals, use_names in \
         [(1,0,0,1), (1,0,0,0), \
@@ -48,13 +48,13 @@ for keep, use_cse, numerals, use_names in \
     module = jit(oderepr)
     t0 = time.time()
     if oderepr.optimization.parameter_numerals:
-        module.rhs(0.0, states, dy)
+        module.rhs(states, 0.0, dy)
         for i in range(times):
-            module.rhs(0.0, states, dy)
+            module.rhs(states, 0.0, dy)
     else:
-        module.rhs(0.0, states, parameters, dy)
+        module.rhs(states, 0.0, parameters, dy)
         for i in range(times):
-            module.rhs(0.0, states, parameters, dy)
+            module.rhs(states, 0.0, parameters, dy)
 
     print """
 keep_intermediates = {0}
