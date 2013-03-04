@@ -12,6 +12,10 @@ def main(filename, params):
     Create a beat cell model from a gotran model
     """
 
+    if params.keep_intermediates:
+        # A hack to avoid sympy contractions
+        import gotran.codegeneration.avoidsympycontractions
+
     # Load Gotran model
     ode = load_ode(filename)
 

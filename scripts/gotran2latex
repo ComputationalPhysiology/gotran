@@ -111,6 +111,10 @@ def main(ode_file):
     global _params
     _params = _params or _default_params()
 
+    if _params.keep_intermediates:
+        # A hack to avoid sympy contractions
+        import gotran.codegeneration.avoidsympycontractions
+
     # Load Gotran model
     ode = load_ode(ode_file)
 
