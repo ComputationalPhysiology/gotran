@@ -359,7 +359,9 @@ class MarkovModel(ODEObject):
         Arguments
         ---------
         states : tuple of size two
-            A tuple of two states for which the rate is going to be between
+            A tuple of two states for which the rate is going to be between,
+            a list of states is also accepted. If two lists are passed something
+            with a shape is expected as rate argument.
         rate : scalar or sympy expression
             An expression of the rate between the two states
         """
@@ -373,9 +375,51 @@ class MarkovModel(ODEObject):
         if len(states) != 2:
             error("Expected the states argument to be a tuple of two states")
 
-        if not all(state in self._states for state in states):
-            error("Expected the states arguments to be States in "\
-                  "the Markov model")
+        if all(isinstance(state, ModelSymbol) for state in states):
+            
+            if not all(state in self._states for state in states):
+                error("Expected the states arguments to be States in "\
+                      "the Markov model")
+
+        elif all(isinstance(state, list) for state in states):
+
+            # Check index arguments
+            for list_of_states in states:
+                if not all(state in self._states for state in list_of_states):
+                    error("Expected the states arguments to be States in "\
+                          "the Markov model")
+
+            # Check rate matrix
+            if not hasattr(rate, "shape"):
+                error("When passing list of states as indices a rate with "\
+                      "shape attribute is expected.")
+
+            # Assign the individual rates
+            if rate.shape[0] != len(states[0]) or rate.shape[1] != len(states[1]):
+                error("Shape of rates does not match given states")
+            
+            for i, state_i in enumerate(states[0]):
+                for j, state_j in enumerate(states[1]):
+                    value = rate[i,j]
+
+                    # If 0 as rate
+                    if (isinstance(value, scalars) and value == 0) or \
+                        (isinstance(value, sp.Basic) and value.is_zero):
+                        continue
+
+                    if state_i == state_j:
+                        error("Cannot have a nonzero rate value between the "\
+                              "same states")
+
+                    print state_i, state_j, value
+                    # Assign the rate
+                    self[state_i, state_j] = value
+
+            # Do not continue after matrix is added
+            return
+                
+        else:
+            error("Expected either a list of states or only states as indices.")
             
         if states[0] == states[1]:
             error("The two states cannot be the same.")

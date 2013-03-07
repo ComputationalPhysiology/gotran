@@ -54,6 +54,8 @@ class IntermediateDispatcher(dict):
         # Set the attr of the ODE
         # If a scalar or a sympy number or it is a sympy.Basic consisting of
         # ModelSymbols
+
+        print "SET", name
         if isinstance(value, scalars) or isinstance(value, sp.Number) or \
                (isinstance(value, sp.Basic) and \
                 any(isinstance(atom, ModelSymbol)\
@@ -103,12 +105,16 @@ class IntermediateDispatcher(dict):
             # namespace
             dict.__setitem__(self, name, value)
 
-def _init_namespace(ode, load_arguments):
+    def update(self, other):
+        for name, value in other.items():
+            print "update", name
+            dict.__setitem__(self, name, value)
+
+def _init_namespace(ode, load_arguments, namespace):
     """
     Create namespace and populate it
     """
     
-    namespace = {}
     namespace.update(sp_namespace)
     namespace.update(dict(time=ode.time, dt=ode.dt,
                           ScalarParam=ScalarParam,
@@ -197,18 +203,20 @@ def load_ode(filename, name=None, **arguments):
 
     debug("Loading {}".format(ode.name))
 
+    # Dict to collect declared intermediates
+    intermediate_dispatcher = IntermediateDispatcher(ode)
+
     # Create namespace which the ode file will be executed in
-    namespace = _init_namespace(ode, arguments)
+    namespace = _init_namespace(ode, arguments, intermediate_dispatcher)
 
     # Execute the file
     if (not os.path.isfile(filename)):
         error("Could not find '{0}'".format(filename))
 
-    # Dict to collect declared intermediates
-    intermediate_dispatcher = IntermediateDispatcher(ode)
+    #intermediate_dispatcher.update(namespace)
 
     # Execute file and collect 
-    execfile(filename, namespace, intermediate_dispatcher)
+    execfile(filename, intermediate_dispatcher)
     
     # Finalize ODE
     ode.finalize()
@@ -370,8 +378,7 @@ def _namespace_binder(namespace, ode, load_arguments):
         namespace[mm.name] = mm
 
         # Add symbols to namespace
-        for state in mm._states:
-            namespace[state.name] = state.sym
+        namespace.update(dict((state.name, state.sym) for state in mm._states))
 
     # Update provided namespace
     namespace.update(dict(

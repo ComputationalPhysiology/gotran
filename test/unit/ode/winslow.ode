@@ -263,15 +263,13 @@ gamma = 0.10375*Ca_ss
 normal_mode_states = [C0, C1, C2, C3, C4]
 Ca_mode_states = [CCa0, CCa1, CCa2, CCa3, CCa4]
 
-for ind, (s0, s1) in enumerate(zip(normal_mode_states[:-1], \
-                                   normal_mode_states[1:])):
-    lcc[s0, s1] = (4-ind)*alpha
-    lcc[s1, s0] = (1+ind)*beta
+lcc[normal_mode_states, normal_mode_states] = \
+        Matrix(5, 5, lambda i, j: (4-i)*alpha if j-i == 1 else \
+               (i*beta if i-j == 1 else 0))
 
-for ind, (s0, s1) in enumerate(zip(Ca_mode_states[:-1], \
-                                   Ca_mode_states[1:])):
-    lcc[s0, s1] = (4-ind)*alpha*aL
-    lcc[s1, s0] = (1+ind)*beta/bL
+lcc[Ca_mode_states, Ca_mode_states] = \
+        Matrix(5, 5, lambda i, j: (4-i)*alpha*aL if j-i == 1 else \
+               (i*beta/bL if i-j == 1 else 0))
 
 for ind, (normal, Ca_mode) in enumerate(zip(normal_mode_states, \
                                             Ca_mode_states)):
