@@ -136,12 +136,31 @@ import_array();
 }}
 
 %pythoncode%{{
+def rhs({args}, dy=None):
+    '''
+    Evaluates the right hand side of the model
+
+    Arguments:
+    ----------
+{args_doc}    
+    dy : np.ndarray (optional)
+        The computed result 
+    '''
+    import numpy as np
+    if dy is None:
+        dy = np.zeros_like(states)
+    _rhs({args}, dy)
+    return dy
+
 {python_code}
 %}}
 
+// Rename rhs to _rhs
+%rename (_rhs) rhs;
+
 """
 
-def jit(ode, **options):
+def jit(ode, rhs_args="stp", parameters_in_signature=True, **options):
 
     check_arg(ode, (ODERepresentation, ODE))
 
@@ -155,18 +174,41 @@ def jit(ode, **options):
     cgen = CCodeGenerator(oderepr)
     pgen = CodeGenerator(oderepr)
 
-    ccode = cgen.dy_code(parameters_in_signature=True)
+    # Add function prototype
+    args=[]
+    args_doc=[]
+    for arg in rhs_args:
+        if arg == "s":
+            args.append("states")
+            args_doc.append("""    states : np.ndarray
+        The state values""")
+        elif arg == "t":
+            args.append("time")
+            args_doc.append("""    time : scalar
+        The present time""")
+        elif arg == "p" and \
+                 not oderepr.optimization.parameter_numerals \
+                 and parameters_in_signature:
+            args.append("parameters")
+            args_doc.append("""    parameters : np.ndarray
+        The parameter values""")
+
+    args = ", ".join(args)
+    args_doc = "\n".join(args_doc)
+
+    ccode = cgen.dy_code(rhs_args=rhs_args, \
+                         parameters_in_signature=parameters_in_signature)
 
     pcode = "\n\n" + pgen.init_states_code() + "\n\n" + \
             pgen.init_param_code() + "\n\n"
 
     # Compile module
-    return compile_extension_module(ccode, pcode, oderepr.ode)
+    return compile_extension_module(ccode, pcode, oderepr.ode, args, args_doc)
 
 # Assign docstring
 jit.func_doc = _jit_doc_str
 
-def compile_extension_module(code, pcode, ode):
+def compile_extension_module(code, pcode, ode, args, args_doc):
     """
     Compile an extension module, based on the C code from the ode
     """
@@ -195,6 +237,8 @@ def compile_extension_module(code, pcode, ode):
         num_states = ode.num_states,
         num_parameters = ode.num_parameters,
         python_code = pcode,
+        args=args,
+        args_doc=args_doc,
         )
 
     # Compile extension module with instant

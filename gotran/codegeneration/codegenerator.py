@@ -620,7 +620,8 @@ class CCodeGenerator(CodeGenerator):
         # Return the body lines
         return body_lines
         
-    def dy_code(self, parameters_in_signature=False, result_name="dy"):
+    def dy_code(self, rhs_args="stp", parameters_in_signature=False, \
+                result_name="dy"):
         """
         Generate code for evaluating state derivatives
         """
@@ -628,11 +629,19 @@ class CCodeGenerator(CodeGenerator):
         body_lines = self.dy_body(parameters_in_signature, result_name)
 
         # Add function prototype
-        parameters = "" if not parameters_in_signature or \
-                     self.oderepr.optimization.parameter_numerals \
-                     else "double* parameters, "
-        args = "const double* states, double time, {0}double* {1}".format(\
-            parameters, result_name)
+        args=[]
+        for arg in rhs_args:
+            if arg == "s":
+                args.append("const double* states")
+            elif arg == "t":
+                args.append("double time")
+            elif arg == "p" and \
+                not self.oderepr.optimization.parameter_numerals \
+                and parameters_in_signature:
+                args.append("const double* parameters")
+
+        args = ", ".join(args) + ", double* {0}".format(result_name)
+
         dy_function = self.wrap_body_with_function_prototype(\
             body_lines, "rhs", args, \
             "", "Calculate right hand side of {0}".format(self.oderepr.name))
