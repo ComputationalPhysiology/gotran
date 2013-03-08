@@ -367,10 +367,15 @@ class MarkovModel(ODEObject):
         """
         from gotran.model.expressions import Expression
 
-        check_arg(states, tuple, 0, MarkovModel.__setitem__)
+        check_arg(states, (tuple, list), 0, MarkovModel.__setitem__)
 
         if self._is_finalized:
             error("The Markov model is finalized. No more rates can be added.")
+
+        # If given one list of states as arguments we assume the a quadratic
+        # assignment of rates.
+        if isinstance(states, list):
+            states = (states, states)
             
         if len(states) != 2:
             error("Expected the states argument to be a tuple of two states")

@@ -263,13 +263,14 @@ gamma = 0.10375*Ca_ss
 normal_mode_states = [C0, C1, C2, C3, C4]
 Ca_mode_states = [CCa0, CCa1, CCa2, CCa3, CCa4]
 
+# Two lists of states give meaning to the connectivity matrix on the rhs
 lcc[normal_mode_states, normal_mode_states] = \
         Matrix(5, 5, lambda i, j: (4-i)*alpha if j-i == 1 else \
                (i*beta if i-j == 1 else 0))
 
-lcc[Ca_mode_states, Ca_mode_states] = \
-        Matrix(5, 5, lambda i, j: (4-i)*alpha*aL if j-i == 1 else \
-               (i*beta/bL if i-j == 1 else 0))
+# With only one list of states if is interpreted as a symetric two lists.
+lcc[Ca_mode_states] = Matrix(5, 5, lambda i, j: (4-i)*alpha*aL \
+                             if j-i == 1 else (i*beta/bL if i-j == 1 else 0))
 
 for ind, (normal, Ca_mode) in enumerate(zip(normal_mode_states, \
                                             Ca_mode_states)):
