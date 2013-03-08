@@ -55,7 +55,6 @@ class IntermediateDispatcher(dict):
         # If a scalar or a sympy number or it is a sympy.Basic consisting of
         # ModelSymbols
 
-        print "SET", name
         if isinstance(value, scalars) or isinstance(value, sp.Number) or \
                (isinstance(value, sp.Basic) and \
                 any(isinstance(atom, ModelSymbol)\
@@ -106,8 +105,8 @@ class IntermediateDispatcher(dict):
             dict.__setitem__(self, name, value)
 
     def update(self, other):
+        check_arg(other, dict)
         for name, value in other.items():
-            print "update", name
             dict.__setitem__(self, name, value)
 
 def _init_namespace(ode, load_arguments, namespace):
