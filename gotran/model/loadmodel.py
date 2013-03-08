@@ -115,6 +115,10 @@ def _init_namespace(ode, load_arguments, namespace):
     """
     
     namespace.update(sp_namespace)
+
+    # Add Sympy matrix related stuff
+    namespace.update(dict(eye=sp.eye, diag=sp.diag, Matrix=sp.Matrix, zeros=sp.zeros))
+                     
     namespace.update(dict(time=ode.time, dt=ode.dt,
                           ScalarParam=ScalarParam,
                           ArrayParam=ArrayParam,
