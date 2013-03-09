@@ -16,12 +16,11 @@ parameters("Ionic concentrations",
        Na_i=ScalarParam(10.0),
        Na_o=ScalarParam(138.0),)
 
-
 component("Membrane")
 comment("Constants")
-F = 96.5000000000000
-T = 310.000000000000
-R = 8.31400000000000
+F = 96.5
+T = 310
+R = 8.314
 RTonF = R*T/F
 FonRT = F/(R*T)
 VFonRT = FonRT*V
