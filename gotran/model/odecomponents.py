@@ -416,7 +416,6 @@ class MarkovModel(ODEObject):
                         error("Cannot have a nonzero rate value between the "\
                               "same states")
 
-                    print state_i, state_j, value
                     # Assign the rate
                     self[state_i, state_j] = value
 
