@@ -25,6 +25,7 @@ from collections import OrderedDict, deque
 from modelparameters.sympytools import ModelSymbol, sp, sp_namespace
 from modelparameters.codegeneration import sympycode
 from modelparameters.parameters import ScalarParam
+from modelparameters.sympytools import iter_symbol_params_from_expr
 
 # Gotran imports
 from gotran.common import type_error, value_error, error, check_arg, \
@@ -443,6 +444,7 @@ class ODE(object):
 
             # Add rates (to be added later)
             for mm_states, expr in mm._rates.items():
+                mm_states = tuple(prefix_subs[state] for state in mm_states)
                 markov_model_actions.append((obj, mm_states, expr.expr))
 
             # Update namespace
@@ -539,7 +541,7 @@ class ODE(object):
                     if sym in prefix_subs:
                         subs_list.append((sym, prefix_subs[sym]))
                 expr = expr.subs(subs_list)
-            
+
             mm[states] = expr
 
         # Add derivatives
