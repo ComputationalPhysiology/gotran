@@ -11,7 +11,7 @@ def main(filename, params):
     Create a matlab cell model file from a gotran model
     """
 
-    if params.keep_intermediates:
+    if not params.sympy_contraction:
         # A hack to avoid sympy contractions
         import gotran.codegeneration.avoidsympycontractions
 
@@ -38,7 +38,13 @@ if __name__ == "__main__":
     import os
     import sys
 
+    from modelparameters.parameterdict import ParameterDict, Param
+
     params = _default_params()
+    params = ParameterDict(\
+        sympy_contraction = Param(False, description="If True sympy contraction"\
+                                  " will be used, turning (V-3)/2 into V/2-3/2"),\
+        **params)
     params.parse_args(usage="usage: %prog FILE [options]")#sys.argv[2:])
     
     if len(sys.argv) < 2:

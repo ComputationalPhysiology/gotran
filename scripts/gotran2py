@@ -12,7 +12,7 @@ def main(filename, params):
     Create a beat cell model from a gotran model
     """
 
-    if params.keep_intermediates:
+    if not params.sympy_contraction:
         # A hack to avoid sympy contractions
         import gotran.codegeneration.avoidsympycontractions
 
@@ -37,12 +37,16 @@ def main(filename, params):
 
 if __name__ == "__main__":
     import sys
-    from modelparameters.parameterdict import ParameterDict, OptionParam
+    from modelparameters.parameterdict import ParameterDict, OptionParam, Param
     
     params = _default_params()
-    params = ParameterDict(rhs_args = OptionParam("stp", ["tsp", "stp", "spt"], \
-                    description="Argument order of the generated rhs function. "\
-                    "s=states, p=parameters, t=time"), **params)
+    params = ParameterDict(\
+        rhs_args = OptionParam("stp", ["tsp", "stp", "spt"], \
+                description="Argument order of the generated rhs function. "\
+                               "s=states, p=parameters, t=time"),
+        sympy_contraction = Param(True, description="If True sympy contraction"\
+                                  " will be used, turning (V-3)/2 into V/2-3/2"),\
+        **params)
     params.parse_args(usage="usage: %prog FILE [options]")#sys.argv[2:])
     
     if len(sys.argv) < 2:
