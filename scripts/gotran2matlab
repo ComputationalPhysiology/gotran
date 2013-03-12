@@ -8,7 +8,7 @@ from gotran import info
 
 def main(filename, params):
     """
-    Create a matlab cell model file from a gotran model
+    Create a matlab code from a gotran model
     """
 
     if not params.sympy_contraction:

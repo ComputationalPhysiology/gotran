@@ -9,7 +9,7 @@ from gotran.model import load_ode
 
 def main(filename, params):
     """
-    Create a beat cell model from a gotran model
+    Create a python module from a gotran model
     """
 
     if not params.sympy_contraction:
@@ -26,10 +26,18 @@ def main(filename, params):
     # Create an ODE representation
     oderepr = ODERepresentation(ode, **params.copy(True))
 
-    # Create a Beat Cell model code generator
+    # Create a python code generator
     gen = CodeGenerator(oderepr)
 
-    f = open(filename.replace(".ode", "")+".py", "w")
+    output = params.output
+
+    if output:
+        if not(len(output)>3 and output[-3:] == ".py"):
+            output += ".py"
+    else:
+        output = filename.replace(".ode", "")+".py"
+
+    f = open(output, "w")
     f.write("# Gotran generated code for: " + ode.name + "\n\n")
     f.write(gen.init_states_code() + "\n\n")
     f.write(gen.init_param_code() + "\n\n")
@@ -46,6 +54,7 @@ if __name__ == "__main__":
                                "s=states, p=parameters, t=time"),
         sympy_contraction = Param(True, description="If True sympy contraction"\
                                   " will be used, turning (V-3)/2 into V/2-3/2"),\
+        output = Param("", description="Specify output file name"),\
         **params)
     params.parse_args(usage="usage: %prog FILE [options]")#sys.argv[2:])
     
