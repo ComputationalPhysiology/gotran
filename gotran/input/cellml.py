@@ -923,12 +923,23 @@ class CellMLParser(object):
         open("{0}.ode".format(self.name), \
              "w").write()
 
-def cellml2ode(cellml, extract_equations=None, change_state_names=None):
+def cellml2ode(model_source, extract_equations=None, change_state_names=None):
     """
     Convert a CellML model into an ode
+
+    Arguments:
+    ----------
+    model_source: str
+        Path or url to CellML file
+    extract_equations : list of str (optional)
+        List of equations which should be extracted from its component
+        to prevent circular dependency
+    change_state_names : list of str
+        List of str with state names which should have it name locally
+        changed
     """
     from gotran import exec_ode
-    cellml = CellMLParser(cellml, extract_equations=extract_equations, \
+    cellml = CellMLParser(model_source, extract_equations=extract_equations, \
                           change_state_names=change_state_names)
     return exec_ode(cellml.to_gotran(), cellml.name)
     

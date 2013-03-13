@@ -143,17 +143,17 @@ def exec_ode(ode_str, name):
 
     debug("Loading {}".format(ode.name))
 
-    # Create namespace which the ode file will be executed in
-    namespace = _init_namespace(ode, {})
-
     # Dict to collect declared intermediates
     intermediate_dispatcher = IntermediateDispatcher(ode)
+
+    # Create namespace which the ode file will be executed in
+    namespace = _init_namespace(ode, {}, intermediate_dispatcher)
 
     # Write str to file
     open("_tmp_gotrand.ode", "w").write(ode_str)
     
     # Execute file and collect 
-    execfile("_tmp_gotrand.ode", namespace, intermediate_dispatcher)
+    execfile("_tmp_gotrand.ode", intermediate_dispatcher)
     os.unlink("_tmp_gotrand.ode")
 
     # Finalize ODE
