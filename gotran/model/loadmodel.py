@@ -349,11 +349,14 @@ def _namespace_binder(namespace, ode, load_arguments):
                 error("Name '{0}' is not a model_argument.".format(key))
     
         # Update the namespace
+        ns = {}
         for key, value in kwargs.items():
             if key not in load_arguments:
-                namespace[key] = value
+                ns[key] = value
             else:
-                namespace[key] = load_arguments[key]
+                ns[key] = load_arguments[key]
+        
+        namespace.update(ns)
 
     def markov_model(name, component="", algebraic_sum=None, **states):
         """        
