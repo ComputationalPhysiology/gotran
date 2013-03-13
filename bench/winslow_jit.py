@@ -1,6 +1,6 @@
 from gotran import *
 from gotran.codegeneration.codegenerator import *
-from gotran.codegeneration.compilemodule import jit
+from gotran.codegeneration.compilemodule import compile_module
 import time
 import numpy as np
 
@@ -45,7 +45,7 @@ for keep, use_cse, numerals, use_names in \
         int(oderepr.optimization.parameter_numerals),
         int(use_names))
     
-    module = jit(oderepr)
+    module = compile_module(oderepr)
     t0 = time.time()
     if oderepr.optimization.parameter_numerals:
         module.rhs(states, 0.0, dy)

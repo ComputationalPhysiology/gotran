@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2013-03-04"
+__date__ = "2012-05-07 -- 2013-03-13"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -735,7 +735,7 @@ class Creation(unittest.TestCase):
         import numpy as np
         from gotran.codegeneration.codegenerator import \
              CodeGenerator, ODERepresentation
-        from gotran.codegeneration.compilemodule import jit
+        from gotran.codegeneration.compilemodule import compile_module
         
         keep, use_cse, numerals, use_names = (1,0,0,1)
 
@@ -768,7 +768,7 @@ class Creation(unittest.TestCase):
                                         parameter_numerals=numerals,\
                                         use_names=use_names)
             gen = CodeGenerator(oderepr)
-            jit_oderepr = jit(oderepr)
+            jit_oderepr = compile_module(oderepr)
 
             # Execute code
             exec(gen.dy_code())

@@ -28,7 +28,7 @@ from common import DEBUG, INFO, WARNING, ERROR, CRITICAL, \
      info, debug, warning, error, set_log_level, list_timings
 from model import *
 from algorithms import *
-from codegeneration import jit
+from codegeneration import *
 
 # Model parameters
 from modelparameters.parameters import ScalarParam

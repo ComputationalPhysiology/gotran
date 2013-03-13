@@ -21,7 +21,7 @@ import oderepresentation
 import compilemodule
 
 # Import classes and routines from gotran modules
-from compilemodule import jit
+from compilemodule import compile_module
 
 # Assign the __all__ attribute
 __all__ = [name for name in globals().keys() if name[:1] != "_"]

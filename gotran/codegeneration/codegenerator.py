@@ -136,7 +136,8 @@ class CodeGenerator(object):
         # Init dy
         body_lines.append("")
         body_lines.append("# Init dy")
-        body_lines.append("dy = np.zeros_like(states)")
+        body_lines.append("if dy is None:")
+        body_lines.append(["dy = np.zeros_like(states)"])
         
         # Add dy[i] lines
         for ind, (state, (derivative, expr)) in enumerate(\
@@ -147,7 +148,7 @@ class CodeGenerator(object):
         # Return body lines 
         return body_lines
         
-    def dy_code(self, rhs_args="stp"):
+    def dy_code(self, rhs_args="stp", indent=0, self_arg=False):
         """
         Generate code for evaluating state derivatives
         """
@@ -159,6 +160,9 @@ class CodeGenerator(object):
 
         # Add function prototype
         args=[]
+        if self_arg:
+            args.append("self")
+
         for arg in rhs_args:
             if arg == "s":
                 args.append("states")
@@ -167,6 +171,8 @@ class CodeGenerator(object):
             elif arg == "p" and \
                  not self.oderepr.optimization.parameter_numerals:
                 args.append("parameters")
+
+        args.append("dy=None")
         
         args = ", ".join(args)
         
@@ -174,7 +180,7 @@ class CodeGenerator(object):
             body_lines, "rhs", args, \
             "dy", "Calculate right hand side")
         
-        return "\n".join(self.indent_and_split_lines(dy_function))
+        return "\n".join(self.indent_and_split_lines(dy_function, indent=indent))
 
     def monitored_body(self):
         """
@@ -268,7 +274,7 @@ class CodeGenerator(object):
         
         return "\n".join(self.indent_and_split_lines(monitor_function))
 
-    def init_states_code(self):
+    def init_states_code(self, indent=0, self_arg=False):
         """
         Generate code for setting initial condition
         """
@@ -311,15 +317,17 @@ class CodeGenerator(object):
              "init_values[ind] = value"])
             
         body_lines.append("")
+
+        args = "self, **values" if self_arg else "**values"
         
         # Add function prototype
         init_function = self.wrap_body_with_function_prototype(\
-            body_lines, "init_values", "**values", "init_values", \
+            body_lines, "init_values", args, "init_values", \
             "Init values")
         
-        return "\n".join(self.indent_and_split_lines(init_function))
+        return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
 
-    def init_param_code(self):
+    def init_param_code(self, indent=0, self_arg=False):
         """
         Generate code for setting parameters
         """
@@ -362,12 +370,86 @@ class CodeGenerator(object):
             
         body_lines.append("")
         
+        args = "self, **values" if self_arg else "**values"
+        
         # Add function prototype
         function = self.wrap_body_with_function_prototype(\
             body_lines, "default_parameters", \
-            "**values", "param_values", "Parameter values")
+            args, "param_values", "Parameter values")
         
-        return "\n".join(self.indent_and_split_lines(function))
+        return "\n".join(self.indent_and_split_lines(function, indent=indent))
+
+    def state_name_to_index_code(self, indent=0, self_arg=False):
+        """
+        Return code for index handling for states
+        """
+        body_lines = []
+        body_lines.append("state_inds = dict({0})".format(\
+            ", ".join("{0}={1}".format(state.param.name, i) for i, state \
+                      in enumerate(self.oderepr.ode.states))))
+        body_lines.append("")
+        body_lines.append("indices = []")
+        body_lines.append("for state in states:")
+        body_lines.append(\
+            ["if state not in state_inds:",
+             ["raise ValueError(\"Unknown state: '{0}'\".format(state))"],
+             "indices.append(state_inds[state])"])
+        body_lines.append("return indices if len(indices)>1 else indices[0]")
+
+        args = "self, *states" if self_arg else "*states"
+        
+        # Add function prototype
+        function = self.wrap_body_with_function_prototype(\
+            body_lines, "state_indices", \
+            args, "", "State indices")
+        
+        return "\n".join(self.indent_and_split_lines(function, indent=indent))
+
+    def param_name_to_index_code(self, indent=0, self_arg=False):
+        """
+        Return code for index handling for parameters
+        """
+        body_lines = []
+        body_lines.append("param_inds = dict({0})".format(\
+            ", ".join("{0}={1}".format(param.param.name, i) for i, param \
+                                        in enumerate(self.oderepr.ode.parameters))))
+        body_lines.append("")
+        body_lines.append("indices = []")
+        body_lines.append("for param in params:")
+        body_lines.append(\
+            ["if param not in param_inds:",
+             ["raise ValueError(\"Unknown param: '{0}'\".format(param))"],
+             "indices.append(param_inds[param])"])
+        body_lines.append("return indices if len(indices)>1 else indices[0]")
+
+        args = "self, *params" if self_arg else "*params"
+        
+        # Add function prototype
+        function = self.wrap_body_with_function_prototype(\
+            body_lines, "param_indices", \
+            args, "", "Param indices")
+        
+        return "\n".join(self.indent_and_split_lines(function, indent=indent))
+
+    def class_code(self, rhs_args="stp", monitored=False):
+        """
+        Generate class code
+        """
+
+        name = self.oderepr.name
+        name = name if name[0].isupper() else name[0].upper() + \
+               (name[1:] if len(name) > 1 else "")    
+
+        return  """
+class {0}:
+
+{1}
+""".format(name, "\n\n".join([self.init_param_code(indent=1, self_arg=True),
+                              self.init_states_code(indent=1, self_arg=True),
+                              self.dy_code(rhs_args, indent=1, self_arg=True),
+                              self.state_name_to_index_code(indent=1, self_arg=True), 
+                              self.param_name_to_index_code(indent=1, self_arg=True),
+                              ]))
 
     @classmethod
     def indent_and_split_lines(cls, code_lines, indent=0, ret_lines=None, \

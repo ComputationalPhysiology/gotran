@@ -24,29 +24,38 @@ import hashlib
 import types
 
 import gotran
-from gotran.common import check_arg, push_log_level, pop_log_level, info, INFO
+from gotran.common import check_arg, check_kwarg, push_log_level, \
+     pop_log_level, info, INFO, value_error
 from gotran.model.ode import ODE
+from gotran.model.loadmodel import load_ode
 from oderepresentation import ODERepresentation, _default_params
 from codegenerator import CodeGenerator, CCodeGenerator
 
 # Create doc string to jit
-_jit_doc_str = "\n".join("    {0} : bool\n       {1}".format(\
+_compile_module_doc_str = "\n".join("    {0} : bool\n       {1}".format(\
     param.name, param.description) for param in _default_params().values())
 
-_jit_doc_str = """
+_compile_module_doc_str = """
     JIT compile an ode
 
     Arguments:
     ----------
     ode : ODE, ODERepresentation
        The gotran ode
+    rhs_args : str (optional)
+       Argument order of the generated rhs function. 
+       s=states, p=parameters, t=time.
+       Defaults : 'stp'
+    language : str (optional)
+       The language of the generated code
+       Defaults : 'C' \xe2\x88\x88 ['C', 'Python'] 
 {0}
-    """.format(_jit_doc_str)
+    """.format(_compile_module_doc_str)
 
 # Set log level of instant
 instant.set_logging_level("WARNING")
 
-__all__ = ["jit"]
+__all__ = ["compile_module"]
 
 _additional_declarations = r"""
 %init%{{
@@ -160,9 +169,12 @@ def rhs({args}, dy=None):
 
 """
 
-def jit(ode, rhs_args="stp", parameters_in_signature=True, **options):
+def compile_module(ode, rhs_args="stp", language="C", **options):
 
-    check_arg(ode, (ODERepresentation, ODE))
+    check_arg(ode, (ODERepresentation, ODE, str))
+
+    if isinstance(ode, str):
+        ode = load_ode(ode)
 
     if isinstance(ode, ODE):
         params = _default_params()
@@ -171,9 +183,35 @@ def jit(ode, rhs_args="stp", parameters_in_signature=True, **options):
     else:
         oderepr = ode
 
-    cgen = CCodeGenerator(oderepr)
+    check_kwarg(rhs_args, "rhs_args" ,str)
+    check_kwarg(language, "language" ,str)
+
+    language = language.capitalize()
+    valid_languages = ["C", "Python"]
+    if language not in valid_languages:
+        value_error("Expected one of {0} for the language kwarg.".format(\
+            ", ".join("'{0}'".format(lang) for lang in valid_languages)))
+        
+    if language == "C":
+        return compile_extension_module(oderepr, rhs_args)
+
     pgen = CodeGenerator(oderepr)
 
+    # Generate class code, execute it and collect namespace
+    ns = {}
+    exec(pgen.class_code(rhs_args), {}, ns)
+
+    # Grab the only name defined in the executed code
+    return ns.values()[0]()
+
+# Assign docstring
+compile_module.func_doc = _compile_module_doc_str
+
+def compile_extension_module(oderepr, rhs_args):
+    """
+    Compile an extension module, based on the C code from the ode
+    """
+    
     # Add function prototype
     args=[]
     args_doc=[]
@@ -187,8 +225,7 @@ def jit(ode, rhs_args="stp", parameters_in_signature=True, **options):
             args_doc.append("""    time : scalar
         The present time""")
         elif arg == "p" and \
-                 not oderepr.optimization.parameter_numerals \
-                 and parameters_in_signature:
+                 not oderepr.optimization.parameter_numerals:
             args.append("parameters")
             args_doc.append("""    parameters : np.ndarray
         The parameter values""")
@@ -196,28 +233,22 @@ def jit(ode, rhs_args="stp", parameters_in_signature=True, **options):
     args = ", ".join(args)
     args_doc = "\n".join(args_doc)
 
-    ccode = cgen.dy_code(rhs_args=rhs_args, \
-                         parameters_in_signature=parameters_in_signature)
+    pgen = CodeGenerator(oderepr)
+    cgen = CCodeGenerator(oderepr)
+
+    code = cgen.dy_code(rhs_args=rhs_args, \
+                         parameters_in_signature=True)
 
     pcode = "\n\n" + pgen.init_states_code() + "\n\n" + \
-            pgen.init_param_code() + "\n\n"
+            pgen.init_param_code() + "\n\n" + \
+            pgen.state_name_to_index_code() + "\n\n" + \
+            pgen.param_name_to_index_code()
 
-    # Compile module
-    return compile_extension_module(ccode, pcode, oderepr.ode, args, args_doc)
-
-# Assign docstring
-jit.func_doc = _jit_doc_str
-
-def compile_extension_module(code, pcode, ode, args, args_doc):
-    """
-    Compile an extension module, based on the C code from the ode
-    """
-    
     # Create unique module name for this application run
     module_name = "gotran_compiled_module_{0}_{1}".format(\
-        ode.name, hashlib.md5(repr(code) + instant.get_swig_version() + \
-                              gotran.__version__ + \
-                              instant.__version__).hexdigest())
+        oderepr.ode.name, hashlib.md5(repr(code) + instant.get_swig_version() + \
+                                      gotran.__version__ + \
+                                      instant.__version__).hexdigest())
     
     # Check cache
     compiled_module = instant.import_module(module_name)
@@ -234,8 +265,8 @@ def compile_extension_module(code, pcode, ode, args, args_doc):
     instant_kwargs = configure_instant()
 
     declaration_form = dict(\
-        num_states = ode.num_states,
-        num_parameters = ode.num_parameters,
+        num_states = oderepr.ode.num_states,
+        num_parameters = oderepr.ode.num_parameters,
         python_code = pcode,
         args=args,
         args_doc=args_doc,
