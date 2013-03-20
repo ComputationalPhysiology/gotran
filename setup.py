@@ -14,13 +14,7 @@ import sys
 major = 2
 minor = 0
 
-scripts = [pjoin("scripts", "gotran2"),
-           pjoin("scripts", "gotran2py"),
-           pjoin("scripts", "gotran2cpp"),
-           pjoin("scripts", "gotran2c"),
-           pjoin("scripts", "gotran2matlab"),
-           pjoin("scripts", "gotran2latex"),
-           pjoin("scripts", "cellml2gotran")]
+scripts = glob.glob("scripts/*")
 
 if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
     # In the Windows command prompt we can't execute Python scripts
