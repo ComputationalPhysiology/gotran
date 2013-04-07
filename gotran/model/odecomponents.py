@@ -87,6 +87,34 @@ class ODEComponent(ODEObject):
         self.external_object_dep = set()
         self.external_component_dep = set()
 
+    def remove(self, obj):
+        """
+        Remove an ODEObject from the Component
+        """
+        assert(isinstance(obj, (State, Parameter, Variable)))
+        if isinstance(obj, State):
+            self.states.pop(obj.name)
+        elif isinstance(obj, Parameter):
+            self.parameters.pop(obj.name)
+        elif isinstance(obj, Variable):
+            self.variables.pop(obj.name)
+
+        # Remove object and component dependencies
+        for comp in self._ode.components.values():
+            if obj not in comp.external_object_dep:
+                continue
+            comp.external_object_dep.remove(obj)
+
+            # If not same we need to check if external component
+            # dependency still applies
+            for other_obj in comp.external_object_dep:
+                if obj.component == other_obj.component:
+                    break
+            else:
+                # No rest of old component left in external_object_dep
+                assert(obj.component in comp.external_component_dep)
+                comp.external_component_dep.remove(obj.component)
+
     def append(self, obj):
         """
         Append an ODEObject to the Component
@@ -260,9 +288,9 @@ class MarkovModel(ODEObject):
     """
     A Markov model class
     """
-    def __init__(self, name, ode, component="", algebraic_sum=None, **states):
+    def __init__(self, name, ode, component="", *args, **kwargs):
         """
-        Initalize a Markov model
+        Initialize a Markov model
 
         Arguments
         ---------
@@ -275,7 +303,10 @@ class MarkovModel(ODEObject):
         algebraic_sum : scalar (optional)
             If the algebraic sum of all states should be constant,
             give the value here.
-        states : dict
+        args : list of tuples
+            A list of tuples with states and init values. Use this to set states
+            if you need them ordered.
+        kwargs : dict
             A dict with all states defined in this Markov model
         """
 
@@ -286,11 +317,14 @@ class MarkovModel(ODEObject):
         # Call super class
         super(MarkovModel, self).__init__(name, component, ode.name)
 
+        algebraic_sum = kwargs.pop("algebraic_sum", None)
+        states = list(args) + sorted(kwargs.items())
+
         if len(states) < 2:
             error("Expected at least two states in a Markov model")
 
         if algebraic_sum is not None:
-            check_arg(algebraic_sum, scalars)
+            check_arg(algebraic_sum, scalars, gt=0.0)
         
         self._algebraic_sum = algebraic_sum
         self._algebraic_expr = None
@@ -301,7 +335,7 @@ class MarkovModel(ODEObject):
 
         # Check states kwargs
         state_sum = 0.0
-        for state_name, init in states.items():
+        for state_name, init in states:
             # FIXME: Allow Parameter as init
             check_kwarg(init, state_name, scalars + (ScalarParam,))
             state_sum += init if isinstance(init, scalars) else init.value
@@ -314,7 +348,7 @@ class MarkovModel(ODEObject):
                           self._algebraic_sum, state_sum))
             
             # Find the state which will be excluded from the states
-            for state_name in sorted(states.keys()):
+            for state_name, init in states:
                 if "O" not in state_name:
                     break
 
@@ -324,7 +358,7 @@ class MarkovModel(ODEObject):
 
         # Add states to ode
         collected_states = ODEObjectList()
-        for state_name, init in sorted(states.items()):
+        for state_name, init in states:
 
             # If we are not going to add the state
             if state_name == algebraic_name:
@@ -508,3 +542,7 @@ class MarkovModel(ODEObject):
     @property
     def states(self):
         return self._states
+
+    def _set_algebraic_sum(self, value):
+        check_arg(value, scalars, gt=0)
+        _algebraic_sum = value

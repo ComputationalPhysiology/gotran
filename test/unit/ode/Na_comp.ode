@@ -1,12 +1,15 @@
-variables("Na_comp", 
-       Na_o=ScalarParam(138.0),
-       VFonRT=ScalarParam(-1.31045962116),
-       K_o=ScalarParam(4.0),
-       E_Na=ScalarParam(70.100138335),
-       V=ScalarParam(-35),
-       Ca_o=ScalarParam(2.0),
-       Ca_i=ScalarParam(8.464e-05),
-       Na_i=ScalarParam(10.0),)
+parameters("Na_comp", 
+           VFonRT=ScalarParam(-1.31045962116),
+           K_o=ScalarParam(4.0),
+           E_Na=ScalarParam(70.100138335),
+           V=ScalarParam(-35),
+           Ca_o=ScalarParam(2.0),
+           Ca_i=ScalarParam(8.464e-05),)
+
+parameters("Ionic concentrations",
+           Na_i = 10.0,
+           Na_o=ScalarParam(138.0),
+           )
 
 states("Na current I_Na", 
        h=ScalarParam(0.99869),
@@ -14,23 +17,22 @@ states("Na current I_Na",
        m=ScalarParam(0.00024676),)
 
 parameters("Na current I_Na", 
-       G_NaMax=ScalarParam(12.8),)
+           G_NaMax=ScalarParam(12.8),)
 
 parameters("NCX Current I_NaCa", 
-       K_mCa=ScalarParam(1.38),
-       K_mNa=ScalarParam(87.5),
-       eta=ScalarParam(0.35),
-       k_NaCa=ScalarParam(0.3),
-       k_sat=ScalarParam(0.2),)
+           K_mCa=ScalarParam(1.38),
+           K_mNa=ScalarParam(87.5),
+           eta=ScalarParam(0.35),
+           k_NaCa=ScalarParam(0.3),
+           k_sat=ScalarParam(0.2),)
 
 parameters("Na-K pump current I_NaK", 
-       I_NaKMax=ScalarParam(0.693),
-       K_mKo=ScalarParam(1.5),
-       K_mNai=ScalarParam(10.0),)
+           I_NaKMax=ScalarParam(0.693),
+           K_mKo=ScalarParam(1.5),
+           K_mNai=ScalarParam(10.0),)
 
 parameters("Na background current I_bNa", 
-       G_bNaMax=ScalarParam(0.0031),)
-
+           G_bNaMax=ScalarParam(0.0031),)
 
 component("Na current I_Na")
 I_Na = G_NaMax*h*j*m**3.0*(-E_Na + V)

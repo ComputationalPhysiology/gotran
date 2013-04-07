@@ -19,6 +19,7 @@ __all__ = ["ODE"]
 
 # System imports
 import inspect
+import re
 from collections import OrderedDict, deque
 
 # ModelParameter imports
@@ -33,6 +34,8 @@ from gotran.common import type_error, value_error, error, check_arg, \
 from gotran.model.odeobjects import *
 from gotran.model.odecomponents import *
 from gotran.model.expressions import *
+
+_derivative_name_template = re.compile("\Ad([a-zA-Z]\w*)_dt\Z")
 
 class ODE(object):
     """
@@ -80,10 +83,11 @@ class ODE(object):
         self._components = OrderedDict()
         self._components[name] = self._default_component
         self._components_set = []
-        
+
         self.clear()
 
-    def add_state(self, name, init, der_init=0.0, component="", slaved=False):
+    def add_state(self, name, init, der_init=0.0, component="", slaved=False, \
+                  replace_level="none"):
         """
         Add a state to the ODE
 
@@ -100,6 +104,10 @@ class ODE(object):
         slaved : bool
             If True the creation and differentiation is controlled by
             other entity, like a Markov model.
+        replace_level : str (optional)
+            If not "none", replace can be either "global_params" or "any",
+            meaning that either global or any object can be replaced by
+            the added intermediate
             
         Example:
         ========
@@ -117,7 +125,9 @@ class ODE(object):
         
         state.derivative = state_der
         
-        self._register_object(state)
+        self._register_object(state, replace_level)
+
+        # FIXME: Remove register object when registering the state
         self._register_object(state_der)
         
         # Append state specific information
@@ -128,7 +138,8 @@ class ODE(object):
         # Return the sympy version of the state
         return state.sym
         
-    def add_parameter(self, name, init, component="", slaved=False):
+    def add_parameter(self, name, init, component="", slaved=False, \
+                      replace_level="none"):
         """
         Add a parameter to the ODE
 
@@ -143,6 +154,10 @@ class ODE(object):
         slaved : bool
             If True the creation and differentiation is controlled by
             other entity, like a Markov model.
+        replace_level : str (optional)
+            If not "none", replace can be either "global_params" or "any",
+            meaning that either global or any object can be replaced by
+            the added intermediate
             
         Example:
         ========
@@ -158,7 +173,7 @@ class ODE(object):
         parameter = Parameter(name, init, component, self.name)
         
         # Register the parameter
-        self._register_object(parameter)
+        self._register_object(parameter, replace_level)
         self._parameters.append(parameter)
         if parameter.is_field:
             self._field_parameters.append(parameter)
@@ -166,7 +181,8 @@ class ODE(object):
         # Return the sympy version of the parameter
         return parameter.sym
 
-    def add_variable(self, name, init, component="", slaved=False):
+    def add_variable(self, name, init, component="", slaved=False, \
+                     replace_level="none"):
         """
         Add a variable to the ODE
 
@@ -181,6 +197,10 @@ class ODE(object):
         slaved : bool
             If True the creation and differentiation is controlled by
             other entity, like a Markov model.
+        replace_level : str (optional)
+            If not "none", replace can be either "global_params" or "any",
+            meaning that either global or any object can be replaced by
+            the added intermediate
             
         Example:
         ========
@@ -196,7 +216,7 @@ class ODE(object):
         variable = Variable(name, init, component, self.name)
         
         # Register the variable
-        self._register_object(variable)
+        self._register_object(variable, replace_level)
         self._variables.append(variable)
 
         # Return the sympy version of the variable
@@ -217,7 +237,7 @@ class ODE(object):
             error("expected at least one state")
         
         # Check values and create sympy Symbols
-        return self._add_entities(component, kwargs, "state")
+        return self._add_entities(component, sorted(kwargs.items()), "state")
     
     def add_parameters(self, component="", **kwargs):
         """
@@ -236,7 +256,7 @@ class ODE(object):
             error("expected at least one state")
         
         # Check values and create sympy Symbols
-        return self._add_entities(component, kwargs, "parameter")
+        return self._add_entities(component, sorted(kwargs.items()), "parameter")
         
     def add_variables(self, component="", **kwargs):
         """
@@ -254,7 +274,7 @@ class ODE(object):
             error("expected at least one variable")
         
         # Check values and create sympy Symbols
-        return self._add_entities(component, kwargs, "variable")
+        return self._add_entities(component, sorted(kwargs.items()), "variable")
 
     def add_monitored(self, *args):
         """
@@ -277,9 +297,9 @@ class ODE(object):
             # Register the expanded monitored intermediate
             self._monitored_intermediates[name] = obj
 
-    def add_markov_model(self, name, component="", algebraic_sum=None, **states):
+    def add_markov_model(self, name, component="", *args, **kwargs):
         """        
-        Initalize a Markov model
+        Initialize a Markov model
 
         Arguments
         ---------
@@ -290,13 +310,15 @@ class ODE(object):
         algebraic_sum : scalar (optional)
             If the algebraic sum of all states should be constant,
             give the value here.
-        states : dict
+        args : list of tuples
+            A list of tuples with states and init values. Use this to set states
+            if you need them ordered.
+        kwargs : dict
             A dict with all states defined in this Markov model
         """
 
         # Create and store the markov model
-        mm = MarkovModel(name, self, component=component, \
-                         algebraic_sum=algebraic_sum, **states)
+        mm = MarkovModel(name, self, component=component, *args, **kwargs)
         
         self._markov_models.append(mm)
 
@@ -306,7 +328,8 @@ class ODE(object):
         # Return the markov model
         return mm
         
-    def add_intermediate(self, name, expr, component=None, slaved=False):
+    def add_intermediate(self, name, expr, component=None, slaved=False, \
+                         replace_level="global_params"):
         """
         Register an intermediate
 
@@ -321,6 +344,10 @@ class ODE(object):
         slaved : bool
             If True the creation and differentiation is controlled by
             other entity, like a Markov model.
+        replace_level : str (optional)
+            If not "none", replace can be either "global_params" or "any",
+            meaning that either global or any object can be replaced by
+            the added intermediate
         """
 
         timer = Timer("Add intermediate")
@@ -331,31 +358,28 @@ class ODE(object):
         # Create an intermediate in the present component
         intermediate = Intermediate(name, expr, self, component_name, slaved)
 
+        check_kwarg(replace_level, "replace_level", str)
+
         # Check for existing object
         dup_obj = self._all_single_ode_objects.get(name)
-
-        # If the name of the registered object is the same as a Variable in
-        # the component with the same name as the ODE, we overwrite that
-        # Variable with the new object
-        if dup_obj and isinstance(dup_obj, Variable) and \
-               dup_obj.component == self.name:
-            info("Overwriting Variable: '{0}' with an Intermediate with "\
-                 "same name".format(dup_obj.name))
-            self._all_single_ode_objects.pop(dup_obj.name)
-            self._variables.remove(dup_obj)
-            self._components[dup_obj.component].variables.pop(dup_obj.name)
-            dup_obj = None
 
         # If the object already exists and is a StateDerivative
         if dup_obj is not None and isinstance(dup_obj, StateDerivative):
             self.diff(dup_obj.sym, expr)
             return
-        
-        if dup_obj is not None:
-            error("Cannot register an Intermediate. A '{0}' with name '{1}' "\
-                  "is already registered in this ODE.".format(\
-                      type(dup_obj).__name__, dup_obj.name))
 
+        # If object already exists
+        if dup_obj and not self._remove_duplicate(dup_obj, replace_level):
+            error("Cannot register a {0}. A {1} with name '{2}' is "\
+                  "already registered in this ODE.".format(\
+                      type(intermediate).__name__, type(dup_obj).__name__, dup_obj.name))
+        
+        # Check for reserved wording of StateDerivatives
+        if re.search(_derivative_name_template, intermediate.name):
+            error("The pattern d{{name}}_dt is reserved for derivatives. "
+                  "However {0} is not a state derivative.".format(\
+                      intermediate.name))
+        
         # Check for duplicates
         if intermediate.name in self._intermediates:
             self._intermediate_duplicates.add(intermediate.name)
@@ -381,7 +405,8 @@ class ODE(object):
         self._intermediates.append(comment)
         self._comments.append(comment)
 
-    def add_subode(self, subode, prefix=None, components=None):
+    def add_subode(self, subode, prefix=None, components=None,
+                   skip_duplicated_global_parameters=True):
         """
         Load an ODE and add it to the present ODE
 
@@ -398,6 +423,9 @@ class ODE(object):
         components : list, tuple of str (optional)
             A list of components which will be extracted and added to the present
             ODE. If not given the whole ODE will be added.
+        skip_duplicated_global_parameters : bool (optional)
+            If true global parameters and variables will be skipped if they exists
+            in the present model.
         """
 
         # If ode is given directly 
@@ -439,8 +467,8 @@ class ODE(object):
                 param_repr = param_repr.split(", name=")[0] + ")"
                 mm_states[prefix+state.name] = eval(param_repr)
             
-            obj = self.add_markov_model(prefix+mm.name, mm.component,
-                                        mm._algebraic_sum, **mm_states)
+            obj = self.add_markov_model(prefix+mm.name, component=mm.component,
+                                        algebraic_sum=mm._algebraic_sum, **mm_states)
 
             # Add rates (to be added later)
             for mm_states, expr in mm._rates.items():
@@ -465,7 +493,8 @@ class ODE(object):
 
             # Add the state
             sym = self.add_state(prefix+state.name, state.param, \
-                                 state.derivative.param, state.component)
+                                 state.derivative.param, state.component,
+                                 replace_level="global_params")
             ns[prefix+state.name] = sym
 
         # Add prefixed parameters
@@ -476,13 +505,30 @@ class ODE(object):
             prefix_subs[parameter.sym] = ModelSymbol(prefix+parameter.name, \
                                                      self.name)
         
-            if prefix+parameter.name in self._parameters:
-                error("Parameter with name {0} already exist in ODE".format(\
-                    prefix+parameter.name))
+            # If variable name already excist in this ODE do not add it
+            # This will implicitly exchange all variables with corresponding
+            # states and parameters from this ODE
+            obj = self.get_object(parameter.name) or self._intermediates.get(\
+                parameter.name)
 
+            # If duplicated version already excists
+            if obj and parameter.component == ode.name and \
+                   skip_duplicated_global_parameters:
+                debug("Skipping global {0} {1} as a {2} with same name already "\
+                      "excists.".format(type(parameter).__name__, parameter.name, \
+                                                    type(obj).__name__))
+                continue
+
+            # If component name is the same as the ode name, change
+            # component name to this ODE name
+            component = self.name if parameter.component == ode.name \
+                        else parameter.component
+            prefix_ = prefix if parameter.component == ode.name else ""
+            
             # Add the parameter
-            sym = self.add_parameter(prefix+parameter.name, parameter.param, \
-                                     parameter.component)
+            sym = self.add_parameter(prefix_+parameter.name, parameter.param, \
+                                     component=component, \
+                                     replace_level="global_params")
             ns[prefix+parameter.name] = sym
 
         # Add variables if not name already excisting in this ODE
@@ -495,18 +541,25 @@ class ODE(object):
             # states and parameters from this ODE
             obj = self.get_object(variable.name) or self._intermediates.get(\
                 variable.name)
-            if obj is not None:
-                info("Skipping Variable {0} as a {1} with same name already "\
-                     "excists.".format(variable.name, type(obj).__name__))
+
+            # If duplicated version already excists
+            if obj and variable.component == ode.name and \
+                   skip_duplicated_global_parameters:
+                debug("Skipping global {0} {1} as a {2} with same name already "\
+                      "excists.".format(type(variable).__name__, variable.name, \
+                                            type(obj).__name__))
                 continue
 
             # If component name is the same as the ode name, change
             # component name to this ODE name
             component = self.name if variable.component == ode.name \
                         else variable.component
+            prefix_ = prefix if parameters.component == ode.name else ""
             
             # Add the un-prefixed variable
-            sym = self.add_variable(variable.name, variable.param, component)
+            sym = self.add_variable(prefix_+variable.name, variable.param,
+                                    component=component,
+                                    replace_level="global_params")
             ns[variable.name] = sym
 
         # Add intermediates
@@ -530,7 +583,8 @@ class ODE(object):
                                               prefix_subs[obj_dep.sym]))
 
                 sym = self.add_intermediate(intermediate.name, \
-                                            intermediate.expr.subs(subs_list))
+                                            intermediate.expr.subs(subs_list), \
+                                            replace_level="global_params")
                 ns[intermediate.name] = sym
         
         # Add all rates for the markov models
@@ -568,6 +622,29 @@ class ODE(object):
         # If set to return namespace
         if self._return_namespace:
             return ns
+
+    def present_component(self, component=None):
+        """
+        Return the present component
+
+        Arguments
+        ---------
+        component : str (optional)
+            A component name. If not given the present component will be used.
+        """
+        if not component:
+            return self._present_component
+
+        # Check if component is already registered
+        comp = self._components.get(component)
+        if comp is None:
+            comp = ODEComponent(component, self)
+            self._components[component] = comp
+
+        # Update present component
+        self._present_component = comp
+
+        return self._present_component
         
     def set_component(self, component):
         """
@@ -578,12 +655,8 @@ class ODE(object):
         if component in self._components_set:
             error("Component can only be set once per ODE")
 
-        # Check if component is already registered
-        comp = self._components.get(component)
-        if comp is None:
-            comp = ODEComponent(component, self)
-            self._components[component] = comp
-        self._present_component = comp
+        # Get present component
+        comp = self.present_component(component)
 
         # Register that this component has been set
         self._components_set.append(comp.name)
@@ -608,15 +681,30 @@ class ODE(object):
         """
         return self._intermediates.get(name)
 
+    def algebraic(self, state, expr, component=""):
+        """
+        Register an expression for a state given by an algebraic expression
+
+        Arguments
+        ---------
+        state : sympy.Basic
+            A linear expression of StateDerivative symbols
+        expr : Sympy expression of ModelSymbols
+            The derivative expression
+        component : str (optional)
+            The component will be determined automatically if the
+            DerivativeExpression is an Algebraic expression
+        """
+        pass
+
     def diff(self, derivatives, expr, component=""):
         """
         Register an expression for state derivatives
 
         Arguments
         ---------
-        derivatives : int, sympy.Basic
-            A linear expression of StateDerivative symbols. Can also be an
-            integer and then only 0, to add an algebraic expression
+        derivatives : sympy.Basic
+            A linear expression of StateDerivative symbols
         expr : Sympy expression of ModelSymbols
             The derivative expression
         component : str (optional)
@@ -628,18 +716,12 @@ class ODE(object):
         derivative_expression = DerivativeExpression(\
             derivatives, expr, self, component)
         
-        
         # Store expressions
-        if derivative_expression.is_algebraic:
-            self._algebraic_expr.append(derivative_expression.expr)
-            self._algebraic_expr_expanded.append(\
-                derivative_expression.expanded_expr)
-        else:
-            self._derivative_expr.append((derivative_expression.states, \
-                                          derivative_expression.expr))
-            self._derivative_expr_expanded.append(\
-                (derivative_expression.states, \
-                 derivative_expression.expanded_expr))
+        self._derivative_expr.append((derivative_expression.states, \
+                                      derivative_expression.expr))
+        self._derivative_expr_expanded.append(\
+            (derivative_expression.states, \
+             derivative_expression.expanded_expr))
 
         # Store derivative expression
         self._derivative_expressions.append(derivative_expression)
@@ -925,7 +1007,8 @@ class ODE(object):
             # FIXME: Allow propagating of Parameter information
             mm_states = dict((state.name, state.value) \
                              for state in mm.states)
-            ode.add_markov_model(mm.name, mm.component, mm._algebraic_sum,
+            ode.add_markov_model(mm.name, component=mm.component, \
+                                 algebraic_sum=mm._algebraic_sum, \
                                  **mm_states)
 
             obj = ode.get_object(mm.name)
@@ -1039,7 +1122,7 @@ class ODE(object):
         self.add_variable("time", 0.0, self._default_component.name)
         self.add_variable("dt", 0.1, self._default_component.name)
         
-    def _add_entities(self, component, kwargs, entity):
+    def _add_entities(self, component, items, entity):
         """
         Help function for determine if each entity in the kwargs is unique
         and to check the type of the given default value
@@ -1055,7 +1138,7 @@ class ODE(object):
         ns = {}
 
         # Symbol and value dicts
-        for name, value in sorted(kwargs.items()):
+        for name, value in items:
     
             # Add the symbol
             sym = add(name, value, component=component)
@@ -1064,46 +1147,95 @@ class ODE(object):
         # If set to return namespace
         if self._return_namespace:
             return ns
-    
-    def _register_object(self, obj):
+
+    def _remove_duplicate(self, dup_obj, remove_level):
+        """
+        Remove an already registered object 
+        """
+        if not isinstance(dup_obj, (State, Parameter, Variable)):
+            error("Trying to remove '{0}' which is a '{1}' is not allowed. "\
+                  "Can only remove States, Parameters and Variables.".format(\
+                      dup_obj, type(dup_obj).__name__))
+
+        allowed_levels = ["none", "global_params", "any"]
+        if remove_level not in allowed_levels:
+            value_error("expected 'remove_level' argument to be one of: {0}".format(\
+                ", ".join("'{0}'" for what in allowed_levels)))
+            
+        if remove_level == "none":
+            return False
+            
+        # If the name of the registered object is the same as a Variable or
+        # Parameter in the component with the same name as the ODE (global),
+        # we overwrite that Variable/Parameter with the new object
+        if remove_level == "global_params" and not \
+               (self.is_global(dup_obj) and isinstance(\
+            dup_obj, (Variable, Parameter))):
+            return False
+            
+        debug("Removing {0}: '{1}' with a {2} with same name".format(\
+            type(dup_obj).__name__, dup_obj.name, type(dup_obj).__name__))
+
+        # Remove all traces of old object
+        self._all_single_ode_objects.pop(dup_obj.name)
+        if isinstance(dup_obj, Variable):
+            self._variables.remove(dup_obj)
+        elif isinstance(dup_obj, State):
+            self._states.remove(dup_obj)
+            if dup_obj.is_field:
+                self._field_states.remove(dup_obj)
+            self._all_single_ode_objects.pop(dup_obj.derivative)
+
+            # Remove any derivative expressions that depends on the state
+            for der_expr in self._derivative_expr[:]:
+                if dup_obj in der_expr.states:
+                    self._derivative_expr.pop(der_expr)
+
+            # FIXME: Add logic for removing algebraic expression for state
+            # FIXME: Add logic for removing slaved entities
+            
+        elif isinstance(dup_obj, Parameter):
+            self._parameters.remove(dup_obj)
+            if dup_obj.is_field:
+                self._field_parameters.remove(dup_obj)
+
+        # Clean up components and component dependencies
+        self._components[dup_obj.component].remove(dup_obj)
+
+        return True
+        
+    def _register_object(self, obj, replace_level="none"):
         """
         Register an ODEObject (only used for states, parameters, variables,
         and state_derivatives)
+
+        Arguments
+        ---------
+        obj : ODEObject
+            The object to be registered
+        replace_level : str (optional)
+            If not "none", replace can be either "global_params" or "any", meaning that
+            either global or any object can be replaced by the added intermediate
         """
         
         timer = Timer("Register obj")
         assert(isinstance(obj, (State, Parameter, Variable, StateDerivative, \
                                 MarkovModel)))
 
+        check_kwarg(replace_level, "replace_level", str)
+
         # Check for existing object
         dup_obj = self._all_single_ode_objects.get(obj.name) or \
                   self._intermediates.get(obj.name)
-        
-        # If the name of the registered object is the same as a Variable in
-        # the component with the same name as the ODE, we overwrite that
-        # Variable with the new object
-        if dup_obj and isinstance(dup_obj, Variable) and \
-               dup_obj.component == self.name:
-            info("Overwriting Variable: '{0}' with {1} with same name".format(\
-                dup_obj.name, type(obj).__name__))
-            self._all_single_ode_objects.pop(dup_obj.name)
-            self._variables.remove(dup_obj)
-            self._components[dup_obj.component].variables.pop(dup_obj.name)
-            dup_obj = None
-        
-        if dup_obj is not None:
-            error("Cannot register a {0}. A {1} with name '{2}' is already "\
-                  "registered in this ODE.".format(\
+
+        # If object already exists
+        if dup_obj and not self._remove_duplicate(dup_obj, replace_level):
+            error("Cannot register a {0}. A {1} with name '{2}' is "\
+                  "already registered in this ODE.".format(\
                       type(obj).__name__, type(dup_obj).__name__, obj.name))
-
-        # Register obj in component
-        comp = self._components.get(obj.component)
-        if comp is None:
-            comp = ODEComponent(obj.component, self)
-            self._components[obj.component] = comp
-
-        # Update present component
-        self._present_component = comp
+        
+        # Get present component
+        comp = self.present_component(obj.component)
 
         # Add object to component if not StateDerivative
         if not isinstance(obj, StateDerivative):
@@ -1117,7 +1249,7 @@ class ODE(object):
             self.__dict__[obj.name] = obj.sym
         else:
             self.__dict__[obj.name] = obj
-            
+
     def __setattr__(self, name, value):
         """
         A magic function which will register intermediates and simpler
@@ -1141,7 +1273,6 @@ class ODE(object):
 
         # If not registering Intermediate or doing a shorthand
         # diff expression we silently leave.
-        
 
     def __eq__(self, other):
         """
@@ -1419,6 +1550,17 @@ class ODE(object):
         Return the number of monitored intermediates
         """
         return len(self._monitored_intermediates)
+
+    def is_global(self, obj):
+        """
+        Return True if obj is part of the "global" component.
+
+        The global component is the one with the same name as the ode.
+        
+        """
+        if not isinstance(obj, ValueODEObject):
+            return False
+        return obj.component == self.name
 
     @property
     def is_complete(self):

@@ -1,19 +1,18 @@
-variables("Ca_comp", 
-       A_cap=ScalarParam(0.0001534),
-       K_i=ScalarParam(159.48),
-       E_Ca=ScalarParam(134.479067982),
-       C_sc=ScalarParam(1.0),
-       V_myo=ScalarParam(2.584e-05),
-       K_o=ScalarParam(4.0),
-       F=ScalarParam(96.5),
-       V_ss=ScalarParam(1.2e-09),
-       V_JSR=ScalarParam(1.6e-07),
-       expVFonRT=ScalarParam(0.269696069873),
-       V=ScalarParam(-35),
-       VFonRT=ScalarParam(-1.31045962116),
-       Ca_o=ScalarParam(2.0),
-       I_NaCa=ScalarParam(0.0680605650624),
-       V_NSR=ScalarParam(2.1e-06),)
+parameters("Ca_comp", 
+           A_cap=ScalarParam(0.0001534),
+           K_i=ScalarParam(159.48),
+           E_Ca=ScalarParam(134.479067982),
+           C_sc=ScalarParam(1.0),
+           V_myo=ScalarParam(2.584e-05),
+           K_o=ScalarParam(4.0),
+           F=ScalarParam(96.5),
+           V_ss=ScalarParam(1.2e-09),
+           V_JSR=ScalarParam(1.6e-07),
+           expVFonRT=ScalarParam(0.269696069873),
+           V=ScalarParam(-35),
+           VFonRT=ScalarParam(-1.31045962116),
+           I_NaCa=ScalarParam(0.0680605650624),
+           V_NSR=ScalarParam(2.1e-06),)
 
 markov_model("lcc", "L-type Ca Channel", algebraic_sum=1.0,
              C0=ScalarParam(0.99802),
@@ -32,14 +31,14 @@ states("L-type Ca Channel",
        yCa=ScalarParam(0.7959),)
 
 parameters("L-type Ca Channel", 
-       ICahalf=ScalarParam(-0.265),
-       PCa=ScalarParam(0.0003125),
-       PK=ScalarParam(5.79e-07),
-       aL=ScalarParam(2.0),
-       bL=ScalarParam(2.0),
-       fL=ScalarParam(0.3),
-       gL=ScalarParam(2.0),
-       omega=ScalarParam(0.01),)
+           ICahalf=ScalarParam(-0.265),
+           PCa=ScalarParam(0.0003125),
+           PK=ScalarParam(5.79e-07),
+           aL=ScalarParam(2.0),
+           bL=ScalarParam(2.0),
+           fL=ScalarParam(0.3),
+           gL=ScalarParam(2.0),
+           omega=ScalarParam(0.01),)
 
 states("Intracellular Ca", 
        Ca_JSR=ScalarParam(0.2616),
@@ -50,20 +49,21 @@ states("Intracellular Ca",
        LTRPNCa=ScalarParam(0.0055443),)
 
 parameters("Intracellular Ca", 
-       CMDNtot=ScalarParam(0.05),
-       CSQNtot=ScalarParam(15.0),
-       EGTAtot=ScalarParam(10.0),
-       HTRPNtot=ScalarParam(0.14),
-       KmCMDN=ScalarParam(0.00238),
-       KmCSQN=ScalarParam(0.8),
-       KmEGTA=ScalarParam(0.00015),
-       LTRPNtot=ScalarParam(0.07),
-       khtrpn_minus=ScalarParam(6.6e-05),
-       khtrpn_plus=ScalarParam(20.0),
-       kltrpn_minus=ScalarParam(0.04),
-       kltrpn_plus=ScalarParam(40.0),
-       tau_tr=ScalarParam(0.5747),
-       tau_xfer=ScalarParam(26.7),)
+           Ca_o=ScalarParam(2.0),
+           CMDNtot=ScalarParam(0.05),
+           CSQNtot=ScalarParam(15.0),
+           EGTAtot=ScalarParam(10.0),
+           HTRPNtot=ScalarParam(0.14),
+           KmCMDN=ScalarParam(0.00238),
+           KmCSQN=ScalarParam(0.8),
+           KmEGTA=ScalarParam(0.00015),
+           LTRPNtot=ScalarParam(0.07),
+           khtrpn_minus=ScalarParam(6.6e-05),
+           khtrpn_plus=ScalarParam(20.0),
+           kltrpn_minus=ScalarParam(0.04),
+           kltrpn_plus=ScalarParam(40.0),
+           tau_tr=ScalarParam(0.5747),
+           tau_xfer=ScalarParam(26.7),)
 
 states("RyR Channel", 
        C1_RyR=ScalarParam(0.4929),
@@ -83,20 +83,20 @@ parameters("RyR Channel",
        v_1=ScalarParam(1.8),)
 
 parameters("Sarcolemmal Ca pump current I_pCa", 
-       I_pCaMax=ScalarParam(0.05),
-       K_mpCa=ScalarParam(5e-05),)
+           I_pCaMax=ScalarParam(0.05),
+           K_mpCa=ScalarParam(5e-05),)
 
 parameters("Ca background current I_bCa", 
-       G_bCaMax=ScalarParam(0.0003842),)
+           G_bCaMax=ScalarParam(0.0003842),)
 
 parameters("SERCA2a Pump", 
-       K_SR=ScalarParam(1.0),
-       K_fb=ScalarParam(0.000168),
-       K_rb=ScalarParam(3.29),
-       N_fb=ScalarParam(1.2),
-       N_rb=ScalarParam(1.0),
-       v_maxf=ScalarParam(8.13e-05),
-       v_maxr=ScalarParam(0.000318),)
+           K_SR=ScalarParam(1.0),
+           K_fb=ScalarParam(0.000168),
+           K_rb=ScalarParam(3.29),
+           N_fb=ScalarParam(1.2),
+           N_rb=ScalarParam(1.0),
+           v_maxf=ScalarParam(8.13e-05),
+           v_maxr=ScalarParam(0.000318),)
 
 
 component("Sarcolemmal Ca pump current I_pCa")

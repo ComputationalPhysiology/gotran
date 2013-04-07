@@ -1,46 +1,48 @@
-variables("K_comp", 
-       RTonF=ScalarParam(26.7081865285),
-       Na_o=ScalarParam(138.0),
-       F=ScalarParam(96.5),
-       K_o=ScalarParam(4.0),
-       FonRT=ScalarParam(0.0374417034617),
-       V=ScalarParam(-35),
-       I_NaK=ScalarParam(0.197979231816),
-       A_cap=ScalarParam(0.0001534),
-       I_CaK=ScalarParam(-0.0),
-       E_k=ScalarParam(-98.4363375764),
-       C_sc=ScalarParam(1.0),
-       V_myo=ScalarParam(2.584e-05),
-       Na_i=ScalarParam(10.0),)
+parameters("K_comp", 
+           RTonF=ScalarParam(26.7081865285),
+           Na_o=ScalarParam(138.0),
+           F=ScalarParam(96.5),
+           FonRT=ScalarParam(0.0374417034617),
+           V=ScalarParam(-35),
+           I_NaK=ScalarParam(0.197979231816),
+           A_cap=ScalarParam(0.0001534),
+           I_CaK=ScalarParam(-0.0),
+           E_k=ScalarParam(-98.4363375764),
+           C_sc=ScalarParam(1.0),
+           V_myo=ScalarParam(2.584e-05),
+           Na_i=ScalarParam(10.0),)
 
 states("Rapid-activating delayed rectifier K current I_Kr", 
        xKr=ScalarParam(0.6935),)
 
 parameters("Rapid-activating delayed rectifier K current I_Kr", 
-       G_KrMax=ScalarParam(0.0034),)
+           G_KrMax=ScalarParam(0.0034),)
 
 states("Slow-activating delayed rectifier K current I_Ks", 
        xKs=ScalarParam(0.00014589),)
 
 parameters("Slow-activating delayed rectifier K current I_Ks", 
-       G_KsMax=ScalarParam(0.00271),)
+           G_KsMax=ScalarParam(0.00271),)
 
 states("Transient outward K current I_to", 
        xto1=ScalarParam(3.742e-05),
        yto1=ScalarParam(1),)
 
 parameters("Transient outward K current I_to", 
-       G_toMax=ScalarParam(0.23815),)
+           G_toMax=ScalarParam(0.23815),)
 
-states("Intracellular K", 
+states("Ionic concentrations", 
        K_i=ScalarParam(159.48),)
 
+parameters("Ionic concentrations",
+           K_o=ScalarParam(4.0),)
+            
 parameters("Time-Independent K current I_ti", 
-       G_tiMax=ScalarParam(2.8),
-       K_mK1=ScalarParam(13.0),)
+           G_tiMax=ScalarParam(2.8),
+           K_mK1=ScalarParam(13.0),)
 
 parameters("Plateau current I_Kp", 
-       G_KpMax=ScalarParam(0.002216),)
+           G_KpMax=ScalarParam(0.002216),)
 
 
 component("Rapid-activating delayed rectifier K current I_Kr")
