@@ -53,7 +53,7 @@ _param_table_template = """
 \\multicolumn{{1}}{{c|}}{{\\textbf{{Description}}}}\\\\ \\hline
 \\endfirsthead
 \\multicolumn{{3}}{{c}}%
-{{{{\\bfseries\\tablename\\\\thetable{{}} --- continued from previous page}}}}
+{{{{\\bfseries\\tablename\\ \\thetable{{}} --- continued from previous page}}}}
 \\\\ \hline
 \\multicolumn{{1}}{{|c}}{{\\textbf{{Parameter\\hspace{{0.5cm}}}}}} &
 \\multicolumn{{1}}{{c}}{{\\textbf{{Value\\hspace{{0.5cm}}}}}} &
@@ -84,7 +84,7 @@ _state_table_template = """
 \\multicolumn{{1}}{{c|}}{{\\textbf{{Value}}}}\\\\ \\hline
 \\endfirsthead
 \\multicolumn{{2}}{{c}}%
-{{{{\\bfseries\\tablename\\\\thetable{{}} --- continued from previous page}}}}
+{{{{\\bfseries\\tablename\\ \\thetable{{}} --- continued from previous page}}}}
 \\\\ \hline
 \\multicolumn{{1}}{{|c}}{{\\textbf{{State\\hspace{{0.5cm}}}}}} &
 \\multicolumn{{1}}{{c|}}{{\\textbf{{Value}}}}\\\\ \\hline
@@ -321,7 +321,7 @@ class LatexCodeGenerator(object):
         """
         return "  ${NAME}$\\hspace{{0.5cm}} & ${VAL}{UNIT}$".format(
             NAME=self.format_expr(state_name), VAL=value,
-            UNIT=" " + self.format_unit(unit) if unit else "")
+            UNIT=" " + self.format_unit(unit) if unit != "1" else "")
 
     def format_component_label(self, label):
         """
