@@ -16,11 +16,16 @@
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
 # Import gotran modules
-import codegenerator
 import oderepresentation
+import codegenerator
 import compilemodule
+import latexcodegenerator
 
 # Import classes and routines from gotran modules
+from oderepresentation import *
+from oderepresentation import _default_params
+from codegenerator import *
+from latexcodegenerator import *
 from compilemodule import compile_module
 
 # Assign the __all__ attribute

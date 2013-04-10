@@ -28,6 +28,9 @@ from modelparameters.codegeneration import ccode, cppcode, pythoncode, \
 from gotran.common import check_arg
 from oderepresentation import ODERepresentation
 
+__all__ = ["CodeGenerator", "CCodeGenerator", "CppCodeGenerator", \
+           "MatlabCodeGenerator"]
+
 _re_str = re.compile(".*\"([\w\s]+)\".*")
 
 def _is_number(num_str):

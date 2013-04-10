@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
-from gotran.codegeneration.LatexCodeGenerator import LatexCodeGenerator, \
-    _default_params
+from gotran.codegeneration import LatexCodeGenerator, _default_params
 from gotran.model import load_ode
 from gotran import info
-
 
 def main(filename, params):
     """
