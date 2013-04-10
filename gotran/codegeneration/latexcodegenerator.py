@@ -114,7 +114,7 @@ _components_template = """
 """
 
 
-def _default_params():
+def _default_latex_params():
     """
     Initializes default parameters.
     """
@@ -185,7 +185,7 @@ class LatexCodeGenerator(object):
     def __init__(self, ode, params=None):
         self.ode = ode
         self._name = ode.name
-        self.params = params if params else _default_params()
+        self.params = params if params else _default_latex_params()
 
         self.output_file = params.latex_output or '{0}.tex'.format(
             ode.name)
@@ -340,7 +340,7 @@ class LatexCodeGenerator(object):
         """
         exclude = exclude if exclude and not override else []
         override = override or []
-        opts = _default_params()
+        opts = _default_latex_params()
         opts.update(params if params else self.params)
 
         begin_str = end_str = ""

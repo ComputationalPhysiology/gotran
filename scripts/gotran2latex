@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from gotran.codegeneration import LatexCodeGenerator, _default_params
+from gotran.codegeneration import LatexCodeGenerator, _default_latex_params
 from gotran.model import load_ode
 from gotran import info
 
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     import os
     import sys
 
-    params = _default_params()
+    params = _default_latex_params()
     params.parse_args(usage="usage: %prog FILE [options]")
 
     if len(sys.argv) < 2:

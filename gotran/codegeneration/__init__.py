@@ -26,6 +26,7 @@ from oderepresentation import *
 from oderepresentation import _default_params
 from codegenerator import *
 from latexcodegenerator import *
+from latexcodegenerator import _default_latex_params
 from compilemodule import compile_module
 
 # Assign the __all__ attribute
