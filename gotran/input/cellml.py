@@ -229,8 +229,6 @@ class MathMLBaseParser(object):
             "gt"    : 6,
             "leq"   : 6,
             "geq"   : 6,
-            "and"   : 8,
-            "or"    : 9,
             "eq"    : 10,
             "exp"   : 10,
             "ln"    : 10,
@@ -259,8 +257,6 @@ class MathMLBaseParser(object):
             "gt"    : ' > ',
             "leq"   : ' <= ',
             "geq"   : ' >= ',
-            "and"   : ' & ',
-            "or"    : ' | ',
             "eq"    : ' = ',
             "exp"   : 'exp',
             "ln"    : 'log',
@@ -366,6 +362,12 @@ class MathMLBaseParser(object):
     def _parse_conditional(self, condition, operands, parent):
         return [condition] + ["("] + self._parse_subtree(operands[0], parent) \
                + [", "] +  self._parse_subtree(operands[1], parent) + [")"]
+
+    def _parse_and(self, operands, parent):
+        return ["And("] + self._parse_subtree(operands[0], parent) + [", "] + self._parse_subtree(operands[1], parent)+[")"]
+    
+    def _parse_or(self, operands, parent):
+        return ["Or("] + self._parse_subtree(operands[0], parent) + [", "] + self._parse_subtree(operands[1], parent)+[")"]
     
     def _parse_lt(self, operands, parent):
         return self._parse_conditional("Lt", operands, "lt")
