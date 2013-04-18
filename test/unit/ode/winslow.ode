@@ -1,5 +1,5 @@
 states("Membrane",
-       V=ScalarParam(-35, ge=-200, le=50))
+       V=ScalarParam(-35, ge=-200, le=50, unit="mV", description="Membrane potential"))
 
 states("Na current I_Na",
        m=2.4676e-4, h=0.99869, j=0.99887)
@@ -43,7 +43,7 @@ parameters("Cell geometry",
            ist=0.,
            C_sc  = 1.00,
            A_cap = 1.534e-4,
-           V_myo = 25.84e-6,
+           V_myo = ScalarParam(25.84e-6, gt=0, unit="ul", description="Volume of cytosol"),
            V_JSR = 0.16e-6,
            V_NSR = 2.1e-6,
            V_ss  = 1.2e-9,
