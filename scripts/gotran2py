@@ -42,6 +42,8 @@ def main(filename, params):
     f.write(gen.init_states_code() + "\n\n")
     f.write(gen.init_param_code() + "\n\n")
     f.write(gen.dy_code(params.rhs_args) + "\n\n")
+    f.write(gen.state_name_to_index_code() + "\n\n")
+    f.write(gen.param_name_to_index_code() + "\n\n")
 
 if __name__ == "__main__":
     import sys
