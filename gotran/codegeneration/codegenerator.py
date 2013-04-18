@@ -528,12 +528,14 @@ class {0}:
                                                  is_comment else indent + 1)
                     line_length = indent_length
 
+                    # Check if we are not exeeding the max_line_length
                     # FIXME: Line continuation symbol is not included in
                     # FIXME: linelength
                     while splitted_line and \
                               (((line_length + len(splitted_line[0]) \
                                  + 1 + inside_str) < cls.max_line_length) \
-                               or not line_stump or _is_number(line_stump[-1][-1])):
+                               or not (line_stump and line_stump[-1]) \
+                               or _is_number(line_stump[-1][-1])):
                         line_stump.append(splitted_line.popleft())
 
                         # Add a \" char to first stub if inside str
