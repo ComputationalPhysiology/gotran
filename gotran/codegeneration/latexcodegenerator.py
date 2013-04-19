@@ -18,6 +18,9 @@
 # System imports
 import re
 
+# Gotran imports
+from gotran.common import warning
+
 # Model parameters imports
 from modelparameters.codegeneration import latex as mp_latex
 from modelparameters.parameters import Param, ScalarParam
@@ -77,20 +80,22 @@ _state_table_template = """
 
 \\section*{{Initial Values}}\n
 {OPTS}
-\\begin{{longtable}}{{| l l |}}
+\\begin{{longtable}}{{| l l p{{4cm}} |}}
 \\caption[State Table]{{\\textbf{{State Table}}}}\\\\
 \\hline
 \\multicolumn{{1}}{{|c}}{{\\textbf{{State\\hspace{{0.5cm}}}}}} &
-\\multicolumn{{1}}{{c|}}{{\\textbf{{Value}}}}\\\\ \\hline
+\\multicolumn{{1}}{{c}}{{\\textbf{{Value\\hspace{{0.5cm}}}}}} &
+\\multicolumn{{1}}{{c|}}{{\\textbf{{Description}}}}\\\\ \\hline
 \\endfirsthead
-\\multicolumn{{2}}{{c}}%
+\\multicolumn{{3}}{{c}}%
 {{{{\\bfseries\\tablename\\ \\thetable{{}} --- continued from previous page}}}}
 \\\\ \hline
 \\multicolumn{{1}}{{|c}}{{\\textbf{{State\\hspace{{0.5cm}}}}}} &
-\\multicolumn{{1}}{{c|}}{{\\textbf{{Value}}}}\\\\ \\hline
+\\multicolumn{{1}}{{c}}{{\\textbf{{Value\\hspace{{0.5cm}}}}}} &
+\\multicolumn{{1}}{{c|}}{{\\textbf{{Description}}}}\\\\ \\hline
 \\endhead
 \\hline
-\\multicolumn{{2}}{{|r|}}{{{{Continued on next page}}}}\\\\ \\hline
+\\multicolumn{{3}}{{|r|}}{{{{Continued on next page}}}}\\\\ \\hline
 \\endfoot
 \\hline \\hline
 \\endlastfoot
@@ -112,6 +117,9 @@ _components_template = """
 
 % ----------------- END COMPONENTS ----------------- %
 """
+
+_greek = 'alpha beta gamma delta epsilon zeta eta theta iota kappa lamda '\
+    'mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega'.split(' ')
 
 
 def _default_latex_params():
@@ -245,6 +253,7 @@ class LatexCodeGenerator(object):
         """
         state_str = "\\\\\n".join(
             self.format_state_table_row(state.name,
+                                        state.param.description,
                                         state.value,
                                         state.param.unit)
             for state in self.ode.states)
@@ -274,6 +283,13 @@ class LatexCodeGenerator(object):
                     self.format_expr(intermediate.name),
                     self.format_expr(intermediate.expr))
             for derivative in comp.derivatives:
+                # # TODO: A better solution for when linear combinations are
+                # # implemented in Gotran:
+                # format_body += eqn_template.format(
+                #     ' + '.join('\\frac{{d{0}}}{{dt}}'.format(
+                #         self.format_expr(state))
+                #         for state in derivative.states),
+                #     self.format_expr(derivative.expr))
                 if len(derivative.states) == 1:
                     format_body += eqn_template.format(
                         "\\frac{{d{0}}}{{dt}}".format(
@@ -281,8 +297,13 @@ class LatexCodeGenerator(object):
                         self.format_expr(derivative.expr))
                 else:
                     # TODO: Take a closer look at this...
+                    warning("linear combinations not yet implemented "
+                            "(states: {0})".format(
+                                ', '.join(derivative.states)))
                     format_body += eqn_template.format(
-                        self.format_expr(derivative.expr),
+                        " + ".join("\\frac{{d{0}}}{{dt}}".format(
+                            self.format_expr(state))
+                            for state in derivative.states),
                         self.format_expr(derivative.expr))
             components_str += comp_template.format(LABEL=format_label,
                                                    BODY=format_body)
@@ -310,18 +331,21 @@ class LatexCodeGenerator(object):
                    DESC=description,
                    UNIT=" " + self.format_unit(unit) if unit != "1" else "")
 
-    def format_state_table_row(self, state_name, value, unit="1"):
+    def format_state_table_row(self, state_name, description, value, unit="1"):
         """
         Return a LaTeX-formatted string for a longtable row describing a
         state's initial value.
         E.g.:
-        >>> LatexCodeGenerator.format_state_table_row("amu", 931.46,
-        ... "MeV/c**2")
-        '  $amu$\\hspace{0.5cm} & $931.46 \\mathrm{\\frac{MeV}{c^{2}}}$'
+        >>> LatexCodeGenerator.format_state_table_row("amu",
+        ... "Atomic mass unit", 931.46, "MeV/c**2")
+        '  $amu$\\hspace{0.5cm} & $931.46 \\mathrm{\\frac{MeV}{c^{2}}}$
+        \\hspace{0.5cm} & Atomic mass unit'
         """
-        return "  ${NAME}$\\hspace{{0.5cm}} & ${VAL}{UNIT}$".format(
-            NAME=self.format_expr(state_name), VAL=value,
-            UNIT=" " + self.format_unit(unit) if unit != "1" else "")
+        return "  ${NAME}$\\hspace{{0.5cm}} & ${VAL}{UNIT}$" \
+               "\\hspace{{0.5cm}} & {DESC}".format(
+                   NAME=self.format_expr(state_name), VAL=value,
+                   DESC=description,
+                   UNIT=" " + self.format_unit(unit) if unit != "1" else "")
 
     def format_component_label(self, label):
         """
@@ -384,11 +408,12 @@ class LatexCodeGenerator(object):
         >>> LatexCodeGenerator.format_expr("exp(i*pi) + 1")
         'e^{i \\pi} + 1'
         """
+        if isinstance(expr, str) and expr in _greek:
+            return "\\{0}".format(expr)
         # Some values are treated as special cases by sympy.sympify.
         # Return these as they are.
-        if isinstance(expr, str) and expr in ["beta", "gamma"]:
-            return "\\{0}".format(expr)
-        if isinstance(expr, str) and expr in ["I", "O"]:
+        if isinstance(expr, str) and expr in \
+                filter(lambda x: len(x) == 1, dir(sympy)):
             return expr
         return mp_latex(sympy.sympify(expr), **self.print_settings)
 
@@ -401,7 +426,7 @@ class LatexCodeGenerator(object):
         """
         atomic_units = re.findall(r"([a-zA-Z]+)", unit)
         atomic_dict = dict((au, sympy.Symbol(au)) for au in atomic_units)
-        sympified_unit = eval(unit, atomic_dict, {})
+        sympified_unit = eval(unit, atomic_dict, dict())
         return "\\mathrm{{{0}}}".format(mp_latex(sympified_unit),
                                         **self.print_settings)
 
@@ -414,5 +439,5 @@ class LatexCodeGenerator(object):
                          for package, option in package_list)
 
     def __repr__(self):
-        return "{}({}, {})".format(
+        return "{0}({1}, {2})".format(
             self.__class__.__name__, repr(self.ode), repr(self.params))
