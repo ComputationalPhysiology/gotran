@@ -405,6 +405,12 @@ class MathMLBaseParser(object):
     
     def _parse_cn(self, var, parent):
         value = var.text.strip()
+        if "type" in var.keys() and var.get("type") == "e-notation":
+            exponent = "e" + var.getchildren()[0].tail.strip()
+        else:
+            exponent = ""
+        value += exponent
+            
         # Fix possible strangeness with integer division in Python...
         nums = [1.0, 2.0, 3.0, 4.0, 5.0, 10.0]
         num_strs = ["one", "two", "three", "four", "five", "ten"]
