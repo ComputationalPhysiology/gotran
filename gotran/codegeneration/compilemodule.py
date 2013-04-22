@@ -199,10 +199,10 @@ def compile_module(ode, rhs_args="stp", language="C", **options):
 
     # Generate class code, execute it and collect namespace
     ns = {}
-    exec(pgen.class_code(rhs_args), {}, ns)
+    exec("from __future__ import division\n" + pgen.class_code(rhs_args), {}, ns)
 
-    # Grab the only name defined in the executed code
-    return ns.values()[0]()
+    # Grab the generated class and instantiate it
+    return ns[oderepr.class_name]()
 
 # Assign docstring
 compile_module.func_doc = _compile_module_doc_str
@@ -246,9 +246,9 @@ def compile_extension_module(oderepr, rhs_args):
 
     # Create unique module name for this application run
     module_name = "gotran_compiled_module_{0}_{1}".format(\
-        oderepr.ode.name, hashlib.md5(repr(code) + instant.get_swig_version() + \
-                                      gotran.__version__ + \
-                                      instant.__version__).hexdigest())
+        oderepr.class_name, hashlib.md5(repr(code) + instant.get_swig_version() + \
+                                        gotran.__version__ + \
+                                        instant.__version__).hexdigest())
     
     # Check cache
     compiled_module = instant.import_module(module_name)
