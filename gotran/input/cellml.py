@@ -22,15 +22,11 @@ from xml.etree import ElementTree
 from collections import OrderedDict, deque
 from gotran.common import warning, error
 
+from modelparameters.codegeneration import _all_keywords
+
 __all__ = ["cellml2ode", "CellMLParser"]
 
 ui = "UNINITIALIZED"
-
-python_keywords = ["and", "del", "from", "not", "while", "as", "elif",
-                   "global", "or", "with", "assert", "else", "if", "pass",
-                   "yield", "break", "except", "import", "print", "class",
-                   "exec", "in", "raise", "continue", "finally", "is",
-                   "return", "def", "for", "lambda", "try"]
 
 class Equation(object):
     """
@@ -275,7 +271,7 @@ class MathMLBaseParser(object):
             "arctan": 'atan',
             }
 
-    def use_parenthesis(self, child, parent):
+    def use_parenthesis(self, child, parent, first_operand=True):
         """
         Return true if child operation need parenthesis
         """
@@ -283,8 +279,14 @@ class MathMLBaseParser(object):
             return False
 
         parent_prec = self._precedence[parent]
-        if parent == "minus":
+        if parent == "minus" and not first_operand:
             parent_prec -= 0.5
+
+        if parent == "divide" and child == "times" and first_operand:
+            return False
+        
+        if parent == "minus" and child == "plus" and first_operand:
+            return False
         
         return parent_prec < self._precedence[child]
 
@@ -310,7 +312,7 @@ class MathMLBaseParser(object):
         return equation_list, self._state_variable, self._derivative, \
                self.used_variables
     
-    def _parse_subtree(self, root, parent=None):
+    def _parse_subtree(self, root, parent=None, first_operand=True):
         op = self._gettag(root)
 
         # If the tag i "apply" pick the operator and continue parsing
@@ -326,7 +328,7 @@ class MathMLBaseParser(object):
             eq  = []
             
             # Check if we need parenthesis
-            use_parent = self.use_parenthesis(op, parent)
+            use_parent = self.use_parenthesis(op, parent, first_operand)
             
             # If unary operator
             if len(root) == 1:
@@ -337,6 +339,11 @@ class MathMLBaseParser(object):
                     # parenthesize
                     if self._gettag(root[0]) in ["ci", "cn"]:
                         use_parent = False
+
+                    # If an unary minus is infront of a plus we always use parenthesize
+                    if self._gettag(root[0]) == "apply" and \
+                           self._gettag(root[0].getchildren()[0]) in ["plus"]:
+                        use_parent = True
 
                     eq += ["-"]
                 else:
@@ -353,7 +360,7 @@ class MathMLBaseParser(object):
                 eq += ["("] * use_parent + self._parse_subtree(root[0], op)
                 for operand in root[1:]:
                     eq = eq + [self._operators[op]] + self._parse_subtree(\
-                        operand, op)
+                        operand, op, first_operand=False)
                 eq = eq + [")"]*use_parent
                 return eq
         else:
@@ -364,10 +371,16 @@ class MathMLBaseParser(object):
                + [", "] +  self._parse_subtree(operands[1], parent) + [")"]
 
     def _parse_and(self, operands, parent):
-        return ["And("] + self._parse_subtree(operands[0], parent) + [", "] + self._parse_subtree(operands[1], parent)+[")"]
+        ret = ["And("]
+        for operand in operands:
+            ret += self._parse_subtree(operand, parent) + [", "]
+        return ret + [")"]
     
     def _parse_or(self, operands, parent):
-        return ["Or("] + self._parse_subtree(operands[0], parent) + [", "] + self._parse_subtree(operands[1], parent)+[")"]
+        ret = ["Or("]
+        for operand in operands:
+            ret += self._parse_subtree(operand, parent) + [", "]
+        return ret + [")"]
     
     def _parse_lt(self, operands, parent):
         return self._parse_conditional("Lt", operands, "lt")
@@ -398,7 +411,7 @@ class MathMLBaseParser(object):
     
     def _parse_ci(self, var, parent):
         varname = var.text.strip()
-        if varname in python_keywords:
+        if varname in _all_keywords:
             varname = varname + "_"
         self.used_variables.add(varname)
         return [varname]
@@ -406,7 +419,8 @@ class MathMLBaseParser(object):
     def _parse_cn(self, var, parent):
         value = var.text.strip()
         if "type" in var.keys() and var.get("type") == "e-notation":
-            exponent = "e" + var.getchildren()[0].tail.strip()
+            # Get rid of potential float repr
+            exponent = "e" + str(int(var.getchildren()[0].tail.strip()))
         else:
             exponent = ""
         value += exponent
@@ -417,8 +431,9 @@ class MathMLBaseParser(object):
         
         if eval(value) in nums:
             value = dict(t for t in zip(nums, num_strs))[eval(value)]
-        elif parent == "divide" and "." not in value:
-            value += ".0"
+        #elif "." not in value and "e" not in value:
+        #    value += ".0"
+        
         return [value]
     
     def _parse_diff(self, operands, parent):
@@ -429,6 +444,10 @@ class MathMLBaseParser(object):
         
         x = "".join(self._parse_subtree(operands[1], "diff"))
         y = "".join(self._parse_subtree(operands[0], "diff"))
+        
+        if x in _all_keywords:
+            x = x + "_"
+        
         d = "d" + x + "d" + y
 
         # Restore used_variables
@@ -649,6 +668,9 @@ class CellMLParser(object):
             for var in comp.getiterator(cellml_namespace + "variable"):
 
                 var_name = var.attrib["name"]
+                if var_name in _all_keywords:
+                    var_name = var_name + "_"
+
                 if var.attrib.has_key("initial_value"):
                     initial = var.attrib["initial_value"]
                 else:
@@ -667,7 +689,7 @@ class CellMLParser(object):
                     # Get equation name
                     eq_name = equation_list[0]
                     
-                    if eq_name in python_keywords:
+                    if eq_name in _all_keywords:
                         equation_list[0] = eq_name + "_"
                         eq_name = equation_list[0]
                     
