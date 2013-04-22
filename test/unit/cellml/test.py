@@ -1,73 +1,121 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2012-12-12"
+__date__ = "2012-05-07 -- 2013-04-23"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
 import unittest
 from gotran.input.cellml import *
+from gotran import compile_module
 
-class CellMLTester(unittest.TestCase):
+cellml_data = dict(
+    terkildsen_niederer_crampin_hunter_smith_2008 = dict(\
+        num_states=22, extract_equations=["FVRT", "FVRT_Ca", "Ca_b"], \
+        change_state_names=[]),
+    Pandit_Hinch_Niederer = dict(\
+        num_states=6, extract_equations=[], change_state_names=[]),
+    Pandit_et_al_2001_endo = dict(\
+        num_states=26, extract_equations=[], change_state_names=[]),
+    niederer_hunter_smith_2006 = dict(\
+        num_states=5, extract_equations=["Ca_b", "Ca_i"], change_state_names=[]),
+    iyer_mazhari_winslow_2004 = dict(\
+        num_states=67, extract_equations=["RT_over_F"], change_state_names=[]),
+    shannon_wang_puglisi_weber_bers_2004_b = dict(\
+        num_states=45, extract_equations=[], change_state_names=["R"]),
+    maleckar_greenstein_trayanova_giles_2009 = dict(\
+        num_states=30, extract_equations=[], change_state_names=[]),
+    irvine_jafri_winslow_1999 = dict(\
+        num_states=13, extract_equations=[], change_state_names=[]),
+    grandi_pasqualini_bers_2010 = dict(\
+        num_states=39, extract_equations=[], change_state_names=[]),
+    rice_wang_bers_detombe_2008 = dict(\
+        num_states=11, extract_equations=[], change_state_names=[]),
+    maltsev_2009_paper = dict(\
+        num_states=29, extract_equations=[], change_state_names=["R"]),
+    severi_fantini_charawi_difrancesco_2012 = dict(\
+        num_states=33, extract_equations=["RTONF", "V", "Nai"],
+        change_state_names=["R"]),
+    tentusscher_noble_noble_panfilov_2004_a = dict(\
+        num_states=17, extract_equations=[],
+        change_state_names=[]),
+    winslow_rice_jafri_marban_ororke_1999 = dict(\
+        num_states=33, extract_equations=[], change_state_names=[]),
+    )
 
-    def test_winslow_1999(self):
-        print "winslow_rice_jafri_marban_ororke_1999.cellml"
-        ode = cellml2ode("winslow_rice_jafri_marban_ororke_1999.cellml")
-        self.assertEqual(ode.num_states, 33)
+skip = dict(grandi_pasqualini_bers_2010 = "the model use time differential in assignment",
+            terkildsen_niederer_crampin_hunter_smith_2008 = "the encapsulation structure of the model is not properly parsed",
+            Pandit_Hinch_Niederer = "the model is not translated correct",
+            # Could fix this by always assign derivatives in component
+            iyer_mazhari_winslow_2004 = "the model use intermediates with same name in assignment of derivatives",
+            shannon_wang_puglisi_weber_bers_2004_b = "the model exhibits unstable numerics"
+            )
 
-    # FIXME: Problem with name changing
-    #def test_terkildsen_2008(self):
-    #    ode = cellml2ode("terkildsen_niederer_crampin_hunter_smith_2008.cellml",\
-    #                     ["FVRT", "FVRT_Ca", "Ca_b"])
-    #    self.assertEqual(ode.num_states, 22)
+test_form = """
+class {name}Tester(unittest.TestCase, TestBase):
+    def setUp(self):
+        self.ode = cellml2ode("{name}.cellml",
+                              extract_equations={extract_equations},
+                              change_state_names={change_state_names})
 
-    def test_hinch_2004(self):
-        print "Hinch_et_al_2004.cellml"
-        ode = cellml2ode("Hinch_et_al_2004.cellml")
-        self.assertEqual(ode.num_states, 6)
+    def test_num_statenames(self):
+        self.assertEqual(self.ode.num_states, {num_states})
 
-    def test_pandit_2001(self):
-        ode = cellml2ode("Pandit_et_al_2001_endo.cellml")
-        self.assertEqual(ode.num_states, 26)
+"""
 
-    # FIXME: Problem with name changing if I_LCC
-    #def test_pandit_niederer(self):
-    #    ode = cellml2ode("Pandit_Hinch_Niederer.cellml")
-    #    self.assertEqual(ode.num_states, 6)
+class TestBase(object):
+    def test_run(self):
+        from scipy.integrate import odeint
+        import numpy as np
+        from cPickle import load
 
-    def test_niederer_2006(self):
-        print "niederer_hunter_smith_2006.cellml"
-        ode = cellml2ode("niederer_hunter_smith_2006.cellml", ["Ca_b", "Ca_i"])
-        self.assertEqual(ode.num_states, 5)
+        # Load reference data
+        data = load(open(self.ode.name+".cpickle"))
+        ref_time = data.pop("time")
+        state_name = data.keys()[0]
+        ref_data = data[state_name]
 
-    def test_iyer_2004(self):
-        print "iyer_mazhari_winslow_2004.cellml"
-        ode = cellml2ode("iyer_mazhari_winslow_2004.cellml", ["RT_over_F"])
-        self.assertEqual(ode.num_states, 67)
+        # Compile ODE
+        module = compile_module(self.ode, rhs_args="stp", language="C")
+        rhs = module.rhs
+        y0 = module.init_values()
+        model_params = module.default_parameters()
+        
+        # Run simulation
+        t0 = ref_time[0]
+        t1 = ref_time[-1]
+        dt = min(0.1, t1/1000000.)
+        tsteps = np.linspace(t0, t1, int(t1/dt)+1)
+        results = odeint(rhs, y0, tsteps, args=(model_params,))
+        
+        # Get data to compare with ref
+        ind_state = module.state_indices(state_name)
+        comp_data = []
+        for res in results:
+            comp_data.append(res[ind_state])
+        
+        comp_data = np.array(comp_data)
+        
+        ref_interp_data = np.interp(tsteps, ref_time, ref_data)
+        data_range = ref_interp_data.max()-ref_interp_data.min()
+        rel_diff = np.abs((ref_interp_data-comp_data)/data_range).sum()/len(comp_data)
 
-    def test_shannon_2004(self):
-        print "shannon_wang_puglisi_weber_bers_2004_b.cellml"
-        ode = cellml2ode("shannon_wang_puglisi_weber_bers_2004_b.cellml", \
-                         change_state_names = ["R"])
-        self.assertEqual(ode.num_states, 45)
+        print "Rel diff:", rel_diff
+        self.assertTrue(rel_diff<1e-3)
 
-    def test_niederer_et_al(self):
-        ode = cellml2ode("Niederer_et_al_2006.cellml", ["Ca_b", "Ca_i"])
-        self.assertEqual(ode.num_states, 5)
+        if do_plot:
+            import pylab
+            pylab.plot(tsteps, comp_data, ref_time, ref_data)
+            pylab.legend(["Gotran data", "Ref CellML"])
+            pylab.show()
     
-    def test_maleckar_2009(self):
-        ode = cellml2ode("maleckar_greenstein_trayanova_giles_2009.cellml")
-        self.assertEqual(ode.num_states, 30)
-    
-    def test_irvine_1999(self):
-        ode = cellml2ode("irvine_jafri_winslow_1999.cellml")
-        self.assertEqual(ode.num_states, 13)
-    
-    def xtest_grandi_2010(self):
-        ode = cellml2ode("grandi_pasqualini_bers_2010.cellml")
-        self.assertEqual(ode.num_states, 39)
-    
-    def test_rice_2008(self):
-        ode = cellml2ode("rice_wang_bers_detombe_2008.cellml")
-        self.assertEqual(ode.num_states, 11)
+test_code = []
+for name, data in cellml_data.items():
+    if name in skip:
+        print "Skipping:", name, "because", skip[name]
+        continue
+    test_code.append(test_form.format(name=name, **data))
+
+exec("\n\n".join(test_code))
+do_plot = False
 
 if __name__ == "__main__":
     unittest.main()
