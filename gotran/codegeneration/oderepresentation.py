@@ -214,6 +214,12 @@ class ODERepresentation(object):
     def name(self):
         return self._name
 
+    @property
+    def class_name(self):
+        name = self.name
+        return name if name[0].isupper() else name[0].upper() + \
+               (name[1:] if len(name) > 1 else "")    
+
     def set_state_prefix(self, prefix):
         """
         Register a prefix to a state name. Used if 

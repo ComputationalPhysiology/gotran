@@ -439,9 +439,7 @@ class CodeGenerator(object):
         Generate class code
         """
 
-        name = self.oderepr.name
-        name = name if name[0].isupper() else name[0].upper() + \
-               (name[1:] if len(name) > 1 else "")    
+        name = self.oderepr.class_name
 
         return  """
 class {0}:
