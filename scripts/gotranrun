@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-03-13 -- 2013-03-20"
+__date__ = "2013-03-13 -- 2013-04-22"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
+from __future__ import division
 from gotran import *
 from scipy.integrate import odeint
 import pylab
