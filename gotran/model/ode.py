@@ -24,7 +24,7 @@ from collections import OrderedDict, deque
 
 # ModelParameter imports
 from modelparameters.sympytools import ModelSymbol, sp, sp_namespace
-from modelparameters.codegeneration import sympycode
+from modelparameters.codegeneration import sympycode, _all_keywords
 from modelparameters.parameters import ScalarParam
 from modelparameters.sympytools import iter_symbol_params_from_expr
 
@@ -350,6 +350,10 @@ class ODE(object):
             the added intermediate
         """
 
+        if name in _all_keywords:
+            error("cannot register an intermediate with a computer language "\
+                  "keyword name: {0}".format(name))
+        
         timer = Timer("Add intermediate")
 
         component_name = component if component else \
@@ -1217,6 +1221,10 @@ class ODE(object):
             If not "none", replace can be either "global_params" or "any", meaning that
             either global or any object can be replaced by the added intermediate
         """
+        
+        if obj.name in _all_keywords:
+            error("cannot register an object with a computer language "\
+                  "keyword name: {0}".format(obj.name))
         
         timer = Timer("Register obj")
         assert(isinstance(obj, (State, Parameter, Variable, StateDerivative, \
