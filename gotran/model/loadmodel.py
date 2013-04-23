@@ -386,6 +386,18 @@ def _namespace_binder(namespace, ode, load_arguments):
         # Add symbols to namespace
         namespace.update(dict((state.name, state.sym) for state in mm._states))
 
+    def expand(intermediate):
+        """
+        Expand an intermediate to the core expression using only States
+        and Parameters
+
+        Arguments:
+        ----------
+        intermediate : Intermediate
+            The intermediate which should be expanded
+        """
+        return ode.expand_intermediate(intermediate)
+
     # Update provided namespace
     namespace.update(dict(
         states=states,
@@ -394,6 +406,7 @@ def _namespace_binder(namespace, ode, load_arguments):
         model_arguments=model_arguments,
         subode=subode,
         markov_model=markov_model,
+        expand=expand,
         )
-                         )
+                     )
                     

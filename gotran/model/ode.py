@@ -745,6 +745,24 @@ class ODE(object):
         # Add object to component
         comp.append(derivative_expression)
 
+    def expand_intermediate(self, intermediate):
+        """
+        Expand an intermediate to the core expression using only States
+        and Parameters
+
+        Arguments:
+        ----------
+        intermediate : Intermediate
+            The intermediate which should be expanded
+        """
+
+        check_arg(intermediate, ModelSymbol)
+        obj = self._intermediates.get(intermediate)
+        if obj is None:
+            error("{0} is not an Intermediate in this ODE".format(intermediate))
+
+        return obj.expanded_expr
+
     def get_derivative_expr(self, expanded=False):
         """
         Return the derivative expression

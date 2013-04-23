@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2013-03-13"
+__date__ = "2012-05-07 -- 2013-04-23"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -386,6 +386,13 @@ class Creation(unittest.TestCase):
         ode = load_ode("winslow")
         self.assertTrue(ode == self.ode)
         self.assertNotEqual(id(ode), id(self.ode))
+
+    def test_functionality(self):
+        ode = self.ode
+        expr = ode.expand_intermediate(ode.dO2_RyR)
+        self.assertEqual(expr, -ode.O2_RyR*ode.kbminus + \
+                         (1000.0*ode.Ca_ss)**ode.mcoop*ode.O1_RyR*ode.kbplus)
+        self.assertRaises(GotranException, ode.expand_intermediate, ode.O2_RyR)
         
     def test_completness(self):
         """
