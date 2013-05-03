@@ -1,11 +1,33 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2013-04-23"
+__date__ = "2012-05-07 -- 2013-05-03"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
 import unittest
 from gotran.input.cellml import *
 from gotran import compile_module
+
+supported_models_form = """
+\documentclass[a4paper,12pt]{{article}}
+\usepackage{{fullpage}}
+\usepackage{{longtable}}
+\usepackage{{multicol}}
+\usepackage{{amsmath}}
+\usepackage{{mathpazo}}
+\usepackage[mathpazo]{{flexisym}}
+\usepackage{{breqn}}
+\setkeys{{breqn}}{{breakdepth={{1}}}}
+\\begin{{document}}
+\section{{Supported and tested CellML models in Gotran}}
+\\begin{{itemize}}
+{0}
+\end{{itemize}}
+\section{{Gotran fails to convert the following CellML models}}
+\\begin{{itemize}}
+{1}
+\end{{itemize}}
+\end{{document}}
+"""
 
 cellml_data = dict(
     terkildsen_niederer_crampin_hunter_smith_2008 = dict(\
@@ -37,9 +59,14 @@ cellml_data = dict(
     tentusscher_noble_noble_panfilov_2004_a = dict(\
         num_states=17, extract_equations=[],
         change_state_names=[]),
+    ten_tusscher_model_2006_IK1Ko_M_units = dict(\
+        num_states=19, extract_equations=[], change_state_names=[]),
     winslow_rice_jafri_marban_ororke_1999 = dict(\
         num_states=33, extract_equations=[], change_state_names=[]),
     )
+
+not_supported = cellml_data.keys()
+supported_models = []
 
 skip = dict(grandi_pasqualini_bers_2010 = "the model use time differential in assignment",
             terkildsen_niederer_crampin_hunter_smith_2008 = "the encapsulation structure of the model is not properly parsed",
@@ -55,6 +82,7 @@ class {name}Tester(unittest.TestCase, TestBase):
         self.ode = cellml2ode("{name}.cellml",
                               extract_equations={extract_equations},
                               change_state_names={change_state_names})
+        self.name = "{name}"
 
     def test_num_statenames(self):
         self.assertEqual(self.ode.num_states, {num_states})
@@ -98,15 +126,16 @@ class TestBase(object):
         data_range = ref_interp_data.max()-ref_interp_data.min()
         rel_diff = np.abs((ref_interp_data-comp_data)/data_range).sum()/len(comp_data)
 
-        print "Rel diff:", rel_diff
-        self.assertTrue(rel_diff<1e-3)
-
         if do_plot:
             import pylab
             pylab.plot(tsteps, comp_data, ref_time, ref_data)
             pylab.legend(["Gotran data", "Ref CellML"])
             pylab.show()
     
+        print "Rel diff:", rel_diff
+        self.assertTrue(rel_diff<1e-3)
+        supported_models.append(not_supported.pop(not_supported.index(self.name)))
+
 test_code = []
 for name, data in cellml_data.items():
     if name in skip:
@@ -118,5 +147,20 @@ exec("\n\n".join(test_code))
 do_plot = False
 
 if __name__ == "__main__":
-    unittest.main()
 
+    try:
+        unittest.main()
+    except:
+
+        not_supported = [not_sup + "\\\\{{\\it {0}}}".format(skip.get(not_sup, "").capitalize()) for not_sup in not_supported]
+
+        supported_str = "\n".join("\item {0}".format(\
+            " ".join(part.capitalize() for part in model.split("_"))) \
+                                  for model in supported_models)
+        not_supported_str = "\n".join("\item {0}".format(\
+            " ".join(part.capitalize() for part in model.split("_"))) \
+                                  for model in not_supported)
+        
+        print supported_str
+        open("supported_cellml_models.tex", "w").write(supported_models_form.format(\
+            supported_str, not_supported_str))
