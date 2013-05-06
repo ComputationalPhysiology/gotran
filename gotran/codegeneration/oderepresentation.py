@@ -18,6 +18,9 @@
 # System imports
 from collections import deque, OrderedDict
 import hashlib
+import re
+import sys
+
 
 # Model parametrs imports
 from modelparameters.parameterdict import *
@@ -28,7 +31,7 @@ from gotran.model.ode import ODE
 from gotran.model.odecomponents import ODEComponent, Comment
 from gotran.common import check_arg, check_kwarg, info
 
-import sys
+_jacobi_pattern = re.compile("_([0-9]+)")
 
 def _default_params(exclude=None):
     exclude = exclude or []
@@ -131,6 +134,7 @@ class ODERepresentation(object):
 
         self._used_in_monitoring = None
         self._cse_subs = None
+        self._jacobi_expr = None
 
     def signature(self):
         # Create a unique signature
@@ -217,8 +221,60 @@ class ODERepresentation(object):
         self._used_in_monitoring["states"] = \
                             list(self._used_in_monitoring["states"])
 
-    def _compute_jacobian(self):
-       pass 
+    def _compute_jacobi_cse(self):
+
+        if self._jacobi_expr is not None:
+            return 
+
+        ode = self.ode
+
+        sym_map = OrderedDict()
+        jacobi_expr = OrderedDict()
+        for i, (ders, expr) in enumerate(ode.get_derivative_expr(True)):
+            for j, state in enumerate(ode.states):
+                F_ij = expr.diff(state.sym)
+
+                # Only collect non zero contributions
+                if F_ij:
+                    jacobi_sym = sp.Symbol("j_{0}_{1}".format(i,j))
+                    sym_map[i,j] = jacobi_sym
+                    jacobi_expr[jacobi_sym] = F_ij
+                    #print "[%d,%d] (%d) # [%s, %s]  \n%s" \
+                    # % (i,j, len(F_ij.args), states[i], states[j], F_ij)
+            
+        # Create the Jacobian
+        self._jacobi_mat = sp.SparseMatrix(ode.num_states, ode.num_states, \
+                                           lambda i, j: sym_map.get((i, j), 0))
+        self._jacobi_expr = jacobi_expr
+
+        if not self.optimization.use_cse:
+            return
+
+        info("Calculating jacobi common sub expressions. May take some time...")
+        sys.stdout.flush()
+        # If we use cse we extract the sub expressions here and cache
+        # information
+        self._cse_jacobi_subs, self._cse_jacobi_expr = \
+                sp.cse([self.subs(expr) \
+                        for expr in self._jacobi_expr.values()], \
+                       symbols=sp.numbered_symbols("cse_jacobi_"), \
+                       optimizations=[])
+        
+        cse_jacobi_counts = [[] for i in range(len(self._cse_jacobi_subs))]
+        for i in range(len(self._cse_jacobi_subs)):
+            for j in range(i+1, len(self._cse_jacobi_subs)):
+                if self._cse_jacobi_subs[i][0] in self._cse_jacobi_subs[j][1].atoms():
+                    cse_jacobi_counts[i].append(j)
+            
+            for j in range(len(self._cse_jacobi_expr)):
+                if self._cse_jacobi_subs[i][0] in self._cse_jacobi_expr[j].atoms():
+                    cse_jacobi_counts[i].append(j+len(self._cse_jacobi_subs))
+
+        # Store usage count
+        # FIXME: Use this for more sorting!
+        self._cse_jacobi_counts = cse_jacobi_counts
+
+        info(" done")
             
     def update_index(self, index):
         """
@@ -353,6 +409,41 @@ class ODERepresentation(object):
                 if cse_count:
                     yield expr, name
 
+    def iter_jacobi_body(self):
+        """
+        Iterate over the body defining the jacobi expressions 
+        """
+        
+        if not self.optimization.use_cse:
+            return 
+            
+        self._compute_jacobi_cse()
+
+        # Yield the CSE
+        yield "Common Sub Expressions for jacobi intermediates", "COMMENT"
+        for (name, expr), cse_count in zip(self._cse_jacobi_subs, \
+                                           self._cse_jacobi_counts):
+            if cse_count:
+                yield expr, name
+
+    def iter_jacobi_expr(self):
+        """
+        Iterate over the jacobi expressions 
+        """
+        
+        self._compute_jacobi_cse()
+
+        if self.optimization.use_cse:
+            
+            for ((name, expr), cse_expr) in zip(\
+                self._jacobi_expr.items(), \
+                self._cse_jacobi_expr):
+                yield map(int, re.findall(_jacobi_pattern, str(name))), cse_expr
+        else:
+
+            for name, expr in self._jacobi_expr.items():
+                yield map(int, re.findall(_jacobi_pattern, str(name))), expr
+            
     def iter_monitored_body(self):
         """
         Iterate over the body defining the monitored expressions 
