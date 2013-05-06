@@ -195,14 +195,42 @@ def compile_module(ode, rhs_args="stp", language="C", **options):
     if language == "C":
         return compile_extension_module(oderepr, rhs_args)
 
+    # Create unique module name for this application run
+    modulename = "gotran_python_module_{0}_{1}".format(\
+        oderepr.class_name, hashlib.sha1(repr(oderepr.signature()) + \
+                                         gotran.__version__ + \
+                                         instant.__version__).hexdigest())
+    
+    # Check cache
+    python_module = instant.import_module(modulename)
+    if python_module:
+        return getattr(python_module, oderepr.class_name)()
+
+    # No module in cache generate python version
     pgen = CodeGenerator(oderepr)
 
     # Generate class code, execute it and collect namespace
-    ns = {}
-    exec("from __future__ import division\n" + pgen.class_code(rhs_args), {}, ns)
+    code = "from __future__ import division\n" + pgen.class_code(rhs_args)
 
-    # Grab the generated class and instantiate it
-    return ns[oderepr.class_name]()
+    # Make a temporary module path for compilation
+    module_path = os.path.join(instant.get_temp_dir(), modulename)
+    instant.instant_assert(not os.path.exists(module_path),
+                           "Not expecting module_path to exist: '{}'".format( module_path))
+    instant.makedirs(module_path)
+    original_path = os.getcwd()
+    try:
+        module_path = os.path.abspath(module_path)
+        os.chdir(module_path)
+        instant.write_file("__init__.py", code)
+        module_path = instant.copy_to_cache(\
+            module_path, instant.get_default_cache_dir(), modulename)
+    
+    finally:
+        # Always get back to original directory.
+        os.chdir(original_path)
+
+    python_module = instant.import_module(modulename)
+    return getattr(python_module, oderepr.class_name)()
 
 # Assign docstring
 compile_module.func_doc = _compile_module_doc_str
@@ -230,6 +258,19 @@ def compile_extension_module(oderepr, rhs_args):
             args_doc.append("""    parameters : np.ndarray
         The parameter values""")
 
+    # Create unique module name for this application run
+    modulename = "gotran_compile_module_{0}_{1}".format(\
+        oderepr.class_name, hashlib.sha1(repr(oderepr.signature()) + \
+                                         instant.get_swig_version() + \
+                                         gotran.__version__ + \
+                                         instant.__version__).hexdigest())
+    
+    # Check cache
+    compiled_module = instant.import_module(modulename)
+
+    if compiled_module:
+        return compiled_module
+
     args = ", ".join(args)
     args_doc = "\n".join(args_doc)
 
@@ -243,18 +284,6 @@ def compile_extension_module(oderepr, rhs_args):
             pgen.init_param_code() + "\n\n" + \
             pgen.state_name_to_index_code() + "\n\n" + \
             pgen.param_name_to_index_code()
-
-    # Create unique module name for this application run
-    module_name = "gotran_compiled_module_{0}_{1}".format(\
-        oderepr.class_name, hashlib.md5(repr(code) + instant.get_swig_version() + \
-                                        gotran.__version__ + \
-                                        instant.__version__).hexdigest())
-    
-    # Check cache
-    compiled_module = instant.import_module(module_name)
-
-    if compiled_module:
-        return compiled_module
 
     push_log_level(INFO)
     info("Calling GOTRAN just-in-time (JIT) compiler, this may take some "\
@@ -277,7 +306,7 @@ def compile_extension_module(oderepr, rhs_args):
         code              = code,
         additional_declarations = _additional_declarations.format(\
             **declaration_form),
-        signature         = module_name,
+        signature         = modulename,
         **instant_kwargs)
 
     info(" done")

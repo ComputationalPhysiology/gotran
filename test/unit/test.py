@@ -1,7 +1,7 @@
 """Run all unit tests."""
 
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2010-03-19 -- 2012-09-12"
+__date__ = "2010-03-19 -- 2013-05-06"
 __copyright__ = "Copyright (C) 2010 " + __author__
 __license__  = "GNU LGPL version 3.0"
 
@@ -17,6 +17,8 @@ from instant import get_status_output
 tests = dict(ode = ["panfilov", "winslow"],
              cellml = ["test"])
 
+curdir = os.path.abspath(os.path.curdir)
+
 # Run tests
 failed = []
 for test_dir, tests in tests.items():
@@ -25,7 +27,10 @@ for test_dir, tests in tests.items():
     print "----------------------------------------------------------------------"
 
     for test in tests:
-        result, output = get_status_output("cd {0} && python {1}.py".format(test_dir, test))
+        
+        os.chdir(test_dir)
+        result, output = get_status_output("python {0}.py".format(test))
+        os.chdir(curdir)
         if "OK" in output:
             num_tests = int(re.search("Ran (\d+) test", output).groups()[0])
             print "{0}: OK ({1} tests)".format(test, num_tests)

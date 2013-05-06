@@ -1676,3 +1676,19 @@ class ODE(object):
         for mm in self._markov_models:
             mm.finalize()
         
+    def signature(self):
+        """
+        Return a signature uniquely defining the ODE
+        """
+        import hashlib
+        def_list = [repr(state.param) for state in self.states] 
+        def_list += [repr(param.param) for param in self.parameters] 
+        def_list += [repr(variable.param) for variable in self.variables] 
+        def_list += [str(intermediate.expr) if isinstance(intermediate, Expression) \
+                     else str(intermediate) for intermediate in self.intermediates]
+        def_list += [str(expr) for expr in self.get_derivative_expr()]
+
+        h = hashlib.sha1()
+        h.update(";".join(def_list))
+        return h.hexdigest()
+        

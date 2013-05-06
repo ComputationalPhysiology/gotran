@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2013-05-03"
+__date__ = "2012-05-07 -- 2013-05-06"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -29,7 +29,7 @@ supported_models_form = """
 \end{{document}}
 """
 
-cellml_data = dict(
+cellml_data = dict(\
     terkildsen_niederer_crampin_hunter_smith_2008 = dict(\
         num_states=22, extract_equations=["FVRT", "FVRT_Ca", "Ca_b"], \
         change_state_names=[]),

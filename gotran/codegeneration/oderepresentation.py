@@ -16,7 +16,8 @@
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
 # System imports
-from collections import deque
+from collections import deque, OrderedDict
+import hashlib
 
 # Model parametrs imports
 from modelparameters.parameterdict import *
@@ -128,81 +129,96 @@ class ODERepresentation(object):
         self._state_prefix = ""
         self._parameter_prefix = ""
 
-        # Check for using CSE
-        if not self.optimization.keep_intermediates and \
-               self.optimization.use_cse:
+        self._used_in_monitoring = None
+        self._cse_subs = None
 
-            info("Calculating common sub expressions. May take some time...")
-            sys.stdout.flush()
-            # If we use cse we extract the sub expressions here and cache
-            # information
-            self._cse_subs, self._cse_derivative_expr = \
+    def signature(self):
+        # Create a unique signature
+        h = hashlib.sha1()
+        h.update(self.ode.signature() + repr(self.optimization))
+        return h.hexdigest()
+    
+    def _compute_dy_cse(self):
+        if self._cse_subs is not None:
+            return
+
+        ode = self.ode
+
+        info("Calculating common sub expressions. May take some time...")
+        sys.stdout.flush()
+        # If we use cse we extract the sub expressions here and cache
+        # information
+        self._cse_subs, self._cse_derivative_expr = \
+                sp.cse([self.subs(expr) \
+                        for der, expr in ode.get_derivative_expr(True)], \
+                       symbols=sp.numbered_symbols("cse_"), \
+                       optimizations=[])
+        
+        cse_counts = [[] for i in range(len(self._cse_subs))]
+        for i in range(len(self._cse_subs)):
+            for j in range(i+1, len(self._cse_subs)):
+                if self._cse_subs[i][0] in self._cse_subs[j][1].atoms():
+                    cse_counts[i].append(j)
+            
+            for j in range(len(self._cse_derivative_expr)):
+                if self._cse_subs[i][0] in self._cse_derivative_expr[j].atoms():
+                    cse_counts[i].append(j+len(self._cse_subs))
+
+        # Store usage count
+        # FIXME: Use this for more sorting!
+        self._cse_counts = cse_counts
+
+        info(" done")
+        
+    def _compute_monitor_cse(self):
+        if self._used_in_monitoring is not None:
+            return
+
+        # Generate info about used states and parameters
+        self._used_in_monitoring = dict(
+            states = set(), parameters = set()
+            )
+
+        for name, expr in ode.iter_monitored_intermediates():
+            for sym in iter_symbol_params_from_expr(expr):
+
+                if ode.has_state(sym):
+                    self._used_in_monitoring["states"].add(sym.name)
+                elif ode.has_parameter(sym):
+                    self._used_in_monitoring["parameters"].add(sym.name)
+                else:
+                    # Skip if ModelSymbols is not state or parameter
+                    pass
+        
+        self._cse_monitored_subs, self._cse_monitored_expr = \
                     sp.cse([self.subs(expr) \
-                            for der, expr in ode.get_derivative_expr(True)], \
+                        for name, expr in ode.iter_monitored_intermediates()], \
                            symbols=sp.numbered_symbols("cse_"), \
                            optimizations=[])
-            
-            cse_counts = [[] for i in range(len(self._cse_subs))]
-            for i in range(len(self._cse_subs)):
-                for j in range(i+1, len(self._cse_subs)):
-                    if self._cse_subs[i][0] in self._cse_subs[j][1].atoms():
-                        cse_counts[i].append(j)
+        
+        cse_counts = [[] for i in range(len(self._cse_monitored_subs))]
+        for i in range(len(self._cse_monitored_subs)):
+            for j in range(i+1, len(self._cse_monitored_subs)):
+                if self._cse_monitored_subs[i][0] in \
+                       self._cse_monitored_subs[j][1]:
+                    cse_counts[i].append(j)
                 
-                for j in range(len(self._cse_derivative_expr)):
-                    if self._cse_subs[i][0] in self._cse_derivative_expr[j].atoms():
-                        cse_counts[i].append(j+len(self._cse_subs))
+            for j in range(len(self._cse_monitored_expr)):
+                if self._cse_monitored_subs[i][0] in self._cse_monitored_expr[j]:
+                    cse_counts[i].append(j+len(self._cse_monitored_subs))
 
-            # Store usage count
-            # FIXME: Use this for more sorting!
-            self._cse_counts = cse_counts
+        # Store usage count
+        # FIXME: Use this for more sorting!
+        self._cse_monitored_counts = cse_counts
 
-            info(" done")
+        self._used_in_monitoring["parameters"] = \
+                            list(self._used_in_monitoring["parameters"])
 
-        # If the ode contains any monitored intermediates generate CSE versions 
-        if ode.num_monitored_intermediates > 0:
+        self._used_in_monitoring["states"] = \
+                            list(self._used_in_monitoring["states"])
 
-            # Generate info about used states and parameters
-            self._used_in_monitoring = dict(
-                states = set(), parameters = set()
-                )
-
-            for name, expr in ode.iter_monitored_intermediates():
-                for sym in iter_symbol_params_from_expr(expr):
-
-                    if ode.has_state(sym):
-                        self._used_in_monitoring["states"].add(sym.name)
-                    elif ode.has_parameter(sym):
-                        self._used_in_monitoring["parameters"].add(sym.name)
-                    else:
-                        # Skip if ModelSymbols is not state or parameter
-                        pass
-            
-            self._cse_monitored_subs, self._cse_monitored_expr = \
-                        sp.cse([self.subs(expr) \
-                            for name, expr in ode.iter_monitored_intermediates()], \
-                               symbols=sp.numbered_symbols("cse_"), \
-                               optimizations=[])
-            
-            cse_counts = [[] for i in range(len(self._cse_monitored_subs))]
-            for i in range(len(self._cse_monitored_subs)):
-                for j in range(i+1, len(self._cse_monitored_subs)):
-                    if self._cse_monitored_subs[i][0] in \
-                           self._cse_monitored_subs[j][1]:
-                        cse_counts[i].append(j)
-                    
-                for j in range(len(self._cse_monitored_expr)):
-                    if self._cse_monitored_subs[i][0] in self._cse_monitored_expr[j]:
-                        cse_counts[i].append(j+len(self._cse_monitored_subs))
-
-            # Store usage count
-            # FIXME: Use this for more sorting!
-            self._cse_monitored_counts = cse_counts
-
-            self._used_in_monitoring["parameters"] = \
-                                list(self._used_in_monitoring["parameters"])
-
-            self._used_in_monitoring["states"] = \
-                                list(self._used_in_monitoring["states"])
+    def _compute_jacobian(self):
+       pass 
             
     def update_index(self, index):
         """
@@ -306,6 +322,7 @@ class ODERepresentation(object):
 
         # Use CSE
         else:
+            self._compute_dy_cse()
             return ((derivatives, cse_expr) \
                     for ((derivatives, expr), cse_expr) in zip(\
                         self.ode.get_derivative_expr(), \
@@ -330,6 +347,7 @@ class ODERepresentation(object):
                 yield self.subs(intermediate.expr), intermediate.name
                     
         elif self.optimization.use_cse:
+            self._compute_dy_cse()
             yield "Common Sub Expressions", "COMMENT"
             for (name, expr), cse_count in zip(self._cse_subs, self._cse_counts):
                 if cse_count:
@@ -340,6 +358,7 @@ class ODERepresentation(object):
         Iterate over the body defining the monitored expressions 
         """
         
+        self._compute_monitor_cse()
         if self.ode.num_monitored_intermediates == 0:
             return
 
@@ -355,6 +374,7 @@ class ODERepresentation(object):
         Iterate over the monitored expressions 
         """
         
+        self._compute_monitor_cse()
         if self.ode.num_monitored_intermediates == 0:
             return
 
