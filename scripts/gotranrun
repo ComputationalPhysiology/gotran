@@ -3,7 +3,7 @@
 
 from __future__ import division
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-03-13 -- 2013-04-26"
+__date__ = "2013-03-13 -- 2013-05-07"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -13,9 +13,14 @@ import pylab
 import numpy as np
 
 def main(filename, params):
+
+    # Set code parameters
+    code_params = params.code.copy(True)
+    code_params["generate_jacobian"] = params.use_jacobian
+    
     # Compile executeable code from gotran ode
     module = compile_module(load_ode(filename), rhs_args="stp", \
-                            **params.code.copy(True))
+                            **code_params)
 
     # Use scipy to integrate model
     t0 = 0.
@@ -27,10 +32,15 @@ def main(filename, params):
     model_params = module.default_parameters()
 
     tsteps = np.linspace(t0, t1, t1/dt+1)
-    results = odeint(rhs, y0, tsteps, args=(model_params,))
+    if params.use_jacobian:
+        results = odeint(rhs, y0, tsteps, Dfun=module.jacobian, args=(model_params,))
+    else:
+        results = odeint(rhs, y0, tsteps, args=(model_params,))
 
     # Plot results
     plot_states = params.plot_states
+    if not plot_states:
+        return 
     plot_inds = [module.state_indices(state) for state in plot_states]
     plot_results = [[] for state in plot_states]
     
@@ -50,7 +60,7 @@ if __name__ == "__main__":
     from modelparameters.parameterdict import *
     from gotran.codegeneration.oderepresentation import _default_params
     
-    code_params = _default_params()
+    code_params = _default_params(["generate_jacobian"])
     code_params = ParameterDict(
         language = OptionParam("Python", ["Python", "C"]),
         **code_params
@@ -58,7 +68,8 @@ if __name__ == "__main__":
     params = ParameterDict(\
         tstop = ScalarParam(100., gt=0, description="Time for stopping simulation"),\
         dt_plot = ScalarParam(0.1, gt=0, description="Timestep for plotting."),\
-        plot_states = Param(["V"], description="States to plot"),\
+        plot_states = Param(["V"], description="States to plot."),\
+        use_jacobian = Param(True, description="Use analytic jacobian when integrating."),\
         code = code_params)
     params.parse_args(usage="usage: %prog FILE [options]")
     

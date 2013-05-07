@@ -96,13 +96,7 @@ class CodeGenerator(object):
         prototype.append(body)
         return prototype
 
-    def dy_body(self):
-        """
-        Generate body lines of code for evaluating state derivatives
-        """
-
-        from modelparameters.codegeneration import pythoncode
-
+    def _states_and_parameters_code(self):
         ode = self.oderepr.ode
 
         assert(not ode.is_dae)
@@ -127,6 +121,19 @@ class CodeGenerator(object):
             if self.oderepr.optimization.use_parameter_names:
                 body_lines.append(", ".join(param.name for i, param in \
                         enumerate(ode.parameters)) + " = parameters")
+
+        return body_lines
+
+    def dy_body(self):
+        """
+        Generate body lines of code for evaluating state derivatives
+        """
+
+        from modelparameters.codegeneration import pythoncode
+
+        ode = self.oderepr.ode
+
+        body_lines = self._states_and_parameters_code()
 
         # Iterate over any body needed to define the dy
         for expr, name in self.oderepr.iter_dy_body():
@@ -181,10 +188,76 @@ class CodeGenerator(object):
         
         dy_function = self.wrap_body_with_function_prototype(\
             body_lines, "rhs", args, \
-            "dy", "Calculate right hand side")
+            "dy", "Compute right hand side")
         
         return "\n".join(self.indent_and_split_lines(dy_function, indent=indent))
 
+    def jacobian_body(self):
+        """
+        Generate body lines of code for evaluating state derivatives
+        """
+
+        from modelparameters.codegeneration import pythoncode
+
+        ode = self.oderepr.ode
+
+        body_lines = self._states_and_parameters_code()
+        
+        # Iterate over any body needed to define the jacobian
+        for expr, name in self.oderepr.iter_jacobian_body():
+            if name == "COMMENT":
+                body_lines.append("")
+                body_lines.append("# " + expr)
+            else:
+                body_lines.append(pythoncode(expr, name))
+
+        # Init jacobian
+        body_lines.append("")
+        body_lines.append("# Init jacobian")
+        body_lines.append("if jac is None:")
+        body_lines.append(["jac = np.zeros((len(states), len(states)), dtype=np.float_)"])
+        
+        # Add jac[i,j] lines
+        for (indi, indj), expr in self.oderepr.iter_jacobian_expr():
+            body_lines.append(pythoncode(expr, "jac[{0}, {1}]".format(indi, indj)))
+
+        # Return body lines 
+        return body_lines
+
+    def jacobian_code(self, rhs_args="stp", indent=0, self_arg=False):
+        """
+        Generate code for evaluating jacobian
+        """
+
+        body_lines = self.jacobian_body()
+        
+        body_lines.append("")
+        body_lines.append("# Return jacobian")
+
+        # Add function prototype
+        args=[]
+        if self_arg:
+            args.append("self")
+
+        for arg in rhs_args:
+            if arg == "s":
+                args.append("states")
+            elif arg == "t":
+                args.append("time")
+            elif arg == "p" and \
+                 not self.oderepr.optimization.parameter_numerals:
+                args.append("parameters")
+
+        args.append("jac=None")
+        
+        args = ", ".join(args)
+        
+        jacobian_function = self.wrap_body_with_function_prototype(\
+            body_lines, "jacobian", args, \
+            return_arg="jac", comment="Compute jacobian")
+        
+        return "\n".join(self.indent_and_split_lines(jacobian_function, indent=indent))
+        
     def monitored_body(self):
         """
         Generate body lines of code for evaluating state derivatives
@@ -273,7 +346,7 @@ class CodeGenerator(object):
         
         monitor_function = self.wrap_body_with_function_prototype(\
             body_lines, "monitor", args, \
-            "monitored", "Calculate monitored intermediates")
+            "monitored", "Compute monitored intermediates")
         
         return "\n".join(self.indent_and_split_lines(monitor_function))
 
@@ -441,16 +514,21 @@ class CodeGenerator(object):
 
         name = self.oderepr.class_name
 
+        code = [self.init_param_code(indent=1, self_arg=True),
+                self.init_states_code(indent=1, self_arg=True),
+                self.dy_code(rhs_args, indent=1, self_arg=True),
+                self.state_name_to_index_code(indent=1, self_arg=True), 
+                self.param_name_to_index_code(indent=1, self_arg=True),
+                ]
+
+        if self.oderepr.optimization.generate_jacobian:
+            code += [self.jacobian_code(indent=1, self_arg=True)]
+
         return  """
 class {0}:
 
 {1}
-""".format(name, "\n\n".join([self.init_param_code(indent=1, self_arg=True),
-                              self.init_states_code(indent=1, self_arg=True),
-                              self.dy_code(rhs_args, indent=1, self_arg=True),
-                              self.state_name_to_index_code(indent=1, self_arg=True), 
-                              self.param_name_to_index_code(indent=1, self_arg=True),
-                              ]))
+""".format(name, "\n\n".join(code))
 
     @classmethod
     def indent_and_split_lines(cls, code_lines, indent=0, ret_lines=None, \
@@ -613,6 +691,30 @@ class CCodeGenerator(CodeGenerator):
         prototype.append(body_lines)
         return prototype
     
+    def _states_and_parameters_code(self, parameters_in_signature):
+
+        ode = self.oderepr.ode
+        
+        # Start building body
+        body_lines = ["", "// Assign states"]
+        if self.oderepr.optimization.use_state_names:
+            for i, state in enumerate(ode.states):
+                body_lines.append("const double {0} = states[{1}]".format(\
+                    state.name, i))
+        
+        # Add parameters code if not numerals
+        if parameters_in_signature and \
+               not self.oderepr.optimization.parameter_numerals:
+            body_lines.append("")
+            body_lines.append("// Assign parameters")
+
+            if self.oderepr.optimization.use_parameter_names:
+                for i, param in enumerate(ode.parameters):
+                    body_lines.append("const double {0} = parameters[{1}]".\
+                                      format(param.name, i))
+
+        return body_lines
+
     def init_states_code(self):
         """
         Generate code for setting initial condition
@@ -656,23 +758,7 @@ class CCodeGenerator(CodeGenerator):
 
         assert(not ode.is_dae)
 
-        # Start building body
-        body_lines = ["", "// Assign states"]
-        if self.oderepr.optimization.use_state_names:
-            for i, state in enumerate(ode.states):
-                body_lines.append("const double {0} = states[{1}]".format(\
-                    state.name, i))
-        
-        # Add parameters code if not numerals
-        if parameters_in_signature and \
-               not self.oderepr.optimization.parameter_numerals:
-            body_lines.append("")
-            body_lines.append("// Assign parameters")
-
-            if self.oderepr.optimization.use_parameter_names:
-                for i, param in enumerate(ode.parameters):
-                    body_lines.append("const double {0} = parameters[{1}]".\
-                                      format(param.name, i))
+        body_lines = self._states_and_parameters_code(parameters_in_signature)
 
         # Iterate over any body needed to define the dy
         declared_duplicates = []
@@ -729,9 +815,76 @@ class CCodeGenerator(CodeGenerator):
 
         dy_function = self.wrap_body_with_function_prototype(\
             body_lines, "rhs", args, \
-            "", "Calculate right hand side of {0}".format(self.oderepr.name))
+            "", "Compute right hand side of {0}".format(self.oderepr.name))
         
         return "\n".join(self.indent_and_split_lines(dy_function))
+
+    def jacobian_body(self, parameters_in_signature=False, result_name="jac"):
+
+        ode = self.oderepr.ode
+
+        assert(not ode.is_dae)
+
+        body_lines = self._states_and_parameters_code(parameters_in_signature)
+
+        # Iterate over any body needed to define the dy
+        declared_duplicates = []
+        for expr, name in self.oderepr.iter_jacobian_body():
+
+            name = str(name)
+            
+            if name == "COMMENT":
+                body_lines.append("")
+                body_lines.append("// " + expr)
+            else:
+                if name in ode._intermediate_duplicates:
+                    if name not in declared_duplicates:
+                        declared_duplicates.append(name)
+                        name = "double " + name
+
+                else:
+                    name = "const double " + name
+
+                body_lines.append(self.to_code(expr, name))
+
+        # Add jac[i,j] lines
+        num_states = ode.num_states
+        for (indi, indj), expr in self.oderepr.iter_jacobian_expr():
+            body_lines.append(self.to_code(expr, "{0}[{1}*{2}+{3}]".format(\
+                result_name, indi, num_states, indj)))
+ 
+        body_lines.append("")
+        
+        # Return the body lines
+        return body_lines
+
+    def jacobian_code(self, rhs_args="stp", parameters_in_signature=False, \
+                      result_name="jac"):
+        """
+        Generate code for evaluating state derivatives
+        """
+
+        body_lines = self.jacobian_body(parameters_in_signature, result_name)
+
+        # Add function prototype
+        args=[]
+        for arg in rhs_args:
+            if arg == "s":
+                args.append("const double* states")
+            elif arg == "t":
+                args.append("double time")
+            elif arg == "p" and \
+                not self.oderepr.optimization.parameter_numerals \
+                and parameters_in_signature:
+                args.append("const double* parameters")
+
+        args = ", ".join(args) + ", double* {0}".format(result_name)
+
+        jacobian_function = self.wrap_body_with_function_prototype(\
+            body_lines, "jacobian", args, \
+            "", "Compute jacobian of {0}".format(self.oderepr.name))
+        
+        return "\n".join(self.indent_and_split_lines(jacobian_function))
 
     def monitored_body(self, parameters_in_signature=False, result_name="monitored"):
         """
@@ -805,7 +958,7 @@ class CCodeGenerator(CodeGenerator):
             parameters, result_name)
         monitored_function = self.wrap_body_with_function_prototype(\
             body_lines, "monitored", args, \
-            "", "Calculate monitored intermediates {0}".format(self.oderepr.name))
+            "", "Compute monitored intermediates {0}".format(self.oderepr.name))
         
         return "\n".join(self.indent_and_split_lines(monitored_function))
 

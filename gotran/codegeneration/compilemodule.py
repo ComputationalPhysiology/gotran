@@ -89,6 +89,30 @@ import_array();
   $1 = (double *)PyArray_DATA(xa);
 }}
 
+// Typemaps
+%typemap(in) (double* jac)
+{{
+  // Check type
+  if (!PyArray_Check($input))
+    SWIG_exception(SWIG_TypeError, "Numpy array expected");
+
+  // Get PyArrayObject
+  PyArrayObject *xa = (PyArrayObject *)$input;
+
+  // Check data type
+  if (!(PyArray_ISCONTIGUOUS(xa) && PyArray_TYPE(xa) == NPY_DOUBLE))
+    SWIG_exception(SWIG_TypeError, "Contigous numpy array of doubles "
+                  "expected. Make sure the numpy array is contiguous, "
+                  "and uses dtype=float_.");
+
+  // Check size of passed array
+  if ( PyArray_SIZE(xa) != {num_states}*{num_states} )
+    SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
+                                  "{num_states}*{num_states}, for the jacobian argument.");
+  
+  $1 = (double *)PyArray_DATA(xa);
+}}
+
 %typemap(in) (const double* states)
 {{
   // Check type
@@ -131,6 +155,7 @@ import_array();
              "{num_parameters}, for the parameters argument.");
   
   $1 = (double *)PyArray_DATA(xa);
+  
 }}
 
 // The typecheck
@@ -158,6 +183,7 @@ def rhs({args}, dy=None):
     import numpy as np
     if dy is None:
         dy = np.zeros_like(states)
+    
     _rhs({args}, dy)
     return dy
 
@@ -167,7 +193,42 @@ def rhs({args}, dy=None):
 // Rename rhs to _rhs
 %rename (_rhs) rhs;
 
+{jacobian_declaration}
 """
+
+_jacobian_declaration = """
+%pythoncode%{{
+def jacobian({args}, jac=None):
+    '''
+    Evaluates the jacobian of the model
+
+    Arguments:
+    ----------
+{args_doc}    
+    jac : np.ndarray (optional)
+        The computed result 
+    '''
+    import numpy as np
+    if jac is None:
+        jac = np.zeros({num_states}*{num_states}, dtype=np.float_)
+    elif not isinstance(jac, np.ndarray):
+        raise TypeError(\"expected a NumPy array.\")
+    elif len(jac.shape) != 2 or jac.shape[0] != jac.shape[1] or jac.shape[0] != {num_states}:
+        raise ValueError(\"expected a square shaped matrix with size ({num_states}, {num_states})\")
+    else:
+        # Flatten Matrix
+        jac.shape = ({num_states}*{num_states},)
+    
+    _jacobian({args}, jac)
+    jac.shape = ({num_states},{num_states})
+    return jac
+%}}
+
+// Rename jacobian to _jacobian
+%rename (_jacobian) jacobian;
+"""
+
+
 
 def compile_module(ode, rhs_args="stp", language="C", **options):
 
@@ -262,6 +323,7 @@ def compile_extension_module(oderepr, rhs_args):
     modulename = "gotran_compile_module_{0}_{1}".format(\
         oderepr.class_name, hashlib.sha1(repr(oderepr.signature()) + \
                                          instant.get_swig_version() + \
+                                         rhs_args + \
                                          gotran.__version__ + \
                                          instant.__version__).hexdigest())
     
@@ -278,8 +340,20 @@ def compile_extension_module(oderepr, rhs_args):
     cgen = CCodeGenerator(oderepr)
 
     code = cgen.dy_code(rhs_args=rhs_args, \
-                         parameters_in_signature=True)
+                        parameters_in_signature=True)
+    
+    if oderepr.optimization.generate_jacobian:
+        code += "\n\n" + cgen.jacobian_code(rhs_args=rhs_args, \
+                                            parameters_in_signature=True)
 
+        jacobian_declaration = _jacobian_declaration.format(\
+            num_states = oderepr.ode.num_states,
+            args=args,
+            args_doc=args_doc,
+            )
+    else:
+        jacobian_declaration = ""
+    
     pcode = "\n\n" + pgen.init_states_code() + "\n\n" + \
             pgen.init_param_code() + "\n\n" + \
             pgen.state_name_to_index_code() + "\n\n" + \
@@ -299,8 +373,9 @@ def compile_extension_module(oderepr, rhs_args):
         python_code = pcode,
         args=args,
         args_doc=args_doc,
+        jacobian_declaration=jacobian_declaration,
         )
-
+    
     # Compile extension module with instant
     compiled_module = instant.build_module(\
         code              = code,
