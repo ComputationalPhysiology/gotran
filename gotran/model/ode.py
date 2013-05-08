@@ -288,14 +288,14 @@ class ODE(object):
 
         for i, arg in enumerate(args):
             check_arg(arg, (str, ModelSymbol), i)
-            obj = self.get_object(arg)
+            obj = self.get_object(arg) or self._intermediates.get(arg)
 
             if not isinstance(obj, Intermediate):
                 error("Can only monitor indermediates. '{0}' is not an "\
                       "Intermediate.".format(obj.name))
             
             # Register the expanded monitored intermediate
-            self._monitored_intermediates[name] = obj
+            self._monitored_intermediates[obj.name] = obj
 
     def add_markov_model(self, name, component="", *args, **kwargs):
         """        
@@ -1458,7 +1458,7 @@ class ODE(object):
         """
         Return an dict over registered monitored intermediates
         """
-        return _monitored_intermediates
+        return self._monitored_intermediates
 
     def has_state(self, state):
         """
@@ -1686,6 +1686,7 @@ class ODE(object):
         def_list += [repr(variable.param) for variable in self.variables] 
         def_list += [str(intermediate.expr) if isinstance(intermediate, Expression) \
                      else str(intermediate) for intermediate in self.intermediates]
+        def_list += [str(monitor) for monitor in self.monitored_intermediates]
         def_list += [str(expr) for expr in self.get_derivative_expr()]
 
         h = hashlib.sha1()

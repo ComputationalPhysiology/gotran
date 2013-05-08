@@ -140,6 +140,14 @@ class ODERepresentation(object):
         self._used_in_monitoring = None
         self._cse_subs = None
         self._jacobian_expr = None
+        self._cse_subs_single_dy = None
+        self._linear_terms = None
+
+    @property
+    def used_in_monitoring(self):
+        if self._used_in_monitoring is None:
+            self._compute_monitor_cse()
+        return self._used_in_monitoring
 
     def signature(self):
         # Create a unique signature
@@ -188,8 +196,10 @@ class ODERepresentation(object):
             states = set(), parameters = set()
             )
 
-        for name, expr in ode.iter_monitored_intermediates():
-            for sym in iter_symbol_params_from_expr(expr):
+        ode = self.ode
+
+        for name, obj in ode.monitored_intermediates.items():
+            for sym in iter_symbol_params_from_expr(obj.expanded_expr):
 
                 if ode.has_state(sym):
                     self._used_in_monitoring["states"].add(sym.name)
@@ -200,20 +210,20 @@ class ODERepresentation(object):
                     pass
         
         self._cse_monitored_subs, self._cse_monitored_expr = \
-                    sp.cse([self.subs(expr) \
-                        for name, expr in ode.iter_monitored_intermediates()], \
-                           symbols=sp.numbered_symbols("cse_"), \
+                    sp.cse([self.subs(obj.expanded_expr) \
+                        for obj in ode.monitored_intermediates.values()], \
+                           symbols=sp.numbered_symbols("cse_monitored_"), \
                            optimizations=[])
-        
+
         cse_counts = [[] for i in range(len(self._cse_monitored_subs))]
         for i in range(len(self._cse_monitored_subs)):
             for j in range(i+1, len(self._cse_monitored_subs)):
                 if self._cse_monitored_subs[i][0] in \
-                       self._cse_monitored_subs[j][1]:
+                       self._cse_monitored_subs[j][1].atoms():
                     cse_counts[i].append(j)
                 
             for j in range(len(self._cse_monitored_expr)):
-                if self._cse_monitored_subs[i][0] in self._cse_monitored_expr[j]:
+                if self._cse_monitored_subs[i][0] in self._cse_monitored_expr[j].atoms():
                     cse_counts[i].append(j+len(self._cse_monitored_subs))
 
         # Store usage count
@@ -281,6 +291,86 @@ class ODERepresentation(object):
         self._cse_jacobian_counts = cse_jacobian_counts
 
         info(" done")
+
+    def _compute_linearized_dy_cse(self):
+        self._compute_linearized_dy()
+        
+        if self._cse_subs_single_dy is not None:
+            return
+
+        info("Calculating common sub expressions for single components of ODE. May take some time...")
+        sys.stdout.flush()
+        ode = self.ode
+
+        self._cse_subs_single_dy = []
+        self._cse_derivative_expr_single_dy = []
+        
+        # Iterate over the derivative terms and collect information
+        for i, (ders, expr) in enumerate(ode.get_derivative_expr(True)):
+            cse_subs, cse_derivative_expr = \
+                      sp.cse(self.subs(expr), \
+                             symbols=sp.numbered_symbols("cse_der_{0}_".format(i)),\
+                             optimizations=[])
+            self._cse_subs_single_dy.append(cse_subs)
+            self._cse_derivative_expr_single_dy.append(cse_derivative_expr)
+            
+        info(" done")
+        info("Calculating common sub expressions for linearized ODE. May take some time...")
+        self._cse_linearized_subs, self._cse_linearized_derivative_expr = \
+                                   sp.cse([self.subs(expr) \
+                                           for expr in self._linearized_exprs.values()], \
+                                          symbols=sp.numbered_symbols("cse_linear_"), \
+                                          optimizations=[])
+
+        info(" done")
+        
+    def _compute_linearized_dy(self):
+        if self._linear_terms is not None:
+            return
+
+        ode = self.ode
+
+        used_in_single_dy = []
+        used_in_linear_dy = dict(parameters=set(), states=set())
+        
+        linearized_exprs = OrderedDict()
+
+        # Iterate over the derivative terms and collect information
+        for i, (ders, expr) in enumerate(ode.get_derivative_expr(True)):
+            used_states = set()
+            used_parameters = set()
+            for sym in iter_symbol_params_from_expr(expr):
+                if ode.has_state(sym):
+                    used_states.add(sym.name)
+                elif ode.has_parameter(sym):
+                    used_parameters.add(sym.name)
+
+            used_in_single_dy.append(dict(parameters=list(used_parameters),
+                                          states=list(used_states)))
+            
+            assert(len(ders)==1)
+            
+            # Grab state for the derivative
+            state_sym = ders[0].sym
+            expr_diff = expr.diff(state_sym)
+            
+            # Check for linear term
+            if expr_diff and state_sym not in expr_diff.atoms():
+
+                linearized_exprs[i] = expr_diff
+            
+                for sym in iter_symbol_params_from_expr(expr_diff):
+                    if ode.has_state(sym):
+                        used_in_linear_dy["states"].add(sym.name)
+                    elif ode.has_parameter(sym):
+                        used_in_linear_dy["parameters"].add(sym.name)
+
+        # Store data    
+        self.linear_terms = [i in linearized_exprs for i in range(ode.num_states)]
+        self.used_in_single_dy = used_in_single_dy
+        self._linearized_exprs = linearized_exprs
+        self._used_in_linear_dy = dict(states = list(used_in_linear_dy["states"]),
+                                       parameters = list(used_in_linear_dy["parameters"]))
             
     def update_index(self, index):
         """
@@ -477,7 +567,44 @@ class ODERepresentation(object):
 
         yield "COMMENT", "Monitored intermediates"
 
-        for ((name, expr), cse_expr) in zip(\
-            self.ode.iter_monitored_intermediates(), \
+        for (name, cse_expr) in zip(\
+            self.ode.monitored_intermediates, \
             self._cse_monitored_expr):
             yield name, cse_expr
+
+    def iter_linerized_body(self):
+        if not self.optimization.use_cse:
+            return 
+            
+        self._compute_linearized_dy_cse()
+
+        # Yield the CSE
+        yield "Common Sub Expressions for linearized evaluations", "COMMENT"
+        for name, expr in self._cse_linearized_subs:
+            yield expr, name
+        
+    def iter_linerized_expr(self):
+        
+        if self.optimization.use_cse:
+            self._compute_linearized_dy_cse()
+            for idx, cse_expr in zip(self._linearized_exprs, \
+                                     self._cse_linearized_derivative_expr):
+                yield idx, cse_expr
+
+        else:
+            self._compute_linearized_dy()
+            for idx, expr in self._linearized_exprs.items():
+                yield idx, expr
+            
+    def iter_componentwise_dy(self):
+        
+        if self.optimization.use_cse:
+            self._compute_linearized_dy_cse()
+            for subs, expr in zip(self._cse_subs_single_dy, \
+                                  self._cse_derivative_expr_single_dy):
+                yield subs[::-1], expr
+
+        else:
+            self._compute_linearized_dy()
+            for ders, expr in self.ode.get_derivative_expr(True):
+                yield [], expr

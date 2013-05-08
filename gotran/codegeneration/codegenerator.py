@@ -277,7 +277,7 @@ class CodeGenerator(object):
 
             state_indices, state_names = [], []
             for ind, state in enumerate(ode.states):
-                if state.name in self.oderepr._used_in_monitoring["states"]:
+                if state.name in self.oderepr.used_in_monitoring["states"]:
                     state_names.append(state.name)
                     state_indices.append("states[{0}]".format(ind))
             
@@ -295,7 +295,7 @@ class CodeGenerator(object):
             
                 parameter_indices, parameter_names = [], []
                 for ind, param in enumerate(ode.parameters):
-                    if param.name in self.oderepr._used_in_monitoring["parameters"]:
+                    if param.name in self.oderepr.used_in_monitoring["parameters"]:
                         parameter_names.append(param.name)
                         parameter_indices.append("parameters[{0}]".format(ind))
             
@@ -313,23 +313,24 @@ class CodeGenerator(object):
         # Init dy
         body_lines.append("")
         body_lines.append("# Init monitored")
-        body_lines.append("monitored = np.zeros({0}, dtype=np.float_)".format(\
-            ode.num_monitored_intermediates))
+        body_lines.append("if monitored is None:")
+        body_lines.append(["monitored = np.zeros({0}, dtype=np.float_)".format(\
+            ode.num_monitored_intermediates)])
         
         # Add monitored[i] lines
-        for ind, (monitored, expr) in enumerate(\
-            self.oderepr.iter_monitored_expr()):
+        ind = 0
+        for monitored, expr in self.oderepr.iter_monitored_expr():
             if monitored == "COMMENT":
                 body_lines.append("")
                 body_lines.append("# " + expr)
             else:
                 body_lines.append(pythoncode(expr, "monitored[{0}]".format(ind)))
+                ind += 1
 
         # Return body lines 
         return body_lines
 
-
-    def monitored_code(self):
+    def monitored_code(self, rhs_args="stp", indent=0, self_arg=False):
         """
         Generate code for evaluating monitored variables
         """
@@ -340,9 +341,23 @@ class CodeGenerator(object):
         body_lines.append("# Return monitored")
 
         # Add function prototype
-        args = "states, time"
-        if not self.oderepr.optimization.parameter_numerals:
-            args += ", parameters"
+        # Add function prototype
+        args=[]
+        if self_arg:
+            args.append("self")
+
+        for arg in rhs_args:
+            if arg == "s":
+                args.append("states")
+            elif arg == "t":
+                args.append("time")
+            elif arg == "p" and \
+                 not self.oderepr.optimization.parameter_numerals:
+                args.append("parameters")
+
+        args.append("monitored=None")
+        
+        args = ", ".join(args)
         
         monitor_function = self.wrap_body_with_function_prototype(\
             body_lines, "monitor", args, \
@@ -899,7 +914,7 @@ class CCodeGenerator(CodeGenerator):
         body_lines = ["", "// Assign states"]
         if self.oderepr.optimization.use_state_names:
             for ind, state in enumerate(ode.states):
-                if state.name in self.oderepr._used_in_monitoring["states"]:
+                if state.name in self.oderepr.used_in_monitoring["states"]:
                     body_lines.append("const double {0} = states[{1}]".format(\
                         state.name, ind))
         
@@ -911,7 +926,7 @@ class CCodeGenerator(CodeGenerator):
 
             if self.oderepr.optimization.use_parameter_names:
                 for ind, param in enumerate(ode.parameters):
-                    if param.name in self.oderepr._used_in_monitoring["parameters"]:
+                    if param.name in self.oderepr.used_in_monitoring["parameters"]:
                         body_lines.append("const double {0} = parameters[{1}]".\
                                           format(param.name, ind))
 
@@ -962,6 +977,51 @@ class CCodeGenerator(CodeGenerator):
         
         return "\n".join(self.indent_and_split_lines(monitored_function))
 
+    def dy_componentwise_body(self, parameters_in_signature=False):
+        oderepr = self.oderepr
+        ode = oderepr.ode
+        componentwise_dy_body = []
+        for idx, ((subs, expr), used) in enumerate(zip(\
+            oderepr.iter_componentwise_dy()), oderepr.used_in_single_dy):
+            body_lines = [""]
+            if oderepr.optimization.use_state_names:
+                body_lines.append("// Assign states")
+                for ind, state in enumerate(ode.states):
+                    if state.name in used["states"]:
+                        body_lines.append("const double {0} = states[{1}]".format(\
+                            state.name, ind))
+
+        
+            # Add parameters code if not numerals
+            if parameters_in_signature and \
+                   not self.oderepr.optimization.parameter_numerals:
+
+                if self.oderepr.optimization.use_parameter_names:
+                    body_lines.append("")
+                    body_lines.append("// Assign parameters")
+                    for ind, param in enumerate(ode.parameters):
+                        if param.name in used["parameters"]:
+                            body_lines.append("const double {0} = parameters[{1}]".\
+                                              format(param.name, ind))
+
+            for sub_expr, name in subs:
+
+                name = str(name)
+            
+                if name == "COMMENT":
+                    body_lines.append("")
+                    body_lines.append("// " + sub_expr)
+                else:
+                    name = "const double " + name
+                    body_lines.append(self.to_code(sub_expr, name))
+
+            body_lines.append("")
+            body_lines.append("// The expression")
+            body_lines.append("return " + self.to_code(expr))
+            body_lines.append("break")
+            componentwise_dy_body.append(body_lines)
+        
+        return dy_componentwise_body
 
 class CppCodeGenerator(CCodeGenerator):
     
