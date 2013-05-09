@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2013-04-23"
+__date__ = "2012-05-07 -- 2013-05-09"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -309,7 +309,7 @@ class Creation(unittest.TestCase):
         ode.ICamax = ode.PCa*4.0*ode.VFsqonRT*(ode.a1/ode.a2)
         ode.I_Ca = ode.ICamax*ode.yCa*ode.Open
         
-        ode.PKprime = ode.PK/(1.0+(Min(0.0, ode.ICamax)/ode.ICahalf ))
+        ode.PKprime = ode.PK/(1.0+(Conditional(Gt(ode.ICamax, 0.0), 0.0, ode.ICamax)/ode.ICahalf ))
         ode.a1 = ode.K_i*ode.expVFonRT-ode.K_o
         ode.a2 = ode.expVFonRT-1.0
         ode.I_CaK = ode.PKprime*ode.Open*ode.yCa*ode.VFsqonRT*(ode.a1/ode.a2)

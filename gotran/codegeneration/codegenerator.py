@@ -879,7 +879,8 @@ class CCodeGenerator(CodeGenerator):
         Generate code for evaluating state derivatives
         """
 
-        body_lines = self.jacobian_body(parameters_in_signature, result_name)
+        body_lines = self.jacobian_body(\
+            parameters_in_signature=parameters_in_signature, result_name=result_name)
 
         # Add function prototype
         args=[]
@@ -944,14 +945,15 @@ class CCodeGenerator(CodeGenerator):
                 body_lines.append(self.to_code(expr, name))
 
         # Add monitored[i] lines
-        for ind, (monitored, expr) in enumerate(\
-            self.oderepr.iter_monitored_expr()):
+        ind = 0 
+        for monitored, expr in self.oderepr.iter_monitored_expr():
             if monitored == "COMMENT":
                 body_lines.append("")
                 body_lines.append("// " + expr)
             else:
                 body_lines.append(self.to_code(expr, "{0}[{1}]".format(\
                     result_name, ind)))
+                ind += 1
 
         body_lines.append("")
         
@@ -981,9 +983,9 @@ class CCodeGenerator(CodeGenerator):
         oderepr = self.oderepr
         ode = oderepr.ode
         componentwise_dy_body = []
-        for idx, ((subs, expr), used) in enumerate(zip(\
-            oderepr.iter_componentwise_dy()), oderepr.used_in_single_dy):
-            body_lines = [""]
+        for id, ((subs, expr), used) in enumerate(zip(\
+            oderepr.iter_componentwise_dy(), oderepr.used_in_single_dy)):
+            body_lines = []
             if oderepr.optimization.use_state_names:
                 body_lines.append("// Assign states")
                 for ind, state in enumerate(ode.states):
@@ -1004,24 +1006,66 @@ class CCodeGenerator(CodeGenerator):
                             body_lines.append("const double {0} = parameters[{1}]".\
                                               format(param.name, ind))
 
-            for sub_expr, name in subs:
-
-                name = str(name)
-            
-                if name == "COMMENT":
-                    body_lines.append("")
-                    body_lines.append("// " + sub_expr)
-                else:
-                    name = "const double " + name
-                    body_lines.append(self.to_code(sub_expr, name))
+            if subs:
+                body_lines.append("")
+                body_lines.append("// Common sub expressions for derivative {0}".format(id))
+                
+            for name, sub_expr in subs:
+                name = "const double " + str(name)
+                body_lines.append(self.to_code(sub_expr, name))
 
             body_lines.append("")
             body_lines.append("// The expression")
-            body_lines.append("return " + self.to_code(expr))
+            body_lines.append("return " + self.to_code(expr, None))
             body_lines.append("break")
+
+            componentwise_dy_body.append("case {0}:".format(id))
             componentwise_dy_body.append(body_lines)
         
-        return dy_componentwise_body
+        return componentwise_dy_body
+
+    def linearized_dy_body(self, parameters_in_signature=False, result_name="dy"):
+        oderepr = self.oderepr
+        ode = oderepr.ode
+
+        # Start building body
+        body_lines = ["", "// Assign states"]
+        if self.oderepr.optimization.use_state_names:
+            for ind, state in enumerate(ode.states):
+                if state.name in self.oderepr.used_in_linear_dy["states"]:
+                    body_lines.append("const double {0} = states[{1}]".format(\
+                        state.name, ind))
+        
+        # Add parameters code if not numerals
+        if parameters_in_signature and \
+               not self.oderepr.optimization.parameter_numerals:
+            body_lines.append("")
+            body_lines.append("// Assign parameters")
+
+            if self.oderepr.optimization.use_parameter_names:
+                for ind, param in enumerate(ode.parameters):
+                    if param.name in self.oderepr.used_in_linear_dy["parameters"]:
+                        body_lines.append("const double {0} = parameters[{1}]".\
+                                          format(param.name, ind))
+
+        for expr, name in self.oderepr.iter_linerized_body():
+
+            name = str(name)
+            
+            if name == "COMMENT":
+                body_lines.append("")
+                body_lines.append("// " + expr)
+            else:
+                name = "const double " + name
+                body_lines.append(self.to_code(expr, name))
+
+        body_lines.append("")
+        body_lines.append("// Linearized derivatives")
+
+        for id, expr in self.oderepr.iter_linerized_expr():
+            body_lines.append(self.to_code(expr, "{0}[{1}]".format(result_name, id)))
+
+        return body_lines
 
 class CppCodeGenerator(CCodeGenerator):
     

@@ -149,6 +149,19 @@ class ODERepresentation(object):
             self._compute_monitor_cse()
         return self._used_in_monitoring
 
+    @property
+    def used_in_linear_dy(self):
+        if self._linear_terms is None:
+            self._compute_linearized_dy()
+        
+        return self._used_in_linear_dy
+
+    @property
+    def used_in_single_dy(self):
+        if self._linear_terms is None:
+            self._compute_linearized_dy()
+        return self._used_in_single_dy
+
     def signature(self):
         # Create a unique signature
         h = hashlib.sha1()
@@ -367,10 +380,10 @@ class ODERepresentation(object):
 
         # Store data    
         self.linear_terms = [i in linearized_exprs for i in range(ode.num_states)]
-        self.used_in_single_dy = used_in_single_dy
+        self._used_in_single_dy = used_in_single_dy
         self._linearized_exprs = linearized_exprs
         self._used_in_linear_dy = dict(states = list(used_in_linear_dy["states"]),
-                                       parameters = list(used_in_linear_dy["parameters"]))
+                                      parameters = list(used_in_linear_dy["parameters"]))
             
     def update_index(self, index):
         """
@@ -538,7 +551,7 @@ class ODERepresentation(object):
         else:
 
             for name, expr in self._jacobian_expr.items():
-                yield map(int, re.findall(_jacobian_pattern, str(name))), expr
+                yield map(int, re.findall(_jacobian_pattern, str(name))), self.subs(expr)
             
     def iter_monitored_body(self):
         """
@@ -602,7 +615,7 @@ class ODERepresentation(object):
             self._compute_linearized_dy_cse()
             for subs, expr in zip(self._cse_subs_single_dy, \
                                   self._cse_derivative_expr_single_dy):
-                yield subs[::-1], expr
+                yield subs, expr[0]
 
         else:
             self._compute_linearized_dy()
