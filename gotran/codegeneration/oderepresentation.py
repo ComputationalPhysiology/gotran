@@ -33,6 +33,11 @@ from gotran.common import check_arg, check_kwarg, info
 
 _jacobian_pattern = re.compile("_([0-9]+)")
 
+def _iszero(x):
+    """Returns True if x is zero."""
+    x = sp.sympify(x)
+    return x.is_zero
+
 def _default_params(exclude=None):
     exclude = exclude or []
     check_arg(exclude, list, itemtypes=str)
@@ -97,6 +102,21 @@ def _default_params(exclude=None):
         # Generate code for the computation of the jacobian
         params["generate_jacobian"] = Param(\
             True, description="Generate code for the computation of the jacobian")
+    
+    if "generate_lu_factorization" not in exclude:
+        # Generate code for the factorization of the jacobian
+        params["generate_lu_factorization"] = Param(\
+            True, description="Generate code for the factorization of the jacobian")
+    
+    if "generate_forward_backward_subst" not in exclude:
+        # Generate code for the forward backward substitution code
+        params["generate_forward_backward_subst"] = Param(\
+            True, description="Generate code for the forward backward substitution code")
+
+    if "generate_linearized_evaluation" not in  exclude:
+        # Generate code for linearized evaluation
+        params["generate_linearized_evaluation"] = Param(\
+            True, description="Generate code for linearized evaluation")
     
     # Return the ParameterDict
     return ParameterDict(**params)
@@ -304,6 +324,213 @@ class ODERepresentation(object):
         self._cse_jacobian_counts = cse_jacobian_counts
 
         info(" done")
+
+    def _compute_symbolic_factorization_of_jacobian(self):
+        
+        if self._jacobian_expr is None:
+            self._compute_jacobian_cse()
+
+        # Get jacobian
+        AA = self._jacobian_mat
+        
+        if not AA.is_square:
+            raise NonSquareMatrixError()
+
+        # Get copy
+        n = AA.rows
+        A = AA[:,:]
+        p = []
+        
+        n2 = n*n
+        
+        nnz = 0
+        for i in range(n):
+            # Add dummy value at the diagonal if zero
+            if _iszero(A[i,i]):
+                A[i,i] = 1
+            for j in range(n):
+                nnz += not _iszero(A[i,j])
+        
+        print "Num non zeros in jacobian:", nnz, nnz*1.0/n2*100, "%"
+        
+        # A map between old symbols and new. The values in this dict corresponds to
+        # where an old symbol is used. If the length of the value is 1 it is only
+        # used once and once the value is used it can be freed.
+        old_new = OrderedDict()
+        new_old = OrderedDict()
+        operations = []
+        new_count = 0
+
+        global zero_operations
+        zero_operations = 0
+        
+        def update_entry(new_count, i, j, k):
+            global zero_operations
+            if _iszero(A[i,k]*A[k,j]):
+                zero_operations += 1
+                return new_count
+
+            # Store operation
+            if i != 0:
+                operations.append(\
+                    "jac[{i}*{n}+{j}] -= jac[{i}*{n}+{k}]*jac[{k}*{n}+{j}]".format(\
+                        i=i, j=j, k=k, n=n))
+            else:
+                operations.append(\
+                    "jac[{j}] -= jac[{k}]*jac[{k}*{n}+{j}]".format(\
+                        j=j, k=k, n=n))
+                
+            new_sym = sp.Symbol("j_{0}_{1}:{2}".format(i, j, new_count))
+            new_old[new_sym] = A[i,j] - A[i,k]*A[k,j]
+            for old_sym in [A[i,j], A[i,k], A[k,j]]:
+                storage = old_new.get(old_sym)
+                if storage is None:
+                    storage = set()
+                    old_new[old_sym] = storage
+                storage.add(new_sym)
+                        
+            # Change entry to the new symbol 
+            A[i,j] = new_sym
+            new_count += 1
+        
+            return new_count
+        
+        # factorization
+        for j in range(n):
+            for i in range(j):
+                for k in range(i):
+                    new_count = update_entry(new_count, i, j, k)
+            pivot = -1
+            for i in range(j,n):
+                for k in range(j):
+                    new_count = update_entry(new_count, i, j, k)
+        
+                # find the first non-zero pivot, includes any expression
+                if pivot == -1 and not _iszero(A[i,j]):
+                    pivot = i
+            if pivot < 0:
+                # this result is based on iszerofunc's analysis of the
+                # possible pivots, so even though the element may not be
+                # strictly zero, the supplied iszerofunc's evaluation gave
+                # True
+                raise ValueError("No nonzero pivot found; inversion failed.")
+            
+            if pivot != j: # row must be swapped
+                A.row_swap(pivot,j)
+                p.append([pivot,j])
+                print "Pivoting!!"
+                
+            scale = 1 / A[j,j]
+            for i in range(j+1, n):
+                if _iszero(A[i,j]):
+                    zero_operations += 1
+                    continue
+
+                # Store operation
+                operations.append("jac[{i}*{n}+{j}] /= jac[{j}*{n}+{j}]".format(\
+                    i=i, n=n, j=j))
+                
+                # Create new symbol and store the representation
+                new_sym = sp.Symbol("j_{0}_{1}:{2}".format(i, j, new_count))
+                new_old[new_sym] = A[i,j] * scale
+                for old_sym in [A[i,j], A[j,j]]:
+                    storage = old_new.get(old_sym)
+                    if storage is None:
+                        storage = set()
+                        old_new[old_sym] = storage
+                    storage.add(new_sym)
+                        
+                # Change entry to the new symbol 
+                A[i,j] = new_sym
+                new_count += 1
+        
+        nnz = 0
+        for i in range(n):
+            for j in range(n):
+                nnz += not _iszero(A[i,j])
+
+        total_op = new_count+zero_operations
+        print "Num non zeros in factorized jacobian:", nnz, int(nnz*1.0/n2*100), "%"
+        print "Num non-zero operations while factorizing matrix:", \
+              new_count, new_count*1.0/total_op*100, "%"
+        print "Num zero operations while factorizing matrix:", \
+              zero_operations, int(zero_operations*1.0/total_op*100), "%"
+        factorizing_nnz_operations = new_count 
+        
+        self._jacobian_factorization_operations = operations
+        self._factorized_jacobian = A
+
+    def _compute_symbolic_fb_substitution(self):
+
+        if hasattr(self, "_jacobian_fb_substitution_operations"):
+            return 
+
+        if not hasattr(self, "_factorized_jacobian"):
+            self._compute_symbolic_factorization_of_jacobian()
+
+        global zero_operations
+        zero_operations = 0
+
+        A = self._factorized_jacobian
+    
+        n = A.rows
+        b = sp.Matrix(n,1, lambda i, j: sp.Symbol("F_{}".format(i)))
+
+        old_new = OrderedDict()
+        new_old = OrderedDict()
+
+        #b = rhs.permuteFwd(p)
+        
+        operations = []
+        new_count = 0
+        
+        def update_entry(new_count, i, j):
+            global zero_operations
+            if _iszero(b[j,0]*A[i,j]):
+                zero_operations += 1
+                return new_count
+
+            if i != 0:
+                operations.append("dx[{i}] -= dx[{j}]*jac[{i}*{n}+{j}]".format(i=i, j=j, n=n))
+            else:
+                operations.append("dx[{i}] -= dx[{j}]*jac[{j}]".format(i=i, j=j))
+    
+            # Create new symbol and store the representation
+            new_sym = sp.Symbol("F_{0}:{1}".format(i, new_count))
+            new_old[new_sym] = b[i, 0] - b[j,0]*A[i,j]
+            for old_sym in [b[i, 0], b[j, 0], A[i,j]]:
+                storage = old_new.get(old_sym)
+                if storage is None:
+                    storage = set()
+                    old_new[old_sym] = storage
+                storage.add(new_sym)
+                        
+            # Change entry to the new symbol 
+            b[i, 0] = new_sym
+            new_count += 1
+    
+            return new_count
+    
+        # forward substitution, all diag entries are scaled to 1
+        for i in range(n):
+            for j in range(i):
+                new_count = update_entry(new_count, i, j)
+                #b.row(i, lambda x,k: x - b[j,k]*A[i,j])
+        
+        # backward substitution
+        for i in range(n-1,-1,-1):
+            for j in range(i+1, n):
+                new_count = update_entry(new_count, i, j)
+                #b.row(i, lambda x,k: x - b[j,k]*A[i,j])
+            operations.append("dx[{i}] /= jac[{i}*{n}+{i}]".format(i=i, n=n))
+            b.row(i, lambda x,k: x / A[i,i])
+
+        total_count = zero_operations + new_count*1.0
+        print "Num operations while forward/backward substituting matrix:"
+        print "Zero operations:", zero_operations, int(100*zero_operations/total_count), "%"
+        print "Non-zero operations:", new_count, int(100*new_count/total_count), "%"
+
+        self._jacobian_fb_substitution_operations = operations
 
     def _compute_linearized_dy_cse(self):
         self._compute_linearized_dy()
@@ -621,3 +848,4 @@ class ODERepresentation(object):
             self._compute_linearized_dy()
             for ders, expr in self.ode.get_derivative_expr(True):
                 yield [], expr
+    

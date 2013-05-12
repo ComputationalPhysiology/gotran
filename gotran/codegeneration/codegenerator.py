@@ -683,7 +683,7 @@ class CCodeGenerator(CodeGenerator):
     to_code = lambda a,b,c : ccode(b,c)
     
     def wrap_body_with_function_prototype(self, body_lines, name, args, \
-                                          return_type="", comment=""):
+                                          return_type="", comment="", const=False):
         """
         Wrap a passed body of lines with a function prototype
         """
@@ -699,7 +699,8 @@ class CCodeGenerator(CodeGenerator):
         if comment:
             prototype.append("{0} {1}".format(self.comment, comment))
 
-        prototype.append("{0} {1}({2})".format(return_type, name, args))
+        const = " const" if const else ""
+        prototype.append("{0} {1}({2}){3}".format(return_type, name, args, const))
         body = []
 
         # Append body to prototyp
@@ -1019,10 +1020,19 @@ class CCodeGenerator(CodeGenerator):
             body_lines.append("return " + self.to_code(expr, None))
             body_lines.append("break")
 
+            componentwise_dy_body.append("")
+            componentwise_dy_body.append("// Component {0}".format(id))
             componentwise_dy_body.append("case {0}:".format(id))
             componentwise_dy_body.append(body_lines)
+
+        body = ["// What component?"]
+        body.append("switch (id)")
+        componentwise_dy_body.append("default:")
+        componentwise_dy_body.append([\
+            "throw std::runtime_error(\"Index out of bounds\");", "return 0.0"])
+        body.append(componentwise_dy_body)
         
-        return componentwise_dy_body
+        return body
 
     def linearized_dy_body(self, parameters_in_signature=False, result_name="dy"):
         oderepr = self.oderepr
