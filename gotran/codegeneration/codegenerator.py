@@ -431,7 +431,8 @@ class CodeGenerator(object):
             param.name, param.init) for param in \
                       self.oderepr.ode.parameters)))
         body_lines.append("param_values = np.array([{0}], dtype=np.float_)"\
-                          .format(", ".join("{0}".format(param.init) \
+                          .format(", ".join("{0}".format(\
+                param.init if np.isscalar(param.init) else param.init[0]) \
                     for param in self.oderepr.ode.parameters)))
         body_lines.append("")
         
@@ -737,8 +738,8 @@ class CCodeGenerator(CodeGenerator):
         """
 
         body_lines = []
-        body_lines = ["values[{0}] = {1}; // {2}".format(i, state.param.value,
-                                                         state.name)\
+        body_lines = ["values[{0}] = {1}; // {2}".format(\
+            i, state.init if np.isscalar(state.init) else state.init[0], state.name)\
                       for i, state in enumerate(self.oderepr.ode.states)]
 
         # Add function prototype
@@ -754,8 +755,8 @@ class CCodeGenerator(CodeGenerator):
         """
 
         body_lines = []
-        body_lines = ["values[{0}] = {1}; // {2}".format(i, param.param.value, \
-                                                         param.name)\
+        body_lines = ["values[{0}] = {1}; // {2}".format(\
+            i, param.init if np.isscalar(param.init) else param.init[0], param.name)\
                       for i, param in enumerate(self.oderepr.ode.parameters)]
 
         # Add function prototype
@@ -1151,7 +1152,8 @@ class MatlabCodeGenerator(CodeGenerator):
                 body_lines.append("")
                 body_lines.append("% --- {0} ---".format(param.component))
             
-            body_lines.append("params.{0} = {1}".format(param.name, param.init))
+            body_lines.append("params.{0} = {1}".format(\
+                param.name, param.init if np.isscalar(param.init) else param.init[0]))
 
         body_lines.append("")
             
@@ -1176,7 +1178,9 @@ class MatlabCodeGenerator(CodeGenerator):
                 state_names.append("")
                 state_names.append("% --- {0} ---".format(state.component))
 
-            init_values.append("x0({0}) = {1}".format(ind + 1, state.init))
+            init_values.append("x0({0}) = {1} % {2}".format(\
+                ind + 1, state.init if np.isscalar(state.init) else state.init[0], \
+                state.name))
             state_names.append("state_names{{{0}}} = \'{1}\'".format(ind + 1, state.name))
 
         init_values.append("varargout(1) = {x0}")

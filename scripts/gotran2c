@@ -45,11 +45,17 @@ def main(filename, params):
     f.write(gen.dy_code(rhs_args=params.rhs_args, \
                         parameters_in_signature=True) + "\n\n")
 
+    if params.generate_jacobian:
+        f.write(gen.jacobian_code(rhs_args=params.rhs_args, \
+                                  parameters_in_signature=True))
+
 if __name__ == "__main__":
     import sys
     from modelparameters.parameterdict import ParameterDict, OptionParam, Param
     
-    params = _default_params()
+    params = _default_params(["generate_lu_factorization",
+                              "generate_linearized_evaluation",
+                              "generate_forward_backward_subst"])
     params = ParameterDict(\
         rhs_args = OptionParam("stp", ["tsp", "stp", "spt"], \
                 description="Argument order of the generated rhs function. "\

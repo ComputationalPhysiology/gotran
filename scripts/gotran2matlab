@@ -40,7 +40,9 @@ if __name__ == "__main__":
 
     from modelparameters.parameterdict import ParameterDict, Param
 
-    params = _default_params()
+    params = _default_params(["generate_jacobian", "generate_lu_factorization",
+                                   "generate_linearized_evaluation",
+                                   "generate_forward_backward_subst"])
     params = ParameterDict(\
         sympy_contraction = Param(False, description="If True sympy contraction"\
                                   " will be used, turning (V-3)/2 into V/2-3/2"),\

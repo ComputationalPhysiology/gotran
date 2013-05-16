@@ -3,7 +3,7 @@
 
 from __future__ import division
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-03-13 -- 2013-05-07"
+__date__ = "2013-03-13 -- 2013-05-14"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -11,6 +11,7 @@ from gotran import *
 from scipy.integrate import odeint
 import pylab
 import numpy as np
+import instant
 
 def main(filename, params):
 
@@ -19,8 +20,8 @@ def main(filename, params):
     code_params["generate_jacobian"] = params.use_jacobian
     
     # Compile executeable code from gotran ode
-    module = compile_module(load_ode(filename), rhs_args="stp", \
-                            **code_params)
+    ode = load_ode(filename)
+    module = compile_module(ode, rhs_args="stp", **code_params)
 
     # Use scipy to integrate model
     t0 = 0.
@@ -53,6 +54,9 @@ def main(filename, params):
         plot_args.append(tsteps)
         plot_args.append(np.array(plot_result))
     pylab.plot(*plot_args)
+    pylab.legend(plot_states)
+    pylab.xlabel("time")
+    #pylab.title(ode.name)
     pylab.show()
 
 if __name__ == "__main__":
@@ -60,7 +64,9 @@ if __name__ == "__main__":
     from modelparameters.parameterdict import *
     from gotran.codegeneration.oderepresentation import _default_params
     
-    code_params = _default_params(["generate_jacobian"])
+    code_params = _default_params(["generate_jacobian", "generate_lu_factorization",
+                                   "generate_linearized_evaluation",
+                                   "generate_forward_backward_subst"])
     code_params = ParameterDict(
         language = OptionParam("Python", ["Python", "C"]),
         **code_params

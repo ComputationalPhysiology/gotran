@@ -7,12 +7,22 @@ if profile:
 
 from gotran import *
 
-ode = load_ode("tentusscher_panfilov_2006_M_cell.ode")
-#ode = load_ode("winslow.ode")
+#ode = load_ode("tentusscher_panfilov_2006_M_cell.ode")
+ode = load_ode("winslow.ode")
 
 oderepr = ODERepresentation(ode)#, use_cse=True)
 
-model = compile_module(ode, language="Python")
+oderepr._compute_symbolic_factorization_of_jacobian()
+
+print oderepr._jacobian_factorization_operations
+print len(oderepr._jacobian_factorization_operations)
+
+oderepr._compute_symbolic_fb_substitution()
+
+print oderepr._jacobian_fb_substitution_operations
+print len(oderepr._jacobian_fb_substitution_operations)
+
+#model = compile_module(ode, language="Python")
 
 #for expr, name in oderepr.iter_jacobi_body():
 #    print name, expr
@@ -20,8 +30,6 @@ model = compile_module(ode, language="Python")
 #for indices, expr in oderepr.iter_jacobi_expr():
 #    print indices, expr
     
-#jacobi, jac_subs, states, cse_subs, cse_jacobi_expr = oderepr.generate_jacobian(True)
-
 if profile:
     pr.disable()
     ps = pstats.Stats(pr)
