@@ -1,11 +1,11 @@
 TODO
 ====
 * TODO Add support for physical units (through ModelParameters)
-* TODO Add support for LaTeX output
+* DONE Add support for LaTeX output
 * DONE Add support for Matlab output
-* TODO Move gosscode generator to goss
+* DONE Move gosscode generator to goss
 * TODO Add support for SBML input
-* TODO Add support for a specific Markov model editor
+* DONE Add support for a specific Markov model editor
   With this we can facilitate a more easy editing of Markov models:
   
   : mm = markov_model("Some ion channel", c0=0.1, c1=0.1, O=0.8, degenerate="c0")
