@@ -3,11 +3,12 @@
 
 from __future__ import division
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-03-13 -- 2013-05-29"
+__date__ = "2013-03-13 -- 2013-06-12"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
 from gotran import *
+from modelparameters.codegeneration import latex
 from scipy.integrate import odeint
 import pylab
 import numpy as np
@@ -54,7 +55,7 @@ def main(filename, params):
         plot_args.append(tsteps)
         plot_args.append(np.array(plot_result))
     pylab.plot(*plot_args)
-    pylab.legend(plot_states)
+    pylab.legend([latex(state) for state in plot_states])
     pylab.xlabel("time")
     #pylab.title(ode.name)
     pylab.show()
