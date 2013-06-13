@@ -20,11 +20,12 @@ from collections import deque, OrderedDict
 import hashlib
 import re
 import sys
-
+from distutils.version import LooseVersion as _V
 
 # Model parametrs imports
 from modelparameters.parameterdict import *
 from modelparameters.sympytools import sp, iter_symbol_params_from_expr
+_current_sympy_version = _V(sp.__version__)
 
 # Local gotran imports
 from gotran.model.ode import ODE
@@ -115,8 +116,12 @@ def _default_params(exclude=None):
 
     if "generate_linearized_evaluation" not in  exclude:
         # Generate code for linearized evaluation
+        # For sympy versions lower than 0.7.2 linearized computation does not work
+        default_linearized_evaluation = _current_sympy_version > _V("0.7.2")
+
         params["generate_linearized_evaluation"] = Param(\
-            True, description="Generate code for linearized evaluation")
+            default_linearized_evaluation, \
+            description="Generate code for linearized evaluation")
     
     # Return the ParameterDict
     return ParameterDict(**params)
