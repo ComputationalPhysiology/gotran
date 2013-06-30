@@ -3,7 +3,7 @@
 
 from __future__ import division
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-03-13 -- 2013-06-12"
+__date__ = "2013-03-13 -- 2013-06-30"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -24,14 +24,41 @@ def main(filename, params):
     ode = load_ode(filename)
     module = compile_module(ode, rhs_args="stp", **code_params)
 
+    parameters = params.parameters
+    init_conditions = params.init_conditions
+
+    if len(parameters) == 1 and parameters[0] == "":
+        parameters = []
+
+    if len(init_conditions) == 1 and init_conditions[0] == "":
+        init_conditions = []
+
+    if len(parameters) % 2 != 0:
+        raise RuntimeError("Expected an even number of values for 'params'")
+
+    if len(init_conditions) % 2 != 0:
+        raise RuntimeError("Expected an even number of values for 'initial_conditions'")
+
+    user_params = dict()
+    for param_name, param_value in [(parameters[i*2], parameters[i*2+1]) \
+                                    for i in range(int(len(parameters)/2))]:
+        
+        user_params[param_name] = float(param_value)
+
+    user_ic = dict()
+    for state_name, state_value in [(init_conditions[i*2], init_conditions[i*2+1]) \
+                                    for i in range(int(len(init_conditions)/2))]:
+        
+        user_ic[state_name] = float(state_value)
+
     # Use scipy to integrate model
     t0 = 0.
     t1 = params.tstop
     dt = params.dt_plot
 
     rhs = module.rhs
-    y0 = module.init_values()
-    model_params = module.default_parameters()
+    y0 = module.init_values(**user_ic)
+    model_params = module.default_parameters(**user_params)
 
     tsteps = np.linspace(t0, t1, t1/dt+1)
     if params.use_jacobian:
@@ -73,6 +100,8 @@ if __name__ == "__main__":
         **code_params
         )
     params = ParameterDict(\
+        parameters = Param([""], description="Set parameter of model"),
+        init_conditions = Param([""], description="Set initial condition of model"),
         tstop = ScalarParam(100., gt=0, description="Time for stopping simulation"),\
         dt_plot = ScalarParam(0.1, gt=0, description="Timestep for plotting."),\
         plot_states = Param(["V"], description="States to plot."),\
