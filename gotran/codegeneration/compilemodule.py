@@ -53,7 +53,7 @@ _compile_module_doc_str = """
     """.format(_compile_module_doc_str)
 
 # Set log level of instant
-instant.set_logging_level("WARNING")
+instant.set_log_level("WARNING")
 
 __all__ = ["compile_module"]
 
