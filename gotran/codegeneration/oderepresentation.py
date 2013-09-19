@@ -104,6 +104,11 @@ def _default_params(exclude=None):
         params["generate_jacobian"] = Param(\
             True, description="Generate code for the computation of the jacobian")
     
+    if "transposed_jacobian" not in exclude:
+        # Generate code for the computation of the jacobian
+        params["transposed_jacobian"] = Param(\
+            False, description="The Jacobian is transposed")
+    
     if "generate_lu_factorization" not in exclude:
         # Generate code for the factorization of the jacobian
         params["generate_lu_factorization"] = Param(\
@@ -167,7 +172,10 @@ class ODERepresentation(object):
         self._jacobian_expr = None
         self._cse_subs_single_dy = None
         self._linear_terms = None
-
+        self._jacobian_action_vec = None
+        self._cse_jacobian_expr = None
+        self._cse_jacobian_action_expr = None
+        
     @property
     def used_in_monitoring(self):
         if self._used_in_monitoring is None:
@@ -274,12 +282,16 @@ class ODERepresentation(object):
         self._used_in_monitoring["states"] = \
                             list(self._used_in_monitoring["states"])
 
-    def _compute_jacobian_cse(self):
-
+    def _compute_jacobian(self):
         if self._jacobian_expr is not None:
             return 
 
         ode = self.ode
+
+        if ode.num_states > 10:
+            info("Calculating jacobian for {0} states. "\
+                 "May take some time...".format(ode.num_states))
+            sys.stdout.flush()
 
         sym_map = OrderedDict()
         jacobi_expr = OrderedDict()
@@ -298,14 +310,78 @@ class ODERepresentation(object):
         # Create the Jacobian
         self._jacobian_mat = sp.SparseMatrix(ode.num_states, ode.num_states, \
                                            lambda i, j: sym_map.get((i, j), 0))
+
+        if self.optimization.transposed_jacobian:
+            self._jacobian_mat = self._jacobian_mat.transpose
+        
         self._jacobian_expr = jacobi_expr
 
-        if not self.optimization.use_cse:
+        if ode.num_states > 10:
+            info(" done")
+        
+    def _compute_jacobian_action(self):
+        self._compute_jacobian()
+        if self._jacobian_action_vec is not None:
+            return
+
+        ode = self.ode
+
+        # Create a state vector
+        ode_states = sp.Matrix(ode.num_states, 1, lambda i, j: self.ode.states[i])
+        self._jacobian_action_vec = self._jacobian_mat*ode_states
+        self._jacobian_action_expr = [jac_ac_expr.subs(self._jacobian_expr) \
+                                      for jac_ac_expr in self._jacobian_action_vec]
+
+    def _compute_jacobian_action_cse(self):
+        self._compute_jacobian_action()
+        
+        if not self.optimization.use_cse or self._cse_jacobian_action_expr is not None:
+            return
+        
+        info("Calculating jacobian action common sub expressions for {0} entries. "\
+             "May take some time...".format(len(self._jacobian_action_expr)))
+        sys.stdout.flush()
+        
+        # If we use cse we extract the sub expressions here and cache
+        # information
+        self._cse_jacobian_action_subs, self._cse_jacobian_action_expr = \
+                sp.cse([self.subs(expr) \
+                        for expr in self._jacobian_action_expr], \
+                       symbols=sp.numbered_symbols("cse_jacobian_action_"), \
+                       optimizations=[])
+        
+        cse_jacobian_action_counts = [[] for i in range(\
+            len(self._cse_jacobian_action_subs))]
+        
+        for i in range(len(self._cse_jacobian_action_subs)):
+            for j in range(i+1, len(self._cse_jacobian_action_subs)):
+                if self._cse_jacobian_action_subs[i][0] in \
+                       self._cse_jacobian_action_subs[j][1].atoms():
+                    cse_jacobian_action_counts[i].append(j)
+            
+            for j in range(len(self._cse_jacobian_action_expr)):
+                if self._cse_jacobian_action_subs[i][0] in \
+                       self._cse_jacobian_action_expr[j].atoms():
+                    cse_jacobian_action_counts[i].append(j+len(\
+                        self._cse_jacobian_action_subs))
+
+        # Store usage count
+        # FIXME: Use this for more sorting!
+        self._cse_jacobian_action_counts = cse_jacobian_action_counts
+
+        info(" done")
+
+    def _compute_jacobian_cse(self):
+
+        self._compute_jacobian()
+
+        if not self.optimization.use_cse or self._cse_jacobian_expr is not None:
             return
 
         info("Calculating jacobi common sub expressions for {0} entries. "\
              "May take some time...".format(len(self._jacobian_expr)))
         sys.stdout.flush()
+        
         # If we use cse we extract the sub expressions here and cache
         # information
         self._cse_jacobian_subs, self._cse_jacobian_expr = \
@@ -784,6 +860,39 @@ class ODERepresentation(object):
 
             for name, expr in self._jacobian_expr.items():
                 yield map(int, re.findall(_jacobian_pattern, str(name))), self.subs(expr)
+            
+    def iter_jacobian_action_body(self):
+        """
+        Iterate over the body defining the jacobi expressions 
+        """
+        
+        if not self.optimization.use_cse:
+            return 
+            
+        self._compute_jacobian_action_cse()
+
+        # Yield the CSE
+        yield "Common Sub Expressions for jacobi action intermediates", "COMMENT"
+        for (name, expr), cse_count in zip(self._cse_jacobian_action_subs, \
+                                           self._cse_jacobian_action_counts):
+            if cse_count:
+                yield expr, name
+
+    def iter_jacobian_action_expr(self):
+        """
+        Iterate over the jacobi expressions 
+        """
+        
+        self._compute_jacobian_action_cse()
+
+        if self.optimization.use_cse:
+            
+            for cse_expr in self._cse_jacobian_action_expr:
+                yield cse_expr
+        else:
+
+            for expr in self._jacobian_action_expr:
+                yield self.subs(expr)
             
     def iter_monitored_body(self):
         """

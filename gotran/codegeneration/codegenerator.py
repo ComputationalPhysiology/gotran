@@ -716,8 +716,10 @@ class CCodeGenerator(CodeGenerator):
         body_lines = ["", "// Assign states"]
         if self.oderepr.optimization.use_state_names:
             for i, state in enumerate(ode.states):
+                state_name = state.name if state.name not in ["I"] \
+                             else state.name + "_"
                 body_lines.append("const double {0} = states[{1}]".format(\
-                    state.name, i))
+                    state_name, i))
         
         # Add parameters code if not numerals
         if parameters_in_signature and \
@@ -727,8 +729,10 @@ class CCodeGenerator(CodeGenerator):
 
             if self.oderepr.optimization.use_parameter_names:
                 for i, param in enumerate(ode.parameters):
+                    param_name = param.name if param.name not in ["I"] \
+                                 else param.name + "_"
                     body_lines.append("const double {0} = parameters[{1}]".\
-                                      format(param.name, i))
+                                      format(param_name, i))
 
         return body_lines
 
@@ -790,9 +794,13 @@ class CCodeGenerator(CodeGenerator):
                 if name in ode._intermediate_duplicates:
                     if name not in declared_duplicates:
                         declared_duplicates.append(name)
+                        if name in ["I"]:
+                            name += "_"
                         name = "double " + name
 
                 else:
+                    if name in ["I"]:
+                        name += "_"
                     name = "const double " + name
 
                 body_lines.append(self.to_code(expr, name))
@@ -857,9 +865,13 @@ class CCodeGenerator(CodeGenerator):
                 if name in ode._intermediate_duplicates:
                     if name not in declared_duplicates:
                         declared_duplicates.append(name)
+                        if name in ["I"]:
+                            name += "_"
                         name = "double " + name
 
                 else:
+                    if name in ["I"]:
+                        name += "_"
                     name = "const double " + name
 
                 body_lines.append(self.to_code(expr, name))
@@ -904,6 +916,78 @@ class CCodeGenerator(CodeGenerator):
         
         return "\n".join(self.indent_and_split_lines(jacobian_function))
 
+    def jacobian_action_body(self, parameters_in_signature=False, result_name="jac_action"):
+
+        ode = self.oderepr.ode
+
+        assert(not ode.is_dae)
+
+        body_lines = self._states_and_parameters_code(parameters_in_signature)
+
+        # Iterate over any body needed to define the dy
+        declared_duplicates = []
+        for expr, name in self.oderepr.iter_jacobian_action_body():
+
+            name = str(name)
+            
+            if name == "COMMENT":
+                body_lines.append("")
+                body_lines.append("// " + expr)
+            else:
+                if name in ode._intermediate_duplicates:
+                    if name not in declared_duplicates:
+                        declared_duplicates.append(name)
+                        if name in ["I"]:
+                            name += "_"
+                        name = "double " + name
+
+                else:
+                    if name in ["I"]:
+                        name += "_"
+                    name = "const double " + name
+
+                body_lines.append(self.to_code(expr, name))
+
+        # Add jac[i,j] lines
+        num_states = ode.num_states
+        for ind, expr in enumerate(self.oderepr.iter_jacobian_action_expr()):
+            body_lines.append(self.to_code(expr, "{0}[{1}]".format(\
+                result_name, ind)))
+ 
+        body_lines.append("")
+        
+        # Return the body lines
+        return body_lines
+
+    def jacobian_action_code(self, rhs_args="stp", parameters_in_signature=False, \
+                             result_name="jac_action"):
+        """
+        Generate code for evaluating state derivatives
+        """
+
+        body_lines = self.jacobian_action_body(\
+            parameters_in_signature=parameters_in_signature, result_name=result_name)
+
+        # Add function prototype
+        args=[]
+        for arg in rhs_args:
+            if arg == "s":
+                args.append("const double* states")
+            elif arg == "t":
+                args.append("double time")
+            elif arg == "p" and \
+                not self.oderepr.optimization.parameter_numerals \
+                and parameters_in_signature:
+                args.append("const double* parameters")
+
+        args = ", ".join(args) + ", double* {0}".format(result_name)
+
+        jacobian_action_function = self.wrap_body_with_function_prototype(\
+            body_lines, "jacobian_action", args, \
+            "", "Compute jacobian action of {0}".format(self.oderepr.name))
+        
+        return "\n".join(self.indent_and_split_lines(jacobian_action_function))
+
     def monitored_body(self, parameters_in_signature=False, result_name="monitored"):
         """
         Generate body lines of code for evaluating monitored intermediates
@@ -943,6 +1027,8 @@ class CCodeGenerator(CodeGenerator):
                 body_lines.append("")
                 body_lines.append("// " + expr)
             else:
+                if name in ["I"]:
+                    name += "_"
                 name = "const double " + name
                 body_lines.append(self.to_code(expr, name))
 
@@ -992,8 +1078,10 @@ class CCodeGenerator(CodeGenerator):
                 body_lines.append("// Assign states")
                 for ind, state in enumerate(ode.states):
                     if state.name in used["states"]:
+                        state_name = state.name if state.name not in ["I"] \
+                                     else state.name + "_"
                         body_lines.append("const double {0} = states[{1}]".format(\
-                            state.name, ind))
+                            state_name, ind))
 
         
             # Add parameters code if not numerals
@@ -1005,14 +1093,18 @@ class CCodeGenerator(CodeGenerator):
                     body_lines.append("// Assign parameters")
                     for ind, param in enumerate(ode.parameters):
                         if param.name in used["parameters"]:
+                            param_name = param.name if param.name not in ["I"] \
+                                         else param.name + "_"
                             body_lines.append("const double {0} = parameters[{1}]".\
-                                              format(param.name, ind))
+                                              format(param_name, ind))
 
             if subs:
                 body_lines.append("")
                 body_lines.append("// Common sub expressions for derivative {0}".format(id))
                 
             for name, sub_expr in subs:
+                if name in ["I"]:
+                    name += "_"
                 name = "const double " + str(name)
                 body_lines.append(self.to_code(sub_expr, name))
 
@@ -1044,8 +1136,10 @@ class CCodeGenerator(CodeGenerator):
         if self.oderepr.optimization.use_state_names:
             for ind, state in enumerate(ode.states):
                 if state.name in self.oderepr.used_in_linear_dy["states"]:
+                    state_name = state.name if state.name not in ["I"] \
+                                 else state.name + "_"
                     body_lines.append("const double {0} = states[{1}]".format(\
-                        state.name, ind))
+                        state_name, ind))
         
         # Add parameters code if not numerals
         if parameters_in_signature and \
@@ -1056,8 +1150,10 @@ class CCodeGenerator(CodeGenerator):
             if self.oderepr.optimization.use_parameter_names:
                 for ind, param in enumerate(ode.parameters):
                     if param.name in self.oderepr.used_in_linear_dy["parameters"]:
+                        param_name = param.name if param.name not in ["I"] \
+                                     else param.name + "_"
                         body_lines.append("const double {0} = parameters[{1}]".\
-                                          format(param.name, ind))
+                                          format(param_name, ind))
 
         for expr, name in self.oderepr.iter_linerized_body():
 
@@ -1067,6 +1163,8 @@ class CCodeGenerator(CodeGenerator):
                 body_lines.append("")
                 body_lines.append("// " + expr)
             else:
+                if name in ["I"]:
+                    name += "_"
                 name = "const double " + name
                 body_lines.append(self.to_code(expr, name))
 
