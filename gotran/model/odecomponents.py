@@ -21,8 +21,7 @@ __all__ = ["ODEObjectList", "ODEComponent", "Comment", "MarkovModel"]
 from collections import OrderedDict
 
 # ModelParameters imports
-from modelparameters.sympytools import sp, ModelSymbol, \
-     iter_symbol_params_from_expr
+from modelparameters.sympytools import sp, iter_symbol_params_from_expr
 from modelparameters.parameters import ScalarParam
 
 # Local imports
@@ -46,7 +45,7 @@ class Comment(ODEObject):
         """
         
         # Call super class
-        super(Comment, self).__init__(comment, component, "")
+        super(Comment, self).__init__(comment, component)
 
 class ODEComponent(ODEObject):
     """
@@ -70,7 +69,7 @@ class ODEComponent(ODEObject):
         check_arg(ode, ODE, 1, ODEComponent)
         
         # Call super class
-        super(ODEComponent, self).__init__(component, "", "")
+        super(ODEComponent, self).__init__(component, "")
 
         # Store ode
         self._ode = ode
@@ -223,14 +222,14 @@ class ODEObjectList(list):
     def get(self, name):
         if isinstance(name, str):
             return self._objects.get(name)
-        elif isinstance(name, ModelSymbol):
+        elif isinstance(name, sp.Symbol):
             return self._objects.get(name.name)
         return None
         
     def __contains__(self, item):
         if isinstance(item, str):
             return any(item == obj.name for obj in self)
-        elif isinstance(item, ModelSymbol):
+        elif isinstance(item, sp.Symbol):
             return any(item.name == obj.name for obj in self)
         elif (item, ODEObject):
             return super(ODEObjectList, self).__contains__(item)
@@ -239,7 +238,7 @@ class ODEObjectList(list):
     def count(self, item):
         if isinstance(item, str):
             return sum(item == obj.name for obj in self)
-        elif isinstance(item, ModelSymbol):
+        elif isinstance(item, sp.Symbol):
             return sum(item.name == obj.name for obj in self)
         elif (item, ODEObject):
             return super(ODEObjectList, self).count(item)
@@ -250,7 +249,7 @@ class ODEObjectList(list):
             for ind, obj in enumerate(self):
                 if item == obj.name:
                     return ind
-        elif isinstance(item, ModelSymbol):
+        elif isinstance(item, sp.Symbol):
             for ind, obj in enumerate(self):
                 if item.name == obj.name:
                     return ind
@@ -315,7 +314,7 @@ class MarkovModel(ODEObject):
         check_arg(ode, ODE, 1)
 
         # Call super class
-        super(MarkovModel, self).__init__(name, component, ode.name)
+        super(MarkovModel, self).__init__(name, component)
 
         algebraic_sum = kwargs.pop("algebraic_sum", None)
         states = list(args) + sorted(kwargs.items())
@@ -414,7 +413,7 @@ class MarkovModel(ODEObject):
         if len(states) != 2:
             error("Expected the states argument to be a tuple of two states")
 
-        if all(isinstance(state, ModelSymbol) for state in states):
+        if all(isinstance(state, sp.Symbol) for state in states):
             
             if not all(state in self._states for state in states):
                 error("Expected the states arguments to be States in "\

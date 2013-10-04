@@ -23,7 +23,7 @@ import re
 from collections import OrderedDict, deque
 
 # ModelParameter imports
-from modelparameters.sympytools import ModelSymbol, sp, sp_namespace
+from modelparameters.sympytools import sp, sp_namespace
 from modelparameters.codegeneration import sympycode, _all_keywords
 from modelparameters.parameters import ScalarParam
 from modelparameters.sympytools import iter_symbol_params_from_expr
@@ -120,8 +120,8 @@ class ODE(object):
 
         # Create the state and derivative
         component = component or self.name
-        state = State(name, init, component, self.name, slaved)
-        state_der = StateDerivative(state, der_init, component, self.name)
+        state = State(name, init, component, slaved)
+        state_der = StateDerivative(state, der_init, component)
         
         state.derivative = state_der
         
@@ -170,7 +170,7 @@ class ODE(object):
         
         # Create the parameter
         component = component or self.name
-        parameter = Parameter(name, init, component, self.name)
+        parameter = Parameter(name, init, component)
         
         # Register the parameter
         self._register_object(parameter, replace_level)
@@ -213,7 +213,7 @@ class ODE(object):
 
         # Create the variable
         component = component or self.name
-        variable = Variable(name, init, component, self.name)
+        variable = Variable(name, init, component)
         
         # Register the variable
         self._register_object(variable, replace_level)
@@ -287,7 +287,7 @@ class ODE(object):
         """
 
         for i, arg in enumerate(args):
-            check_arg(arg, (str, ModelSymbol), i)
+            check_arg(arg, (str, sp.Symbol), i)
             obj = self.get_object(arg) or self._intermediates.get(arg)
 
             if not isinstance(obj, Intermediate):
@@ -466,7 +466,7 @@ class ODE(object):
             # FIXME: Allow propagating of Parameter information
             mm_states = {}
             for state in mm.states:
-                prefix_subs[state.sym] = ModelSymbol(prefix+state.name, self.name)
+                prefix_subs[state.sym] = sp.Symbol(prefix+state.name)
                 param_repr = repr(state.param).replace("Slave", "Scalar")
                 param_repr = param_repr.split(", name=")[0] + ")"
                 mm_states[prefix+state.name] = eval(param_repr)
@@ -487,9 +487,9 @@ class ODE(object):
             if state.slaved:
                 continue
                 
-            prefix_subs[state.sym] = ModelSymbol(prefix+state.name, self.name)
-            prefix_subs[state.derivative.sym] = ModelSymbol(\
-                "d"+prefix+state.name+"_dt", self.name)
+            prefix_subs[state.sym] = sp.Symbol(prefix+state.name)
+            prefix_subs[state.derivative.sym] = sp.Symbol(\
+                "d"+prefix+state.name+"_dt")
             
             if prefix+state.name in self._states:
                 error("State with name {0} already exist in ODE".format(\
@@ -506,8 +506,7 @@ class ODE(object):
             if parameter.slaved:
                 continue
                 
-            prefix_subs[parameter.sym] = ModelSymbol(prefix+parameter.name, \
-                                                     self.name)
+            prefix_subs[parameter.sym] = sp.Symbol(prefix+parameter.name)
         
             # If variable name already excist in this ODE do not add it
             # This will implicitly exchange all variables with corresponding
@@ -673,8 +672,8 @@ class ODE(object):
         Return a registered object
         """
 
-        check_arg(name, (str, ModelSymbol))
-        if isinstance(name, ModelSymbol):
+        check_arg(name, (str, sp.Symbol))
+        if isinstance(name, sp.Symbol):
             name = name.name
         
         return self._all_single_ode_objects.get(name)
@@ -693,7 +692,7 @@ class ODE(object):
         ---------
         state : sympy.Basic
             A linear expression of StateDerivative symbols
-        expr : Sympy expression of ModelSymbols
+        expr : Sympy expression of sympy.Symbols
             The derivative expression
         component : str (optional)
             The component will be determined automatically if the
@@ -709,7 +708,7 @@ class ODE(object):
         ---------
         derivatives : sympy.Basic
             A linear expression of StateDerivative symbols
-        expr : Sympy expression of ModelSymbols
+        expr : Sympy expression of sympy.Symbols
             The derivative expression
         component : str (optional)
             The component will be determined automatically if the
@@ -756,7 +755,7 @@ class ODE(object):
             The intermediate which should be expanded
         """
 
-        check_arg(intermediate, ModelSymbol)
+        check_arg(intermediate, sp.Symbol)
         obj = self._intermediates.get(intermediate)
         if obj is None:
             error("{0} is not an Intermediate in this ODE".format(intermediate))
@@ -1017,7 +1016,7 @@ class ODE(object):
                 # Create a Variable to replace an external object dependency
                 # Put the Variable in the main ODE component
                 variables.append(Variable(obj.name, obj.value, \
-                                          name, name))
+                                          name))
 
         # Create return ODE
         ode = ODE(name)
@@ -1290,7 +1289,7 @@ class ODE(object):
         
         # Assume that we are registering an intermediate
         if isinstance(value, scalars) or (isinstance(value, sp.Basic) \
-                                and any(isinstance(atom, ModelSymbol)\
+                                and any(isinstance(atom, sp.Symbol)\
                                         for atom in value.atoms())):
             self.add_intermediate(name, value)
         else:
@@ -1464,10 +1463,10 @@ class ODE(object):
         """
         Return True if state is a registered state or field state
         """
-        check_arg(state, (str, ModelSymbol, ODEObject))
+        check_arg(state, (str, sp.Symbol, ODEObject))
 
-        # Grab ODEObject if str or ModelSymbol is passed
-        if isinstance(state, (str, ModelSymbol)):
+        # Grab ODEObject if str or Symbol is passed
+        if isinstance(state, (str, sp.Symbol)):
             state = self.get_object(state)
             if state is None:
                 return False
@@ -1478,10 +1477,10 @@ class ODE(object):
         """
         Return True if state is a registered field state
         """
-        check_arg(state, (str, ModelSymbol, ODEObject))
+        check_arg(state, (str, sp.Symbol, ODEObject))
 
-        # Grab ODEObject if str or ModelSymbol is passed
-        if isinstance(state, (str, ModelSymbol)):
+        # Grab ODEObject if str or sp.Symbol is passed
+        if isinstance(state, (str, sp.Symbol)):
             state = self.get_object(state)
             if state is None:
                 return False
@@ -1492,10 +1491,10 @@ class ODE(object):
         """
         Return True if parameter is a registered parameter or field parameter
         """
-        check_arg(parameter, (str, ModelSymbol, ODEObject))
+        check_arg(parameter, (str, sp.Symbol, ODEObject))
 
-        # Grab ODEObject if str or ModelSymbol is passed
-        if isinstance(parameter, (str, ModelSymbol)):
+        # Grab ODEObject if str or sp.Symbol is passed
+        if isinstance(parameter, (str, sp.Symbol)):
             parameter = self.get_object(parameter)
             if parameter is None:
                 return False
@@ -1506,10 +1505,10 @@ class ODE(object):
         """
         Return True if parameter is a registered field parameter
         """
-        check_arg(parameter, (str, ModelSymbol, ODEObject))
+        check_arg(parameter, (str, sp.Symbol, ODEObject))
 
-        # Grab ODEObject if str or ModelSymbol is passed
-        if isinstance(parameter, (str, ModelSymbol)):
+        # Grab ODEObject if str or sp.Symbol is passed
+        if isinstance(parameter, (str, sp.Symbol)):
             parameter = self.get_object(parameter)
             if parameter is None:
                 return False
@@ -1520,10 +1519,10 @@ class ODE(object):
         """
         Return True if variable is a registered Variable
         """
-        check_arg(variable, (str, ModelSymbol, ODEObject))
+        check_arg(variable, (str, sp.Symbol, ODEObject))
 
-        # Grab ODEObject if str or ModelSymbol is passed
-        if isinstance(variable, (str, ModelSymbol)):
+        # Grab ODEObject if str or sp.Symbol is passed
+        if isinstance(variable, (str, sp.Symbol)):
             variable = self.get_object(variable)
             if variable is None:
                 return False

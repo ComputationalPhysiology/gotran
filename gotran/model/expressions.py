@@ -18,8 +18,7 @@
 __all__ = ["Expression", "Intermediate", "DerivativeExpression"]
 
 # ModelParameters imports
-from modelparameters.sympytools import sp, ModelSymbol, \
-     iter_symbol_params_from_expr
+from modelparameters.sympytools import sp, iter_symbol_params_from_expr
 
 # Local imports
 from gotran.common import error, check_arg, scalars, Timer
@@ -56,10 +55,10 @@ class Expression(ValueODEObject):
         
         expr = sp.sympify(expr)
         
-        if not any(isinstance(atom, (ModelSymbol, sp.Number)) \
+        if not any(isinstance(atom, (sp.Symbol, sp.Number)) \
                    for atom in expr.atoms()):
             error("expected the expression to contain at least one "\
-                  "ModelSymbol or Number.")
+                  "Symbol or Number.")
 
         # Iterate over dependencies in the expression
         intermediate_objects = []
@@ -83,7 +82,7 @@ class Expression(ValueODEObject):
                 intermediate_objects.append(dep_obj)
 
         # Call super class with expression as the "value"
-        super(Expression, self).__init__(name, expr, component, ode.name, slaved)
+        super(Expression, self).__init__(name, expr, component, slaved)
 
         # Create and store expanded expression
         timer = Timer("subs")
@@ -135,7 +134,7 @@ class DerivativeExpression(Expression):
             DerivativeExpression is an Algebraic expression
         """
 
-        check_arg(derivatives, (sp.Basic, ModelSymbol, int), 0)
+        check_arg(derivatives, (sp.Basic, sp.Symbol, int), 0)
 
         error_str = "expected a linear combination of state derivatives "\
                     "as the derivative argument."
@@ -151,7 +150,7 @@ class DerivativeExpression(Expression):
             """
             derivative = None
             for arg in mul.args:
-                if isinstance(arg, ModelSymbol):
+                if isinstance(arg, sp.Symbol):
                     obj = ode.get_object(arg)
 
                     if isinstance(obj, StateDerivative):
@@ -196,15 +195,15 @@ class DerivativeExpression(Expression):
         # If an expression of derivatives
         elif isinstance(derivatives, sp.Basic):
 
-            # If single ModelSymbol we expect a DerivativeExpression
-            if isinstance(derivatives, ModelSymbol):
+            # If single sp.Symbol we expect a DerivativeExpression
+            if isinstance(derivatives, sp.Symbol):
                 check_single_model_sym(derivatives)
                 stripped_derivatives.append(ode.get_object(derivatives))
 
             # If derivatives is a linear combination of derivatives
             elif isinstance(derivatives, sp.Add):
                 for arg in derivatives.args:
-                    if isinstance(arg, ModelSymbol):
+                    if isinstance(arg, sp.Symbol):
                         check_single_model_sym(arg)
                     elif isinstance(arg, sp.Mul):
                         stripped_derivatives.append(check_mul(arg))
@@ -293,9 +292,9 @@ class Intermediate(Expression):
         name : str
             The name of the Intermediate
         expr : sympy.Basic
-            The expression 
-        expanded_expr : sympy.Basic
-            The expanded verision of the intermediate 
+            The expression
+        ode : ODE
+            The ODE which the Intermediate is declared within
         component : str (optional)
             A component for which the Intermediate should be associated with.
         slaved : bool

@@ -27,7 +27,7 @@ from collections import OrderedDict
 # modelparameters import
 from modelparameters.parameters import Param, ScalarParam, ArrayParam, \
      ConstParam, scalars
-from modelparameters.sympytools import sp_namespace, sp, ModelSymbol
+from modelparameters.sympytools import sp_namespace, sp
 
 # gotran imports
 from gotran.common import *
@@ -53,11 +53,11 @@ class IntermediateDispatcher(dict):
 
         # Set the attr of the ODE
         # If a scalar or a sympy number or it is a sympy.Basic consisting of
-        # ModelSymbols
+        # sp.Symbols
 
         if isinstance(value, scalars) or isinstance(value, sp.Number) or \
                (isinstance(value, sp.Basic) and \
-                any(isinstance(atom, ModelSymbol)\
+                any(isinstance(atom, sp.Symbol)\
                     for atom in value.atoms())):
 
             # Get source which triggers the insertion to the global namespace

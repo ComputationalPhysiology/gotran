@@ -252,7 +252,7 @@ class ODERepresentation(object):
                 elif ode.has_parameter(sym):
                     self._used_in_monitoring["parameters"].add(sym.name)
                 else:
-                    # Skip if ModelSymbols is not state or parameter
+                    # Skip if Symbols is not state or parameter
                     pass
         
         self._cse_monitored_subs, self._cse_monitored_expr = \
