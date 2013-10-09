@@ -1,6 +1,9 @@
 import pycuda.driver as drv
+import pycuda.tools
+import pycuda.autoinit
 import numpy as np
 from pycuda.compiler import SourceModule
+
 from gotran import load_ode, ODERepresentation, CCodeGenerator
 
 optimisations = dict()
@@ -44,6 +47,5 @@ print gpu_code
 # Can be compiled with nvcc -c gpu_code.cu -arch=sm_20
 open("gpu_code.cu", "w").write(gpu_code)
 
-# Fails Why?!?
 mod = SourceModule(gpu_code, arch="sm_20")
 
