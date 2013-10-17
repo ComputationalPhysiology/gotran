@@ -23,6 +23,7 @@ from collections import OrderedDict
 # ModelParameters imports
 from modelparameters.sympytools import sp, iter_symbol_params_from_expr
 from modelparameters.parameters import ScalarParam
+from modelparameters.codegeneration import sympycode, _all_keywords
 
 # Local imports
 from gotran.common import error, check_arg, check_kwarg, scalars
@@ -62,7 +63,7 @@ class ODEComponent(ODEObject):
             The ode object of the component
         """
 
-        from gotran.model.ode import ODE
+        from gotran.model.ode2 import ODE
         check_arg(name, str, 0, ODEComponent)
         check_arg(ode, ODE, 1, ODEComponent)
         
@@ -73,120 +74,198 @@ class ODEComponent(ODEObject):
         self._ode = ode
 
         # Store ODEObjects of this component
-        self.states = OrderedDict()
-        self.parameters = OrderedDict()
-        self.variables = OrderedDict()
-        self.intermediates = ODEObjectList()
-        self.derivatives = ODEObjectList()
-        self.markov_models = ODEObjectList()
+        self.ode_objects = ODEObjectList()
 
         # Store external dependencies
-        self.external_object_dep = set()
-        self.external_component_dep = set()
+        self.external_object_dep = OrderedDict()
+        self.external_component_dep = OrderedDict()
 
-    def remove(self, obj):
+    def state(self, name, init):
         """
-        Remove an ODEObject from the Component
-        """
-        assert(isinstance(obj, (State, Parameter, Variable)))
-        if isinstance(obj, State):
-            self.states.pop(obj.name)
-        elif isinstance(obj, Parameter):
-            self.parameters.pop(obj.name)
-        elif isinstance(obj, Variable):
-            self.variables.pop(obj.name)
+        Add a state to the component
 
-        # Remove object and component dependencies
-        for comp in self._ode.components.values():
-            if obj not in comp.external_object_dep:
-                continue
-            comp.external_object_dep.remove(obj)
-
-            # If not same we need to check if external component
-            # dependency still applies
-            # FIXME: REMOVE COMPONENT
-            for other_obj in comp.external_object_dep:
-                if obj.component == other_obj.component:
-                    break
-            else:
-                # No rest of old component left in external_object_dep
-                assert(obj.component in comp.external_component_dep)
-                comp.external_component_dep.remove(obj.component)
-
-    def append(self, obj):
+        Arguments
+        ---------
+        name : str
+            The name of the state variable
+        init : scalar, ScalarParam
+            The initial value of the state
         """
-        Append an ODEObject to the Component
+
+        # Create state
+        state = State(name, init)
+
+        # FIXME: Create this inside State constructor?
+        state_der = StateDerivative(state)
+        state.derivative = state_der
+
+        self._register_object(state)
+        self._register_object(state_der)
+
+        # Return the sympy version of the state
+        return state.sym
+
+    def parameter(self, name, init):
         """
-        from gotran.model.expressions import Expression, Intermediate, \
-             DerivativeExpression
+        Add a parameter to the component
+
+        Arguments
+        ---------
+        name : str
+            The name of the parameter
+        init : scalar, ScalarParam
+            The initial value of the parameter
+        """
         
-        check_arg(obj, ODEObject, 0, ODEComponent.append)
+        param = Parameter(name, init)
 
-        assert(obj.component == self.name)
+        self._register_object(param)
 
-        # If SingleODEObject we need to check that no Expressions has been added
-        if isinstance(obj, SingleODEObjects):
+        # Return the sympy version of the state
+        return param.sym
 
-            #if (len(self.intermediates) + len(self.derivatives))>0:
-            #    error("Cannot register a {0} to '{1}' after an expression"\
-            #          " has been register.".format(\
-            #              type(obj).__name__, self.name, ))
+    def variable(self, name, init):
+        """
+        Add a variable to the component
 
-            # Store object
-            if isinstance(obj, State):
-                self.states[obj.name] = obj
-            elif isinstance(obj, Parameter):
-                self.parameters[obj.name] = obj
-            elif isinstance(obj, Variable):
-                self.variables[obj.name] = obj
-            else:
-                error("Not recognised SingleODEObject: {0}".format(\
-                    type(obj).__name__))
+        Arguments
+        ---------
+        name : str
+            The name of the variable
+        init : scalar, ScalarParam
+            The initial value of the variable
+        """
+        
+        variable = Variable(name, init)
 
-        elif isinstance(obj, Expression):
+        self._register_object(variable)
 
-            # If Intermediate we need to check that no DerivativeExpression
-            # has been added
-            if isinstance(obj, Intermediate):
-                if self.derivatives:
-                    error("Cannot register an Intermediate after"\
-                          "a DerivativeExpression has been registered.")
+        # Return the sympy version of the state
+        return variable.sym
+
+    def derivative(self, sym, expr):
+        pass
+
+    def algebraic(self, sym, expr):
+        pass
+
+    def rates(self, states, rates):
+        pass
+
+    def expression(self, name, expr):
+        """
+        Register a math expression
+
+        Arguments
+        ---------
+        name : str
+            The name of the expression
+        expr : sympy.Basic, scalar
+            The expression
+        """
+
+        # Create an Expression in the present component
+        expr = Expression(name, expr)
+
+        # Iterate over dependencies in the expression
+        intermediate_objects = []
+        object_dependencies = ODEObjectList()
+        for sym in iter_symbol_params_from_expr(expr):
+            dep_obj = ode.get_object(sym) or ode._intermediates.get(sym)
+            if dep_obj is None:
+                error("The symbol '{0}' is not declared within the '{1}' "\
+                      "ODE.".format(sym, ode.name))
+
+            # Store object dependencies
+            object_dependencies.append(dep_obj)
             
-            if isinstance(obj, Intermediate):
-                self.intermediates.append(obj)
-            elif isinstance(obj, DerivativeExpression):
-                self.derivatives.append(obj)
-            else:
-                error("Not recognised Expression: {0}".format(\
-                    type(obj).__name__))
+            # Check that we are not using a DerivativeExpressions in expression
+            if isinstance(dep_obj, (StateDerivative, DerivativeExpression)):
+                error("An expression cannot include a StateDerivative or "\
+                      "DerivativeExpression")
 
-            own_obj = self.states.keys() + self.parameters.keys() + \
-                      self.variables.keys()
+            # Collect intermediates to be used in substitutions below
+            if isinstance(dep_obj, Intermediate):
+                intermediate_objects.append(dep_obj)
 
-            # We have an expression and we need to figure out dependencies
-            for sym in iter_symbol_params_from_expr(obj.expr):
-                dep_obj = self._ode.get_object(sym) or \
-                          self._ode.get_intermediate(sym)
-                assert(dep_obj)
-                assert(not isinstance(dep_obj, DerivativeExpression))
 
-                if dep_obj in self.intermediates:
-                    continue
+        expr.expanded_expr = expr.sym.subs((dep_obj.sym, dep_obj.expanded_expr) \
+                                           for dep_obj in intermediate_objects)
 
-                if dep_obj.name in own_obj:
-                    continue
+        self._object_dependencies = object_dependencies
+
+    def _register_object(self, obj):
+        """
+        Register an ODEObject to the component
+        """
+        
+        if obj.name in _all_keywords:
+            error("Cannot register a {0} with a computer language "\
+                  "keyword name: {1}".format(obj.__class__.__name__,
+                                             obj.name))
+
+        # Check for reserved wording of StateDerivatives
+        if re.search(_derivative_name_template, obj.name):
+            error("The pattern d{{name}}_dt is reserved for derivatives. "
+                  "However {0} is not a state derivative.".format(\
+                      intermediate.name))
+        
+        def duplication_error(obj, dup_obj):
+            error("Cannot register a {0}. A {1} with name '{2}' is "\
+                  "already registered in this ODE.".format(\
+                      type(obj).__name__, type(dup_obj).__name__, dup_obj.name))
+
+        # Check for existing object in the ODE
+        duplication = self.ode.get_object(obj.name, return_component=True)
+
+        # If object with same name is already registered in the ode we
+        # need to figure out what to do
+        if duplication:
+
+            dup_obj, comp = duplication
+
+            # If a parameter or Variable is registered using the same name
+            # as the ODE it can be overwritten with the new object if the new object 
+            if isinstance(dub_obj, (Parameter, Variable)) and \
+                   comp.name == self.ode.name:
                 
-                self.external_object_dep.add(dep_obj)
-                self.external_component_dep.add(dep_obj.component)
+                
+            # If State we always raise an error
+            if isinstance(dup_obj, State):
+                duplication_error(obj, dup_obj)
+                
+            if isinstance(dub_obj, StateDerviative):
+                
+                
+        # Check for existing object
+        dup_obj = self.ode_objects.get(name)
+        
+        # If the object already exists and is a StateDerivative
+        if dup_obj is not None and isinstance(dup_obj, StateDerivative):
+            
+            self.derivative(dup_obj.sym, expr)
+            return
+        
+        # Check for duplicates
+        if intermediate.name in self._intermediates:
+            self._intermediate_duplicates.add(intermediate.name)
 
-        elif isinstance(object, Comment):
-            self.intermediates.append(obj)
+        # Store the intermediate
+        self._intermediates.append(intermediate)
 
-        elif isinstance(obj, MarkovModel):
-            self.markov_models.append(obj)
-        else:
-            error("Not recognised ODEObject: {0}".format(\
-                type(obj).__name__))
+        # Add to component
+        self._present_component.append(intermediate)
+
+        # Register symbol, overwrite any already excisting symbol
+        self.__dict__[name] = intermediate.sym
+
+        # Return symbol
+        return intermediate.sym
+
+                # Logic to handle state derivatives
+
+        # Register the object 
+        self.ode_objects[obj.name] = obj
 
 class ODEObjectList(list):
     """

@@ -15,8 +15,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ["ODEObject", "ValueODEObject", "Parameter", "State", \
-           "StateDerivative", "Variable", "SingleODEObjects"]
+__all__ = ["ODEObject", "ODEValueObject", "Parameter", "State", \
+           "StateDerivative", "Variable", "SingleODEObjects", "Time", "Dt"]
 
 # System imports
 import numpy as np
@@ -44,13 +44,7 @@ class ODEObject(object):
         """
 
         check_arg(name, str, 0, ODEObject)
-
-        # Check for underscore in name
-        if len(name) > 0 and name[0] == "_":
-            error("No ODEObject names can start with an underscore: "\
-                  "'{0}'".format(name))
-
-        self._name = name
+        self._name = self._check_name(name)
 
     def __eq__(self, other):
         """
@@ -83,22 +77,44 @@ class ODEObject(object):
         x.__repr__() <==> repr(x)
         """
         return "{0}({1})".format(self.__class__.__name__, self._args_str())
-
+    
     @property
     def name(self):
         return self._name
-
+    
     def _args_str(self):
         """
         Return a formated str of __init__ arguments
         """
         return "'{0}'".format(self._name)
+    
+    def rename(self, name):
+        """
+        Rename the ODEObject
+        """
 
-class ValueODEObject(ODEObject):
+        check_arg(name, str)
+        self._name = self._check_name(name)
+
+    def _check_name(self, name):
+        """
+        Check the name
+        """
+        assert(isinstance(name, str))
+        name = name.strip().replace(" ", "_")
+
+        # Check for underscore in name
+        if len(name) > 0 and name[0] == "_":
+            error("No ODEObject names can start with an underscore: "\
+                  "'{0}'".format(name))
+            
+        return name
+
+class ODEValueObject(ODEObject):
     """
     A class for all ODE objects which has a value
     """
-    def __init__(self, name, value, slaved=False):
+    def __init__(self, name, value):
         """
         Create ODEObject instance
 
@@ -108,19 +124,14 @@ class ValueODEObject(ODEObject):
             The name of the ODEObject
         value : scalar, ScalarParam, np.ndarray, sp. Basic
             The value of this ODEObject
-        slaved : bool
-            If True the creation and differentiation is controlled by
-            other entity, like a Markov model.
         """
 
-        check_arg(name, str, 0, ValueODEObject)
+        check_arg(name, str, 0, ODEValueObject)
         check_arg(value, scalars + (ScalarParam, list, np.ndarray, sp.Basic), \
-                  1, ValueODEObject)
+                  1, ODEValueObject)
 
-        name = name.strip().replace(" ", "_")
-        
         # Init super class
-        super(ValueODEObject, self).__init__(name)
+        super(ODEValueObject, self).__init__(name)
 
         if isinstance(value, ScalarParam):
 
@@ -145,18 +156,20 @@ class ValueODEObject(ODEObject):
             else:
                 debug("{0}: {1}".format(name, value.value))
             
-        # Store the Param
+            # Store the Param
         self._param = value 
 
-        # Store field
-        self._field = isinstance(value, ArrayParam)
+    def rename(self, name):
+        """
+        Rename the ODEValueObject
+        """
+        super(ODEValueObject, self).rename(name)
 
-        self._slaved = slaved
-
-    @property
-    def slaved(self):
-        return self._slaved
-    
+        # Re-create param with changed name
+        param = self._param.copy(include_name=False)
+        param.name = name
+        self._param = param
+        
     @property
     def value(self):
         return self._param.getvalue()
@@ -165,10 +178,9 @@ class ValueODEObject(ODEObject):
     def value(self, value):
         self._param.setvalue(value)
 
-
     @property
     def is_field(self):
-        return self._field
+        return isinstance(self._param, ArrayParam)
 
     @property
     def sym(self):
@@ -185,11 +197,11 @@ class ValueODEObject(ODEObject):
         return "'{0}', {1}{2}".format(\
             self.name, repr(self._param.getvalue()))
 
-class State(ValueODEObject):
+class State(ODEValueObject):
     """
     Container class for a State variable
     """
-    def __init__(self, name, init, slaved=False):
+    def __init__(self, name, init, time):
         """
         Create a state variable with an assosciated initial value
 
@@ -199,25 +211,53 @@ class State(ValueODEObject):
             The name of the State
         init : scalar, ScalarParam
             The initial value of this state
-        slaved : bool
-            If True the creation and differentiation is controlled by
-            other entity, like a Markov model.
+        time : Variable
+            The time variable
         """
         
         # Call super class
-        super(State, self).__init__(name, init, slaved)
+        check_arg(init, scalars + (ScalarParam, list, np.ndarray), \
+                  1, State)
+        
+        super(State, self).__init__(name, init)
+        check_arg(time, Time, 2)
 
-        self.derivative = None
+        self.time = time
 
-        check_arg(slaved, bool, 4)
-        self._slaved = slaved
+        self.derivative = StateDerivative(self)
 
         # Add previous value symbol
-        self.sym_0 = sp.Symbol("{0}_0".format(name))
+        self.sym_0 = sp.Symbol("{0}_0".format(name))(time.sym)
 
-    init = ValueODEObject.value
+    init = ODEValueObject.value
 
-class StateDerivative(ValueODEObject):
+    @property
+    def sym(self):
+        return self._param.sym(self.time.sym)
+
+    def _args_str(self):
+        """
+        Return a formated str of __init__ arguments
+        """
+        return "'{0}', {1}, {2}".format(\
+            self.name, repr(self._param.copy(include_name=False)), self.time)
+
+    def toggle_field(self):
+        """
+        Toggle a State between scalar and field object
+        """
+        if isinstance(self._param, ArrayParam):
+            self._param = eval("ScalarParam(%s%s%s)" % \
+                               (self._param.value[0], \
+                                self._param._check_arg(), \
+                                self._param._name_arg()))
+        else:
+            self._param = eval("ArrayParam(%s, 1%s%s)" % \
+                               (self._param.value, \
+                                self._param._check_arg(), \
+                                self._param._name_arg()))
+            
+class StateDerivative(ODEValueObject):
     """
     Container class for a StateDerivative variable
     """
@@ -238,12 +278,17 @@ class StateDerivative(ValueODEObject):
         # Call super class
         super(StateDerivative, self).__init__("d{0}_dt".format(state.name), \
                                               init)
-        
+
+        self.time = state.time
         self.state = state
     
-    init = ValueODEObject.value
+    init = ODEValueObject.value
 
-class Parameter(ValueODEObject):
+    @property
+    def sym(self):
+        return self.state.sym.diff(self.time.sym)
+
+class Parameter(ODEValueObject):
     """
     Container class for a Parameter
     """
@@ -262,9 +307,24 @@ class Parameter(ValueODEObject):
         # Call super class
         super(Parameter, self).__init__(name, init)
     
-    init = ValueODEObject.value
+    init = ODEValueObject.value
 
-class Variable(ValueODEObject):
+    def toggle_field(self):
+        """
+        Toggle a State between scalar and field object
+        """
+        if isinstance(self._param, ArrayParam):
+            self._param = eval("ScalarParam(%s%s%s)" % \
+                               (self._param.value[0], \
+                                self._param._check_arg(), \
+                                self._param._name_arg()))
+        else:
+            self._param = eval("ArrayParam(%s, 1%s%s)" % \
+                               (self._param.value, \
+                                self._param._check_arg(), \
+                                self._param._name_arg()))
+    
+class Variable(ODEValueObject):
     """
     Container class for a Variable
     """
@@ -286,7 +346,21 @@ class Variable(ValueODEObject):
         # Add previous value symbol
         self.sym_0 = sp.Symbol("{0}_0".format(name))
 
-    init = ValueODEObject.value
+    init = ODEValueObject.value
 
+class Time(Variable):
+    """
+    Specialization for a Time class
+    """
+    def __init__(self, name):
+        super(Time, self).__init__(name, 0.0)
+
+class Dt(Variable):
+    """
+    Specialization for a time step class
+    """
+    def __init__(self, name):
+        super(Dt, self).__init__(name, 0.1)
+    
 # Tuple with single ODE Objects, for type checking
-SingleODEObjects = (State, StateDerivative, Parameter, Variable)
+SingleODEObjects = (State, StateDerivative, Parameter, Variable, Time)
