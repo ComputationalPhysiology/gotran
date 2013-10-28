@@ -18,14 +18,15 @@
 # System imports
 from collections import deque
 import re
+import numpy as np
 
 # Model parameters imports
-from modelparameters.parameters import *
+from modelparameters.parameterdict import *
 from modelparameters.codegeneration import ccode, cppcode, pythoncode, \
      sympycode, matlabcode
 
 # Gotran imports
-from gotran.common import check_arg
+from gotran.common import check_arg, check_kwarg
 from oderepresentation import ODERepresentation
 
 __all__ = ["CodeGenerator", "CCodeGenerator", "CppCodeGenerator", \
@@ -58,8 +59,39 @@ class CodeGenerator(object):
     max_line_length = 79
     to_code = lambda a,b,c,d="math" : pythoncode(b,c,d)
 
-    def __init__(self, oderepr):
+    def args(self, result_name):
+        ret_args=[]
+        if self.params.self_arg:
+            ret_args.append("self")
+
+        for arg in self.params.rhs_args:
+            if arg == "s":
+                ret_args.append("states")
+            elif arg == "t":
+                ret_args.append("time")
+            elif arg == "p" and \
+                 not self.oderepr.optimization.parameter_numerals:
+                ret_args.append("parameters")
+
+        ret_args.append("{0}=None".format(result_name))
+        
+        return ", ".join(ret_args)
+
+    @staticmethod
+    def default_params():
+        
+        return ParameterDict(rhs_args=OptionParam(\
+            "stp", ["tsp", "stp", "spt"]),
+                             self_arg = False)
+
+    def __init__(self, oderepr, params=None):
         check_arg(oderepr, ODERepresentation, 0)
+
+        params = params or {}
+
+        self.params = self.default_params()
+        self.params.update(params)
+
         self.oderepr = oderepr
         self.oderepr.update_index(self.index)
 
@@ -99,8 +131,6 @@ class CodeGenerator(object):
     def _states_and_parameters_code(self):
         ode = self.oderepr.ode
 
-        assert(not ode.is_dae)
-
         # Start building body
         body_lines = ["# Imports", "import numpy as np", "import math", \
                       "from math import pow, sqrt, log"]
@@ -124,7 +154,7 @@ class CodeGenerator(object):
 
         return body_lines
 
-    def dy_body(self):
+    def dy_body(self, result_name="dy"):
         """
         Generate body lines of code for evaluating state derivatives
         """
@@ -145,54 +175,37 @@ class CodeGenerator(object):
 
         # Init dy
         body_lines.append("")
-        body_lines.append("# Init dy")
-        body_lines.append("if dy is None:")
-        body_lines.append(["dy = np.zeros_like(states)"])
+        body_lines.append("# Init {0}".format(result_name))
+        body_lines.append("if {0} is None:".format(result_name))
+        body_lines.append(["{0} = np.zeros_like(states)".format(result_name)])
         
         # Add dy[i] lines
         for ind, (state, (derivative, expr)) in enumerate(\
             zip(ode.states, self.oderepr.iter_derivative_expr())):
             assert(state.sym == derivative[0].sym)
-            body_lines.append(pythoncode(expr, "dy[{0}]".format(ind)))
+            body_lines.append(pythoncode(expr, "{0}[{1}]".format(result_name, ind)))
 
         # Return body lines 
         return body_lines
         
-    def dy_code(self, rhs_args="stp", indent=0, self_arg=False):
+    def dy_code(self, indent=0, result_name="dy"):
         """
         Generate code for evaluating state derivatives
         """
 
-        body_lines = self.dy_body()
+        body_lines = self.dy_body(result_name)
         
         body_lines.append("")
-        body_lines.append("# Return dy")
+        body_lines.append("# Return result")
 
         # Add function prototype
-        args=[]
-        if self_arg:
-            args.append("self")
-
-        for arg in rhs_args:
-            if arg == "s":
-                args.append("states")
-            elif arg == "t":
-                args.append("time")
-            elif arg == "p" and \
-                 not self.oderepr.optimization.parameter_numerals:
-                args.append("parameters")
-
-        args.append("dy=None")
-        
-        args = ", ".join(args)
-        
         dy_function = self.wrap_body_with_function_prototype(\
-            body_lines, "rhs", args, \
-            "dy", "Compute right hand side")
+            body_lines, "rhs", self.args(result_name), \
+            result_name, "Compute right hand side")
         
         return "\n".join(self.indent_and_split_lines(dy_function, indent=indent))
 
-    def jacobian_body(self):
+    def jacobian_body(self, result_name="jac"):
         """
         Generate body lines of code for evaluating state derivatives
         """
@@ -214,51 +227,36 @@ class CodeGenerator(object):
         # Init jacobian
         body_lines.append("")
         body_lines.append("# Init jacobian")
-        body_lines.append("if jac is None:")
-        body_lines.append(["jac = np.zeros((len(states), len(states)), dtype=np.float_)"])
+        body_lines.append("if {0} is None:".format(result_name))
+        body_lines.append(["{0} = np.zeros((len(states), len(states)), "\
+                           "dtype=np.float_)".format(result_name)])
         
         # Add jac[i,j] lines
         for (indi, indj), expr in self.oderepr.iter_jacobian_expr():
-            body_lines.append(pythoncode(expr, "jac[{0}, {1}]".format(indi, indj)))
+            body_lines.append(pythoncode(\
+                expr, "{0}[{1}, {2}]".format(result_name, indi, indj)))
 
         # Return body lines 
         return body_lines
 
-    def jacobian_code(self, rhs_args="stp", indent=0, self_arg=False):
+    def jacobian_code(self, indent=0, result_name="jac"):
         """
         Generate code for evaluating jacobian
         """
 
-        body_lines = self.jacobian_body()
+        body_lines = self.jacobian_body(result_name)
         
         body_lines.append("")
         body_lines.append("# Return jacobian")
 
         # Add function prototype
-        args=[]
-        if self_arg:
-            args.append("self")
-
-        for arg in rhs_args:
-            if arg == "s":
-                args.append("states")
-            elif arg == "t":
-                args.append("time")
-            elif arg == "p" and \
-                 not self.oderepr.optimization.parameter_numerals:
-                args.append("parameters")
-
-        args.append("jac=None")
-        
-        args = ", ".join(args)
-        
         jacobian_function = self.wrap_body_with_function_prototype(\
-            body_lines, "jacobian", args, \
-            return_arg="jac", comment="Compute jacobian")
+            body_lines, "jacobian", self.args(result_name), \
+            return_arg=result_name, comment="Compute jacobian")
         
         return "\n".join(self.indent_and_split_lines(jacobian_function, indent=indent))
         
-    def monitored_body(self):
+    def monitored_body(self, result_name="monitored"):
         """
         Generate body lines of code for evaluating state derivatives
         """
@@ -280,9 +278,10 @@ class CodeGenerator(object):
                 if state.name in self.oderepr.used_in_monitoring["states"]:
                     state_names.append(state.name)
                     state_indices.append("states[{0}]".format(ind))
-            
-            body_lines.append(", ".join(state_names) + " = " +\
-                              ", ".join(state_indices))
+
+            if state_names:
+                body_lines.append(", ".join(state_names) + " = " +\
+                                  ", ".join(state_indices))
         
         # Add parameters code if not numerals
         if not self.oderepr.optimization.parameter_numerals:
@@ -298,9 +297,10 @@ class CodeGenerator(object):
                     if param.name in self.oderepr.used_in_monitoring["parameters"]:
                         parameter_names.append(param.name)
                         parameter_indices.append("parameters[{0}]".format(ind))
-            
-                body_lines.append(", ".join(parameter_names) + " = " +\
-                                  ", ".join(parameter_indices))
+
+                if parameter_names:
+                    body_lines.append(", ".join(parameter_names) + " = " +\
+                                      ", ".join(parameter_indices))
 
         # Iterate over any body needed to define the dy
         for expr, name in self.oderepr.iter_monitored_body():
@@ -330,45 +330,30 @@ class CodeGenerator(object):
         # Return body lines 
         return body_lines
 
-    def monitored_code(self, rhs_args="stp", indent=0, self_arg=False):
+    def monitored_code(self, indent=0, result_name="monitored"):
         """
         Generate code for evaluating monitored variables
         """
 
-        body_lines = self.monitored_body()
+        body_lines = self.monitored_body(result_name)
         
         body_lines.append("")
         body_lines.append("# Return monitored")
 
         # Add function prototype
-        # Add function prototype
-        args=[]
-        if self_arg:
-            args.append("self")
-
-        for arg in rhs_args:
-            if arg == "s":
-                args.append("states")
-            elif arg == "t":
-                args.append("time")
-            elif arg == "p" and \
-                 not self.oderepr.optimization.parameter_numerals:
-                args.append("parameters")
-
-        args.append("monitored=None")
-        
-        args = ", ".join(args)
-        
         monitor_function = self.wrap_body_with_function_prototype(\
-            body_lines, "monitor", args, \
-            "monitored", "Compute monitored intermediates")
+            body_lines, "monitor", self.args(result_name), \
+            result_name, "Compute monitored intermediates")
         
-        return "\n".join(self.indent_and_split_lines(monitor_function))
+        return "\n".join(self.indent_and_split_lines(monitor_function, \
+                                                     indent=indent))
 
-    def init_states_code(self, indent=0, self_arg=False):
+    def init_states_code(self, indent=0):
         """
         Generate code for setting initial condition
         """
+
+        self_arg = self.params.self_arg
 
         # Start building body
         body_lines = ["# Imports", "import numpy as np",\
@@ -418,10 +403,12 @@ class CodeGenerator(object):
         
         return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
 
-    def init_param_code(self, indent=0, self_arg=False):
+    def init_param_code(self, indent=0):
         """
         Generate code for setting parameters
         """
+
+        self_arg = self.params.self_arg
 
         # Start building body
         body_lines = ["# Imports", "import numpy as np",\
@@ -471,10 +458,12 @@ class CodeGenerator(object):
         
         return "\n".join(self.indent_and_split_lines(function, indent=indent))
 
-    def state_name_to_index_code(self, indent=0, self_arg=False):
+    def state_name_to_index_code(self, indent=0):
         """
         Return code for index handling for states
         """
+        self_arg = self.params.self_arg
+
         body_lines = []
         body_lines.append("state_inds = dict({0})".format(\
             ", ".join("{0}={1}".format(state.param.name, i) for i, state \
@@ -497,10 +486,13 @@ class CodeGenerator(object):
         
         return "\n".join(self.indent_and_split_lines(function, indent=indent))
 
-    def param_name_to_index_code(self, indent=0, self_arg=False):
+    def param_name_to_index_code(self, indent=0):
         """
         Return code for index handling for parameters
         """
+
+        self_arg = self.params.self_arg
+
         body_lines = []
         body_lines.append("param_inds = dict({0})".format(\
             ", ".join("{0}={1}".format(param.param.name, i) for i, param \
@@ -523,28 +515,47 @@ class CodeGenerator(object):
         
         return "\n".join(self.indent_and_split_lines(function, indent=indent))
 
-    def class_code(self, rhs_args="stp", monitored=False):
+    def code_list(self, indent=0):
+        
+        code = [self.init_param_code(indent),
+                self.init_states_code(indent),
+                self.dy_code(indent),
+                self.state_name_to_index_code(indent), 
+                self.param_name_to_index_code(indent),
+                self.monitored_code(indent)
+                ]
+
+        if self.oderepr.optimization.generate_jacobian:
+            code += [self.jacobian_code(indent)]
+
+        return code
+
+    def class_code(self):
         """
         Generate class code
         """
 
         name = self.oderepr.class_name
 
-        code = [self.init_param_code(indent=1, self_arg=True),
-                self.init_states_code(indent=1, self_arg=True),
-                self.dy_code(rhs_args, indent=1, self_arg=True),
-                self.state_name_to_index_code(indent=1, self_arg=True), 
-                self.param_name_to_index_code(indent=1, self_arg=True),
-                ]
-
-        if self.oderepr.optimization.generate_jacobian:
-            code += [self.jacobian_code(indent=1, self_arg=True)]
+        code_list = self.code_list(indent=1)
 
         return  """
 class {0}:
 
+    @staticmethod
 {1}
-""".format(name, "\n\n".join(code))
+""".format(name, "\n\n    @staticmethod\n".join(code_list))
+
+    def module_code(self):
+        
+        code_list = self.code_list()
+
+        return  """# Gotran generated code for the  "{0}" model
+from __future__ import division
+
+{1}
+""".format(self.oderepr.ode.name, "\n\n".join(code_list))
+    
 
     @classmethod
     def indent_and_split_lines(cls, code_lines, indent=0, ret_lines=None, \
@@ -683,6 +694,33 @@ class CCodeGenerator(CodeGenerator):
     indent_str = " "
     to_code = lambda a,b,c : ccode(b,c)
     
+    def args(self, result_name=""):
+
+        ret_args=[]
+        for arg in self.params.rhs_args:
+            if arg == "s":
+                ret_args.append("const double* states")
+            elif arg == "t":
+                ret_args.append("double time")
+            elif arg == "p" and \
+                not self.oderepr.optimization.parameter_numerals \
+                and self.params.parameters_in_signature:
+                ret_args.append("const double* parameters")
+
+        ret = ", ".join(ret_args)
+        
+        if result_name:
+            ret += ", double* {0}".format(result_name)
+
+        return  ret
+
+    @staticmethod
+    def default_params():
+        
+        return ParameterDict(rhs_args = OptionParam(\
+            "stp", ["tsp", "stp", "spt"]),
+                             parameters_in_signature = True)
+
     def wrap_body_with_function_prototype(self, body_lines, name, args, \
                                           return_type="", comment="", const=False):
         """
@@ -702,13 +740,12 @@ class CCodeGenerator(CodeGenerator):
 
         const = " const" if const else ""
         prototype.append("{0} {1}({2}){3}".format(return_type, name, args, const))
-        body = []
 
         # Append body to prototyp
         prototype.append(body_lines)
         return prototype
     
-    def _states_and_parameters_code(self, parameters_in_signature):
+    def _states_and_parameters_code(self):
 
         ode = self.oderepr.ode
         
@@ -722,7 +759,7 @@ class CCodeGenerator(CodeGenerator):
                     state_name, i))
         
         # Add parameters code if not numerals
-        if parameters_in_signature and \
+        if self.params.parameters_in_signature and \
                not self.oderepr.optimization.parameter_numerals:
             body_lines.append("")
             body_lines.append("// Assign parameters")
@@ -736,7 +773,7 @@ class CCodeGenerator(CodeGenerator):
 
         return body_lines
 
-    def init_states_code(self):
+    def init_states_code(self, indent=0):
         """
         Generate code for setting initial condition
         """
@@ -748,12 +785,11 @@ class CCodeGenerator(CodeGenerator):
 
         # Add function prototype
         init_function = self.wrap_body_with_function_prototype(\
-            body_lines, "init_values", "double* values", "", \
-            "Init values")
+            body_lines, "init_values", "double* values", "", "Init values")
         
-        return "\n".join(self.indent_and_split_lines(init_function))
+        return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
 
-    def init_param_code(self):
+    def init_param_code(self, indent=0):
         """
         Generate code for setting  parameters
         """
@@ -768,18 +804,16 @@ class CCodeGenerator(CodeGenerator):
             body_lines, "parameter_values", "double* values", "", \
             "Default parameter values")
         
-        return "\n".join(self.indent_and_split_lines(init_function))
+        return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
 
-    def dy_body(self, parameters_in_signature=False, result_name="dy"):
+    def dy_body(self, result_name="dy"):
         """
         Generate body lines of code for evaluating state derivatives
         """
         
         ode = self.oderepr.ode
 
-        assert(not ode.is_dae)
-
-        body_lines = self._states_and_parameters_code(parameters_in_signature)
+        body_lines = self._states_and_parameters_code()
 
         # Iterate over any body needed to define the dy
         declared_duplicates = []
@@ -816,41 +850,26 @@ class CCodeGenerator(CodeGenerator):
         # Return the body lines
         return body_lines
         
-    def dy_code(self, rhs_args="stp", parameters_in_signature=False, \
-                result_name="dy"):
+    def dy_code(self, indent=0, result_name="dy"):
         """
         Generate code for evaluating state derivatives
         """
 
-        body_lines = self.dy_body(parameters_in_signature, result_name)
+        body_lines = self.dy_body(result_name)
 
         # Add function prototype
-        args=[]
-        for arg in rhs_args:
-            if arg == "s":
-                args.append("const double* states")
-            elif arg == "t":
-                args.append("double time")
-            elif arg == "p" and \
-                not self.oderepr.optimization.parameter_numerals \
-                and parameters_in_signature:
-                args.append("const double* parameters")
-
-        args = ", ".join(args) + ", double* {0}".format(result_name)
-
         dy_function = self.wrap_body_with_function_prototype(\
-            body_lines, "rhs", args, \
+            body_lines, "rhs", self.args(result_name), \
             "", "Compute right hand side of {0}".format(self.oderepr.name))
         
-        return "\n".join(self.indent_and_split_lines(dy_function))
+        return "\n".join(self.indent_and_split_lines(\
+            dy_function, indent=indent))
 
-    def jacobian_body(self, parameters_in_signature=False, result_name="jac"):
+    def jacobian_body(self, result_name="jac"):
 
         ode = self.oderepr.ode
 
-        assert(not ode.is_dae)
-
-        body_lines = self._states_and_parameters_code(parameters_in_signature)
+        body_lines = self._states_and_parameters_code()
 
         # Iterate over any body needed to define the dy
         declared_duplicates = []
@@ -887,42 +906,26 @@ class CCodeGenerator(CodeGenerator):
         # Return the body lines
         return body_lines
 
-    def jacobian_code(self, rhs_args="stp", parameters_in_signature=False, \
-                      result_name="jac"):
+    def jacobian_code(self, indent=0, result_name="jac"):
         """
         Generate code for evaluating state derivatives
         """
 
-        body_lines = self.jacobian_body(\
-            parameters_in_signature=parameters_in_signature, result_name=result_name)
+        body_lines = self.jacobian_body(result_name)
 
         # Add function prototype
-        args=[]
-        for arg in rhs_args:
-            if arg == "s":
-                args.append("const double* states")
-            elif arg == "t":
-                args.append("double time")
-            elif arg == "p" and \
-                not self.oderepr.optimization.parameter_numerals \
-                and parameters_in_signature:
-                args.append("const double* parameters")
-
-        args = ", ".join(args) + ", double* {0}".format(result_name)
-
         jacobian_function = self.wrap_body_with_function_prototype(\
-            body_lines, "jacobian", args, \
+            body_lines, "jacobian", self.args(result_name), \
             "", "Compute jacobian of {0}".format(self.oderepr.name))
         
-        return "\n".join(self.indent_and_split_lines(jacobian_function))
+        return "\n".join(self.indent_and_split_lines(\
+            jacobian_function, indent=indent))
 
-    def jacobian_action_body(self, parameters_in_signature=False, result_name="jac_action"):
+    def jacobian_action_body(self, result_name="jac_action"):
 
         ode = self.oderepr.ode
 
-        assert(not ode.is_dae)
-
-        body_lines = self._states_and_parameters_code(parameters_in_signature)
+        body_lines = self._states_and_parameters_code()
 
         # Iterate over any body needed to define the dy
         declared_duplicates = []
@@ -959,43 +962,27 @@ class CCodeGenerator(CodeGenerator):
         # Return the body lines
         return body_lines
 
-    def jacobian_action_code(self, rhs_args="stp", parameters_in_signature=False, \
-                             result_name="jac_action"):
+    def jacobian_action_code(self, indent=0, result_name="jac_action"):
         """
         Generate code for evaluating state derivatives
         """
 
-        body_lines = self.jacobian_action_body(\
-            parameters_in_signature=parameters_in_signature, result_name=result_name)
+        body_lines = self.jacobian_action_body(result_name)
 
         # Add function prototype
-        args=[]
-        for arg in rhs_args:
-            if arg == "s":
-                args.append("const double* states")
-            elif arg == "t":
-                args.append("double time")
-            elif arg == "p" and \
-                not self.oderepr.optimization.parameter_numerals \
-                and parameters_in_signature:
-                args.append("const double* parameters")
-
-        args = ", ".join(args) + ", double* {0}".format(result_name)
-
         jacobian_action_function = self.wrap_body_with_function_prototype(\
-            body_lines, "jacobian_action", args, \
+            body_lines, "jacobian_action", self.args(result_name), \
             "", "Compute jacobian action of {0}".format(self.oderepr.name))
         
-        return "\n".join(self.indent_and_split_lines(jacobian_action_function))
+        return "\n".join(self.indent_and_split_lines(\
+            jacobian_action_function, indent=indent))
 
-    def monitored_body(self, parameters_in_signature=False, result_name="monitored"):
+    def monitored_body(self, result_name="monitored"):
         """
         Generate body lines of code for evaluating monitored intermediates
         """
 
         ode = self.oderepr.ode
-
-        assert(not ode.is_dae)
 
         # Start building body
         body_lines = ["", "// Assign states"]
@@ -1006,7 +993,7 @@ class CCodeGenerator(CodeGenerator):
                         state.name, ind))
         
         # Add parameters code if not numerals
-        if parameters_in_signature and \
+        if self.params.parameters_in_signature and \
                not self.oderepr.optimization.parameter_numerals:
             body_lines.append("")
             body_lines.append("// Assign parameters")
@@ -1048,26 +1035,22 @@ class CCodeGenerator(CodeGenerator):
         # Return the body lines
         return body_lines
         
-    def monitored_code(self, parameters_in_signature=False, result_name="monitored"):
+    def monitored_code(self, indent=0, result_name="monitored"):
         """
         Generate code for evaluating monitored intermediates
         """
 
-        body_lines = self.monitored_body(parameters_in_signature, result_name)
+        body_lines = self.monitored_body(result_name)
 
         # Add function prototype
-        parameters = "" if not parameters_in_signature or \
-                     self.oderepr.optimization.parameter_numerals \
-                     else "double* parameters, "
-        args = "double t, const double* states, {0}double* {1}".format(\
-            parameters, result_name)
         monitored_function = self.wrap_body_with_function_prototype(\
-            body_lines, "monitored", args, \
+            body_lines, "monitor", self.args(result_name), \
             "", "Compute monitored intermediates {0}".format(self.oderepr.name))
         
-        return "\n".join(self.indent_and_split_lines(monitored_function))
+        return "\n".join(self.indent_and_split_lines(\
+            monitored_function, indent=indent))
 
-    def dy_componentwise_body(self, parameters_in_signature=False):
+    def dy_componentwise_body(self):
         oderepr = self.oderepr
         ode = oderepr.ode
         componentwise_dy_body = []
@@ -1085,7 +1068,7 @@ class CCodeGenerator(CodeGenerator):
 
         
             # Add parameters code if not numerals
-            if parameters_in_signature and \
+            if self.params.parameters_in_signature and \
                    not self.oderepr.optimization.parameter_numerals:
 
                 if self.oderepr.optimization.use_parameter_names:
@@ -1120,14 +1103,34 @@ class CCodeGenerator(CodeGenerator):
 
         body = ["// What component?"]
         body.append("switch (id)")
+        componentwise_dy_body.append("")
         componentwise_dy_body.append("default:")
-        componentwise_dy_body.append([\
-            "throw std::runtime_error(\"Index out of bounds\");", "return 0.0"])
+        default_lines = []
+        if self.language == "C++":
+            default_lines.append("throw std::runtime_error(\"Index out of bounds\")")
+        else:
+            default_lines.append("// Throw an exception...")
+        default_lines.append("return 0.0")
+        componentwise_dy_body.append(default_lines)
         body.append(componentwise_dy_body)
         
         return body
 
-    def linearized_dy_body(self, parameters_in_signature=False, result_name="dy"):
+
+    def dy_componentwise_code(self, indent=0):
+
+        body_lines = self.dy_componentwise_body()
+
+        # Add function prototype
+        args = "unsigned int id, " + self.args()
+        componentwise_function = self.wrap_body_with_function_prototype(\
+            body_lines, "componentwise", args, \
+            "double", "Compute componentwise rhs {0}".format(self.oderepr.name))
+        
+        return "\n".join(self.indent_and_split_lines(\
+            componentwise_function, indent=indent))
+
+    def linearized_dy_body(self, result_name="values"):
         oderepr = self.oderepr
         ode = oderepr.ode
 
@@ -1142,7 +1145,7 @@ class CCodeGenerator(CodeGenerator):
                         state_name, ind))
         
         # Add parameters code if not numerals
-        if parameters_in_signature and \
+        if self.params.parameters_in_signature and \
                not self.oderepr.optimization.parameter_numerals:
             body_lines.append("")
             body_lines.append("// Assign parameters")
@@ -1176,10 +1179,69 @@ class CCodeGenerator(CodeGenerator):
 
         return body_lines
 
+    def linearized_dy_code(self, indent=0, result_name="values"):
+
+        body_lines = self.linearized_dy_body(result_name)
+
+        # Add function prototype
+        linearized_function = self.wrap_body_with_function_prototype(\
+            body_lines, "linearized_derivatives", self.args(result_name), \
+            "", "Compute linearized derivatives {0}".format(self.oderepr.name))
+        
+        return "\n".join(self.indent_and_split_lines(\
+            linearized_function, indent=indent))
+
+    def code_list(self, indent=0):
+        
+        code = [self.init_param_code(indent),
+                self.init_states_code(indent),
+                self.dy_code(indent),
+                self.monitored_code(indent),
+                self.dy_componentwise_code(indent),
+                self.linearized_dy_code(indent),
+                ]
+
+        if self.oderepr.optimization.generate_jacobian:
+            code += [self.jacobian_code(indent)]
+
+        return code
+
+    def module_code(self):
+        
+        code_list = self.code_list()
+
+        return  """// Gotran generated code for the "{0}" model
+
+{1}
+""".format(self.oderepr.ode.name, "\n\n".join(code_list))
+
 class CppCodeGenerator(CCodeGenerator):
     
+    language = "C++"
+
     # Class attributes
     to_code = lambda a,b,c : cppcode(b,c)
+
+    def class_code(self):
+        """
+        Generate class code
+        """
+
+        name = self.oderepr.class_name
+
+        code_list = self.code_list(indent=2)
+
+        return  """
+// Gotran generated class for the "{0}" model        
+class {1}
+{{
+
+public:
+
+{2}
+
+}};
+""".format(name, self.oderepr.class_name, "\n\n".join(code_list))
 
 class MatlabCodeGenerator(CodeGenerator):
     """

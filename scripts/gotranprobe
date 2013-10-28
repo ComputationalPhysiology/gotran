@@ -2,30 +2,47 @@
 # -*- coding: utf-8 -*-
 
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-05-07 -- 2013-05-07"
+__date__ = "2013-05-07 -- 2013-10-23"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
 from gotran import *
+from gotran.model import Intermediate
 
 def main(filename, params):
 
+    set_log_level(WARNING)
     ode = load_ode(filename)
+    set_log_level(INFO)
 
-    print "Information of", ode.name, "Gotran model"
-    if params.list_states:
-        print "States:", ", ".join(state.name for state in ode.states)
-    if params.list_parameters:
-        print "Parameters:", ", ".join(param.name for param in ode.parameters)
-
+    print "Information of '{0}' Gotran model".format(ode.name)
+    
+    if params.flat_view:
+        print "  States:        ", ", ".join(state.name for state in ode.states)
+        print "  Parameters:    ", ", ".join(param.name for param in ode.parameters)
+        print "  Intermediates: ", ", ".join(interm.name for interm in ode.intermediates \
+                                           if isinstance(interm, Intermediate))
+    else:
+        for comp in ode.components.values():
+            if comp.states or comp.parameters or comp.intermediates:
+                print "\n  {0}:".format(comp.name)
+                if comp.states:
+                    print "    States:        ", ", ".join(\
+                        state.name for state in comp.states.values())
+                if comp.parameters:
+                    print "    Parameters:    ", ", ".join(\
+                        param.name for param in comp.parameters.values())
+                if comp.intermediates:
+                    print "    Intermediates: ", ", ".join(\
+                        interm.name for interm in comp.intermediates \
+                        if isinstance(interm, Intermediate))
 
 if __name__ == "__main__":
     import sys, os
     from modelparameters.parameterdict import *
     
     params = ParameterDict(\
-        list_states = Param(True, description="List states in model."),\
-        list_parameters = Param(True, description="List states in model."),\
+        flat_view = Param(True, description="List all objects in a flat view"),\
         )
     params.parse_args(usage="usage: %prog FILE [options]")
     

@@ -27,7 +27,10 @@ def main(filename, params):
     oderepr = ODERepresentation(ode, **params.copy(True))
 
     # Create a C code generator
-    gen = CCodeGenerator(oderepr)
+    code_params = CCodeGenerator.default_params()
+    code_params.rhs_args = params.rhs_args
+
+    gen = CCodeGenerator(oderepr, code_params)
 
     output = params.output
 
@@ -38,16 +41,9 @@ def main(filename, params):
         output = filename.replace(".ode", "")+".h"
 
     f = open(output, "w")
-    f.write("// Gotran generated code for: " + ode.name + "\n\n")
-    f.write("#include \"math.h\"\n\n")
-    f.write(gen.init_states_code() + "\n\n")
-    f.write(gen.init_param_code() + "\n\n")
-    f.write(gen.dy_code(rhs_args=params.rhs_args, \
-                        parameters_in_signature=True) + "\n\n")
+    f.write("#include \"math.h\"\n")
+    f.write(gen.module_code())
 
-    if params.generate_jacobian:
-        f.write(gen.jacobian_code(rhs_args=params.rhs_args, \
-                                  parameters_in_signature=True))
 
 if __name__ == "__main__":
     import sys

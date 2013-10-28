@@ -1685,7 +1685,7 @@ class ODE(object):
         def_list += [repr(variable.param) for variable in self.variables] 
         def_list += [str(intermediate.expr) if isinstance(intermediate, Expression) \
                      else str(intermediate) for intermediate in self.intermediates]
-        def_list += [str(monitor) for monitor in self.monitored_intermediates]
+        def_list += [repr(monitor) for monitor in self.monitored_intermediates.values()]
         def_list += [str(expr) for expr in self.get_derivative_expr()]
 
         h = hashlib.sha1()

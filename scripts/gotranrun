@@ -3,7 +3,7 @@
 
 from __future__ import division
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-03-13 -- 2013-06-30"
+__date__ = "2013-03-13 -- 2013-10-28"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -22,6 +22,28 @@ def main(filename, params):
     
     # Compile executeable code from gotran ode
     ode = load_ode(filename)
+    
+    # Handle monitored
+    # Clear all stored monitored
+    if ode._monitored_intermediates:
+        warning("Clearing all information about monitored intermediates. "\
+                "Use option --monitor instead.")
+        ode._monitored_intermediates.clear()
+        
+    monitored = params.monitor
+
+    # Remove default value
+    if "" in monitored:
+        monitored.remove("")
+
+    # Add the monitored to the ode model
+    for monitor in monitored:
+        obj = ode.get_intermediate(monitor)
+        if obj is None:
+            raise RuntimeError("'{0}' is not an intermediate in this ode".format(monitor))
+        
+        ode.add_monitored(obj.name)
+    
     module = compile_module(ode, rhs_args="stp", **code_params)
 
     parameters = params.parameters
@@ -68,23 +90,38 @@ def main(filename, params):
 
     # Plot results
     plot_states = params.plot_states
-    if not plot_states:
-        return 
+
+    if not (plot_states or monitored):
+        return
+    
     plot_inds = [module.state_indices(state) for state in plot_states]
     plot_results = [[] for state in plot_states]
     
-    for res in results:
+    monitored_values = [[] for monitor in monitored]
+    
+    for time, res in zip(tsteps, results):
         for ind, plot_ind in enumerate(plot_inds):
             plot_results[ind].append(res[plot_ind])
 
+        if monitored:
+            for ind, value in enumerate(module.monitor(res, time, model_params)):
+                monitored_values[ind].append(value)
+
+    # Build plot arguments
     plot_args = []
     for plot_result in plot_results:
         plot_args.append(tsteps)
         plot_args.append(np.array(plot_result))
+
+    for plot_result in monitored_values:
+        plot_args.append(tsteps)
+        plot_args.append(np.array(plot_result))
+
     pylab.plot(*plot_args)
-    pylab.legend([latex(state) for state in plot_states])
+    pylab.legend(["$\\mathrm{{{0}}}$".format(latex(value))
+                  for value in plot_states + monitored])
     pylab.xlabel("time")
-    #pylab.title(ode.name)
+    pylab.title(ode.name.replace("_", "\\_"))
     pylab.show()
 
 if __name__ == "__main__":
@@ -105,6 +142,7 @@ if __name__ == "__main__":
         tstop = ScalarParam(100., gt=0, description="Time for stopping simulation"),\
         dt_plot = ScalarParam(0.1, gt=0, description="Timestep for plotting."),\
         plot_states = Param(["V"], description="States to plot."),\
+        monitor = Param([""], description="Plot monitored intermediates"),\
         use_jacobian = Param(True, description="Use analytic jacobian when integrating."),\
         code = code_params)
     params.parse_args(usage="usage: %prog FILE [options]")

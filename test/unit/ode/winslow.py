@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2013-10-04"
+__date__ = "2012-05-07 -- 2013-10-28"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -746,16 +746,16 @@ class Creation(unittest.TestCase):
         
         keep, use_cse, numerals, use_names = (1,0,0,1)
 
+        self.ode.add_monitored("I_Na")
+        self.ode.add_monitored("I_NaCa")
+
         gen = CodeGenerator(ODERepresentation(self.ode,
                                               keep_intermediates=keep, \
                                               use_cse=use_cse,
                                               parameter_numerals=numerals,\
                                               use_names=use_names))
 
-        exec(gen.init_states_code())
-        exec(gen.init_param_code())
-        exec(gen.dy_code())
-        exec(gen.jacobian_code())
+        exec(gen.module_code())
         
         parameters = default_parameters()
         states = init_values()
@@ -763,6 +763,8 @@ class Creation(unittest.TestCase):
         dy_correct = rhs(states, 0.0, parameters)
         jac_correct = jacobian(states, 0.0, parameters)
         c_jacobian = np.asarray(jac_correct).copy()
+        monitor_correct = monitor(states, 0.0, parameters)
+        c_monitor = np.asarray(monitor_correct).copy()
 
         for keep, use_cse, numerals, use_names in \
                 [(1,0,0,1), (1,0,0,0), \
@@ -771,31 +773,62 @@ class Creation(unittest.TestCase):
                  (0,0,1,1), (0,0,1,0), \
                  (0,1,0,1), (0,1,0,0), \
                  (0,1,1,1), (0,1,1,0)]:
-
+        
             oderepr = ODERepresentation(self.ode,
                                         keep_intermediates=keep, \
                                         use_cse=use_cse,
                                         parameter_numerals=numerals,\
                                         use_names=use_names)
+        
+            for rhs_args in ['tsp', 'stp', 'spt']:
 
-            python_gen = compile_module(oderepr, language="Python")
-            c_gen = compile_module(oderepr, language="C")
+                python_gen = compile_module(oderepr, language="Python", \
+                                            rhs_args=rhs_args)
+                c_gen = compile_module(oderepr, language="C", rhs_args=rhs_args)
+
+                if numerals:
+                    if rhs_args in ['stp', 'spt']:
+                        python_dy_eval = python_gen.rhs(states, 0.0)
+                        c_gen.rhs(states, 0.0, c_dy_eval)
+                        python_jacobian = python_gen.jacobian(states, 0.0)
+                        c_gen.jacobian(states, 0.0, c_jacobian)
+                        python_monitor = python_gen.monitor(states, 0.0)
+                        c_gen.monitor(states, 0.0, c_monitor)
+                    else:
+                        python_dy_eval = python_gen.rhs(0.0, states)
+                        c_gen.rhs(0.0, states, c_dy_eval)
+                        python_jacobian = python_gen.jacobian(0.0, states)
+                        c_gen.jacobian(0.0, states, c_jacobian)
+                        python_monitor = python_gen.monitor(0.0, states)
+                        c_gen.monitor(0.0, states, c_monitor)
+                        
+                else:
+                    
+                    args = []
+
+                    for rhs_arg in rhs_args:
+                        if rhs_arg == "t":
+                            args.append(0.0)
+                        elif rhs_arg == "s":
+                            args.append(states)
+                        else:
+                            args.append(parameters)
+
+                    python_dy_eval = python_gen.rhs(*args)
+                    c_dy_eval = c_gen.rhs(*args)
+                    python_jacobian = python_gen.jacobian(*args)
+                    c_gen.jacobian(*(args + [c_jacobian]))
+                    python_monitor = python_gen.monitor(*args)
+                    c_monitor = c_gen.monitor(*args)
             
-            if numerals:
-                python_dy_eval = python_gen.rhs(states, 0.0)
-                c_gen.rhs(states, 0.0, c_dy_eval)
-                python_jacobian = python_gen.jacobian(states, 0.0)
-                c_gen.jacobian(states, 0.0, c_jacobian)
-            else:
-                python_dy_eval = python_gen.rhs(states, 0.0, parameters)
-                c_gen.rhs(states, 0.0, parameters, c_dy_eval)
-                python_jacobian = python_gen.jacobian(states, 0.0, parameters)
-                c_gen.jacobian(states, 0.0, parameters, c_jacobian)
-
-            self.assertTrue(np.sum(np.abs((c_dy_eval - dy_correct))) < 1e-12)
-            self.assertTrue(np.sum(np.abs((python_dy_eval - dy_correct))) < 1e-12)
-            self.assertTrue(np.sum(np.abs((c_jacobian - jac_correct))) < 1e-12)
-            self.assertTrue(np.sum(np.abs((python_jacobian - jac_correct))) < 1e-12)
+                self.assertTrue(np.sum(np.abs((c_dy_eval - dy_correct))) < 1e-12)
+                self.assertTrue(np.sum(np.abs((python_dy_eval - dy_correct))) < 1e-12)
+            
+                self.assertTrue(np.sum(np.abs((c_jacobian - jac_correct))) < 1e-12)
+                self.assertTrue(np.sum(np.abs((python_jacobian - jac_correct))) < 1e-12)
+                
+                self.assertTrue(np.sum(np.abs((c_monitor - monitor_correct))) < 1e-12)
+                self.assertTrue(np.sum(np.abs((python_monitor - monitor_correct))) < 1e-12)
             
     def test_matlab_python_code(self):
         from gotran.codegeneration.codegenerator import \
