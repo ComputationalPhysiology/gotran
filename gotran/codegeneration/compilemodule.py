@@ -158,6 +158,29 @@ import_array();
   
 }}
 
+%typemap(in) (double* monitored)
+{{
+  // Check type
+  if (!PyArray_Check($input))
+    SWIG_exception(SWIG_TypeError, "Numpy array expected");
+
+  // Get PyArrayObject
+  PyArrayObject *xa = (PyArrayObject *)$input;
+
+  // Check data type
+  if (!(PyArray_ISCONTIGUOUS(xa) && PyArray_TYPE(xa) == NPY_DOUBLE))
+    SWIG_exception(SWIG_TypeError, "Contigous numpy array of doubles expected."
+           " Make sure the numpy array is contiguous, and uses dtype=float_.");
+
+  // Check size of passed array
+  if ( PyArray_SIZE(xa) != {num_monitored} )
+    SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
+             "{num_monitored}, for the monitored argument.");
+  
+  $1 = (double *)PyArray_DATA(xa);
+  
+}}
+
 // The typecheck
 %typecheck(SWIG_TYPECHECK_DOUBLE_ARRAY) double *
 {{
@@ -194,6 +217,8 @@ def rhs({args}, dy=None):
 %rename (_rhs) rhs;
 
 {jacobian_declaration}
+
+{monitor_declaration}
 """
 
 _jacobian_declaration = """
@@ -229,6 +254,33 @@ def jacobian({args}, jac=None):
 """
 
 
+_monitor_declaration = """
+%pythoncode%{{
+def monitor({args}, monitored=None):
+    '''
+    Evaluates any monitored intermediates of the model
+
+    Arguments:
+    ----------
+{args_doc}    
+    monitored : np.ndarray (optional)
+        The computed result 
+    '''
+    import numpy as np
+    if monitored is None:
+        monitored = np.zeros({num_monitored}, dtype=np.float_)
+    elif not isinstance(monitored, np.ndarray):
+        raise TypeError(\"expected a NumPy array.\")
+    elif len(monitored) != {num_monitored}:
+        raise ValueError(\"expected a numpy array of size: {num_monitored}\")
+    
+    _monitor({args}, monitored)
+    return monitored
+%}}
+
+// Rename monitor to _monitor
+%rename (_monitor) monitor;
+"""
 
 def compile_module(ode, rhs_args="stp", language="C", **options):
 
@@ -259,6 +311,7 @@ def compile_module(ode, rhs_args="stp", language="C", **options):
     # Create unique module name for this application run
     modulename = "gotran_python_module_{0}_{1}".format(\
         oderepr.class_name, hashlib.sha1(repr(oderepr.signature()) + \
+                                         rhs_args + \
                                          gotran.__version__ + \
                                          instant.__version__).hexdigest())
     
@@ -268,10 +321,10 @@ def compile_module(ode, rhs_args="stp", language="C", **options):
         return getattr(python_module, oderepr.class_name)()
 
     # No module in cache generate python version
-    pgen = CodeGenerator(oderepr)
+    pgen = CodeGenerator(oderepr, dict(rhs_args=rhs_args))
 
     # Generate class code, execute it and collect namespace
-    code = "from __future__ import division\n" + pgen.class_code(rhs_args)
+    code = "from __future__ import division\n" + pgen.class_code()
 
     # Make a temporary module path for compilation
     module_path = os.path.join(instant.get_temp_dir(), modulename)
@@ -336,15 +389,17 @@ def compile_extension_module(oderepr, rhs_args):
     args = ", ".join(args)
     args_doc = "\n".join(args_doc)
 
-    pgen = CodeGenerator(oderepr)
-    cgen = CCodeGenerator(oderepr)
+    pgen = CodeGenerator(oderepr, dict(rhs_args=rhs_args))
 
-    code = cgen.dy_code(rhs_args=rhs_args, \
-                        parameters_in_signature=True)
+    cparam = dict(rhs_args=rhs_args, \
+                  parameters_in_signature=True)
+
+    cgen = CCodeGenerator(oderepr, cparam)
+    code = cgen.dy_code()
+    code += "\n\n" + cgen.monitored_code()
     
     if oderepr.optimization.generate_jacobian:
-        code += "\n\n" + cgen.jacobian_code(rhs_args=rhs_args, \
-                                            parameters_in_signature=True)
+        code += "\n\n" + cgen.jacobian_code()
 
         jacobian_declaration = _jacobian_declaration.format(\
             num_states = oderepr.ode.num_states,
@@ -370,10 +425,17 @@ def compile_extension_module(oderepr, rhs_args):
     declaration_form = dict(\
         num_states = oderepr.ode.num_states,
         num_parameters = oderepr.ode.num_parameters,
+        num_monitored = oderepr.ode.num_monitored_intermediates,
         python_code = pcode,
         args=args,
         args_doc=args_doc,
         jacobian_declaration=jacobian_declaration,
+        monitor_declaration=_monitor_declaration.format(\
+            num_states = oderepr.ode.num_states,
+            num_monitored = oderepr.ode.num_monitored_intermediates,
+            args=args,
+            args_doc=args_doc,
+            )
         )
     
     # Compile extension module with instant

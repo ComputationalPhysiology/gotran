@@ -38,16 +38,12 @@ def main(filename, params):
         output = filename.replace(".ode", "")+".h"
 
     f = open(output, "w")
-    f.write("// Gotran generated code for: " + ode.name + "\n\n")
-    f.write("#include <cmath>\n\n")
-    f.write(gen.init_states_code() + "\n\n")
-    f.write(gen.init_param_code() + "\n\n")
-    f.write(gen.dy_code(rhs_args=params.rhs_args, \
-                        parameters_in_signature=True) + "\n\n")
-
-    if params.generate_jacobian:
-        f.write(gen.jacobian_code(rhs_args=params.rhs_args, \
-                                  parameters_in_signature=True))
+    f.write("#include <stdexcept>\n")
+    f.write("#include <cmath>\n")
+    if params.generate_class:
+        f.write(gen.class_code())
+    else:
+        f.write(gen.module_code())
 
 if __name__ == "__main__":
     import sys
@@ -57,6 +53,7 @@ if __name__ == "__main__":
                               "generate_linearized_evaluation",
                               "generate_forward_backward_subst"])
     params = ParameterDict(\
+        generate_class = Param(True, description="Generate C++ class"),\
         rhs_args = OptionParam("stp", ["tsp", "stp", "spt"], \
                 description="Argument order of the generated rhs function. "\
                                "s=states, p=parameters, t=time"),

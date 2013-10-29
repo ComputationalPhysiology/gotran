@@ -27,7 +27,10 @@ def main(filename, params):
     oderepr = ODERepresentation(ode, **params.copy(True))
 
     # Create a python code generator
-    gen = CodeGenerator(oderepr)
+    code_params = CodeGenerator.default_params()
+    code_params.rhs_args = params.rhs_args
+    
+    gen = CodeGenerator(oderepr, code_params)
 
     output = params.output
 
@@ -38,15 +41,8 @@ def main(filename, params):
         output = filename.replace(".ode", "")+".py"
 
     f = open(output, "w")
-    f.write("# Gotran generated code for: " + ode.name + "\n\n")
-    f.write("from __future__ import division\n\n")
-    f.write(gen.init_states_code() + "\n\n")
-    f.write(gen.init_param_code() + "\n\n")
-    f.write(gen.dy_code(params.rhs_args) + "\n\n")
-    f.write(gen.state_name_to_index_code() + "\n\n")
-    f.write(gen.param_name_to_index_code() + "\n\n")
-    if ode.num_monitored_intermediates:
-        f.write(gen.monitored_code() + "\n\n")
+    f.write(gen.module_code())
+
 
 if __name__ == "__main__":
     import sys

@@ -32,6 +32,8 @@ from gotran.model.ode import ODE
 from gotran.model.odecomponents import ODEComponent, Comment
 from gotran.common import check_arg, check_kwarg, info
 
+from sympy_cse import cse
+
 _jacobian_pattern = re.compile("_([0-9]+)")
 
 def _iszero(x):
@@ -212,10 +214,10 @@ class ODERepresentation(object):
         # If we use cse we extract the sub expressions here and cache
         # information
         self._cse_subs, self._cse_derivative_expr = \
-                sp.cse([self.subs(expr) \
-                        for der, expr in ode.get_derivative_expr(True)], \
-                       symbols=sp.numbered_symbols("cse_"), \
-                       optimizations=[])
+                cse([self.subs(expr) \
+                     for der, expr in ode.get_derivative_expr(True)], \
+                    symbols=sp.numbered_symbols("cse_"), \
+                    optimizations=[])
         
         cse_counts = [[] for i in range(len(self._cse_subs))]
         for i in range(len(self._cse_subs)):
@@ -256,7 +258,7 @@ class ODERepresentation(object):
                     pass
         
         self._cse_monitored_subs, self._cse_monitored_expr = \
-                    sp.cse([self.subs(obj.expanded_expr) \
+                    cse([self.subs(obj.expanded_expr) \
                         for obj in ode.monitored_intermediates.values()], \
                            symbols=sp.numbered_symbols("cse_monitored_"), \
                            optimizations=[])
@@ -345,7 +347,7 @@ class ODERepresentation(object):
         # If we use cse we extract the sub expressions here and cache
         # information
         self._cse_jacobian_action_subs, self._cse_jacobian_action_expr = \
-                sp.cse([self.subs(expr) \
+                cse([self.subs(expr) \
                         for expr in self._jacobian_action_expr], \
                        symbols=sp.numbered_symbols("cse_jacobian_action_"), \
                        optimizations=[])
@@ -385,7 +387,7 @@ class ODERepresentation(object):
         # If we use cse we extract the sub expressions here and cache
         # information
         self._cse_jacobian_subs, self._cse_jacobian_expr = \
-                sp.cse([self.subs(expr) \
+                cse([self.subs(expr) \
                         for expr in self._jacobian_expr.values()], \
                        symbols=sp.numbered_symbols("cse_jacobian_"), \
                        optimizations=[])
@@ -629,7 +631,7 @@ class ODERepresentation(object):
         # Iterate over the derivative terms and collect information
         for i, (ders, expr) in enumerate(ode.get_derivative_expr(True)):
             cse_subs, cse_derivative_expr = \
-                      sp.cse(self.subs(expr), \
+                      cse(self.subs(expr), \
                              symbols=sp.numbered_symbols("cse_der_{0}_".format(i)),\
                              optimizations=[])
             self._cse_subs_single_dy.append(cse_subs)
@@ -638,10 +640,10 @@ class ODERepresentation(object):
         info(" done")
         info("Calculating common sub expressions for linearized ODE. May take some time...")
         self._cse_linearized_subs, self._cse_linearized_derivative_expr = \
-                                   sp.cse([self.subs(expr) \
-                                           for expr in self._linearized_exprs.values()], \
-                                          symbols=sp.numbered_symbols("cse_linear_"), \
-                                          optimizations=[])
+                                   cse([self.subs(expr) \
+                                        for expr in self._linearized_exprs.values()], \
+                                       symbols=sp.numbered_symbols("cse_linear_"), \
+                                       optimizations=[])
 
         info(" done")
         
