@@ -16,14 +16,18 @@
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
 __all__ = ["ODEObject", "ODEValueObject", "Parameter", "State", \
-           "StateDerivative", "Variable", "SingleODEObjects", "Time", "Dt"]
+           "SingleODEObjects", "Time", "Dt", "Expression", \
+           "DerivativeExpression"]
 
 # System imports
 import numpy as np
 from collections import OrderedDict
+from sympy.core.function import AppliedUndef
 
 # ModelParameters imports
-from modelparameters.sympytools import sp, iter_symbol_params_from_expr
+from modelparameters.sympytools import sp, symbols_from_expr, \
+     iter_symbol_params_from_expr
+from modelparameters.codegeneration import sympycode
 from modelparameters.parameters import *
 
 from gotran.common import error, check_arg, scalars, debug, DEBUG, \
@@ -33,6 +37,7 @@ class ODEObject(object):
     """
     Base container class for all ODEObjects
     """
+    __count = 0 
     def __init__(self, name):
         """
         Create ODEObject instance
@@ -46,6 +51,13 @@ class ODEObject(object):
         check_arg(name, str, 0, ODEObject)
         self._name = self._check_name(name)
 
+        # Unique identifyer
+        self._hash = ODEObject.__count
+        ODEObject.__count += 1
+
+    def __hash__(self):
+        return self._hash
+
     def __eq__(self, other):
         """
         x.__eq__(y) <==> x==y
@@ -54,7 +66,7 @@ class ODEObject(object):
         if not isinstance(other, type(self)):
             return False
         
-        return self._name == str(other)
+        return self._hash == other._hash
 
     def __ne__(self, other):
         """
@@ -64,7 +76,7 @@ class ODEObject(object):
         if not isinstance(other, type(self)):
             return True
         
-        return self._name != str(other)
+        return self._hash != other._hash
 
     def __str__(self):
         """
@@ -194,7 +206,7 @@ class ODEValueObject(ODEObject):
         """
         Return a formated str of __init__ arguments
         """
-        return "'{0}', {1}{2}".format(\
+        return "'{0}', {1}".format(\
             self.name, repr(self._param.getvalue()))
 
 class State(ODEValueObject):
@@ -211,7 +223,7 @@ class State(ODEValueObject):
             The name of the State
         init : scalar, ScalarParam
             The initial value of this state
-        time : Variable
+        time : Time
             The time variable
         """
         
@@ -240,7 +252,7 @@ class State(ODEValueObject):
         Return a formated str of __init__ arguments
         """
         return "'{0}', {1}, {2}".format(\
-            self.name, repr(self._param.copy(include_name=False)), self.time)
+            self.name, repr(self._param.copy(include_name=False)), repr(self.time))
 
     def toggle_field(self):
         """
@@ -324,43 +336,123 @@ class Parameter(ODEValueObject):
                                 self._param._check_arg(), \
                                 self._param._name_arg()))
     
-class Variable(ODEValueObject):
+class Time(ODEValueObject):
     """
-    Container class for a Variable
+    Specialization for a Time class
     """
-    def __init__(self, name, init):
-        """
-        Create a variable with an assosciated initial value
-
-        Arguments
-        ---------
-        name : str
-            The name of the variable
-        init : scalar
-            The initial value of this variable
-        """
-        
-        # Call super class
-        super(Variable, self).__init__(name, init)
+    def __init__(self, name, unit="ms"):
+        super(Time, self).__init__(name, ScalarParam(0.0, unit=unit))
 
         # Add previous value symbol
         self.sym_0 = sp.Symbol("{0}_0".format(name))
 
-    init = ODEValueObject.value
-
-class Time(Variable):
-    """
-    Specialization for a Time class
-    """
-    def __init__(self, name):
-        super(Time, self).__init__(name, 0.0)
-
-class Dt(Variable):
+class Dt(ODEValueObject):
     """
     Specialization for a time step class
     """
     def __init__(self, name):
         super(Dt, self).__init__(name, 0.1)
     
+
+class Expression(ODEValueObject):
+    """
+    class for all expressions such as intermediates and derivatives
+    """
+    def __init__(self, name, expr):
+        """
+        Create an Exression with an assosciated name
+
+        Arguments
+        ---------
+        name : str
+            The name of the Expression
+        expr : sympy.Basic
+            The expression 
+        """
+
+        # Check arguments
+        from gotran.model.ode import ODE
+        check_arg(expr, scalars + (sp.Basic,), 1, Expression)
+        
+        expr = sp.sympify(expr)
+
+        # Deal with Subs in sympy expression
+        for sub_expr in expr.atoms(sp.Subs):
+
+            # deal with one Subs at a time
+            subs = dict((key,value) for key, value in \
+                    zip(sub_expr.variables, sub_expr.point))
+
+            expr =  expr.subs(sub_expr, sub_expr.expr.xreplace(subs))
+
+        if not symbols_from_expr(expr, include_numbers=True):
+            error("expected the expression to contain at least one "\
+                  "Symbol or Number.")
+
+        # Collect dependent symbols
+        self.dependent = tuple(symbols_from_expr(expr))
+
+        # Call super class with expression as the "value"
+        super(Expression, self).__init__(name, expr)
+        
+    @property
+    def expr(self):
+        """
+        Return the stored expression
+        """
+        return self._param.expr
+
+    @property
+    def sym(self):
+        """
+        """
+        if self.dependent:
+            return self._param.sym(*self.dependent)
+        else:
+            return self._param.sym
+
+class DerivativeExpression(Expression):
+    """
+    Sub class for all derivative expressions
+    """
+    def __init__(self, der_expr, dep_var, expr):
+        """
+        Create a DerivativeExpression 
+
+        Arguments
+        ---------
+        der_expr : Expression, State
+            The Expression or State which is differentiated
+        dep_var : State, Time, Expression
+            The dependent variable
+        expr : sympy.Basic
+            The expression which the differetiation should be equal
+        """
+        check_arg(der_expr, (State, Expression), 0, DerivativeExpression)
+        check_arg(dep_var, (State, Expression, Time), 1, DerivativeExpression)
+
+        # Check that the der_expr is dependent on var
+        if dep_var.sym not in der_expr.sym:
+            error("Cannot create a DerivativeExpression as {0} is not "\
+                  "dependent on {1}".format(der_expr, dep_var))
+        
+        self._sym = sp.Derivative(der_expr.sym, dep_var.sym)
+        self._der_expr = der_expr
+        self._dep_var = dep_var
+
+        super(DerivativeExpression, self).__init__(sympycode(self._sym), expr)
+
+    @property
+    def sym(self):
+        return self._sym
+
+    @property
+    def der_expr(self):
+        return self._der_expr
+
+    @property
+    def der_var(self):
+        return self._der_var
+
 # Tuple with single ODE Objects, for type checking
-SingleODEObjects = (State, StateDerivative, Parameter, Variable, Time)
+SingleODEObjects = (State, Parameter, Time)
