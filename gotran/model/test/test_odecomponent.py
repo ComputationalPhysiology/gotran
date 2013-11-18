@@ -45,7 +45,7 @@ class TestODEComponent(unittest.TestCase):
         ode.dj_dt = -ode.alpha - jj
         ode.dk_dt = kk*k*ode.alpha
 
-        self.assertEqual(ode.num_intermediates, 1)
+        self.assertEqual(ode.num_intermediates, 4)
 
         # Add a component with 2 states
         jada = ode.add_component("jada")
@@ -72,7 +72,7 @@ class TestODEComponent(unittest.TestCase):
         # Reduce state n
         jada.add_solve_state(jada.n, 1-jada.l-jada.m-jada.n)
 
-        self.assertEqual(ode.num_intermediates, 4)
+        self.assertEqual(ode.num_intermediates, 8)
 
         # Create a derivative expression
         ode.add_comment("More funky objects")
@@ -80,7 +80,7 @@ class TestODEComponent(unittest.TestCase):
         jada.add_derivative(jada.l, ode.t, jada.tmp3)
         jada.add_algebraic(jada.o, jada.o**2-exp(jada.o)+2/jada.o)
 
-        self.assertEqual(ode.num_intermediates, 9)
+        self.assertEqual(ode.num_intermediates, 15)
         self.assertEqual(ode.num_state_expressions, 6)
         self.assertTrue(ode.is_complete)
 

@@ -392,12 +392,15 @@ class ODEComponent(ODEObject):
                 error("{0} is not registered in this ODE".format(name))
             dep_var = dep_var[0]
 
-        # Additional checks if der_expr is a State
+        # Check if der_expr is a State
         if isinstance(der_expr, State):
             self._expect_state(der_expr)
+            obj = StateDerivative(der_expr, expr)
 
-        # Create a DerivativeExpression in the present component
-        obj = DerivativeExpression(der_expr, dep_var, expr)
+        else:
+            
+            # Create a DerivativeExpression in the present component
+            obj = DerivativeExpression(der_expr, dep_var, expr)
 
         self._register_component_object(obj)
 
@@ -523,7 +526,7 @@ class ODEComponent(ODEObject):
         """
 
         # Create an Intermediate in the present component
-        expr = Expression(name, expr)
+        expr = Intermediate(name, expr)
 
         self._register_component_object(expr)
 
@@ -565,16 +568,16 @@ class ODEComponent(ODEObject):
         """
         Return a list of all intermediates
         """
-        return [obj for obj in iter_objects(self, False, False, False, Expression)\
-                if not obj.is_state_expression]
+        return [obj for obj in iter_objects(self, False, False, False, \
+                                            Intermediate)]
 
     @property
     def state_expressions(self):
         """
         Return a list of state expressions
         """
-        return [obj for obj in iter_objects(self, False, False, False, Expression)\
-                if obj.is_state_expression]
+        return [obj for obj in iter_objects(self, False, False, False, \
+                                            StateExpression)]
 
     @property
     def components(self):
@@ -813,11 +816,10 @@ class ODEComponent(ODEObject):
                                              obj.name))
 
         # Check for reserved wording of DerivativeExpressions
-        if not isinstance(obj, DerivativeExpression) and \
-               re.search(_derivative_name_template, obj.name):
+        if  re.search(_derivative_name_template, obj.name) \
+               and not isinstance(obj, Derivatives):
             error("The pattern d{{name}}_dt is reserved for derivatives. "
-                  "However {0} is not a DerivativeExpression.".format(\
-                      obj.name))
+                  "However {0} is not a Derivative.".format(obj.name))
 
         # Register symbol, overwrite any already excisting symbol
         self.__dict__[obj.name] = obj.sym
