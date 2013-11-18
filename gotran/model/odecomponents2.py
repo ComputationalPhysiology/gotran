@@ -924,8 +924,6 @@ class ODE(ODEComponent):
 
             dup_obj, dup_comp = duplication
 
-            print type(obj), type(dup_obj)
-
             # If State, Parameter or DerivativeExpression we always raise an error
             if isinstance(dup_obj, State) and isinstance(obj, StateSolution):
                 debug("Reduce state '{0}' to {1}".format(dup_obj, obj.expr))
@@ -956,10 +954,14 @@ class ODE(ODEComponent):
         if isinstance(obj, Expression):
 
             # Append the name to the list all_components
+            # FIXME: Add a better way of storing the last used component...
+            # FIXME: Combine that with a way for checking if a component is
+            # FIXME: complete or not
             _bubble_append(self.all_components_ordered, comp.name)
 
             # Expand and add any derivatives in the expressions
-            self._expand_derivatives(obj, comp)
+            for der_expr in obj.expr.atoms(sp.Derivative):
+                self._expand_single_derivative(comp, obj, der_expr)
 
             # Expand the Expression
             self.expanded_expressions[obj.name] = self._expand_expression(obj)
@@ -970,61 +972,50 @@ class ODE(ODEComponent):
                    self.object_used_in.get(obj.state):
                 error("A state solution cannot have been used previously.")
 
-    def _expand_derivatives(self, obj, comp):
+    def _expand_single_derivative(self, comp, obj, der_expr):
         """
-        Expand all derivatives (by applying the chain rule) and
-        register these as new derivative expression
+        Expand a single derivative and register it as new derivative expression
         """
 
-        der_exprs = obj.expr.atoms(sp.Derivative)
-        if not der_exprs:
-            return 
+        if not isinstance(der_expr.args[0], AppliedUndef):
+            error("Can only register Derivatives of allready registered "\
+            "Expressions. Got: {0}".format(sympycode(der_expr.args[0])))
 
-        # Iterate over all derivative expressions
-        for der_expr in der_exprs:
+        if not isinstance(der_expr.args[1], (AppliedUndef, sp.Symbol)):
+            error("Can only register Derivatives with a single dependent "\
+                  "variabe. Got: {0}".format(sympycode(der_expr.args[1])))
 
-            if not isinstance(der_expr.args[0], AppliedUndef):
-                error("Can only register Derivatives of allready registered "\
-                "Expressions. Got: {0}".format(sympycode(der_expr.args[0])))
+        # Try accessing already registered derivative expressions
+        der_expr_obj = self.present_ode_objects.get(sympycode(der_expr))
 
+        # If excist continue
+        if der_expr_obj:
+            return
 
-            if not isinstance(der_expr.args[1], (AppliedUndef, sp.Symbol)):
-                error("Can only register Derivatives with a single dependent "\
-                      "variabe. Got: {0}".format(sympycode(der_expr.args[1])))
+        # Get the expr and dependent variable objects
+        expr_obj = self.present_ode_objects[sympycode(der_expr.args[0])][0]
+        var_obj = self.present_ode_objects[sympycode(der_expr.args[1])][0]
 
-            # Try accessing already registered derivative expressions
-            der_expr_obj = self.present_ode_objects.get(sympycode(der_expr))
+        # If the dependent variable is time and the expression is a state
+        # variable we raise an error as the user should already have created
+        # the expression.
+        if isinstance(expr_obj, State) and var_obj == self._time:
+            error("The expression {0} is dependent on the state "\
+                  "derivative of {1} which is not registered in this ODE."\
+                  .format(obj, expr_obj))
 
-            # If excist continue
-            if der_expr_obj:
-                continue
+        if not isinstance(expr_obj, Expression):
+            error("Can only differentiate expressions or states. Got {0} as "\
+                  "the derivative expression.".format(expr_obj))
+            
+        # If we get a Derivative(expr, t) we issue an error
+        if isinstance(expr_obj, Expression) and var_obj == self._time:
+            error("All derivative expressions of registered expressions "\
+                  "need to be expanded with respect to time. Use "\
+                  "expr.diff(t) instead of Derivative(expr, t) ")
 
-            # Get the expr and dependent variable objects
-            expr_obj = self.present_ode_objects[sympycode(der_expr.args[0])][0]
-            var_obj = self.present_ode_objects[sympycode(der_expr.args[1])][0]
-
-            # If the dependent variable is time and the expression is a state
-            # variable we raise an error as the user should already have created
-            # the expression.
-            if isinstance(expr_obj, State) and var_obj == self._time:
-                error("The expression {0} is dependent on the state "\
-                      "derivative of {1} which is not registered in this ODE."\
-                      .format(obj, expr_obj))
-
-            # If we get a Derivative(expr, t) we issue an error
-            if isinstance(expr_obj, Expression) and var_obj == self._time:
-                error("All derivative expressions of registered expressions "\
-                      "need to be expanded with respect to time. Use "\
-                      "expr.diff(t) instead of Derivative(expr, t) ")
-
-            # If the expr obj is an expression we perform the derivative and
-            # store the expression
-            if isinstance(expr_obj, Expression):
-                comp.add_derivative(expr_obj, var_obj, \
-                                    expr_obj.expr.diff(var_obj.sym))
-                continue
-
-            error("Should not reach here.")
+        # Store expression
+        comp.add_derivative(expr_obj, var_obj, expr_obj.expr.diff(var_obj.sym))
 
     def _expand_expression(self, obj):
 
