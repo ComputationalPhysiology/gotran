@@ -15,9 +15,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ["ODEObject", "ODEValueObject", "Parameter", "State", \
+__all__ = ["ODEObject", "Comment", "ODEValueObject", "Parameter", "State", \
            "SingleODEObjects", "Time", "Dt", "Expression", \
-           "DerivativeExpression"]
+           "DerivativeExpression", "AlgebraicExpression", \
+           "StateSolution", "RateDerivative", "RateExpression"]
 
 # System imports
 import numpy as np
@@ -37,7 +38,7 @@ class ODEObject(object):
     """
     Base container class for all ODEObjects
     """
-    __count = 0 
+    __count = 0
     def __init__(self, name):
         """
         Create ODEObject instance
@@ -62,20 +63,20 @@ class ODEObject(object):
         """
         x.__eq__(y) <==> x==y
         """
-        
+
         if not isinstance(other, type(self)):
             return False
-        
+
         return self._hash == other._hash
 
     def __ne__(self, other):
         """
         x.__neq__(y) <==> x==y
         """
-        
+
         if not isinstance(other, type(self)):
             return True
-        
+
         return self._hash != other._hash
 
     def __str__(self):
@@ -89,17 +90,17 @@ class ODEObject(object):
         x.__repr__() <==> repr(x)
         """
         return "{0}({1})".format(self.__class__.__name__, self._args_str())
-    
+
     @property
     def name(self):
         return self._name
-    
+
     def _args_str(self):
         """
         Return a formated str of __init__ arguments
         """
         return "'{0}'".format(self._name)
-    
+
     def rename(self, name):
         """
         Rename the ODEObject
@@ -119,8 +120,25 @@ class ODEObject(object):
         if len(name) > 0 and name[0] == "_":
             error("No ODEObject names can start with an underscore: "\
                   "'{0}'".format(name))
-            
+
         return name
+
+class Comment(ODEObject):
+    """
+    A Comment. To keep track of user comments in an ODE
+    """
+    def __init__(self, comment):
+        """
+        Create a comment
+
+        Arguments
+        ---------
+        comment : str
+            The comment
+        """
+
+        # Call super class
+        super(Comment, self).__init__(comment)
 
 class ODEValueObject(ODEObject):
     """
@@ -150,14 +168,16 @@ class ODEValueObject(ODEObject):
             # Re-create one with correct name
             value = value.copy(include_name=False)
             value.name = name
-            
+
         elif isinstance(value, scalars):
             value = ScalarParam(value, name=name)
-        
+
         elif isinstance(value, (list, np.ndarray)):
-            value = ArrayParam(np.fromiter(value, dtype=np.float_), name=name)
+            value = ArrayParam(value, name=name)
+
         elif isinstance(value, str):
             value = ConstParam(value, name=name)
+
         else:
             value = SlaveParam(value, name=name)
 
@@ -167,9 +187,9 @@ class ODEValueObject(ODEObject):
                 debug("{0}: {1} {2:.3f}".format(self.name, value.expr, value.value))
             else:
                 debug("{0}: {1}".format(name, value.value))
-            
+
             # Store the Param
-        self._param = value 
+        self._param = value
 
     def rename(self, name):
         """
@@ -181,7 +201,7 @@ class ODEValueObject(ODEObject):
         param = self._param.copy(include_name=False)
         param.name = name
         self._param = param
-        
+
     @property
     def value(self):
         return self._param.getvalue()
@@ -206,8 +226,8 @@ class ODEValueObject(ODEObject):
         """
         Return a formated str of __init__ arguments
         """
-        return "'{0}', {1}".format(\
-            self.name, repr(self._param.getvalue()))
+        return "'{0}', {1}".format(self.name, self._param.repr(\
+            include_name=False))
 
 class State(ODEValueObject):
     """
@@ -226,20 +246,21 @@ class State(ODEValueObject):
         time : Time
             The time variable
         """
-        
+
         # Call super class
         check_arg(init, scalars + (ScalarParam, list, np.ndarray), \
                   1, State)
-        
+
         super(State, self).__init__(name, init)
         check_arg(time, Time, 2)
 
         self.time = time
 
-        self.derivative = StateDerivative(self)
-
         # Add previous value symbol
         self.sym_0 = sp.Symbol("{0}_0".format(name))(time.sym)
+
+        # Flag to determine if State is solved or not
+        self._is_solved = False
 
     init = ODEValueObject.value
 
@@ -263,42 +284,18 @@ class State(ODEValueObject):
                                (self._param.value[0], \
                                 self._param._check_arg(), \
                                 self._param._name_arg()))
-        else:
+        elif not self.is_solved:
+            
             self._param = eval("ArrayParam(%s, 1%s%s)" % \
                                (self._param.value, \
                                 self._param._check_arg(), \
                                 self._param._name_arg()))
-            
-class StateDerivative(ODEValueObject):
-    """
-    Container class for a StateDerivative variable
-    """
-    def __init__(self, state, init=0.0):
-        """
-        Create a state derivative variable with an assosciated initial value
-
-        Arguments
-        ---------
-        state : State
-            The State
-        init : scalar, ScalarParam
-            The initial value of this state derivative
-        """
-
-        check_arg(state, State)
-
-        # Call super class
-        super(StateDerivative, self).__init__("d{0}_dt".format(state.name), \
-                                              init)
-
-        self.time = state.time
-        self.state = state
-    
-    init = ODEValueObject.value
+        else:
+            error("Cannot turn a solved state into a field state")
 
     @property
-    def sym(self):
-        return self.state.sym.diff(self.time.sym)
+    def is_solved(self):
+        return self._is_solved
 
 class Parameter(ODEValueObject):
     """
@@ -315,10 +312,10 @@ class Parameter(ODEValueObject):
         init : scalar, ScalarParam
             The initial value of this parameter
         """
-        
+
         # Call super class
         super(Parameter, self).__init__(name, init)
-    
+
     init = ODEValueObject.value
 
     def toggle_field(self):
@@ -335,7 +332,7 @@ class Parameter(ODEValueObject):
                                (self._param.value, \
                                 self._param._check_arg(), \
                                 self._param._name_arg()))
-    
+
 class Time(ODEValueObject):
     """
     Specialization for a Time class
@@ -352,7 +349,7 @@ class Dt(ODEValueObject):
     """
     def __init__(self, name):
         super(Dt, self).__init__(name, 0.1)
-    
+
 
 class Expression(ODEValueObject):
     """
@@ -367,13 +364,13 @@ class Expression(ODEValueObject):
         name : str
             The name of the Expression
         expr : sympy.Basic
-            The expression 
+            The expression
         """
 
         # Check arguments
         from gotran.model.ode import ODE
         check_arg(expr, scalars + (sp.Basic,), 1, Expression)
-        
+
         expr = sp.sympify(expr)
 
         # Deal with Subs in sympy expression
@@ -392,9 +389,11 @@ class Expression(ODEValueObject):
         # Collect dependent symbols
         self.dependent = tuple(symbols_from_expr(expr))
 
+        self._is_state_expression = False
+
         # Call super class with expression as the "value"
         super(Expression, self).__init__(name, expr)
-        
+
     @property
     def expr(self):
         """
@@ -411,13 +410,26 @@ class Expression(ODEValueObject):
         else:
             return self._param.sym
 
+    @property
+    def is_state_expression(self):
+        """
+        True of expression is a state expression
+        """
+        return self._is_state_expression
+
+    def _args_str(self):
+        """
+        Return a formated str of __init__ arguments
+        """
+        return "'{0}', {1}".format(self.name, repr(self.expr))
+
 class DerivativeExpression(Expression):
     """
     Sub class for all derivative expressions
     """
     def __init__(self, der_expr, dep_var, expr):
         """
-        Create a DerivativeExpression 
+        Create a DerivativeExpression
 
         Arguments
         ---------
@@ -435,12 +447,15 @@ class DerivativeExpression(Expression):
         if dep_var.sym not in der_expr.sym:
             error("Cannot create a DerivativeExpression as {0} is not "\
                   "dependent on {1}".format(der_expr, dep_var))
-        
+
         self._sym = sp.Derivative(der_expr.sym, dep_var.sym)
         self._der_expr = der_expr
         self._dep_var = dep_var
 
         super(DerivativeExpression, self).__init__(sympycode(self._sym), expr)
+
+        if isinstance(der_expr, State):
+            self._is_state_expression = True
 
     @property
     def sym(self):
@@ -451,8 +466,140 @@ class DerivativeExpression(Expression):
         return self._der_expr
 
     @property
-    def der_var(self):
-        return self._der_var
+    def dep_var(self):
+        return self._dep_var
+
+    def _args_str(self):
+        """
+        Return a formated str of __init__ arguments
+        """
+        return "{0}, {1}, {2}".format(repr(self._der_expr), repr(self._dep_var),\
+                                      repr(self.expr))
+
+class RateExpression(Expression):
+    """
+    A sub class of Expression holding single rates
+    """
+    def __init__(self, from_state, to_state, expr):
+
+        check_arg(from_state, (State, StateSolution), 0, RateExpression)
+        check_arg(to_state, (State, StateSolution), 1, RateExpression)
+
+        super(RateExpression, self).__init__("{0}_{1}".format(\
+            from_state, to_state), expr)
+        self._from_state = from_state
+        self._to_state = to_state
+
+class RateDerivative(DerivativeExpression):
+    """
+    A state derivative expression for rate expressions
+    """
+    def __init__(self, state):
+        """
+        Create a RateDerivative
+
+        Arguments
+        ---------
+        state : State
+            The State the rate derivative determines
+        """
+        check_arg(state, State, 0, RateDerivative)
+
+        # Initate the base class with a dummy expression
+        super(RateDerivative, self).__init__(state, state.time, sp.sympify(0))
+
+        # Variable which is used to build up the deriviative expression
+        self._expr = sp.sympify(0)
+        
+    def add_rate(self, rate):
+        """
+        Register a rate expression to the Derivative
+        """
+        self._expr += rate
+        
+    @property
+    def expr(self):
+        """
+        Return the stored expression
+        """
+        return self._expr
+
+class AlgebraicExpression(Expression):
+    """
+    Sub class for all algebraic expressions which relates a State with
+    an expression which should equal to 0
+    """
+    def __init__(self, state, expr):
+        """
+        Create an AlgebraicExpression
+
+        Arguments
+        ---------
+        state : State
+            The State which the algebraic expression should determine
+        expr : sympy.Basic
+            The expression that should equal 0
+        """
+        check_arg(state, State, 0, AlgebraicExpression)
+
+        super(AlgebraicExpression, self).__init__("alg_{0}_0".format(state), expr)
+
+        # Check that the expr is dependent on the state
+        if state.sym not in self.sym:
+            error("Cannot create an AlgebraicExpression as {0} is not "\
+                  "dependent on {1}".format(state, expr))
+
+        self._is_state_expression = True
+        self._state = state
+
+    @property
+    def state(self):
+        return self._state
+
+    @property
+    def _args_str(self):
+        """
+        Return a formated str of __init__ arguments
+        """
+        return "{0}, {1}".format(repr(self._state), repr(self.expr))
+
+class StateSolution(Expression):
+    """
+    Sub class of Expression for state solution expressions
+    """
+    def __init__(self, state, expr):
+        """
+        Create a StateSolution
+
+        Arguments
+        ---------
+        state : State
+            The state that is being solved for
+        expr : sympy.Basic
+            The expression that should equal 0 and which solves the state
+        """
+        check_arg(state, State, 0, StateSolution)
+        check_arg(expr, sp.Basic, 1, StateSolution)
+
+        if state.is_field:
+            error("Cannot registered a solved state that is a field_state")
+
+        super(StateSolution, self).__init__(state.name, expr)
+
+        # Flag solved state
+        state._is_solved = True
+        
+        self._state = state
+
+    @property
+    def state(self):
+        return self._state
+
+    def _args_str(self):
+        """
+        Return a formated str of __init__ arguments
+        """
+        return "'{0}', {1}".format(repr(self.state), repr(self.expr))
 
 # Tuple with single ODE Objects, for type checking
 SingleODEObjects = (State, Parameter, Time)

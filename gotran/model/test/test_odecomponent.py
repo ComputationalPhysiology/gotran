@@ -2,6 +2,7 @@
 
 import unittest
 
+import gotran
 from modelparameters.logger import suppress_logging
 from modelparameters.codegeneration import sympycode
 from modelparameters.sympytools import sp_namespace
@@ -18,39 +19,99 @@ suppress_logging()
 class TestODEComponent(unittest.TestCase):
 
     def test_creation(self):
-        
+
         # Adding a phoney ODE
         ode = ODE("test")
 
         # Add states and parameters
+        j=ode.add_state("j", [1.0])
         i=ode.add_state("i", 2.0)
-        j=ode.add_state("j", 0.0)
-        k=ode.add_state("k", 0.0)
+        k=ode.add_state("k", 3.0)
 
         ii=ode.add_parameter("ii", 0.0)
         jj=ode.add_parameter("jj", 0.0)
         kk=ode.add_parameter("kk", 0.0)
 
-        # Add an Sxpression
+        self.assertEqual(ode.num_states, 3)
+        self.assertEqual(ode.num_field_states, 1)
+        self.assertEqual(ode.num_parameters, 3)
+
+        # Add an Expression
         ode.alpha = i*j
-        
+
+        # Add derivatives for all states in the main component
+        ode.add_comment("Some nice derivatives")
         ode.di_dt = ode.alpha + ii
         ode.dj_dt = -ode.alpha - jj
         ode.dk_dt = kk*k*ode.alpha
 
-        # Add a component
-        jada = ode.add_component("jada")
-        jada.add_states(l=1.0, m=2.0)
-        ode["jada"].add_parameters(ll=1.0, mm=2.0)
+        self.assertEqual(ode.num_intermediates, 1)
 
+        # Add a component with 2 states
+        jada = ode.add_component("jada")
+        jada.add_states(m=2.0, n=3.0, l=1.0, o=4.0)
+        ode["jada"].add_parameters(ll=1.0, mm=[2.0])
+
+        # Test num_foo
+        self.assertEqual(jada.num_states, 4)
+        self.assertEqual(jada.num_parameters, 2)
+        self.assertEqual(ode.num_states, 7)
+        self.assertEqual(ode.num_parameters, 5)
+        self.assertEqual(ode.num_components, 2)
+        self.assertEqual(ode.num_field_states, 1)
+        self.assertEqual(ode.num_field_parameters, 1)
+        self.assertEqual(jada.num_components, 1)
+
+        # Define a state derivative
         jada.dm_dt = jada.ll - (jada.m - ode.i)
 
         # Add expressions to the component
         jada.tmp = jada.ll*jada.m**2+3/i - ii*jj
         jada.tmp2 = ode.j*exp(jada.tmp)
-        jada.tmp3 = jada.tmp2.diff(ode.t)
-        jada.dl_dt = jada.tmp3
+
+        # Reduce state n
+        jada.add_solve_state(jada.n, 1-jada.l-jada.m-jada.n)
+
+        self.assertEqual(ode.num_intermediates, 4)
+
+        # Create a derivative expression
+        ode.add_comment("More funky objects")
+        jada.tmp3 = jada.tmp2.diff(ode.t) + jada.n + jada.o
+        jada.add_derivative(jada.l, ode.t, jada.tmp3)
+        jada.add_algebraic(jada.o, jada.o**2-exp(jada.o)+2/jada.o)
+
+        self.assertEqual(ode.num_intermediates, 9)
+        self.assertEqual(ode.num_state_expressions, 6)
+        self.assertTrue(ode.is_complete)
+
+        # Add another component to test rates
+        bada = ode.add_component("bada")
+        bada.add_parameters(nn=5.0, oo=3.0, qq=1.0, pp=2.0)
         
+        nada = bada.add_component("nada")
+        nada.add_states(("r", 3.0), ("s", 4.0), ("q", 1.0), ("p", 2.0))
+        self.assertEqual(bada.num_parameters, 4)
+        self.assertEqual(bada.num_states, 4)
+        nada.p = 1 - nada.r - nada.s - nada.q
+        
+        nada._add_single_rate(nada.r, nada.s, 1.0)
+        nada._add_single_rate(nada.s, nada.r, 2.0)
+
+        nada._add_single_rate(nada.s, nada.q, 2.0)
+        nada._add_single_rate(nada.q, nada.s, 1.0)
+
+        nada._add_single_rate(nada.q, nada.p, 3.0)
+        nada._add_single_rate(nada.p, nada.q, 4.0)
+        
+        self.assertEqual("".join(p.name for p in ode.parameters), "iijjkkllmmnnooppqq")
+        self.assertEqual("".join(s.name for s in ode.states), "jiklmorsq")
+        self.assertFalse(ode.is_complete)
+        
+        
+        
+        for expr in ode.intermediates:
+            print expr, repr(expr)
+
 
 if __name__ == "__main__":
     unittest.main()
