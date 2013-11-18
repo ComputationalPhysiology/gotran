@@ -81,8 +81,9 @@ class TestODEComponent(unittest.TestCase):
         jada.add_algebraic(jada.o, jada.o**2-exp(jada.o)+2/jada.o)
 
         self.assertEqual(ode.num_intermediates, 15)
-        self.assertEqual(ode.num_state_expressions, 6)
+        self.assertEqual(ode.num_state_expressions, 7)
         self.assertTrue(ode.is_complete)
+        self.assertEqual(ode.num_full_states, 6)
 
         # Add another component to test rates
         bada = ode.add_component("bada")

@@ -203,6 +203,9 @@ class ODEComponent(ODEObject):
         # Store ODEObjects of this component
         self.ode_objects = ODEObjectList()
 
+        # Store all state expressions
+        self._state_expressions = dict()
+
         self._constructed = True
 
     def get_object(self, name, reversed=True, return_component=False):
@@ -535,10 +538,19 @@ class ODEComponent(ODEObject):
     @property
     def states(self):
         """
-        Return a list of all states in the component that are not solved
+        Return a list of all states in the component and its children
         """
-        return [state for state in iter_objects(\
-            self, False, False, False, State) if not state.is_solved]
+        return [state for state in iter_objects(self, False, False, False, \
+                                                State)]
+
+    @property
+    def full_states(self):
+        """
+        Return a list of all states in the component and its children that are
+        not solved
+        """
+        return [state for state in iter_objects(self, False, False, False, \
+                                                State) if not state.is_solved]
 
     @property
     def field_states(self):
@@ -605,6 +617,13 @@ class ODEComponent(ODEObject):
         return len(self.states)
 
     @property
+    def num_full_states(self):
+        """
+        Return the number of all full states
+        """
+        return len(self.full_states)
+
+    @property
     def num_field_states(self):
         """
         Return the number of all field states
@@ -649,9 +668,14 @@ class ODEComponent(ODEObject):
     @property
     def is_complete(self):
         """
-        True if component is complete
+        True if the number of non-solved states are the same as the number
+        of registered state expressions 
         """
-        return self.num_states == self.num_state_expressions
+        num_local_states = sum(1 for obj in self.ode_objects \
+                               if isinstance(obj, State))
+
+        return num_local_states == len(self._state_expressions) \
+               and all(child.is_complete for child in self.children.values())
         
     def __setattr__(self, name, value):
         """
@@ -805,24 +829,29 @@ class ODEComponent(ODEObject):
         Register an ODEObject to the component
         """
 
-        # Check if component is complete
-        if self.states and self.is_complete:
-            error("The '{0}' component is complete and more objects "\
-                  "cannot be added.".format(self))
+        self._check_reserved_wordings(obj)
 
-        if obj.name in _all_keywords:
-            error("Cannot register a {0} with a computer language "\
-                  "keyword name: {1}".format(obj.__class__.__name__,
-                                             obj.name))
+        # If registering a StateExpression
+        if isinstance(obj, StateExpression):
+            if obj.state in self._state_expressions:
+                error("A StateExpression for state {0} is already registered "\
+                      "in this component.")
 
-        # Check for reserved wording of DerivativeExpressions
-        if  re.search(_derivative_name_template, obj.name) \
-               and not isinstance(obj, Derivatives):
-            error("The pattern d{{name}}_dt is reserved for derivatives. "
-                  "However {0} is not a Derivative.".format(obj.name))
+            # Check that the state is registered in this component
+            state_obj = self.ode_objects.get(obj.state.name)
+            if not isinstance(state_obj, State):
+                error("The state expression {0} defines state {1}, which is "\
+                      "not registered in the {2} component.".format(\
+                          obj, obj.state, self))
+                
+            self._state_expressions[obj.state] = obj
 
-        # Register symbol, overwrite any already excisting symbol
-        self.__dict__[obj.name] = obj.sym
+        # If obj is Intermediate register it as an attribute so it can be used
+        # later on.
+        if isinstance(obj, (State, Parameter, Intermediate)):
+            
+            # Register symbol, overwrite any already excisting symbol
+            self.__dict__[obj.name] = obj.sym
 
         # Register the object in the root ODE,
         # (here all duplication checks and expression expansions are done)
@@ -830,6 +859,24 @@ class ODEComponent(ODEObject):
 
         # Register the object
         self.ode_objects.append(obj)
+
+    def _check_reserved_wordings(self, obj):
+        if obj.name in _all_keywords:
+            error("Cannot register a {0} with a computer language "\
+                  "keyword name: {1}".format(obj.__class__.__name__,
+                                             obj.name))
+
+        # Check for reserved Expression wordings 
+        if re.search(_derivative_name_template, obj.name) \
+               and not isinstance(obj, Derivatives):
+            error("The pattern d{{name}}_dt is reserved for derivatives. "
+                  "However {0} is not a Derivative.".format(obj.name))
+
+        if re.search(_algebraic_name_template, obj.name) \
+               and not isinstance(obj, AlgebraicExpression):
+            error("The pattern {alg_{{name}}_0 is reserved for algebraic "\
+                  "expressions, however {1} is not an AlgebraicExpression."\
+                  .format(obj.name))
 
 class ODE(ODEComponent):
     """

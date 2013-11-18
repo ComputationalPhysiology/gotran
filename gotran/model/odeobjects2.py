@@ -542,7 +542,7 @@ class AlgebraicExpression(StateExpression):
         """
         return "{0}, {1}".format(repr(self._state), repr(self.expr))
 
-class StateSolution(Intermediate):
+class StateSolution(StateExpression):
     """
     Sub class of Expression for state solution expressions
     """
@@ -559,19 +559,14 @@ class StateSolution(Intermediate):
         """
 
         check_arg(state, State, 0, StateSolution)
-        super(StateSolution, self).__init__(state.name, expr)
+        super(StateSolution, self).__init__(state.name, state, expr)
 
         if state.is_field:
             error("Cannot registered a solved state that is a field_state")
 
         # Flag solved state
         state._is_solved = True
-        self._state = state
         
-    @property
-    def state(self):
-        return self._state
-
     def _args_str(self):
         """
         Return a formatted str of __init__ arguments
