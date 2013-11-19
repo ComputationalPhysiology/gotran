@@ -9,7 +9,7 @@ from sympy.core.singleton import S
 from sympy.core.basic import preorder_traversal
 from sympy.core.function import _coeff_isneg
 from sympy.core.exprtools import factor_terms
-from sympy.core.compatibility import iterable, xrange
+from sympy.core.compatibility import iterable
 from sympy.utilities.iterables import numbered_symbols, \
     sift, topological_sort, ordered
 
