@@ -109,10 +109,9 @@ class TestODEComponent(unittest.TestCase):
         nada.add_single_rate(nada.q, nada.p, 3.0)
         nada.add_single_rate(nada.p, nada.q, 4.0)
         
+        nada.finalize()
+        self.assertTrue(ode.is_complete)
         
-        for expr in ode.intermediates:
-            print expr, repr(expr)
-
 
 if __name__ == "__main__":
     unittest.main()

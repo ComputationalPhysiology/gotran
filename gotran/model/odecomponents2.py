@@ -143,34 +143,6 @@ def ode_components(comp, include_self=True):
 
     return comps
 
-def _bubble_append(components, obj):
-    """
-    Help function to append an object to a list. If the object already
-    excist in the list it will be moved to the end.
-    """
-
-    assert(isinstance(components, list))
-
-    # If first component
-    if len(components) == 0:
-        components.append(obj)
-
-    # If the component is alread the last one
-    elif components[-1] == obj:
-        pass
-
-    # If the component is already registered
-    else:
-        # Just remove the component in list if it is there
-        try:
-            components.remove(obj)
-        except:
-            # If not we do not have to do anything
-            pass
-
-        components.append(obj)
-
-
 class ODEBaseComponent(ODEObject):
     """
     Base class for all ODE components. 
@@ -364,7 +336,6 @@ class ODEBaseComponent(ODEObject):
             error("A component with the name '{0}' already excists.".format(name))
 
         self.children[name] = comp
-        _bubble_append(self.root.all_components_ordered, name)
         self.root.all_components[name] = comp
 
         return comp
@@ -379,7 +350,6 @@ class ODEBaseComponent(ODEObject):
             error("A component with the name '{0}' already excists.".format(name))
 
         self.children[name] = comp
-        _bubble_append(self.root.all_components_ordered, name)
         self.root.all_components[name] = comp
 
         return comp
@@ -604,14 +574,21 @@ class ODEBaseComponent(ODEObject):
     @property
     def is_complete(self):
         """
+        True if the component and all its children are locally complete
+        """
+        return self.is_locally_complete and all(child.is_complete for child \
+                                                in self.children.values())
+
+    @property
+    def is_locally_complete(self):
+        """
         True if the number of non-solved states are the same as the number
         of registered state expressions
         """
         num_local_states = sum(1 for obj in self.ode_objects \
                                if isinstance(obj, State))
 
-        return num_local_states == len(self._state_expressions) \
-               and all(child.is_complete for child in self.children.values())
+        return num_local_states == len(self._state_expressions) 
 
     def __call__(self, name):
         """
@@ -709,14 +686,19 @@ class ODEBaseComponent(ODEObject):
                   "expressions, however {1} is not an AlgebraicExpression."\
                   .format(obj.name))
 
-    def _finalize(self):
+    def finalize(self):
         """
         Called whenever the component should be finalized
         """
-        if not self.is_complete:
-            error("Cannot finalize a component that is not complete")
+        if not self.is_locally_complete:
+            error("Cannot finalize component '{0}'. It is "\
+                  "not complete.".format(self))
             
-        self._finalize = True
+        if self.is_finalized:
+            error("Cannot finalize component '{0}'. It is already "\
+                  "finalized.".format(self))
+
+        self._is_finalize = True
 
 class DerivativeComponent(ODEBaseComponent):
     """
@@ -1048,27 +1030,33 @@ class MarkovModelComponent(ODEBaseComponent):
         This will add the derivatives to the ode model. After this is
         done no more rates can be added to the Markov model.
         """
-        if self._is_finalized:
-            return
+        if self.is_finalized:
+            error("Cannot finalize a component that is already finalized")
 
         # Derivatives
         states = self.states
-        derivatives = defaultdict(lambda : sympify(0.0))
+        derivatives = defaultdict(lambda : sp.sympify(0.0))
         rate_check = defaultdict(lambda : 0)
 
         # Build rate information and check that each rate is added in a
         # symetric way
-        used_states = [0]*self.states
+        used_states = [0]*self.num_states
         for (from_state, to_state), rate in self._rates.items():
 
             # Get ODEObjects
-            from_state = self.ode_objects[from_state], 
-            to_state = self.ode_objects[to_state]
-            
+            from_state = self.ode_objects.get(from_state)
+            to_state = self.ode_objects.get(to_state)
+
             # Add to derivatives of the two states
             derivatives[from_state] -= rate.expr*from_state.sym
             derivatives[to_state] += rate.expr*from_state.sym
+            
+            if isinstance(from_state, StateSolution):
+                from_state = from_state.state
 
+            if isinstance(to_state, StateSolution):
+                to_state = to_state.state
+            
             # Register rate
             ind_from = states.index(from_state)
             ind_to = states.index(to_state)
@@ -1100,6 +1088,8 @@ class MarkovModelComponent(ODEBaseComponent):
             obj = StateDerivative(state, derivatives[state])
             self._register_component_object(obj)
 
+        assert self.is_locally_complete, "The Markov model should be complete..."
+            
         self._is_finalized = True
 
 class ODE(DerivativeComponent):
@@ -1134,9 +1124,9 @@ class ODE(DerivativeComponent):
         # Namespace, which can be used to eval an expression
         self.ns = dict(t=time.sym)
 
-        # An list with all components name
+        # An list with all component names with expression added to them
         # The components are always sorted wrt last expression added
-        self.all_components_ordered = []
+        self.all_expr_components_ordered = []
 
         # A dict with all components objects
         self.all_components = {name : self}
@@ -1226,11 +1216,20 @@ class ODE(DerivativeComponent):
         # If Expression
         if isinstance(obj, Expression):
 
-            # Append the name to the list all_components
-            # FIXME: Add a better way of storing the last used component...
-            # FIXME: Combine that with a way for checking if a component is
-            # FIXME: complete or not
-            _bubble_append(self.all_components_ordered, comp.name)
+            # Append the name to the list all ordered components with
+            # expressions
+            if len(self.all_expr_components_ordered) == 0:
+                self.all_expr_components_ordered.append(comp.name)
+
+            # We are shifting expression components
+            elif self.all_expr_components_ordered[-1] != comp.name:
+
+                # Finalize the last component we visited
+                self.all_components[\
+                    self.all_expr_components_ordered[-1]].finalize()
+                
+                # Append this component
+                self.all_expr_components_ordered.append(comp.name)
 
             # Expand and add any derivatives in the expressions
             for der_expr in obj.expr.atoms(sp.Derivative):
