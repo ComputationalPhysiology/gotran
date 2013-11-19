@@ -613,14 +613,16 @@ class ODEBaseComponent(ODEObject):
         return num_local_states == len(self._state_expressions) \
                and all(child.is_complete for child in self.children.values())
 
-    def __getitem__(self, name):
+    def __call__(self, name):
         """
-        Return a child component
+        Return a child component, if the component does not excist, create
+        and add one
         """
         check_arg(name, str)
         comp = self.children.get(name)
         if comp is None:
-            error("'{0}' is not a sub component of {1}".format(name, self))
+            comp = self.add_component(name)
+            debug("Adding '{0}' component to {1}".format(name, self))
 
         return comp
 

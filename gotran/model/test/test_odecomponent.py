@@ -48,9 +48,12 @@ class TestODEComponent(unittest.TestCase):
         self.assertEqual(ode.num_intermediates, 4)
 
         # Add a component with 2 states
-        jada = ode.add_component("jada")
-        jada.add_states(m=2.0, n=3.0, l=1.0, o=4.0)
-        ode["jada"].add_parameters(ll=1.0, mm=[2.0])
+        ode("jada").add_states(m=2.0, n=3.0, l=1.0, o=4.0)
+        ode("jada").add_parameters(ll=1.0, mm=[2.0])
+
+        # Define a state derivative
+        ode("jada").dm_dt = ode("jada").ll - (ode("jada").m - ode.i)
+        jada = ode("jada")
 
         # Test num_foo
         self.assertEqual(jada.num_states, 4)
@@ -61,9 +64,6 @@ class TestODEComponent(unittest.TestCase):
         self.assertEqual(ode.num_field_states, 1)
         self.assertEqual(ode.num_field_parameters, 1)
         self.assertEqual(jada.num_components, 1)
-
-        # Define a state derivative
-        jada.dm_dt = jada.ll - (jada.m - ode.i)
 
         # Add expressions to the component
         jada.tmp = jada.ll*jada.m**2+3/i - ii*jj
@@ -86,7 +86,7 @@ class TestODEComponent(unittest.TestCase):
         self.assertEqual(ode.num_full_states, 6)
 
         # Add another component to test rates
-        bada = ode.add_component("bada")
+        bada = ode("bada")
         bada.add_parameters(nn=5.0, oo=3.0, qq=1.0, pp=2.0)
         
         nada = bada.add_markov_model("nada")
