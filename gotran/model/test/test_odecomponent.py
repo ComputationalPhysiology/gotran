@@ -89,25 +89,25 @@ class TestODEComponent(unittest.TestCase):
         bada = ode.add_component("bada")
         bada.add_parameters(nn=5.0, oo=3.0, qq=1.0, pp=2.0)
         
-        nada = bada.add_component("nada")
+        nada = bada.add_markov_model("nada")
         nada.add_states(("r", 3.0), ("s", 4.0), ("q", 1.0), ("p", 2.0))
         self.assertEqual(bada.num_parameters, 4)
         self.assertEqual(bada.num_states, 4)
         nada.p = 1 - nada.r - nada.s - nada.q
         
-        nada._add_single_rate(nada.r, nada.s, 1.0)
-        nada._add_single_rate(nada.s, nada.r, 2.0)
-
-        nada._add_single_rate(nada.s, nada.q, 2.0)
-        nada._add_single_rate(nada.q, nada.s, 1.0)
-
-        nada._add_single_rate(nada.q, nada.p, 3.0)
-        nada._add_single_rate(nada.p, nada.q, 4.0)
-        
         self.assertEqual("".join(p.name for p in ode.parameters), "iijjkkllmmnnooppqq")
-        self.assertEqual("".join(s.name for s in ode.states), "jiklmorsq")
+        self.assertEqual("".join(s.name for s in ode.states), "jiklmnorsqp")
+        self.assertEqual("".join(s.name for s in ode.full_states), "jiklmorsq")
         self.assertFalse(ode.is_complete)
-        
+
+        nada.add_single_rate(nada.r, nada.s, 1.0)
+        nada.add_single_rate(nada.s, nada.r, 2.0)
+
+        nada.add_single_rate(nada.s, nada.q, 2.0)
+        nada.add_single_rate(nada.q, nada.s, 1.0)
+
+        nada.add_single_rate(nada.q, nada.p, 3.0)
+        nada.add_single_rate(nada.p, nada.q, 4.0)
         
         
         for expr in ode.intermediates:

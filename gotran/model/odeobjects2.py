@@ -18,8 +18,8 @@
 __all__ = ["ODEObject", "Comment", "ODEValueObject", "Parameter", "State", \
            "SingleODEObjects", "Time", "Dt", "Expression", \
            "DerivativeExpression", "AlgebraicExpression", "StateExpression",\
-           "StateSolution", "RateDerivative", "RateExpression", \
-           "StateDerivative", "Derivatives", "Intermediate"]
+           "StateSolution", "RateExpression", \
+           "StateDerivative", "Derivatives"]
 
 # System imports
 import numpy as np
@@ -421,27 +421,7 @@ class Expression(ODEValueObject):
         """
         return "'{0}', {1}".format(self.name, repr(self.expr))
 
-class Intermediate(Expression):
-    """
-    Intermediates are used to store math expressions which are supposed to
-    be used in a StateExpression later.
-    """
-    def __init__(self, name, expr):
-        """
-        Create an Intermediate with an assosiated name
-
-        Arguments
-        ---------
-        name : str
-            The name of the Expression
-        expr : sympy.Basic
-            The expression
-        """
-
-        # Call super class 
-        super(Intermediate, self).__init__(name, expr)
-
-class StateExpression(Intermediate):
+class StateExpression(Expression):
     """
     An expression which determines a State.
     """
@@ -452,16 +432,16 @@ class StateExpression(Intermediate):
         Arguments
         ---------
         name : str
-            The name of the Expression
+            The name of the state expression. A symbol based on the name will
+            be created and accessible to build other expressions
         state : State
             The state which the expression should determine
         expr : sympy.Basic
-            The expression
+            The mathematical expression
         """
 
-        check_arg(state, State, 1, StateExpression)
+        check_arg(state, State, 0, StateExpression)
 
-        # Call super class 
         super(StateExpression, self).__init__(name, expr)
         self._state = state
         
@@ -469,13 +449,11 @@ class StateExpression(Intermediate):
     def state(self):
         return self._state
 
-    @property
     def _args_str(self):
         """
         Return a formatted str of __init__ arguments
         """
-        return "'{0}', {1}, {2}".format(\
-            self.name, repr(self._state), repr(self.expr))
+        return "'{0}', {1}, {2}".format(self.name, repr(state), sympycode(self.expr))
 
 class StateDerivative(StateExpression):
     """
@@ -494,10 +472,11 @@ class StateDerivative(StateExpression):
         """
         
         check_arg(state, State, 0, StateDerivative)
+        sym = sp.Derivative(state.sym, state.time.sym)
 
-        self._sym = sp.Derivative(state.sym, state.time.sym)
-
-        super(StateDerivative, self).__init__(sympycode(self._sym), state, expr)
+        # Call base class constructor
+        super(StateDerivative, self).__init__(sympycode(sym), state, expr)
+        self._sym = sym
 
     @property
     def sym(self):
@@ -507,7 +486,7 @@ class StateDerivative(StateExpression):
         """
         Return a formatted str of __init__ arguments
         """
-        return "{0}, {1}".format(repr(self._state), self.expr)
+        return "{0}, {1}".format(repr(self._state), sympycode(self.expr))
 
 class AlgebraicExpression(StateExpression):
     """
@@ -535,7 +514,6 @@ class AlgebraicExpression(StateExpression):
             error("Cannot create an AlgebraicExpression as {0} is not "\
                   "dependent on {1}".format(state, expr))
 
-    @property
     def _args_str(self):
         """
         Return a formatted str of __init__ arguments
@@ -559,7 +537,7 @@ class StateSolution(StateExpression):
         """
 
         check_arg(state, State, 0, StateSolution)
-        super(StateSolution, self).__init__(state.name, state, expr)
+        super(StateSolution, self).__init__(sympycode(state.sym), state, expr)
 
         if state.is_field:
             error("Cannot registered a solved state that is a field_state")
@@ -571,9 +549,9 @@ class StateSolution(StateExpression):
         """
         Return a formatted str of __init__ arguments
         """
-        return "'{0}', {1}".format(repr(self.state), repr(self.expr))
+        return "'{0}', {1}".format(repr(self.state), sympycode(self.expr))
 
-class DerivativeExpression(Intermediate):
+class DerivativeExpression(Expression):
     """
     A class for Intermediate derivative expressions
     """
@@ -627,49 +605,15 @@ class RateExpression(Expression):
     """
     A sub class of Expression holding single rates
     """
-    def __init__(self, from_state, to_state, expr):
+    def __init__(self, to_state, from_state, expr):
 
         check_arg(from_state, (State, StateSolution), 0, RateExpression)
         check_arg(to_state, (State, StateSolution), 1, RateExpression)
 
-        super(RateExpression, self).__init__("{0}_{1}".format(\
-            from_state, to_state), expr)
-        self._from_state = from_state
+        super(RateExpression, self).__init__("rate_{0}_{1}".format(\
+            to_state, from_state), expr)
         self._to_state = to_state
-
-class RateDerivative(DerivativeExpression):
-    """
-    A state derivative expression for rate expressions
-    """
-    def __init__(self, state):
-        """
-        Create a RateDerivative
-
-        Arguments
-        ---------
-        state : State
-            The State the rate derivative determines
-        """
-        check_arg(state, State, 0, RateDerivative)
-
-        # Initate the base class with a dummy expression
-        super(RateDerivative, self).__init__(state, state.time, sp.sympify(0))
-
-        # Variable which is used to build up the deriviative expression
-        self._expr = sp.sympify(0)
-        
-    def add_rate(self, rate):
-        """
-        Register a rate expression to the Derivative
-        """
-        self._expr += rate
-        
-    @property
-    def expr(self):
-        """
-        Return the stored expression
-        """
-        return self._expr
+        self._from_state = from_state
 
 # Tuple with single ODE Objects, for type checking
 SingleODEObjects = (State, Parameter, Time)
