@@ -25,7 +25,7 @@ import types
 from sympy.core.function import AppliedUndef
 
 # ModelParameters imports
-from modelparameters.sympytools import sp, symbols_from_expr, iter_symbol_params_from_expr
+from modelparameters.sympytools import sp, symbols_from_expr
 from modelparameters.parameters import ScalarParam
 from modelparameters.parameterdict import ParameterDict
 from modelparameters.codegeneration import sympycode, _all_keywords
@@ -34,6 +34,7 @@ from modelparameters.utils import tuplewrap
 # Local imports
 from gotran.common import error, debug, check_arg, check_kwarg, scalars
 from gotran.model.odeobjects2 import *
+from gotran.model.expressions2 import *
 
 _derivative_name_template = re.compile("\Ad([a-zA-Z]\w*)_d([a-zA-Z]\w*)\Z")
 _algebraic_name_template = re.compile("\Aalg_([a-zA-Z]\w*)_0\Z")
