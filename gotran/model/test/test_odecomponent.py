@@ -35,6 +35,7 @@ class TestODEComponent(unittest.TestCase):
         self.assertEqual(ode.num_states, 3)
         self.assertEqual(ode.num_field_states, 1)
         self.assertEqual(ode.num_parameters, 3)
+        self.assertEqual(ode.present_component, ode)
 
         # Add an Expression
         ode.alpha = i*j
@@ -54,6 +55,7 @@ class TestODEComponent(unittest.TestCase):
         # Define a state derivative
         ode("jada").dm_dt = ode("jada").ll - (ode("jada").m - ode.i)
         jada = ode("jada")
+        self.assertEqual(ode.present_component, jada)
 
         # Test num_foo
         self.assertEqual(jada.num_states, 4)
@@ -110,6 +112,9 @@ class TestODEComponent(unittest.TestCase):
         nada.add_single_rate(nada.p, nada.q, 4.0)
         
         nada.finalize()
+
+        self.assertEqual(ode.present_component, nada)
+
         self.assertTrue(ode.is_complete)
         
 

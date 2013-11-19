@@ -336,8 +336,9 @@ class ODEBaseComponent(ODEObject):
         if name in self.root.all_components:
             error("A component with the name '{0}' already excists.".format(name))
 
-        self.children[name] = comp
-        self.root.all_components[name] = comp
+        self.children[comp.name] = comp
+        self.root.all_components[comp.name] = comp
+        self.root._present_component = comp.name
 
         return comp
 
@@ -350,8 +351,9 @@ class ODEBaseComponent(ODEObject):
         if name in self.root.all_components:
             error("A component with the name '{0}' already excists.".format(name))
 
-        self.children[name] = comp
-        self.root.all_components[name] = comp
+        self.children[comp.name] = comp
+        self.root.all_components[comp.name] = comp
+        self.root._present_component = comp.name
 
         return comp
 
@@ -597,11 +599,15 @@ class ODEBaseComponent(ODEObject):
         and add one
         """
         check_arg(name, str)
+        name = name.strip().replace(" ", "_")
+
         comp = self.children.get(name)
         if comp is None:
             comp = self.add_component(name)
             debug("Adding '{0}' component to {1}".format(name, self))
-
+        else:
+            self.root._present_component = comp.name
+            
         return comp
 
     def _expect_state(self, state, allow_state_solution=False):
@@ -706,6 +712,20 @@ class DerivativeComponent(ODEBaseComponent):
     ODE Component for derivative and algebraic expressions
     """
 
+    def __init__(self, name, parent):
+        """
+        Create an DerivativeComponent
+
+        Arguments
+        ---------
+        name : str
+            The name of the component. This str serves as the unique
+            identifier of the Component.
+        parent : ODEBaseComponent
+            The parent component of this ODEComponent
+        """
+        super(DerivativeComponent, self).__init__(name, parent)
+
     def __setattr__(self, name, value):
         """
         A magic function which will register expressions and simpler
@@ -719,8 +739,8 @@ class DerivativeComponent(ODEBaseComponent):
             return
 
         # If no expression is registered
-        if (not isinstance(value, scalars)) and not (isinstance(value, sp.Basic) \
-                                                     and symbols_from_expr(value)):
+        if (not isinstance(value, scalars+(sp.Number,))) \
+               and not (isinstance(value, sp.Basic) and symbols_from_expr(value)):
             debug("Not registering: {0} as attribut. It does not contain "\
                   "any symbols or scalars.".format(name))
 
@@ -1110,10 +1130,10 @@ class ODE(DerivativeComponent):
         # Call super class with itself as parent component
         super(ODE, self).__init__(name, self)
 
-        ns = ns or {}
-
         # Reset constructed attribute
         self._constructed = False
+
+        self.ns = ns if ns is not None else {}
 
         # Add Time object
         # FIXME: Add information about time unit dimensions and make
@@ -1123,7 +1143,7 @@ class ODE(DerivativeComponent):
         self.ode_objects.append(time)
 
         # Namespace, which can be used to eval an expression
-        self.ns = dict(t=time.sym)
+        self.ns.update({"t":time.sym, "time":time.sym})
 
         # An list with all component names with expression added to them
         # The components are always sorted wrt last expression added
@@ -1132,9 +1152,15 @@ class ODE(DerivativeComponent):
         # A dict with all components objects
         self.all_components = {name : self}
 
+        # An attribute keeping track of the present ODE component
+        self._present_component = self.name
+
+        # Keep track of monitored intermediates
+        self.monitored_intermediates = OrderedDict()
+
         # A dict with the present ode objects
         # NOTE: hashed by name so duplicated expressions are not stored
-        self.present_ode_objects = dict(t=(self._time, self))
+        self.present_ode_objects = dict(t=(self._time, self), time=(self._time, self))
 
         # Keep track of duplicated expressions
         self.duplicated_expressions = defaultdict(list)
@@ -1149,6 +1175,13 @@ class ODE(DerivativeComponent):
 
         # Flag that the ODE is constructed
         self._constructed = True
+
+    @property
+    def present_component(self):
+        """
+        Return the present component
+        """
+        return self.all_components[self._present_component]
 
     def add_sub_ode(self, subode, prefix=None, components=None,
                    skip_duplicated_global_parameters=True):
@@ -1192,10 +1225,10 @@ class ODE(DerivativeComponent):
             if isinstance(dup_obj, State) and isinstance(obj, StateSolution):
                 debug("Reduce state '{0}' to {1}".format(dup_obj, obj.expr))
 
-            elif any(isinstance(oo, (State, Parameter, DerivativeExpression,
+            elif any(isinstance(oo, (State, Parameter, Time, DerivativeExpression,
                                      AlgebraicExpression, StateSolution)) \
                      for oo in [dup_obj, obj]):
-                error("Cannot register a {0}. A {1} with name '{2}' is "\
+                error("Cannot register {0}. A {1} with name '{2}' is "\
                       "already registered in this ODE.".format(\
                           type(obj).__name__, type(\
                               dup_obj).__name__, dup_obj.name))
@@ -1212,7 +1245,7 @@ class ODE(DerivativeComponent):
 
         # Update global information about ode object
         self.present_ode_objects[obj.name] = (obj, comp)
-        self.ns[obj.name] = obj.sym
+        self.ns.update({obj.name : obj.sym})
 
         # If Expression
         if isinstance(obj, Expression):
@@ -1339,6 +1372,36 @@ class ODE(DerivativeComponent):
                 if isinstance(obj, SingleODEObjects):
                     continue
 
+    def add_monitored(self, *args):
+        """
+        Add intermediate expressions to be monitored
+
+        Arguments
+        ---------
+        args : any number of intermediates
+            Intermediates which will be monitored
+        """
+
+        for i, arg in enumerate(args):
+            check_arg(arg, (str, sp.Symbol, AppliedUndef), i)
+            name = arg if isinstance(str) else sympycode(arg)
+            obj = self.present_ode_objects.get(name)
+
+            if not isinstance(obj, Expression):
+                error("Can only monitor Expressions. '{0}' is not an "\
+                      "Expression.".format(obj.name))
+            
+            # Register the expanded monitored intermediate
+            self.monitored_intermediates[obj.name] = obj
+
+    @property
+    def num_monitored_intermediates(self):
+        return len(self.monitored_intermediates)
+
+    def finalize(self):
+        super(ODE, self).finalize()
+        self._present_component = self.name
+        
 class ODEObjectList(list):
     """
     Specialized container for ODEObjects
@@ -1432,265 +1495,3 @@ class ODEObjectList(list):
         error("Cannot alter ODEObjectList, other than adding ODEObjects.")
 
 
-class MarkovModel(ODEObject):
-    """
-    A Markov model class
-    """
-    def __init__(self, name, ode, component="", *args, **kwargs):
-        """
-        Initialize a Markov model
-
-        Arguments
-        ---------
-        name : str
-            Name of Markov model
-        ode : ODE
-            The ode the Markov Model should be added to
-        component : str (optional)
-            Add state to a particular component
-        algebraic_sum : scalar (optional)
-            If the algebraic sum of all states should be constant,
-            give the value here.
-        args : list of tuples
-            A list of tuples with states and init values. Use this to set states
-            if you need them ordered.
-        kwargs : dict
-            A dict with all states defined in this Markov model
-        """
-
-        from ode import ODE
-
-        check_arg(ode, ODE, 1)
-
-        # Call super class
-        super(MarkovModel, self).__init__(name, component)
-
-        algebraic_sum = kwargs.pop("algebraic_sum", None)
-        states = list(args) + sorted(kwargs.items())
-
-        if len(states) < 2:
-            error("Expected at least two states in a Markov model")
-
-        if algebraic_sum is not None:
-            check_arg(algebraic_sum, scalars, gt=0.0)
-
-        self._algebraic_sum = algebraic_sum
-        self._algebraic_expr = None
-        self._algebraic_name = None
-
-        self._ode = ode
-        self._is_finalized = False
-
-        # Check states kwargs
-        state_sum = 0.0
-        for state_name, init in states:
-            # FIXME: Allow Parameter as init
-            check_kwarg(init, state_name, scalars + (ScalarParam,))
-            state_sum += init if isinstance(init, scalars) else init.value
-
-        # Check algebraic sum agains initial values
-        if self._algebraic_sum is not None:
-            if abs(state_sum - self._algebraic_sum) > 1e-8 :
-                error("The given algebraic sum does not match the sum of "\
-                      "the initial state values: {0}!={1}.".format(\
-                          self._algebraic_sum, state_sum))
-
-            # Find the state which will be excluded from the states
-            for state_name, init in states:
-                if "O" not in state_name:
-                    break
-
-            algebraic_name = state_name
-        else:
-            algebraic_name = ""
-
-        # Add states to ode
-        collected_states = ODEObjectList()
-        for state_name, init in states:
-
-            # If we are not going to add the state
-            if state_name == algebraic_name:
-                continue
-
-            # Add a slaved state
-            sym = ode.add_state(state_name, init, component=component, slaved=True)
-            collected_states.append(ode.get_object(sym))
-
-        # Add an intermediate for the algebraic state
-        if self._algebraic_sum is not None:
-
-            algebraic_expr = 1 - reduce(lambda x,y:x+y, \
-                                (state.sym for state in collected_states), 0)
-
-            # Add a slaved intermediate
-            sym = ode.add_intermediate(algebraic_name, algebraic_expr, \
-                                       component=component, slaved=True)
-
-            collected_states.append(ode.intermediates.get(sym))
-
-        # Store state attributes
-        self._states = collected_states
-
-        # Rate attributes
-        self._rates = OrderedDict()
-
-    def __setitem__(self, states, rate):
-        """
-        Set a rate between states given in states
-
-        Arguments
-        ---------
-        states : tuple of size two
-            A tuple of two states for which the rate is going to be between,
-            a list of states is also accepted. If two lists are passed something
-            with a shape is expected as rate argument.
-        rate : scalar or sympy expression
-            An expression of the rate between the two states
-        """
-        from gotran.model.expressions import Expression
-
-        check_arg(states, (tuple, list), 0, MarkovModel.__setitem__)
-
-        if self._is_finalized:
-            error("The Markov model is finalized. No more rates can be added.")
-
-        # If given one list of states as arguments we assume the a quadratic
-        # assignment of rates.
-        if isinstance(states, list):
-            states = (states, states)
-
-        if len(states) != 2:
-            error("Expected the states argument to be a tuple of two states")
-
-        if all(isinstance(state, sp.Symbol) for state in states):
-
-            if not all(state in self._states for state in states):
-                error("Expected the states arguments to be States in "\
-                      "the Markov model")
-
-        elif all(isinstance(state, list) for state in states):
-
-            # Check index arguments
-            for list_of_states in states:
-                if not all(state in self._states for state in list_of_states):
-                    error("Expected the states arguments to be States in "\
-                          "the Markov model")
-
-            # Check rate matrix
-            if not hasattr(rate, "shape"):
-                error("When passing list of states as indices a rate with "\
-                      "shape attribute is expected.")
-
-            # Assign the individual rates
-            if rate.shape[0] != len(states[0]) or rate.shape[1] != len(states[1]):
-                error("Shape of rates does not match given states")
-
-            for i, state_i in enumerate(states[0]):
-                for j, state_j in enumerate(states[1]):
-                    value = rate[i,j]
-
-                    # If 0 as rate
-                    if (isinstance(value, scalars) and value == 0) or \
-                        (isinstance(value, sp.Basic) and value.is_zero):
-                        continue
-
-                    if state_i == state_j:
-                        error("Cannot have a nonzero rate value between the "\
-                              "same states")
-
-                    # Assign the rate
-                    self[state_i, state_j] = value
-
-            # Do not continue after matrix is added
-            return
-
-        else:
-            error("Expected either a list of states or only states as indices.")
-
-        if states[0] == states[1]:
-            error("The two states cannot be the same.")
-
-        if states in self._rates:
-            error("Rate between state {0} and {1} is already "\
-                  "registered.".format(*states))
-
-        # Create an Expression of the rate and store it
-        self._rates[states] = Expression("{0}-{1}".format(*states), rate, \
-                                         self._ode)
-
-        # Check that the states are not used in the rates
-        for dep_obj in self._rates[states].object_dependencies:
-            if dep_obj in self._states:
-                error("Markov model rate cannot include state variables "\
-                      "in the same Markov model: {0}".format(dep_obj))
-
-    def finalize(self):
-        """
-        Finalize the Markov model.
-
-        This will add the derivatives to the ode model. After this is
-        done no more rates can be added to the Markov model.
-        """
-        if self._is_finalized:
-            return
-
-        self._is_finalized = True
-
-        # Derivatives
-        derivatives = OrderedDict((state.sym, 0.0) for state in self._states)
-        rate_check = {}
-
-        # Build rate information and check that each rate is added in a
-        # symetric way
-        used_states = [0]*len(self._states)
-        for (from_state, to_state), rate in self._rates.items():
-
-            # Add to derivatives of the two states
-            derivatives[from_state] -= rate.expr*from_state
-            derivatives[to_state] += rate.expr*from_state
-
-            # Register rate
-            ind_from = self._states.index(from_state)
-            ind_to = self._states.index(to_state)
-            ind_tuple = (min(ind_from, ind_to), max(ind_from, ind_to))
-            if ind_tuple not in rate_check:
-                rate_check[ind_tuple] = 0
-            rate_check[ind_tuple] += 1
-
-            used_states[ind_from] = 1
-            used_states[ind_to] = 1
-
-        # Check used states
-        if 0 in used_states:
-            error("No rate registered for state {0}".format(\
-                self._states[used_states.find(0)]))
-
-        # Check rate symetry
-        for (ind_from, ind_to), times in rate_check.items():
-            if times != 2:
-                error("Only one rate between the states {0} and {1} was "\
-                      "registered, expected two.".format(\
-                          self._states[ind_from], self._states[ind_to]))
-
-        # Add derivatives
-        for state in self._states:
-            if isinstance(state, State):
-                self._ode.diff(state.derivative.sym, derivatives[state.sym], \
-                               self.component)
-
-
-    @property
-    def is_finalized(self):
-        return self._is_finalized
-
-    @property
-    def num_states(self):
-        return len(self._states)
-
-    @property
-    def states(self):
-        return self._states
-
-    def _set_algebraic_sum(self, value):
-        check_arg(value, scalars, gt=0)
-        _algebraic_sum = value
