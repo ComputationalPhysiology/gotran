@@ -18,7 +18,7 @@
 __all__ = ["ODE", "ODEObjectList", "ODEBaseComponent"]
 
 # System imports
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict, defaultdict, deque
 import re
 import types
 
@@ -585,11 +585,20 @@ class ODEBaseComponent(ODEObject):
                 if obj.is_field]
 
     @property
-    def parameters(self):
+    def all_parameters(self):
         """
         Return a list of all parameters in the component
         """
         return ode_objects(self, Parameter)
+
+    @property
+    def parameters(self):
+        """
+        Return a list of all parameters in the component which are not field
+        parameters
+        """
+        return [obj for obj in iter_objects(self, False, False, False, \
+                                            Parameter) if not obj.is_field]
 
     @property
     def field_parameters(self):
@@ -665,6 +674,13 @@ class ODEBaseComponent(ODEObject):
         Return the number of all field states
         """
         return len(self.field_states)
+
+    @property
+    def num_all_parameters(self):
+        """
+        Return the number of all parameters
+        """
+        return len(self.all_parameters)
 
     @property
     def num_parameters(self):
@@ -1229,6 +1245,8 @@ class ODE(DerivativeComponent):
         # All expanded expressions
         self.expanded_expressions = dict()
 
+        # Attributes which will be populated later
+        self._body_expressions = None
         self._mass_matrix = None
         self._jacobian_component = None
 
@@ -1435,19 +1453,21 @@ class ODE(DerivativeComponent):
 
         return obj.expr.subs(expression_subs)
 
+    @property
     def body_expressions(self):
         """
-        Return a list of all body expressions
+        Return a list of all body expressions if ODE is finalized it will be cached
         """
+        
+        if self._body_expressions:
+            return self._body_expressions
 
-        exprs = []
+        body_expressions = []
 
         # Iterate over all components
         for comp_name in self.all_expr_components_ordered:
             comp = self.all_components[comp_name]
 
-            exprs.append(comp)
-            
             # Iterate over all objects of the component
             for obj in comp.ode_objects:
 
@@ -1455,9 +1475,12 @@ class ODE(DerivativeComponent):
                 if isinstance(obj, SingleODEObjects):
                     continue
 
-            exprs.append(obj)
+                body_expressions.append(obj)
 
-        return exprs
+        if self.is_finalized:
+            self._body_expressions = body_expressions
+
+        return body_expressions
 
     def add_monitored(self, *args):
         """
@@ -1516,14 +1539,81 @@ class ODE(DerivativeComponent):
 
         return self._jacobian_component
 
+    def component_wise_derivatives(self, index):
+        """
+        Return a component holding the expressions for the ith
+        state derivative 
+        """
+        if not self.is_finalized:
+            error("Cannot compute component wise derivatives if ODE is "\
+                  "not finalized")
+
+        check_arg(index, int, ge=0, le=self.num_full_states)
+            
+        if self._component_wise_derivatives[index] is None:
+            expr = self.state_expressions[index]
+            state = expr.state
+            if not isinstance(expr, StateDerivative):
+                error("Expected a derivative component to be a "\
+                      "StateDerivative.")
+            self._component_wise_derivatives[index] = \
+                DependentExpressionComponent("d{0}_dt_component".format(\
+                state), self, expr)
+
+        return self._component_wise_derivatives[index]
+
     def finalize(self):
         """
         Finalize the ODE
         """
         super(ODE, self).finalize()
         self._present_component = self.name
+        self._compute_argument_indices()
+        self._component_wise_derivatives = [None]*self.num_full_states
 
-class JacobianComponent(DerivativeComponent):
+    def _compute_argument_indices(self):
+        """
+        Compute the argument indices for this ODE (States, StateExpressions, Parameters)
+        """
+        self._arg_indices = {}
+        
+        for ind, state_expr in enumerate(self.full_state_expressions):
+            self._arg_indices[state_expr] = ind
+            self._arg_indices[state_expr.state] = ind
+
+        for ind, param in enumerate(self.parameters):
+            self._arg_indices[param] = ind
+        
+        for ind, param in enumerate(self.field_parameters):
+            self._arg_indices[param] = ind
+
+        ind = 0
+        for expr in self.body_expressions:
+            if isinstance(expr, Comment):
+                continue
+            self._arg_indices[expr] = ind
+            ind += 1
+        
+    def arg_index(self, arg):
+        """
+        Return the argument index of an ODEValueObject
+        """
+        check_arg(arg, ODEValueObject, 0, ODE.arg_index)
+
+        if not self.is_finalized:
+            error("ODE must be finalized to extract argument indices")
+        index = self._arg_indices.get(arg)
+        if index is None:
+            error("No index registered for {0}".format(arg))
+        return index
+
+    def arg_cmp(self, arg0, arg1):
+        """
+        Compare method to sort a list of arguments
+        """
+        return cmp(self.arg_index(arg0), self.arg_index(arg1))
+
+class JacobianComponent(ODEBaseComponent):
     """
     An ODEComponent which keeps all expressions for the Jacobian of the rhs
     """
@@ -1743,6 +1833,129 @@ class JacobianForwardBackwardSubstComponent(ODEBaseComponent):
         super(JacobianForwardBackwardSubstComponent, self).__init__(\
             "JacobianForwardBackwardSubst", parent)
 
+class DependentExpressionComponent(ODEBaseComponent):
+    """
+    Component which takes a set of expressions and extracts dependent
+    expressions from the ODE
+    """
+    def __init__(self, name, parent, *args):
+        """
+        Create a DependentExpressionComponent
+
+        Arguments
+        ---------
+        args : tuple of Expressions
+        """
+        super(DependentExpressionComponent, self).__init__(\
+            name, parent)
+        
+        self.init_deps(*args)
+
+    def init_deps(self, *args):
+        """
+        Init the dependencies
+        """
+        ode_expr_deps = self.root.expression_dependencies
+        
+        # Check passed args
+        exprs = set()
+        not_checked = set()
+        used_states = set()
+        used_parameters = set()
+        used_field_parameters = set()
+
+        exprs_not_in_body = []
+
+        for i, arg in enumerate(args):
+            check_arg(arg, Expression, i+1, DependentExpressionComponent.init_deps)
+
+            # If arg is part of body
+            if self.root._arg_indices.get(arg):
+                exprs.add(arg)
+            else:
+                exprs_not_in_body.append(arg)
+            
+            # Collect dependencies
+            for obj in ode_expr_deps[arg]:
+                if isinstance(obj, Expression):
+                    not_checked.add(obj)
+                elif isinstance(obj, State):
+                    used_states.add(obj)
+                elif isinstance(obj, Parameter):
+                    if obj.is_field:
+                        used_field_parameters.add(obj)
+                    else:
+                        used_parameters.add(obj)
+
+        # Collect all dependencies
+        while not_checked:
+
+            dep_expr = not_checked.pop()
+            exprs.add(dep_expr)
+            for obj in ode_expr_deps[dep_expr]:
+                if isinstance(obj, Expression):
+                    if obj not in exprs:
+                        not_checked.add(obj)
+                elif isinstance(obj, State):
+                    used_states.add(obj)
+                elif isinstance(obj, Parameter):
+                    if obj.is_field:
+                        used_field_parameters.add(obj)
+                    else:
+                        used_parameters.add(obj)
+
+        # Sort used state, parameters and expr
+        arg_cmp = self.root.arg_cmp
+        self._used_states = sorted(used_states, arg_cmp)
+        self._used_parameters = sorted(used_parameters, arg_cmp)
+        self._used_field_parameters = sorted(used_field_parameters, arg_cmp)
+        self._body_expressions = sorted(exprs, arg_cmp)
+        self._body_expressions.extend(exprs_not_in_body)
+        
+    @property
+    def used_states(self):
+        return self._used_states
+
+    @property
+    def used_parameters(self):
+        return self._used_parameters
+
+    @property
+    def used_field_parameters(self):
+        return self._used_field_parameters
+
+    @property
+    def body_expressions(self):
+        return self._body_expressions
+
+class LinearizedDerivativeComponent(DependentExpressionComponent):
+    """
+    A component for all linear and linearized derivatives
+    """
+    def __init__(self, parent):
+
+        super(LinearizedDerivativeComponent, self).__init__(\
+            "LinearizedDerivatives", parent)
+        
+        check_arg(parent, ODE)
+        assert parent.is_finalized
+        self._linear_derivative_indices = [0]*self.root.num_full_states
+        for ind, expr in enumerate(self.root.full_state_expressions):
+            if not isinstance(expr, StateDerivative):
+                error("Cannot generate a linearized derivative of an "\
+                      "algebraic expression.")
+            expr_diff = expr.expr.diff(expr.state.sym)
+
+            if expr_diff and expr.state.sym not in expr_diff:
+
+                self._linear_derivative_indices[ind] = 1
+                self.add_intermediate("linearized_d{0}_dt".format(expr.state), expr_diff)
+
+        self.init_deps(*self.intermediates)
+
+    def linear_derivative_indices(self):
+        return self._linear_derivative_indices
+        
 class ODEObjectList(list):
     """
     Specialized container for ODEObjects
