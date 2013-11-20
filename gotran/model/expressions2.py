@@ -95,7 +95,7 @@ class Expression(ODEValueObject):
         """
         Return a formatted str of __init__ arguments
         """
-        return "'{0}', {1}".format(self.name, repr(self.expr))
+        return "'{0}', {1}".format(self.name, sympycode(self.expr))
 
 class StateExpression(Expression):
     """
@@ -194,7 +194,7 @@ class AlgebraicExpression(StateExpression):
         """
         Return a formatted str of __init__ arguments
         """
-        return "{0}, {1}".format(repr(self._state), repr(self.expr))
+        return "{0}, {1}".format(repr(self._state), sympycode(self.expr))
 
 class StateSolution(StateExpression):
     """
@@ -275,7 +275,7 @@ class DerivativeExpression(Expression):
         Return a formatted str of __init__ arguments
         """
         return "{0}, {1}, {2}".format(repr(self._der_expr), repr(self._dep_var),\
-                                      self.expr)
+                                      sympycode(self.expr))
 
 class RateExpression(Expression):
     """
@@ -283,13 +283,20 @@ class RateExpression(Expression):
     """
     def __init__(self, to_state, from_state, expr):
 
-        check_arg(from_state, (State, StateSolution), 0, RateExpression)
-        check_arg(to_state, (State, StateSolution), 1, RateExpression)
+        check_arg(to_state, (State, StateSolution), 0, RateExpression)
+        check_arg(from_state, (State, StateSolution), 1, RateExpression)
 
         super(RateExpression, self).__init__("rate_{0}_{1}".format(\
             to_state, from_state), expr)
         self._to_state = to_state
         self._from_state = from_state
+
+    def _args_str(self):
+        """
+        Return a formatted str of __init__ arguments
+        """
+        return "{0}, {1}, {2}".format(\
+            repr(self._to_state), repr(self._from_state), sympycode(self.expr))
 
 # Tuple with Derivative types, for type checking
 Derivatives = (StateDerivative, DerivativeExpression)

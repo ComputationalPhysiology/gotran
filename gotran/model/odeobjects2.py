@@ -111,7 +111,6 @@ class ODEObject(object):
         Check the name
         """
         assert(isinstance(name, str))
-        name = name.strip().replace(" ", "_")
 
         # Check for underscore in name
         if len(name) > 0 and name[0] == "_":
@@ -198,6 +197,20 @@ class ODEValueObject(ODEObject):
         param = self._param.copy(include_name=False)
         param.name = name
         self._param = param
+
+    def _check_name(self, name):
+        """
+        Check the name
+        """
+        assert(isinstance(name, str))
+        name = name.strip().replace(" ", "_")
+
+        # Check for underscore in name
+        if len(name) > 0 and name[0] == "_":
+            error("No ODEObject names can start with an underscore: "\
+                  "'{0}'".format(name))
+
+        return name
 
     @property
     def value(self):
