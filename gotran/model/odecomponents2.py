@@ -216,7 +216,7 @@ class ODEBaseComponent(ODEObject):
         self.ode_objects = ODEObjectList()
 
         # Store all state expressions
-        self._state_expressions = dict()
+        self._local_state_expressions = dict()
 
         # Flag to check if component is finalized
         self._is_finalized = False
@@ -564,8 +564,8 @@ class ODEBaseComponent(ODEObject):
         Return a list of all states in the component and its children that are
         not solved and determined by a state expression
         """
-        return [obj.state for obj in iter_objects(self, False, False, False, \
-                            StateExpression) if not obj.state.is_solved]
+        return [obj for obj in iter_objects(self, False, False, False, \
+                                            State) if not obj.is_solved]
 
     @property
     def full_state_vector(self):
@@ -621,16 +621,11 @@ class ODEBaseComponent(ODEObject):
         """
         Return a list of state expressions
         """
-        return [obj for obj in iter_objects(self, False, False, False, \
-                                            StateExpression)]
-
-    @property
-    def full_state_expressions(self):
-        """
-        Return a list of full state expressions
-        """
-        return [obj for obj in iter_objects(self, False, False, False, \
-                            StateExpression) if not obj.state.is_solved]
+        states = self.full_states
+        return sorted((obj for obj in iter_objects(self, False, False, \
+                                                   False, StateExpression)),\
+                      lambda o0, o1 : cmp(states.index(o0.state), \
+                                          states.index(o1.state)))
 
     @property
     def components(self):
@@ -732,9 +727,9 @@ class ODEBaseComponent(ODEObject):
         of registered state expressions
         """
         num_local_states = sum(1 for obj in self.ode_objects \
-                               if isinstance(obj, State))
+                               if isinstance(obj, State) and not obj.is_solved)
 
-        return num_local_states == len(self._state_expressions) 
+        return num_local_states == len(self._local_state_expressions) 
 
     def __call__(self, name):
         """
@@ -784,12 +779,17 @@ class ODEBaseComponent(ODEObject):
         """
         Register an ODEObject to the component
         """
-
+        
+        if self._is_finalized:
+            error("Cannot add {0} {1} to component {2} it is "\
+                  "already finalized.".format(\
+                      obj.__class__.__name__, obj, self))
+        
         self._check_reserved_wordings(obj)
 
         # If registering a StateExpression
         if isinstance(obj, StateExpression):
-            if obj.state in self._state_expressions:
+            if obj.state in self._local_state_expressions:
                 error("A StateExpression for state {0} is already registered "\
                       "in this component.")
 
@@ -800,7 +800,7 @@ class ODEBaseComponent(ODEObject):
                       "not registered in the {2} component.".format(\
                           obj, obj.state, self))
 
-            self._state_expressions[obj.state] = obj
+            self._local_state_expressions[obj.state] = obj
 
         # If obj is Intermediate register it as an attribute so it can be used
         # later on.
@@ -835,17 +835,20 @@ class ODEBaseComponent(ODEObject):
                   "expressions, however {1} is not an AlgebraicExpression."\
                   .format(obj.name))
 
-    def finalize(self):
+    def finalize_component(self):
         """
         Called whenever the component should be finalized
         """
+        if self.is_finalized:
+            return
+
         if not self.is_locally_complete:
             error("Cannot finalize component '{0}'. It is "\
                   "not complete.".format(self))
             
-        if self.is_finalized:
-            error("Cannot finalize component '{0}'. It is already "\
-                  "finalized.".format(self))
+        #if self.is_finalized:
+        #    error("Cannot finalize component '{0}'. It is already "\
+        #          "finalized.".format(self))
 
         self._is_finalized = True
 
@@ -1116,7 +1119,7 @@ class MarkovModelComponent(ODEBaseComponent):
             error("Trying to register a {0} but that is not allowed in a"\
                   "Markov model component.".format(special_expression_str[TYPE]))
 
-    def finalize(self):
+    def finalize_component(self):
         """
         Finalize the Markov model.
 
@@ -1249,6 +1252,10 @@ class ODE(DerivativeComponent):
         self._body_expressions = None
         self._mass_matrix = None
         self._jacobian_component = None
+        self._linearized_derivatives = None
+        
+        # Global finalized flag
+        self._is_finalized_ode = False
 
         # Flag that the ODE is constructed
         self._constructed = True
@@ -1289,7 +1296,7 @@ class ODE(DerivativeComponent):
         Register an ODE object in the root ODEComponent
         """
 
-        if self.is_finalized and isinstance(obj, StateExpression):
+        if self._is_finalized_ode and isinstance(obj, StateExpression):
             error("Cannot register a StateExpression, the ODE is finalized")
 
         # Check for existing object in the ODE
@@ -1368,7 +1375,7 @@ class ODE(DerivativeComponent):
 
             # Finalize the last component we visited
             self.all_components[\
-                self.all_expr_components_ordered[-1]].finalize()
+                self.all_expr_components_ordered[-1]].finalize_component()
                 
             # Append this component
             self.all_expr_components_ordered.append(comp.name)
@@ -1518,18 +1525,29 @@ class ODE(DerivativeComponent):
             
         if not self._mass_matrix:
         
-            state_exprs = [expr for expr in self.state_expressions \
-                           if not expr.state.is_solved]
+            state_exprs = self.state_expressions
             N = len(state_exprs)
             self._mass_matrix = sp.Matrix(N, N, lambda i, j : 1 if i==j and \
                         isinstance(state_exprs[i], StateDerivative) else 0)
             
         return self._mass_matrix
 
+    @property
+    def is_dae(self):
+        """
+        Return True if ODE is a DAE
+        """
+        if not self.is_complete:
+            error("The ODE is not complete")
+
+        return any(isinstance(expr, AlgebraicExpression) for expr in \
+                   self.state_expressions)
+    
     def jacobian_component(self):
         """
         If the ODE is finished a Jacobian component is constructed and returned
         """
+        from algorithmcomponents import JacobianComponent
         if not self.is_complete:
             error("The ODE is not complete")
 
@@ -1539,11 +1557,12 @@ class ODE(DerivativeComponent):
 
         return self._jacobian_component
 
-    def component_wise_derivatives(self, index):
+    def component_wise_derivative(self, index):
         """
         Return a component holding the expressions for the ith
         state derivative 
         """
+        from algorithmcomponents import DependentExpressionComponent
         if not self.is_finalized:
             error("Cannot compute component wise derivatives if ODE is "\
                   "not finalized")
@@ -1562,11 +1581,30 @@ class ODE(DerivativeComponent):
 
         return self._component_wise_derivatives[index]
 
+    def linearized_derivatives(self):
+        """
+        Return a component holding linearized derivative expressions 
+        """
+        from algorithmcomponents import LinearizedDerivativeComponent
+        
+        if not self.is_complete:
+            error("The ODE is not complete")
+
+        if not self._linearized_derivatives:
+            
+            self._linearized_derivatives = LinearizedDerivativeComponent(self)
+
+        return self._linearized_derivatives
+        
+
     def finalize(self):
         """
         Finalize the ODE
         """
-        super(ODE, self).finalize()
+        for comp in self.components:
+            comp.finalize_component()
+            
+        self._is_finalized_ode = True
         self._present_component = self.name
         self._compute_argument_indices()
         self._component_wise_derivatives = [None]*self.num_full_states
@@ -1577,7 +1615,7 @@ class ODE(DerivativeComponent):
         """
         self._arg_indices = {}
         
-        for ind, state_expr in enumerate(self.full_state_expressions):
+        for ind, state_expr in enumerate(self.state_expressions):
             self._arg_indices[state_expr] = ind
             self._arg_indices[state_expr.state] = ind
 
@@ -1613,349 +1651,6 @@ class ODE(DerivativeComponent):
         """
         return cmp(self.arg_index(arg0), self.arg_index(arg1))
 
-class JacobianComponent(ODEBaseComponent):
-    """
-    An ODEComponent which keeps all expressions for the Jacobian of the rhs
-    """
-    def __init__(self, parent):
-        """
-        Create a JacobianComponent
-
-        Arguments
-        ---------
-        name : str
-            The name of the component. This str serves as the unique
-            identifier of the Component.
-        parent : ODEBaseComponent
-            The parent component of this ODEComponent
-        """
-        super(JacobianComponent, self).__init__("Jacobian", parent)
-
-        # Gather state expressions and states
-        state_exprs = self.root.full_state_expressions
-        states = self.root.full_states
-
-        # Create Jacobian matrix
-        N = len(states)
-        self._jacobian = sp.Matrix(N, N, lambda i, j : 0.0)
-        
-        self._num_nonzero = 0
-        
-        for i, expr in enumerate(state_exprs):
-            for j, state in enumerate(states):
-
-                jac_ij = expr.expr.diff(state.sym)
-
-                # Only collect non zero contributions
-                if jac_ij:
-                    self._num_nonzero += 1
-                    jac_ij = self.add_intermediate("jac_{0}_{1}".format(i,j), jac_ij)
-                    self._jacobian[i, j] = jac_ij
-
-        # Attributes for jacobian action and jacobian solution components
-        self._action_component = None
-        self._factorization_component = None
-
-    @property
-    def jacobian(self):
-        """
-        Return the jacobian matrix
-        """
-        return self._jacobian
-
-    @property
-    def num_nonzero(self):
-        """
-        Return the num non zeros of the Jacobian
-        """
-        return self._num_nonzero
-
-
-    @property
-    def action_component(self):
-        """
-        Return a jacobian action component
-        """
-
-        if self._action_component is None:
-            self._action_component = JacobianActionComponent(self.root)
-
-        return self._action_component
-
-    @property
-    def factorization_component(self):
-        """
-        Return a jacobian factorization component
-        """
-
-        if self._factorization_component is None:
-            self._factorization_component = \
-                        JacobianFactorizationComponent(self.root)
-
-        return self._factorization_component
-
-    @property
-    def forward_backward_subst_component(self):
-        """
-        Return a jacobian forward_backward_subst component
-        """
-
-        if self._forward_backward_subst_component is None:
-            self._forward_backward_subst_component = \
-                        JacobianForwardBackwardSubstComponent(self.root)
-
-        return self._forward_backward_subst_component
-        
-
-class JacobianActionComponent(ODEBaseComponent):
-    """
-    Jacobian action component which returns the expressions for Jac*x
-    """
-    def __init__(self, parent):
-        """
-        Create a JacobianActionComponent
-        """
-        super(JacobianActionComponent, self).__init__("JacobianAction", parent)
-
-        x = self.root.full_state_vector
-        jac = self.root.jacobian_component().jacobian
-
-        self._action_vector = sp.Matrix(len(x), 1,lambda i,j:0)
-
-        # Create Jacobian matrix
-        for i, expr in enumerate(jac*x):
-            self._action_vector[i] = self.add_intermediate(\
-                "jac_action_{0}".format(i), expr)
-
-    def action_vector(self):
-        """
-        Return the vector of all action symbols
-        """
-        return self._action_vector
-
-class JacobianFactorizationComponent(ODEBaseComponent):
-    """
-    Class to generate expressions for symbolicaly factorize a jacobian
-    """
-    def __init__(self, parent):
-        """
-        Create a JacobianSymbolicFactorizationComponent
-        """
-        
-        super(JacobianFactorizationComponent, self).__init__(\
-            "JacobianFactorization", parent)
-
-        # Get copy of jacobian
-        jac = self.root.jacobian_component().jacobian[:,:]
-        p = []
-
-        # Size of system
-        n = jac.rows
-
-        def add_intermediate_if_changed(jac, jac_ij, i, j):
-            # If item has changed 
-            if jac_ij != jac[i,j]:
-                jac[i,j] = self.add_intermediate(\
-                    "jac_{0}_{1}".format(i,j), jac_ij)
-
-        # Do the factorization
-        for j in range(n):
-            for i in range(j):
-                
-                # Get sympy expr of A_ij
-                jac_ij = jac[i,j]
-
-                # Build sympy expression
-                for k in range(i):
-                    jac_ij -= jac[i,k]*jac[k,j]
-
-                add_intermediate_if_changed(jac, jac_ij, i, j)
-                    
-            pivot = -1
-
-            for i in range(j, n):
-
-                # Get sympy expr of A_ij
-                jac_ij = jac[i,j]
-
-                # Build sympy expression
-                for k in range(j):
-                    jac_ij -= jac[i,k]*jac[k,j]
-
-                add_intermediate_if_changed(jac, jac_ij, i, j)
-
-                # find the first non-zero pivot, includes any expression
-                if pivot == -1 and jac[i,j]:
-                    pivot = i
-                
-            if pivot < 0:
-                # this result is based on iszerofunc's analysis of the
-                # possible pivots, so even though the element may not be
-                # strictly zero, the supplied iszerofunc's evaluation gave
-                # True
-                error("No nonzero pivot found; symbolic inversion failed.")
-
-            if pivot != j: # row must be swapped
-                jac.row_swap(pivot,j)
-                p.append([pivot,j])
-                print "Pivoting!!"
-
-            # Scale with diagonal
-            if not jac[j,j]:
-                error("Diagonal element of the jacobian is zero. "\
-                      "Inversion failed")
-                
-            scale = 1 / jac[j,j]
-            for i in range(j+1, n):
-                
-                # Get sympy expr of A_ij
-                jac_ij = jac[i,j]
-                jac_ij *= scale
-                add_intermediate_if_changed(jac, jac_ij, i, j)
-
-        # Store factorized jacobian
-        self._factorized_jacobian = jac
-
-    @property
-    def factorized_jacobian(self):
-        return self._factorized_jacobian
-        
-class JacobianForwardBackwardSubstComponent(ODEBaseComponent):
-    """
-    Class to generate a forward backward substiution algorithm for
-    symbolically factorized jacobian
-    """
-    def __init__(self, parent):
-        """
-        Create a JacobianForwardBackwardSubstComponent
-        """
-        
-        super(JacobianForwardBackwardSubstComponent, self).__init__(\
-            "JacobianForwardBackwardSubst", parent)
-
-class DependentExpressionComponent(ODEBaseComponent):
-    """
-    Component which takes a set of expressions and extracts dependent
-    expressions from the ODE
-    """
-    def __init__(self, name, parent, *args):
-        """
-        Create a DependentExpressionComponent
-
-        Arguments
-        ---------
-        args : tuple of Expressions
-        """
-        super(DependentExpressionComponent, self).__init__(\
-            name, parent)
-        
-        self.init_deps(*args)
-
-    def init_deps(self, *args):
-        """
-        Init the dependencies
-        """
-        ode_expr_deps = self.root.expression_dependencies
-        
-        # Check passed args
-        exprs = set()
-        not_checked = set()
-        used_states = set()
-        used_parameters = set()
-        used_field_parameters = set()
-
-        exprs_not_in_body = []
-
-        for i, arg in enumerate(args):
-            check_arg(arg, Expression, i+1, DependentExpressionComponent.init_deps)
-
-            # If arg is part of body
-            if self.root._arg_indices.get(arg):
-                exprs.add(arg)
-            else:
-                exprs_not_in_body.append(arg)
-            
-            # Collect dependencies
-            for obj in ode_expr_deps[arg]:
-                if isinstance(obj, Expression):
-                    not_checked.add(obj)
-                elif isinstance(obj, State):
-                    used_states.add(obj)
-                elif isinstance(obj, Parameter):
-                    if obj.is_field:
-                        used_field_parameters.add(obj)
-                    else:
-                        used_parameters.add(obj)
-
-        # Collect all dependencies
-        while not_checked:
-
-            dep_expr = not_checked.pop()
-            exprs.add(dep_expr)
-            for obj in ode_expr_deps[dep_expr]:
-                if isinstance(obj, Expression):
-                    if obj not in exprs:
-                        not_checked.add(obj)
-                elif isinstance(obj, State):
-                    used_states.add(obj)
-                elif isinstance(obj, Parameter):
-                    if obj.is_field:
-                        used_field_parameters.add(obj)
-                    else:
-                        used_parameters.add(obj)
-
-        # Sort used state, parameters and expr
-        arg_cmp = self.root.arg_cmp
-        self._used_states = sorted(used_states, arg_cmp)
-        self._used_parameters = sorted(used_parameters, arg_cmp)
-        self._used_field_parameters = sorted(used_field_parameters, arg_cmp)
-        self._body_expressions = sorted(exprs, arg_cmp)
-        self._body_expressions.extend(exprs_not_in_body)
-        
-    @property
-    def used_states(self):
-        return self._used_states
-
-    @property
-    def used_parameters(self):
-        return self._used_parameters
-
-    @property
-    def used_field_parameters(self):
-        return self._used_field_parameters
-
-    @property
-    def body_expressions(self):
-        return self._body_expressions
-
-class LinearizedDerivativeComponent(DependentExpressionComponent):
-    """
-    A component for all linear and linearized derivatives
-    """
-    def __init__(self, parent):
-
-        super(LinearizedDerivativeComponent, self).__init__(\
-            "LinearizedDerivatives", parent)
-        
-        check_arg(parent, ODE)
-        assert parent.is_finalized
-        self._linear_derivative_indices = [0]*self.root.num_full_states
-        for ind, expr in enumerate(self.root.full_state_expressions):
-            if not isinstance(expr, StateDerivative):
-                error("Cannot generate a linearized derivative of an "\
-                      "algebraic expression.")
-            expr_diff = expr.expr.diff(expr.state.sym)
-
-            if expr_diff and expr.state.sym not in expr_diff:
-
-                self._linear_derivative_indices[ind] = 1
-                self.add_intermediate("linearized_d{0}_dt".format(expr.state), expr_diff)
-
-        self.init_deps(*self.intermediates)
-
-    def linear_derivative_indices(self):
-        return self._linear_derivative_indices
-        
 class ODEObjectList(list):
     """
     Specialized container for ODEObjects

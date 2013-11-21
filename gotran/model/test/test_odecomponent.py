@@ -59,9 +59,10 @@ class TestODEComponent(unittest.TestCase):
 
         # Test num_foo
         self.assertEqual(jada.num_states, 4)
-        self.assertEqual(jada.num_parameters, 2)
+        self.assertEqual(jada.num_all_parameters, 2)
+        self.assertEqual(jada.num_parameters, 1)
         self.assertEqual(ode.num_states, 7)
-        self.assertEqual(ode.num_parameters, 5)
+        self.assertEqual(ode.num_all_parameters, 5)
         self.assertEqual(ode.num_components, 2)
         self.assertEqual(ode.num_field_states, 1)
         self.assertEqual(ode.num_field_parameters, 1)
@@ -83,7 +84,7 @@ class TestODEComponent(unittest.TestCase):
         jada.add_algebraic(jada.o, jada.o**2-exp(jada.o)+2/jada.o)
 
         self.assertEqual(ode.num_intermediates, 15)
-        self.assertEqual(ode.num_state_expressions, 7)
+        self.assertEqual(ode.num_state_expressions, 6)
         self.assertTrue(ode.is_complete)
         self.assertEqual(ode.num_full_states, 6)
 
@@ -97,9 +98,8 @@ class TestODEComponent(unittest.TestCase):
         self.assertEqual(bada.num_states, 4)
         nada.p = 1 - nada.r - nada.s - nada.q
         
-        self.assertEqual("".join(p.name for p in ode.parameters), "iijjkkllmmnnooppqq")
+        self.assertEqual("".join(p.name for p in ode.all_parameters), "iijjkkllmmnnooppqq")
         self.assertEqual("".join(s.name for s in ode.states), "jiklmnorsqp")
-        self.assertEqual("".join(s.name for s in ode.full_states), "jiklmorsq")
         self.assertFalse(ode.is_complete)
 
         nada.add_single_rate(nada.r, nada.s, 1.0)
@@ -111,8 +111,9 @@ class TestODEComponent(unittest.TestCase):
         nada.add_single_rate(nada.q, nada.p, 3.0)
         nada.add_single_rate(nada.p, nada.q, 4.0)
         
-        nada.finalize()
+        nada.finalize_component()
 
+        self.assertEqual("".join(s.name for s in ode.full_states), "jiklmorsq")
         self.assertEqual(ode.present_component, nada)
 
         self.assertTrue(ode.is_complete)

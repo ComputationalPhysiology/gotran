@@ -196,7 +196,7 @@ class AlgebraicExpression(StateExpression):
         """
         return "{0}, {1}".format(repr(self._state), sympycode(self.expr))
 
-class StateSolution(StateExpression):
+class StateSolution(Expression):
     """
     Sub class of Expression for state solution expressions
     """
@@ -213,14 +213,19 @@ class StateSolution(StateExpression):
         """
 
         check_arg(state, State, 0, StateSolution)
-        super(StateSolution, self).__init__(sympycode(state.sym), state, expr)
+        super(StateSolution, self).__init__(sympycode(state.sym), expr)
 
         if state.is_field:
             error("Cannot registered a solved state that is a field_state")
 
         # Flag solved state
         state._is_solved = True
+        self._state = state
         
+    @property
+    def state(self):
+        return self._state
+
     def _args_str(self):
         """
         Return a formatted str of __init__ arguments
