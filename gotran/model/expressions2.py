@@ -17,7 +17,7 @@
 
 __all__ = ["Expression", "DerivativeExpression", "AlgebraicExpression", \
            "StateExpression", "StateSolution", "RateExpression", \
-           "StateDerivative", "Derivatives"]
+           "Intermediate", "StateDerivative", "Derivatives"]
 
 # ModelParameters imports
 from modelparameters.sympytools import sp, symbols_from_expr
@@ -96,6 +96,130 @@ class Expression(ODEValueObject):
         Return a formatted str of __init__ arguments
         """
         return "'{0}', {1}".format(self.name, sympycode(self.expr))
+
+class Intermediate(Expression):
+    """
+    An empty class for all Intermediate classes
+    """
+    def __init__(self, name, expr):
+        """
+        Create an Intermediate with an associated name
+
+        Arguments
+        ---------
+        name : str
+            The name of the Expression
+        expr : sympy.Basic
+            The expression
+        """
+        super(Intermediate, self).__init__(name, expr)
+
+class StateSolution(Intermediate):
+    """
+    Sub class of Expression for state solution expressions
+    """
+    def __init__(self, state, expr):
+        """
+        Create a StateSolution
+
+        Arguments
+        ---------
+        state : State
+            The state that is being solved for
+        expr : sympy.Basic
+            The expression that should equal 0 and which solves the state
+        """
+
+        check_arg(state, State, 0, StateSolution)
+        super(StateSolution, self).__init__(sympycode(state.sym), expr)
+
+        if state.is_field:
+            error("Cannot registered a solved state that is a field_state")
+
+        # Flag solved state
+        state._is_solved = True
+        self._state = state
+        
+    @property
+    def state(self):
+        return self._state
+
+    def _args_str(self):
+        """
+        Return a formatted str of __init__ arguments
+        """
+        return "'{0}', {1}".format(repr(self.state), sympycode(self.expr))
+
+class DerivativeExpression(Intermediate):
+    """
+    A class for Intermediate derivative expressions
+    """
+    def __init__(self, der_expr, dep_var, expr):
+        """
+        Create a DerivativeExpression
+
+        Arguments
+        ---------
+        der_expr : Expression, State
+            The Expression or State which is differentiated
+        dep_var : State, Time, Expression
+            The dependent variable
+        expr : sympy.Basic
+            The expression which the differetiation should be equal
+        """
+        check_arg(der_expr, Expression, 0, DerivativeExpression)
+        check_arg(dep_var, (State, Expression, Time), 1, DerivativeExpression)
+
+        # Check that the der_expr is dependent on var
+        if dep_var.sym not in der_expr.sym:
+            error("Cannot create a DerivativeExpression as {0} is not "\
+                  "dependent on {1}".format(der_expr, dep_var))
+
+        self._sym = sp.Derivative(der_expr.sym, dep_var.sym)
+        self._der_expr = der_expr
+        self._dep_var = dep_var
+
+        super(DerivativeExpression, self).__init__(sympycode(self._sym), expr)
+
+    @property
+    def sym(self):
+        return self._sym
+
+    @property
+    def der_expr(self):
+        return self._der_expr
+
+    @property
+    def dep_var(self):
+        return self._dep_var
+
+    def _args_str(self):
+        """
+        Return a formatted str of __init__ arguments
+        """
+        return "{0}, {1}, {2}".format(repr(self._der_expr), repr(self._dep_var),\
+                                      sympycode(self.expr))
+
+class RateExpression(Intermediate):
+    """
+    A sub class of Expression holding single rates
+    """
+    def __init__(self, to_state, from_state, expr):
+
+        check_arg(to_state, (State, StateSolution), 0, RateExpression)
+        check_arg(from_state, (State, StateSolution), 1, RateExpression)
+
+        super(RateExpression, self).__init__("rate_{0}_{1}".format(\
+            to_state, from_state), expr)
+        self._to_state = to_state
+        self._from_state = from_state
+
+    def _args_str(self):
+        """
+        Return a formatted str of __init__ arguments
+        """
+        return "{0}, {1}, {2}".format(\
+            repr(self._to_state), repr(self._from_state), sympycode(self.expr))
 
 class StateExpression(Expression):
     """
@@ -195,113 +319,6 @@ class AlgebraicExpression(StateExpression):
         Return a formatted str of __init__ arguments
         """
         return "{0}, {1}".format(repr(self._state), sympycode(self.expr))
-
-class StateSolution(Expression):
-    """
-    Sub class of Expression for state solution expressions
-    """
-    def __init__(self, state, expr):
-        """
-        Create a StateSolution
-
-        Arguments
-        ---------
-        state : State
-            The state that is being solved for
-        expr : sympy.Basic
-            The expression that should equal 0 and which solves the state
-        """
-
-        check_arg(state, State, 0, StateSolution)
-        super(StateSolution, self).__init__(sympycode(state.sym), expr)
-
-        if state.is_field:
-            error("Cannot registered a solved state that is a field_state")
-
-        # Flag solved state
-        state._is_solved = True
-        self._state = state
-        
-    @property
-    def state(self):
-        return self._state
-
-    def _args_str(self):
-        """
-        Return a formatted str of __init__ arguments
-        """
-        return "'{0}', {1}".format(repr(self.state), sympycode(self.expr))
-
-class DerivativeExpression(Expression):
-    """
-    A class for Intermediate derivative expressions
-    """
-    def __init__(self, der_expr, dep_var, expr):
-        """
-        Create a DerivativeExpression
-
-        Arguments
-        ---------
-        der_expr : Expression, State
-            The Expression or State which is differentiated
-        dep_var : State, Time, Expression
-            The dependent variable
-        expr : sympy.Basic
-            The expression which the differetiation should be equal
-        """
-        check_arg(der_expr, Expression, 0, DerivativeExpression)
-        check_arg(dep_var, (State, Expression, Time), 1, DerivativeExpression)
-
-        # Check that the der_expr is dependent on var
-        if dep_var.sym not in der_expr.sym:
-            error("Cannot create a DerivativeExpression as {0} is not "\
-                  "dependent on {1}".format(der_expr, dep_var))
-
-        self._sym = sp.Derivative(der_expr.sym, dep_var.sym)
-        self._der_expr = der_expr
-        self._dep_var = dep_var
-
-        super(DerivativeExpression, self).__init__(sympycode(self._sym), expr)
-
-    @property
-    def sym(self):
-        return self._sym
-
-    @property
-    def der_expr(self):
-        return self._der_expr
-
-    @property
-    def dep_var(self):
-        return self._dep_var
-
-    def _args_str(self):
-        """
-        Return a formatted str of __init__ arguments
-        """
-        return "{0}, {1}, {2}".format(repr(self._der_expr), repr(self._dep_var),\
-                                      sympycode(self.expr))
-
-class RateExpression(Expression):
-    """
-    A sub class of Expression holding single rates
-    """
-    def __init__(self, to_state, from_state, expr):
-
-        check_arg(to_state, (State, StateSolution), 0, RateExpression)
-        check_arg(from_state, (State, StateSolution), 1, RateExpression)
-
-        super(RateExpression, self).__init__("rate_{0}_{1}".format(\
-            to_state, from_state), expr)
-        self._to_state = to_state
-        self._from_state = from_state
-
-    def _args_str(self):
-        """
-        Return a formatted str of __init__ arguments
-        """
-        return "{0}, {1}, {2}".format(\
-            repr(self._to_state), repr(self._from_state), sympycode(self.expr))
 
 # Tuple with Derivative types, for type checking
 Derivatives = (StateDerivative, DerivativeExpression)

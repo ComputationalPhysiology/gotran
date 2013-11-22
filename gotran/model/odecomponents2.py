@@ -472,7 +472,7 @@ class ODEBaseComponent(ODEObject):
         """
 
         # Create an Intermediate in the present component
-        expr = Expression(name, expr)
+        expr = Intermediate(name, expr)
 
         self._register_component_object(expr)
 
@@ -614,7 +614,7 @@ class ODEBaseComponent(ODEObject):
         Return a list of all intermediates
         """
         return [obj for obj in iter_objects(self, False, False, False, \
-                                            Expression)]
+                                            Intermediate)]
 
     @property
     def state_expressions(self):
@@ -839,7 +839,7 @@ class ODEBaseComponent(ODEObject):
         """
         Called whenever the component should be finalized
         """
-        if self.is_finalized:
+        if self._is_finalized:
             return
 
         if not self.is_locally_complete:
@@ -1126,7 +1126,7 @@ class MarkovModelComponent(ODEBaseComponent):
         This will add the derivatives to the ode model. After this is
         done no more rates can be added to the Markov model.
         """
-        if self.is_finalized:
+        if self._is_finalized:
             error("Cannot finalize a component that is already finalized")
 
         # Derivatives
@@ -1144,8 +1144,8 @@ class MarkovModelComponent(ODEBaseComponent):
             to_state = self.ode_objects.get(to_state)
 
             # Add to derivatives of the two states
-            derivatives[from_state] -= rate.expr*from_state.sym
-            derivatives[to_state] += rate.expr*from_state.sym
+            derivatives[from_state] -= rate.sym*from_state.sym
+            derivatives[to_state] += rate.sym*from_state.sym
             
             if isinstance(from_state, StateSolution):
                 from_state = from_state.state
@@ -1181,8 +1181,9 @@ class MarkovModelComponent(ODEBaseComponent):
             if not isinstance(state, State) or state.is_solved:
                 continue
             
-            obj = StateDerivative(state, derivatives[state])
-            self._register_component_object(obj)
+            self.add_derivative(state, state.time.sym, derivatives[state])
+            #obj = StateDerivative(state, derivatives[state])
+            #self._register_component_object(obj)
 
         assert self.is_locally_complete, "The Markov model should be complete..."
             
@@ -1337,9 +1338,9 @@ class ODE(DerivativeComponent):
         # If Expression
         if isinstance(obj, Expression):
 
-            # Append the name to the list all ordered components with
-            # expressions
-            if not self.is_finalized:
+            # Append the name to the list of all ordered components with
+            # expressions. If the ODE is finalized we do not update components
+            if not self._is_finalized_ode:
                 self._handle_expr_component(comp)
 
             # Expand and add any derivatives in the expressions
@@ -1363,6 +1364,7 @@ class ODE(DerivativeComponent):
         A help function to sort and add components in the ordered
         the intermediate expressions are added to the ODE
         """
+        
         if len(self.all_expr_components_ordered) == 0:
             self.all_expr_components_ordered.append(comp.name)
 
@@ -1473,6 +1475,7 @@ class ODE(DerivativeComponent):
 
         # Iterate over all components
         for comp_name in self.all_expr_components_ordered:
+
             comp = self.all_components[comp_name]
 
             # Iterate over all objects of the component

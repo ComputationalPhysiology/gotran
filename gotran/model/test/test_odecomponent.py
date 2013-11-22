@@ -46,7 +46,7 @@ class TestODEComponent(unittest.TestCase):
         ode.dj_dt = -ode.alpha - jj
         ode.dk_dt = kk*k*ode.alpha
 
-        self.assertEqual(ode.num_intermediates, 4)
+        self.assertEqual(ode.num_intermediates, 1)
 
         # Add a component with 2 states
         ode("jada").add_states(m=2.0, n=3.0, l=1.0, o=4.0)
@@ -75,7 +75,7 @@ class TestODEComponent(unittest.TestCase):
         # Reduce state n
         jada.add_solve_state(jada.n, 1-jada.l-jada.m-jada.n)
 
-        self.assertEqual(ode.num_intermediates, 8)
+        self.assertEqual(ode.num_intermediates, 4)
 
         # Create a derivative expression
         ode.add_comment("More funky objects")
@@ -83,7 +83,7 @@ class TestODEComponent(unittest.TestCase):
         jada.add_derivative(jada.l, ode.t, jada.tmp3)
         jada.add_algebraic(jada.o, jada.o**2-exp(jada.o)+2/jada.o)
 
-        self.assertEqual(ode.num_intermediates, 15)
+        self.assertEqual(ode.num_intermediates, 9)
         self.assertEqual(ode.num_state_expressions, 6)
         self.assertTrue(ode.is_complete)
         self.assertEqual(ode.num_full_states, 6)
@@ -102,21 +102,24 @@ class TestODEComponent(unittest.TestCase):
         self.assertEqual("".join(s.name for s in ode.states), "jiklmnorsqp")
         self.assertFalse(ode.is_complete)
 
-        nada.add_single_rate(nada.r, nada.s, 1.0)
+        nada.add_single_rate(nada.r, nada.s, 3*exp(-i))
         nada.add_single_rate(nada.s, nada.r, 2.0)
 
         nada.add_single_rate(nada.s, nada.q, 2.0)
-        nada.add_single_rate(nada.q, nada.s, 1.0)
+        nada.add_single_rate(nada.q, nada.s, 2*exp(-i))
 
         nada.add_single_rate(nada.q, nada.p, 3.0)
         nada.add_single_rate(nada.p, nada.q, 4.0)
-        
+
         nada.finalize_component()
 
         self.assertEqual("".join(s.name for s in ode.full_states), "jiklmorsq")
         self.assertEqual(ode.present_component, nada)
 
         self.assertTrue(ode.is_complete)
+
+        for expr in ode.body_expressions:
+            print expr, expr.expr if hasattr(expr, "expr") else ""
         
 
 if __name__ == "__main__":

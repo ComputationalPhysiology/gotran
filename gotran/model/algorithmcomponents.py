@@ -89,7 +89,6 @@ class JacobianComponent(ODEBaseComponent):
         """
         return self._num_nonzero
 
-
     def action_component(self):
         """
         Return a jacobian action component
@@ -233,6 +232,15 @@ class JacobianFactorizationComponent(ODEBaseComponent):
 
         # Store factorized jacobian
         self._factorized_jacobian = jac
+        self._num_nonzero = sum(not jac[i,j].is_zero for i in range(n) \
+                                for j in range(n))
+
+    @property
+    def num_nonzero(self):
+        """
+        Return the num non zeros of the Jacobian
+        """
+        return self._num_nonzero
 
     @property
     def factorized_jacobian(self):

@@ -186,6 +186,7 @@ class ODEValueObject(ODEObject):
 
             # Store the Param
         self._param = value
+        self._arg_ind = -1
 
     def rename(self, name):
         """
@@ -239,9 +240,25 @@ class ODEValueObject(ODEObject):
         return "'{0}', {1}".format(self.name, self._param.repr(\
             include_name=False))
 
+    @property
+    def arg_ind(self):
+        """
+        Attribute to determine an argument index
+        """
+        return self._arg_ind
+
+    @arg_ind.setter
+    def arg_ind(self, value):
+        """
+        Set argument index
+        """
+        value = tuplewrap(value)
+        check_arg(value, tuple, itemtype=int)
+        self_arg_ind = value
+
 class State(ODEValueObject):
     """
-    Container class for a State variable
+    class for a State variable
     """
     def __init__(self, name, init, time):
         """
@@ -309,7 +326,7 @@ class State(ODEValueObject):
 
 class Parameter(ODEValueObject):
     """
-    Container class for a Parameter
+    class for a Parameter
     """
     def __init__(self, name, init):
         """
@@ -342,6 +359,23 @@ class Parameter(ODEValueObject):
                                (self._param.value, \
                                 self._param._check_arg(), \
                                 self._param._name_arg()))
+
+class Argument(ODEValueObject):
+    """
+    class for an arbitrary argument
+    """
+    def __init__(self, name):
+        """
+        Create a Parameter with an associated initial value
+
+        Arguments
+        ---------
+        name : str
+            The name of the argument
+        """
+
+        # Call super class
+        super(Argument, self).__init__(name, 0.0)
 
 class Time(ODEValueObject):
     """

@@ -258,7 +258,8 @@ def _namespace_binder(namespace, ode, load_arguments):
     
     def states(*args, **kwargs):
         """
-        Add a number of states to the current ODE or to the chosed component
+        Add a number of states to the current component or to the
+        chosed component
         """
         
         # If comp string is passed we get the component
