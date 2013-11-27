@@ -5,9 +5,9 @@ import re
 
 model = "winslow_rice_jafri_marban_ororke_1999.cellml"
 #model = "iyer_mazhari_winslow_2004.cellml"
-#model = "severi_fantini_charawi_difrancesco_2012.cellml"
+model = "severi_fantini_charawi_difrancesco_2012.cellml"
 #model = "terkildsen_niederer_crampin_hunter_smith_2008.cellml"
-model = "Pandit_Hinch_Niederer.cellml"
+#model = "Pandit_Hinch_Niederer.cellml"
 
 extract_equations = []
 change_state_names = []
@@ -167,7 +167,7 @@ for con in cellml.getiterator(cellml_namespace + "connection"):
         var2_interface = var2_attr.get("public_interface") or \
                          var2_attr.get("private_interface")
         
-        assert var1_interface != var2_interface or var1_interface == "in"
+        #assert var1_interface != var2_interface or var1_interface == "in"
 
         #if not direction:
         #    direction =  1 if components[comp1]["variables"][var1]\

@@ -954,7 +954,7 @@ class CellMLParser(object):
             # Collect initial state values
             if comp.state_variables:
                 declaration_lines.append("")
-                declaration_lines.append("states({0} ,".format(comp_name))
+                declaration_lines.append("states({0},".format(comp_name))
                 for name, value in comp.state_variables.items():
                     declaration_lines.append("       {0} = {1},".format(name, value))
                 declaration_lines[-1] = declaration_lines[-1][:-1]+")"
@@ -962,7 +962,7 @@ class CellMLParser(object):
             # Collect initial parameters values
             if comp.parameters:
                 declaration_lines.append("")
-                declaration_lines.append("parameters({0} ,".format(comp_name))
+                declaration_lines.append("parameters({0},".format(comp_name))
                 for name, value in comp.parameters.items():
                     declaration_lines.append("           {0} = {1},".format(\
                         name, value))
@@ -992,7 +992,7 @@ class CellMLParser(object):
         open("{0}.ode".format(self.name), \
              "w").write()
 
-def cellml2ode(model_source, extract_equations=None, change_state_names=None):
+def cellml2ode(model_source, **options):
     """
     Convert a CellML model into an ode
 
@@ -1000,15 +1000,13 @@ def cellml2ode(model_source, extract_equations=None, change_state_names=None):
     ----------
     model_source: str
         Path or url to CellML file
-    extract_equations : list of str (optional)
-        List of equations which should be extracted from its component
-        to prevent circular dependency
-    change_state_names : list of str
-        List of str with state names which should have it name locally
-        changed
+    options : dict
+        Optional parameters to control cellml parser
     """
+    check_arg(model_source, str)
     from gotran import exec_ode
-    cellml = CellMLParser(model_source, extract_equations=extract_equations, \
-                          change_state_names=change_state_names)
+    params = CellMLParser.default_parameters()
+    params.update(params)
+    cellml = CellMLParser(model_source, params=params)
     return exec_ode(cellml.to_gotran(), cellml.name)
     
