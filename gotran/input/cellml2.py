@@ -19,11 +19,13 @@ import sys, os, re
 import urllib
 from xml.etree import ElementTree
 
-from collections import OrderedDict, deque
+from collections import OrderedDict, deque, defaultdict
 from gotran.common import warning, error, check_arg
 
 from modelparameters.codegeneration import _all_keywords
 from modelparameters.parameterdict import *
+
+from mathml import MathMLBaseParser
 
 __all__ = ["cellml2ode", "CellMLParser"]
 
@@ -77,6 +79,7 @@ class Component(object):
                                       variables.items() if value is not None)
 
         self.parent = None
+        self.children = []
         
         self.derivatives = state_variables
 
@@ -86,9 +89,29 @@ class Component(object):
         # Attributes which will be populated later
         # FIXME: Should we populate the parameters based on the variables
         # FIXME: with initial values which are not state variables
+        self.sort_and_store_equations(equations)
 
+        # Get used variables
+        self.used_variables = set()
+        for equation in self.equations:
+            self.used_variables.update(equation.used_variables)
+
+        # Remove dependencies on names defined by component
+        #self.used_variables.difference_update(\
+        #    equation.name for equation in self.equations)
+
+        self.used_variables.difference_update(\
+            name for name in self.parameters)
+
+        self.used_variables.difference_update(\
+            name for name in self.state_variables)
+
+    def sort_and_store_equations(self, equations):
+        
         # Check internal dependencies
         for eq0 in equations:
+            
+            eq0.dependent_equations = []
             
             # Store component
             eq0.component = self
@@ -108,20 +131,6 @@ class Component(object):
         # Store the sorted equations
         self.equations = sorted_equations
 
-        # Get used variables
-        self.used_variables = set()
-        for equation in self.equations:
-            self.used_variables.update(equation.used_variables)
-
-        # Remove dependencies on names defined by component
-        self.used_variables.difference_update(\
-            equation.name for equation in self.equations)
-
-        self.used_variables.difference_update(\
-            name for name in self.parameters)
-
-        self.used_variables.difference_update(\
-            name for name in self.state_variables)
 
     def __hash__(self):
         return hash(self.name)
@@ -144,7 +153,7 @@ class Component(object):
         Check components dependencies
         """
         assert(isinstance(component, Component))
-        
+
         if any(equation.name in self.used_variables \
                for equation in component.equations):
             dep_equations = [equation for equation in component.equations \
@@ -210,295 +219,50 @@ class Component(object):
             if oldder == eqn.name:
                 eqn.name = newder
 
-class MathMLBaseParser(object):
-    def __init__(self):
-        self._state_variable = None
-        self._derivative = None
-        self.variables_names = set()
-    
-        self._precedence = {
-            "piecewise" : 0, 
-            "power" : 0,
-            "divide": 1,
-            "times" : 2,
-            "minus" : 4,
-            "plus"  : 5,
-            "lt"    : 6,
-            "gt"    : 6,
-            "leq"   : 6,
-            "geq"   : 6,
-            "eq"    : 10,
-            "exp"   : 10,
-            "ln"    : 10,
-            "abs"   : 10,
-            "floor" : 10,
-            "log"   : 10,
-            "root"  : 10,
-            "tan"   : 10,
-            "cos"   : 10,
-            "sin"   : 10,
-            "tanh"  : 10,
-            "cosh"  : 10,
-            "sinh"  : 10,
-            "arccos": 10,
-            "arcsin": 10,
-            "arctan": 10,
-        }
-    
-        self._operators = {
-            "power" : '**',
-            "divide": '/',
-            "times" : '*',
-            "minus" : ' - ',
-            "plus"  : ' + ',
-            "lt"    : ' < ',
-            "gt"    : ' > ',
-            "leq"   : ' <= ',
-            "geq"   : ' >= ',
-            "eq"    : ' = ',
-            "exp"   : 'exp',
-            "ln"    : 'log',
-            "abs"   : 'abs',
-            "floor" : 'floor',
-            "log"   : 'log',
-            "root"  : 'sqrt',
-            "tan"   : 'tan',
-            "cos"   : 'cos',
-            "sin"   : 'sin',
-            "tanh"  : 'tanh',
-            "cosh"  : 'cosh',
-            "sinh"  : 'sinh',
-            "arccos": 'acos',
-            "arcsin": 'asin',
-            "arctan": 'atan',
-            }
-
-    def use_parenthesis(self, child, parent, first_operand=True):
-        """
-        Return true if child operation need parenthesis
-        """
-        if parent is None:
-            return False
-
-        parent_prec = self._precedence[parent]
-        if parent == "minus" and not first_operand:
-            parent_prec -= 0.5
-
-        if parent == "divide" and child == "times" and first_operand:
-            return False
+    def change_equation_name(self, oldname, newname):
         
-        if parent == "minus" and child == "plus" and first_operand:
-            return False
+        warning("Locally change equation name: '{0}' to '{1}' in "\
+                "component '{2}'.".format(oldname, newname, self.name))
         
-        return parent_prec < self._precedence[child]
+        # Update equations
+        new_equations = []
+        for eqn in self.equations:
+            while oldname in eqn.expr:
+                eqn.expr[eqn.expr.index(oldname)] = newname
 
-    def __getitem__(self, operator):
-        return self._operators[operator]
-    
-    def _gettag(self, node):
-        """
-        Splits off the namespace part from name, and returns the rest, the tag
-        """
-        return "".join(node.tag.split("}")[1:])
+            if eqn.name == oldname:
+                eqn.name = newname
 
-    def parse(self, root):
-        """
-        Recursively parse a mathML subtree and return an list of tokens
-        together with any state variable and derivative.
-        """
-        self._state_variable = None
-        self._derivative = None
-        self.used_variables = set()
+            new_equations.append(eqn)
 
-        equation_list = self._parse_subtree(root)
-        return equation_list, self._state_variable, self._derivative, \
-               self.used_variables
-    
-    def _parse_subtree(self, root, parent=None, first_operand=True):
-        op = self._gettag(root)
+        self.equations = new_equations
 
-        # If the tag i "apply" pick the operator and continue parsing
-        if op == "apply":
-            children = root.getchildren()
-            op = self._gettag(children[0])
-            root = children[1:]
-        # If use special method to parse
-        if hasattr(self, "_parse_" + op):
-            return getattr(self, "_parse_" + op)(root, parent)
-        elif op in self._operators.keys():
-            # Build the equation string
-            eq  = []
+    def change_variable_name(self, oldname, newname):
+        vartype = self.get_variable_type(oldname)
+
+        if vartype is None:
+            error("Cannot change variable name. {0} is not a variable "\
+                  "in component {1}".format(oldname, self.name))
             
-            # Check if we need parenthesis
-            use_parent = self.use_parenthesis(op, parent, first_operand)
-            
-            # If unary operator
-            if len(root) == 1:
-                # Special case if operator is "minus"
-                if op == "minus":
-                    
-                    # If an unary minus is infront of a cn or ci we skip
-                    # parenthesize
-                    if self._gettag(root[0]) in ["ci", "cn"]:
-                        use_parent = False
+        if vartype == "state":
+            self.change_state_name(oldname, newname)
+        elif vartype == "parameter":
+            self.change_parameter_name(oldname, newname)
+        else:
+            self.change_equation_name(oldname, newname)
 
-                    # If an unary minus is infront of a plus we always use parenthesize
-                    if self._gettag(root[0]) == "apply" and \
-                           self._gettag(root[0].getchildren()[0]) in ["plus"]:
-                        use_parent = True
-
-                    eq += ["-"]
-                else:
-                    
-                    # Always use paranthesis for unary operators
-                    use_parent = True
-                    eq += [self._operators[op]]
-
-                eq += ["("]*use_parent + self._parse_subtree(root[0], op) + \
-                      [")"]*use_parent
-                return eq
+    def get_variable_type(self, variable):
+        if variable in self.state_variables:
+            return "state"
+        elif variable in self.parameters:
+            return "parameter"
+        else:
+            for eq in self.equations:
+                if eq.name == variable:
+                    break
             else:
-                # Binary operator
-                eq += ["("] * use_parent + self._parse_subtree(root[0], op)
-                for operand in root[1:]:
-                    eq = eq + [self._operators[op]] + self._parse_subtree(\
-                        operand, op, first_operand=False)
-                eq = eq + [")"]*use_parent
-                return eq
-        else:
-            error("No support for parsing MathML " + op + " operator.")
-
-    def _parse_conditional(self, condition, operands, parent):
-        return [condition] + ["("] + self._parse_subtree(operands[0], parent) \
-               + [", "] +  self._parse_subtree(operands[1], parent) + [")"]
-
-    def _parse_and(self, operands, parent):
-        ret = ["And("]
-        for operand in operands:
-            ret += self._parse_subtree(operand, parent) + [", "]
-        return ret + [")"]
-    
-    def _parse_or(self, operands, parent):
-        ret = ["Or("]
-        for operand in operands:
-            ret += self._parse_subtree(operand, parent) + [", "]
-        return ret + [")"]
-    
-    def _parse_lt(self, operands, parent):
-        return self._parse_conditional("Lt", operands, "lt")
-
-    def _parse_leq(self, operands, parent):
-        return self._parse_conditional("Le", operands, "leq")
-
-    def _parse_gt(self, operands, parent):
-        return self._parse_conditional("Gt", operands, "gt")
-
-    def _parse_geq(self, operands, parent):
-        return self._parse_conditional("Ge", operands, "geq")
-
-    def _parse_neq(self, operands, parent):
-        return self._parse_conditional("Ne", operands, "neq")
-
-    def _parse_eq(self, operands, parent):
-        # Parsing conditional
-        if parent == "piecewise":
-            return self._parse_conditional("Eq", operands, "eq")
-
-        # Parsing assignment
-        return self._parse_subtree(operands[0], "eq") + [self["eq"]] + \
-               self._parse_subtree(operands[1], "eq")
-
-    def _parse_pi(self, var, parent):
-        return ["pi"]
-    
-    def _parse_ci(self, var, parent):
-        varname = var.text.strip()
-        if varname in _all_keywords:
-            varname = varname + "_"
-        self.used_variables.add(varname)
-        return [varname]
-    
-    def _parse_cn(self, var, parent):
-        value = var.text.strip()
-        if "type" in var.keys() and var.get("type") == "e-notation":
-            # Get rid of potential float repr
-            exponent = "e" + str(int(var.getchildren()[0].tail.strip()))
-        else:
-            exponent = ""
-        value += exponent
-            
-        # Fix possible strangeness with integer division in Python...
-        nums = [1.0, 2.0, 3.0, 4.0, 5.0, 10.0]
-        num_strs = ["one", "two", "three", "four", "five", "ten"]
-        
-        if eval(value) in nums:
-            value = dict(t for t in zip(nums, num_strs))[eval(value)]
-        #elif "." not in value and "e" not in value:
-        #    value += ".0"
-        
-        return [value]
-    
-    def _parse_diff(self, operands, parent):
-
-        # Store old used_variables so we can erase any collected state
-        # variables
-        used_variables_prior_parse = self.used_variables.copy()
-        
-        x = "".join(self._parse_subtree(operands[1], "diff"))
-        y = "".join(self._parse_subtree(operands[0], "diff"))
-        
-        if x in _all_keywords:
-            x = x + "_"
-        
-        d = "d" + x + "d" + y
-
-        # Restore used_variables
-        self.used_variables = used_variables_prior_parse
-
-        # Store derivative
-        self.used_variables.add(d)
-        
-        # This is an in/out variable remember it
-        self._derivative = d
-        self._state_variable = x
-        return [d]
-    
-    def _parse_bvar(self, var, parent):
-        if len(var) == 1:
-            return self._parse_subtree(var[0], "bvar")
-        else:
-            error("ERROR: No support for higher order derivatives.")
-            
-    def _parse_piecewise(self, cases, parent=None):
-        if len(cases) == 2:
-            piece_children = cases[0].getchildren()
-            cond  = self._parse_subtree(piece_children[1], "piecewise")
-            true  = self._parse_subtree(piece_children[0])
-            false = self._parse_subtree(cases[1].getchildren()[0])
-            return ["Conditional", "("] + cond + [", "] + true + [", "] + \
-                   false + [")"]
-        else:
-            piece_children = cases[0].getchildren()
-            cond  = self._parse_subtree(piece_children[1], "piecewise")
-            true  = self._parse_subtree(piece_children[0])
-            return ["Conditional", "("] + cond + [", "] + true + [", "] + \
-                   self._parse_piecewise(cases[1:]) + [")"]
-    
-class MathMLCPPParser(MathMLBaseParser):
-    def _parse_power(self, operands):
-        return ["pow", "("] + self._parse_subtree(operands[0]) + [", "] + \
-               self._parse_subtree(operands[1]) + [")"]
-
-    def _parse_piecewise(self, cases):
-        if len(cases) == 2:
-            piece_children = cases[0].getchildren()
-            cond  = self._parse_subtree(piece_children[1])
-            true  = self._parse_subtree(piece_children[0])
-            false = self._parse_subtree(cases[1].getchildren()[0])
-            return ["("] + cond + ["?"] + true + [":"] + false + [")"]
-        else:
-            sys.exit("ERROR: No support for cases with other than two "\
-                     "possibilities.")
+                return
+            return "equation"
 
 class CellMLParser(object):
     """
@@ -526,7 +290,7 @@ class CellMLParser(object):
         
         model_source: str
             Path or url to CellML file
-        targets : list (optional)
+        targets : list, dict (optional)
             Components of the model to parse
         params : dict
             A dict with parameters for the 
@@ -535,7 +299,7 @@ class CellMLParser(object):
         targets = targets or []
         params = params or {}
         check_arg(model_source, str)
-        check_arg(targets, list, itemtypes=str)
+        check_arg(targets, (list, dict))
         self._params = self.default_parameters()
         self._params.update(params)
 
@@ -550,7 +314,7 @@ class CellMLParser(object):
 
         self.model_source = model_source
         self.cellml = ElementTree.parse(fp).getroot()
-        self.mathmlparser = MathMLBaseParser()
+        self.mathmlparser = MathMLBaseParser(self._params.use_sympy_integers)
         self.cellml_namespace = self.cellml.tag.split("}")[0] + "}"
         self.name = self.cellml.attrib['name']
 
@@ -642,13 +406,19 @@ class CellMLParser(object):
 
         # Import other models
         for model in self.get_iterator("import"):
-            import_comp_names = []
+            import_comp_names = dict()
+
             for comp in self.get_iterator("component", model):
-                import_comp_names.append(comp.attrib["name"])
-            
-            components.update(dict((comp.name, comp) for comp in CellMLParser(\
+                
+                import_comp_names[comp.attrib["component_ref"]] = \
+                                                        comp.attrib["name"]
+
+            model_parser = CellMLParser(\
                 model.attrib["{http://www.w3.org/1999/xlink}href"], \
-                import_comp_names).components))
+                import_comp_names)
+
+            for comp in model_parser.components:
+                components[comp.name] = comp
 
         # Extract parameters and states
         for comp in components.values():
@@ -658,16 +428,19 @@ class CellMLParser(object):
                             "imported component: '%s'" % (name, comp.name))
                 collected_states[name] = comp
             
+            all_collected_names = collected_states.keys() + \
+                                  collected_parameters.keys()
+        
             for name in comp.parameters.keys():
-                if name in collected_states + collected_parameters:
-                    new_name = name + "_" + comp_name.split("_")[0]
+                if name in all_collected_names:
+                    new_name = name + "_" + comp.name.split("_")[0]
                     comp.change_parameter_name(name, new_name)
                     name = new_name
                 collected_parameters[name] = comp
 
         return components, collected_states, collected_parameters
 
-    def get_parents(self):
+    def get_parents(self, grouping, element=None):
         """
         If group was used in the cellml use it to gather parent information
         about the components
@@ -688,12 +461,13 @@ class CellMLParser(object):
 
             return children
 
+        encapsulations = dict()
         all_parents = dict()
-        for group in self.get_iterator("group"):
+        for group in self.get_iterator("group", element):
             children = group.getchildren()
 
             if children and children[0].attrib.get("relationship") == \
-                   self._params.grouping:
+                   grouping:
                 encapsulations = get_encapsulation(children[1:], all_parents)
 
         # If no group information in cellml extract potential parent information
@@ -702,14 +476,14 @@ class CellMLParser(object):
 
             # Iterate over the components
             comp_names = [comp.attrib["name"] for comp in self.get_iterator(\
-                "component")]
+                "component", element)]
 
             for parent_name in comp_names:
                 for name in comp_names:
                     if parent_name in name and parent_name != name:
                         all_parents[name] = parent_name
 
-        return all_parents
+        return encapsulations, all_parents
 
     def parse_single_component(self, comp, collected_parameters,
                                collected_states):
@@ -859,17 +633,26 @@ class CellMLParser(object):
 
         # Create heuristic score of which equation we will start removing
         # from components
-        for low_dep in list(zero_dep_equations) + list(one_dep_equations):
+        for low_dep in zero_dep_equations:
             num = 0
             for comp in circular_components:
                 for equations in comp.components_dependencies.values():
                     num += low_dep in equations
             
-            heruistic_score.append((num, low_dep))
+            heruistic_score.append((1, num, low_dep))
+
+        for low_dep in one_dep_equations:
+            num = 0
+            for comp in circular_components:
+                for equations in comp.components_dependencies.values():
+                    num += low_dep in equations
+            
+            heruistic_score.append((0, num, low_dep))
 
         heruistic_score.sort()
 
-        for num, eq, in heruistic_score:
+        print "Heuristic"
+        for deps, num, eq in heruistic_score:
             print num, eq
 
         # Try to eliminate circular dependency
@@ -881,10 +664,11 @@ class CellMLParser(object):
         # Try to eliminate circular dependency
         while circular_components:
             
-            num, eq = heruistic_score.pop()
+            deps, num, eq = heruistic_score.pop()
             
             old_comp = eq.component
             ode_comp.equations.append(eq)
+            old_comp.equations.remove(eq)
 
             # Store changed 
             removed_equations[eq] = old_comp
@@ -900,8 +684,6 @@ class CellMLParser(object):
                 if eq not in equations or dep_comp == ode_comp:
                     continue
 
-                print dep_comp,  
-                
                 # Remove dependency from old component and add it to the new
                 if len(equations) == 1:
                     new_dependent_componets[dep_comp] = \
@@ -911,7 +693,8 @@ class CellMLParser(object):
                         old_comp.dependent_components[dep_comp].pop(equations.index(eq))]
 
                 # Change component dependencies
-                if old_comp in dep_comp.components_dependencies:
+                if old_comp in dep_comp.components_dependencies and eq in \
+                       dep_comp.components_dependencies[old_comp]:
                     if len(dep_comp.components_dependencies[old_comp]) == 1:
                         dep_comp.components_dependencies.pop(old_comp)
                     else:
@@ -932,6 +715,9 @@ class CellMLParser(object):
             sorted_components, circular_components = sort_components(\
                 sorted_components + circular_components)
 
+        # Sort newly added equations
+        ode_comp.sort_and_store_equations(ode_comp.equations)
+
         warning("To avoid circular dependency the following equations "\
                 "has been moved:")
         
@@ -939,7 +725,7 @@ class CellMLParser(object):
             warning("{0} : from {1} to {2} component".format(\
                 eq.name, old_comp.name, ode_comp.name))
 
-        return components
+        return sorted_components
 
     def parse_components(self, targets):
         """
@@ -947,12 +733,36 @@ class CellMLParser(object):
         component of the cellml model
         """
 
+        # Parse imported components
         components, collected_states, collected_parameters = \
                     self.parse_imported_model()
 
         # Get parent relationship between components
-        all_parents = self.get_parents()
-            
+        encapsulations, all_parents = self.get_parents(self._params.grouping)
+
+        if targets:
+
+            # If the parent information was not of type encapsulation
+            # regather parent information
+            if self._params.grouping != "encapsulation":
+
+                encapsulations, dummy = self.get_parents("encapsulation")
+
+            # Add any encapsulated components to the target list
+            for target, new_target_name in targets.items():
+                if target in encapsulations:
+                    for child in encapsulations[target]["children"]:
+                        targets[child] = child.replace(\
+                            target, new_target_name)
+
+            target_parents = dict()
+
+            # Update all_parents
+            for comp_name, parent_name in all_parents.items():
+                if parent_name not in targets:
+                    continue
+                target_parents[targets[comp_name]] = targets[parent_name]
+        
         # Iterate over the components
         for comp in self.get_iterator("component"):
             comp_name = comp.attrib["name"]
@@ -962,6 +772,12 @@ class CellMLParser(object):
                    len(comp.getchildren()) == 0:
                 continue
 
+            # If targets provides a name mapping give the component a new name
+            if targets and isinstance(targets, dict):
+                new_name = targets[comp_name]
+                comp.attrib["name"] = new_name
+                comp_name = new_name
+            
             # Store component
             components[comp_name] = self.parse_single_component(\
                 comp, collected_parameters, collected_states)
@@ -974,20 +790,93 @@ class CellMLParser(object):
         
         # Add parent information
         for name, comp in components.items():
-            parent_name = all_parents.get(name)
+
+            if targets:
+                parent_name = target_parents.get(name)
+            else:
+                parent_name = all_parents.get(name)
+
             if parent_name:
                 comp.parent = components[parent_name]
-
+                
                 # If parent name in child name, reduce child name length
                 if parent_name in comp.name:
                     comp.name = comp.name.replace(parent_name, "").strip("_")
 
+                components[parent_name].children.append(comp)
+
+        # If we only extract a sub set of component we do not sort
+        if targets:
+            return components.values()
+
+        # Before dependencies are checked we change names according to
+        # variable mappings in the original CellML file
+        new_variable_names, same_variable_names = self.parse_name_mappings()
+        for comp, variables in new_variable_names.items():
+
+            # Iterate over old and new names
+            for oldname, newnames in variables.items():
+                
+                # Check if the oldname is used in any components
+                oldname_used = oldname in same_variable_names[comp]
+                
+                # If there are only one newname we change the name of the
+                # original equation
+                if len(newnames) == 1:
+
+                    if not oldname_used:
+                        newname = newnames.keys()[0]
+                        if components[comp].get_variable_type(oldname) is not None:
+                            components[comp].change_variable_name(oldname, newname)
+                        else:
+                            for child in components[comp].children:
+                                if child.get_variable_type(oldname) is not None:
+                                    child.change_variable_name(oldname, newname)
+                                    break
+                    else:
+                        # FIXME: Add equation with name change to component
+                        pass
+                else:
+                    # FIXME: Add equation with name change to component
+                    pass
+        
         # Add dependencies and sort the components accordingly
         components = self.add_dependencies_and_sort_components(\
             components.values())
         
         return components
 
+
+    def parse_name_mappings(self):
+        new_variable_names = dict()
+        same_variable_names = dict()
+        
+        for con in self.get_iterator("connection"):
+            con_map = self.get_iterator("map_components", con)[0]
+            comp1 = con_map.attrib["component_1"]
+            comp2 = con_map.attrib["component_2"]
+            
+            for var_map in self.get_iterator("map_variables", con):
+                var1 = var_map.attrib["variable_1"]
+                var2 = var_map.attrib["variable_2"]
+                
+                if var1 != var2:
+                    if comp1 not in new_variable_names:
+                        new_variable_names[comp1] = {var1:defaultdict(list)}
+                    elif var1 not in new_variable_names[comp1]:
+                        new_variable_names[comp1][var1] = defaultdict(list)
+                    new_variable_names[comp1][var1][var2].append(comp2)
+
+                else:
+                    if comp1 not in same_variable_names:
+                        same_variable_names[comp1] = {var1:[comp2]}
+                    elif var1 not in same_variable_names[comp1]:
+                        same_variable_names[comp1][var1] = [comp2]
+                    else:
+                        same_variable_names[comp1][var1].append(comp2)
+
+        return new_variable_names, same_variable_names
+    
     def to_gotran(self):
         """
         Generate a gotran file
@@ -1000,83 +889,69 @@ class CellMLParser(object):
             gotran_lines.extend([""])
 
         # Add component info
-        state_lines = []
-        param_lines = []
+        declaration_lines = []
         equation_lines = []
-        derivative_lines = []
-        derivatives_intermediates = []
+
+        def unders_score_replace(comp):
+
+            new_name = comp.name.replace("_", " ")
+
+            # If only 1 state it might be included in the name
+            if len(comp.state_variables) == 1:
+                state_name = comp.state_variables.keys()[0]
+                if state_name in comp.name:
+                    new_name = state_name.join(part.replace("_", " ") \
+                                for part in comp.name.split(state_name))
+
+            single_words = new_name.split(" ")
+            if len(single_words[0]) > 1 and "_" not in single_words[0]:
+                single_words[0] = single_words[0][0].upper()+single_words[0][1:]
+
+            return " ".join(single_words)
 
         # Iterate over components and collect stuff
-        for comp in self.circular_dependency + self.components:
-            comp_name = comp.name.replace("_", " ").capitalize()
+        for comp in self.components:
+            
+            names = deque([unders_score_replace(comp)])
+
+            parent = comp.parent
+            while parent is not None:
+                names.appendleft(unders_score_replace(parent))
+                parent = parent.parent
+
+            comp_name = ", ".join("\"{0}\"".format(name) for name in names)
             
             # Collect initial state values
             if comp.state_variables:
-                state_lines.append("")
-                state_lines.append("states(\"{0}\",".format(comp_name))
+                declaration_lines.append("")
+                declaration_lines.append("states({0} ,".format(comp_name))
                 for name, value in comp.state_variables.items():
-                    state_lines.append("       {0} = {1},".format(name, value))
-                state_lines[-1] = state_lines[-1][:-1]+")"
+                    declaration_lines.append("       {0} = {1},".format(name, value))
+                declaration_lines[-1] = declaration_lines[-1][:-1]+")"
 
-                # Collect derivatives
-                for state, derivative in comp.derivatives.items():
-                    for eq in comp.equations:
-                        if eq.name in derivative:
-
-                            # Check that derivative equation is not used
-                            # by component or dependent components
-                            for potential_dep in comp.equations + \
-                                    comp.dependent_components.keys():
-                                if eq.name in potential_dep.used_variables:
-                                    derivatives_intermediates.append(eq.name)
-                                    derivative_lines.append("d{0}_dt = {1}".\
-                                                    format(state, eq.name))
-                                    
-                                    break
-                            else:
-                                # Derivative is not used by anyone. Add it to 
-                                derivative_lines.append("d{0}_dt = {1}".\
-                                            format(state, "".join(eq.expr)))
-                            break
-            
             # Collect initial parameters values
             if comp.parameters:
-                param_lines.append("")
-                param_lines.append("parameters(\"{0}\",".format(comp_name))
+                declaration_lines.append("")
+                declaration_lines.append("parameters({0} ,".format(comp_name))
                 for name, value in comp.parameters.items():
-                    param_lines.append("           {0} = {1},".format(\
+                    declaration_lines.append("           {0} = {1},".format(\
                         name, value))
-                param_lines[-1] = param_lines[-1][:-1]+")"
+                declaration_lines[-1] = declaration_lines[-1][:-1]+")"
 
             # Collect all intermediate equations
             if comp.equations:
                 equation_lines.append("")
-                if comp in self.circular_dependency:
-                    equation_lines.append("# Equations with circular "\
-                                          "dependency")
-                equation_lines.append("component(\"{0}\")".format(\
+                equation_lines.append("component({0})".format(\
                     comp_name))
-                
-                for eq in comp.equations:
-                    
-                    # If derivative line and not used else where continue
-                    if eq.name in comp.derivatives.values() and \
-                           eq.name not in derivatives_intermediates:
-                        continue
-                    equation_lines.append("{0} = {1}".format(eq.name, \
-                                                             "".join(eq.expr)))
 
-        # FIXME: Add logic for DAE
+                equation_lines.extend("{0} = {1}".format(eq.name, "".join(eq.expr))\
+                                      for eq in comp.equations)
 
         gotran_lines.append("# gotran file generated by cellml2gotran from "\
                             "{0}".format(self.model_source))
-        gotran_lines.extend(state_lines)
-        gotran_lines.extend(param_lines)
+        gotran_lines.extend(declaration_lines)
         gotran_lines.extend(equation_lines)
         gotran_lines.append("")
-        gotran_lines.append("comment(\"The ODE system: {0} states\")".format(\
-            len(derivative_lines)))
-        gotran_lines.extend(derivative_lines)
         gotran_lines.append("")
         
 

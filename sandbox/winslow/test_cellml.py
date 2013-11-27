@@ -1,3 +1,4 @@
+from xml.etree import ElementTree
 from collections import defaultdict, OrderedDict
 from gotran.input.cellml2 import CellMLParser
 import re
@@ -13,11 +14,13 @@ change_state_names = []
 
 params = CellMLParser.default_parameters()
 
-cellml = CellMLParser(model, params=params)
+parser = CellMLParser(model, params=params)
 
-mathmlparser = cellml.mathmlparser
-parsed_components = cellml.components
-cellml = cellml.cellml
+open(parser.name+".ode", "w").write(parser.to_gotran())
+
+mathmlparser = parser.mathmlparser
+parsed_components = parser.components
+cellml = parser.cellml
 
 cellml_namespace = cellml.tag.split("}")[0] + "}"
 
@@ -41,11 +44,10 @@ for group in cellml.getiterator(cellml_namespace + "group"):
            "containment": #encapsulation
         encapsulations = get_encapsulation(children[1:])
 
-#connections = comp
-components = defaultdict(dict)
-for comp in cellml.getiterator(cellml_namespace + "component"):
-    components[comp.attrib["name"]] = dict(variables=dict())
+def parse_component(comp):
+
     # Collect variables and equations
+    component = dict()
     variables = OrderedDict()
     equations = OrderedDict()
     state_variables = OrderedDict()
@@ -91,37 +93,81 @@ for comp in cellml.getiterator(cellml_namespace + "component"):
     parameters = OrderedDict((name, value) for name, value in \
                              variables.items() if value is not None)
 
-    components[comp.attrib["name"]]["states"] = state_variables
-    components[comp.attrib["name"]]["parameters"] = parameters
-    components[comp.attrib["name"]]["equations"] = equations
+    component["states"] = state_variables
+    component["parameters"] = parameters
+    component["equations"] = equations
+    component["variables"] = dict()
     
     for var in comp.getiterator(cellml_namespace+"variable"):
-        components[comp.attrib["name"]]["variables"][var.attrib["name"]] = dict(var.attrib)
+        component["variables"][var.attrib["name"]] = dict(var.attrib)
 
+    return component
+
+#connections = comp
+components = defaultdict(dict)
+
+for model in parser.get_iterator("import"):
+    import_comp_names = dict()
+
+    for comp in parser.get_iterator("component", model):
+        import_comp_names[comp.attrib["component_ref"]] = comp.attrib["name"]
         
-#for con in cellml.getiterator(cellml_namespace + "connection"):
-#    con_map = con.getiterator(cellml_namespace+"map_components")[0]
-#    comp1 = con_map.attrib["component_1"]
-#    comp2 = con_map.attrib["component_2"]
-#    
-#    direction = 0
-#    
-#    for var_map in con.getiterator(cellml_namespace+"map_variables"):
-#        var1 = var_map.attrib["variable_1"]
-#        var2 = var_map.attrib["variable_2"]
-#        
-#        if var1 != var2:
-#            print "Variable name-change!!"
-#
-#        var1_attr = components[comp1]["variables"][var1]
-#        var2_attr = components[comp2]["variables"][var2]
-#        
-#        var1_interface = var1_attr.get("public_interface") or \
-#                         var1_attr.get("private_interface")
-#        var2_interface = var2_attr.get("public_interface") or \
-#                         var2_attr.get("private_interface")
-#        
-#        assert var1_interface != var2_interface or var1_interface == "in"
+    model_cellml = ElementTree.parse(\
+        open(model.attrib["{http://www.w3.org/1999/xlink}href"])).getroot()
+
+    for comp in model_cellml.getiterator(cellml_namespace + "component"):
+        if comp.attrib["name"] in import_comp_names:
+            new_name = import_comp_names[comp.attrib["name"]]
+            components[new_name] = parse_component(comp)
+
+for comp in cellml.getiterator(cellml_namespace + "component"):
+    if comp.attrib["name"] in components:
+        continue
+    components[comp.attrib["name"]] = parse_component(comp)
+
+new_variable_names = dict()
+same_variable_names = dict()
+
+for con in cellml.getiterator(cellml_namespace + "connection"):
+    con_map = con.getiterator(cellml_namespace+"map_components")[0]
+    comp1 = con_map.attrib["component_1"]
+    comp2 = con_map.attrib["component_2"]
+    
+    direction = 0
+
+    #print comp1, comp2
+    
+    for var_map in con.getiterator(cellml_namespace+"map_variables"):
+        var1 = var_map.attrib["variable_1"]
+        var2 = var_map.attrib["variable_2"]
+        
+        if var1 != var2:
+            if comp1 not in new_variable_names:
+                new_variable_names[comp1] = {var1:defaultdict(list)}
+            elif var1 not in new_variable_names[comp1]:
+                new_variable_names[comp1][var1] = defaultdict(list)
+            new_variable_names[comp1][var1][var2].append(comp2)
+
+        else:
+
+            if comp1 not in same_variable_names:
+                same_variable_names[comp1] = {var1:[comp2]}
+            elif var1 not in same_variable_names[comp1]:
+                same_variable_names[comp1][var1] = [comp2]
+            else:
+                same_variable_names[comp1][var1].append(comp2)
+            
+            #print "Variable name-change!!", var1, var2
+
+        var1_attr = components[comp1]["variables"][var1]
+        var2_attr = components[comp2]["variables"][var2]
+        
+        var1_interface = var1_attr.get("public_interface") or \
+                         var1_attr.get("private_interface")
+        var2_interface = var2_attr.get("public_interface") or \
+                         var2_attr.get("private_interface")
+        
+        assert var1_interface != var2_interface or var1_interface == "in"
 
         #if not direction:
         #    direction =  1 if components[comp1]["variables"][var1]\
