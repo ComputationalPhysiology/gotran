@@ -578,7 +578,12 @@ class CellMLParser(object):
         all_collected_names = collected_states.keys() + \
                               collected_parameters.keys() + \
                               collected_equations.keys()
-        
+
+        # FIXME: Do not automatically change name of parameter. If a parameter
+        # FIXME: is used in another component we are screwed. Therfor check
+        # FIXME: wether the parameter, state or equation are used in another
+        # FIXME: component and shift the name in that component that only
+        # FIXME: use it internally.
         for name in comp.parameters.keys():
             if name in all_collected_names:
                 new_name = name + "_" + comp_name.split("_")[0]
@@ -621,6 +626,9 @@ class CellMLParser(object):
                     sorted_components.append(component)
 
             return sorted_components, list(components)
+
+        # FIXME: We need a better heuristics for this... See pandit niederer model
+        # FIXME: which fails to extract the most obvious equation.
 
         # Initial sorting
         sorted_components, circular_components = sort_components(components)
