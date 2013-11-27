@@ -403,6 +403,7 @@ class CellMLParser(object):
         # Collect states and parameters to check for duplicates
         collected_states = dict()
         collected_parameters = dict()
+        collected_equations = dict()
 
         # Import other models
         for model in self.get_iterator("import"):
@@ -422,23 +423,39 @@ class CellMLParser(object):
 
         # Extract parameters and states
         for comp in components.values():
-            for name in comp.state_variables:
+
+            # Check for duplicates of parameters and states
+            for name in comp.state_variables.keys():
+                if name in self._params.change_state_names:
+                    newname = name + "_" + comp_name.split("_")[0]
+                    comp.change_state_name(name, newname)
+                    name = newname
+                
                 if name in collected_states:
                     warning("Duplicated state name: '%s' detected in "\
-                            "imported component: '%s'" % (name, comp.name))
+                            "component: '%s'" % (name, comp.name))
                 collected_states[name] = comp
             
+            for eq in comp.equations:
+                collected_equations[eq.name] = comp
+            
             all_collected_names = collected_states.keys() + \
-                                  collected_parameters.keys()
-        
+                                  collected_parameters.keys() + \
+                                  collected_equations.keys()
+            
             for name in comp.parameters.keys():
                 if name in all_collected_names:
                     new_name = name + "_" + comp.name.split("_")[0]
+                    if new_name in all_collected_names:
+                        new_name = name + "_" + comp.name
+                        
                     comp.change_parameter_name(name, new_name)
                     name = new_name
                 collected_parameters[name] = comp
+                all_collected_names.append(name)
 
-        return components, collected_states, collected_parameters
+        return components, collected_states, collected_parameters,\
+               collected_equations
 
     def get_parents(self, grouping, element=None):
         """
@@ -486,7 +503,7 @@ class CellMLParser(object):
         return encapsulations, all_parents
 
     def parse_single_component(self, comp, collected_parameters,
-                               collected_states):
+                               collected_states, collected_equations):
         """
         Parse a single component and create a Component object
         """
@@ -555,8 +572,12 @@ class CellMLParser(object):
                         "component: '%s'" % (name, comp.name))
             collected_states[name] = comp
 
+        for eq in comp.equations:
+            collected_equations[eq.name] = comp
+
         all_collected_names = collected_states.keys() + \
-                              collected_parameters.keys()
+                              collected_parameters.keys() + \
+                              collected_equations.keys()
         
         for name in comp.parameters.keys():
             if name in all_collected_names:
@@ -734,8 +755,8 @@ class CellMLParser(object):
         """
 
         # Parse imported components
-        components, collected_states, collected_parameters = \
-                    self.parse_imported_model()
+        components, collected_states, collected_parameters, \
+                    collected_equations = self.parse_imported_model()
 
         # Get parent relationship between components
         encapsulations, all_parents = self.get_parents(self._params.grouping)
@@ -780,14 +801,23 @@ class CellMLParser(object):
             
             # Store component
             components[comp_name] = self.parse_single_component(\
-                comp, collected_parameters, collected_states)
+                comp, collected_parameters, collected_states, collected_equations)
 
-        for name, comp in collected_states.items():
-            if name in collected_parameters:
-                warning("State name: '{0}' in component: '{1}' is a "\
-                        "duplication of a parameter in component {2}".format(\
-                            name, comp.name, collected_parameters[name].name))
-        
+        for name, comp in collected_parameters.items():
+            if name in collected_states:
+                warning("Parameter name: '{0}' in component: '{1}' is a "\
+                        "duplication of a state in component {2}".format(\
+                            name, comp.name, collected_states[name].name))
+                new_name = name + "_" + comp.name.split("_")[0]
+                comp.change_parameter_name(name, new_name)
+
+            elif name in collected_equations:
+                warning("Parameter name: '{0}' in component: '{1}' is a "\
+                        "duplication of a equation in component {2}".format(\
+                            name, comp.name, collected_equations[name].name))
+                new_name = name + "_" + comp.name.split("_")[0]
+                comp.change_parameter_name(name, new_name)
+            
         # Add parent information
         for name, comp in components.items():
 
