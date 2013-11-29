@@ -44,6 +44,63 @@ for group in cellml.getiterator(cellml_namespace + "group"):
            "containment": #encapsulation
         encapsulations = get_encapsulation(children[1:])
 
+si_unit_map = {"ampere":"A", "becquerel":"Bq", "candela":"cd", "celsius":"gradC",
+               "coulomb":"C","dimensionless":"1", "farad":"F", "gram":"g",
+               "gray":"Gy", "henry":"H", "hertz":"Hz", "joule":"J", "katal":"kat",
+               "kelvin":"K", "kilogram":"kg", "liter":"l", "litre":"l",
+               "lumen":"lm", "lux":"lx", "meter":"m", "metre":"m", "mole":"mole",
+               "newton":"N", "ohm":"Omega", "pascal":"Pa", "radian":"rad",
+               "second":"s", "siemens":"S", "sievert":"Sv", "steradian":"sr",
+               "tesla":"T", "volt":"V", "watt":"W", "weber":"Wb"}
+
+prefix_map = {"deca":"da", "hecto":"h", "kilo":"k", "mega":"M", "giga":"G",
+              "tera":"T", "peta":"P", "exa":"E", "zetta":"Z", "yotta":"Y",
+              "deci":"d", "centi":"c", "milli":"m", "micro":"u", "nano":"n",
+              "pico":"p", "femto":"f", "atto":"a", "zepto":"z", "yocto":"y",
+              None:""}
+
+collected_units = {}
+
+for units in parser.get_iterator("units"):
+    unit_name = units.attrib["name"]
+    collected_parts = OrderedDict()
+    for unit in units.getchildren():
+        if unit.attrib.get("multiplier"):
+            warning("skipping multiplier in unit {0}".format(units.attrib["name"]))
+        if unit.attrib.get("multiplier"):
+            warning("skipping multiplier in unit {0}".format(units.attrib["name"]))
+        cellml_unit = unit.attrib.get("units")
+        prefix = prefix_map[unit.attrib.get("prefix")]
+        exponent = unit.attrib.get("exponent", "1")
+        if cellml_unit in si_unit_map:
+            abbrev = si_unit_map[cellml_unit]
+            name = prefix+abbrev
+            if exponent not in ["0", "1"]:
+                fullname = name + "**" + exponent
+            else:
+                fullname = name
+
+            collected_parts[name] = (fullname, exponent)
+        elif cellml_unit in collected_units:
+            if prefix:
+                warning("Skipping prefix of unit '{0}'".format(cellml_unit))
+            for name, (fullnam, part_exponent) in collected_units[cellml_unit].items():
+                new_exponent = str(int(part_exponent) * int(exponent))
+                if new_exponent not in ["0", "1"]:
+                    fullname = name + "**" + new_exponent
+                else:
+                    fullname = name
+                
+                collected_parts[name] = (fullname, exponent)
+            
+        else:
+            warning("Unknown unit '{0}'".format(cellml_unit))
+            break
+        
+    collected_units[unit_name] = collected_parts
+        
+#    print unit_name, "=", "*".join(fullname for fullname, exp in collected_parts.values())
+    
 def parse_component(comp):
 
     # Collect variables and equations
@@ -104,69 +161,69 @@ def parse_component(comp):
     return component
 
 #connections = comp
-components = defaultdict(dict)
+#components = defaultdict(dict)
 
-for model in parser.get_iterator("import"):
-    import_comp_names = dict()
+#for model in parser.get_iterator("import"):
+#    import_comp_names = dict()
+#
+#    for comp in parser.get_iterator("component", model):
+#        import_comp_names[comp.attrib["component_ref"]] = comp.attrib["name"]
+#        
+#    model_cellml = ElementTree.parse(\
+#        open(model.attrib["{http://www.w3.org/1999/xlink}href"])).getroot()
+#
+#    for comp in model_cellml.getiterator(cellml_namespace + "component"):
+#        if comp.attrib["name"] in import_comp_names:
+#            new_name = import_comp_names[comp.attrib["name"]]
+#            components[new_name] = parse_component(comp)
+#
+#for comp in cellml.getiterator(cellml_namespace + "component"):
+#    if comp.attrib["name"] in components:
+#        continue
+#    components[comp.attrib["name"]] = parse_component(comp)
+#
+#new_variable_names = dict()
+#same_variable_names = dict()
 
-    for comp in parser.get_iterator("component", model):
-        import_comp_names[comp.attrib["component_ref"]] = comp.attrib["name"]
-        
-    model_cellml = ElementTree.parse(\
-        open(model.attrib["{http://www.w3.org/1999/xlink}href"])).getroot()
-
-    for comp in model_cellml.getiterator(cellml_namespace + "component"):
-        if comp.attrib["name"] in import_comp_names:
-            new_name = import_comp_names[comp.attrib["name"]]
-            components[new_name] = parse_component(comp)
-
-for comp in cellml.getiterator(cellml_namespace + "component"):
-    if comp.attrib["name"] in components:
-        continue
-    components[comp.attrib["name"]] = parse_component(comp)
-
-new_variable_names = dict()
-same_variable_names = dict()
-
-for con in cellml.getiterator(cellml_namespace + "connection"):
-    con_map = con.getiterator(cellml_namespace+"map_components")[0]
-    comp1 = con_map.attrib["component_1"]
-    comp2 = con_map.attrib["component_2"]
-    
-    direction = 0
-
-    #print comp1, comp2
-    
-    for var_map in con.getiterator(cellml_namespace+"map_variables"):
-        var1 = var_map.attrib["variable_1"]
-        var2 = var_map.attrib["variable_2"]
-        
-        if var1 != var2:
-            if comp1 not in new_variable_names:
-                new_variable_names[comp1] = {var1:defaultdict(list)}
-            elif var1 not in new_variable_names[comp1]:
-                new_variable_names[comp1][var1] = defaultdict(list)
-            new_variable_names[comp1][var1][var2].append(comp2)
-
-        else:
-
-            if comp1 not in same_variable_names:
-                same_variable_names[comp1] = {var1:[comp2]}
-            elif var1 not in same_variable_names[comp1]:
-                same_variable_names[comp1][var1] = [comp2]
-            else:
-                same_variable_names[comp1][var1].append(comp2)
-            
-            #print "Variable name-change!!", var1, var2
-
-        var1_attr = components[comp1]["variables"][var1]
-        var2_attr = components[comp2]["variables"][var2]
-        
-        var1_interface = var1_attr.get("public_interface") or \
-                         var1_attr.get("private_interface")
-        var2_interface = var2_attr.get("public_interface") or \
-                         var2_attr.get("private_interface")
-        
+#for con in cellml.getiterator(cellml_namespace + "connection"):
+#    con_map = con.getiterator(cellml_namespace+"map_components")[0]
+#    comp1 = con_map.attrib["component_1"]
+#    comp2 = con_map.attrib["component_2"]
+#    
+#    direction = 0
+#
+#    #print comp1, comp2
+#    
+#    for var_map in con.getiterator(cellml_namespace+"map_variables"):
+#        var1 = var_map.attrib["variable_1"]
+#        var2 = var_map.attrib["variable_2"]
+#        
+#        if var1 != var2:
+#            if comp1 not in new_variable_names:
+#                new_variable_names[comp1] = {var1:defaultdict(list)}
+#            elif var1 not in new_variable_names[comp1]:
+#                new_variable_names[comp1][var1] = defaultdict(list)
+#            new_variable_names[comp1][var1][var2].append(comp2)
+#
+#        else:
+#
+#            if comp1 not in same_variable_names:
+#                same_variable_names[comp1] = {var1:[comp2]}
+#            elif var1 not in same_variable_names[comp1]:
+#                same_variable_names[comp1][var1] = [comp2]
+#            else:
+#                same_variable_names[comp1][var1].append(comp2)
+#            
+#            #print "Variable name-change!!", var1, var2
+#
+#        var1_attr = components[comp1]["variables"][var1]
+#        var2_attr = components[comp2]["variables"][var2]
+#        
+#        var1_interface = var1_attr.get("public_interface") or \
+#                         var1_attr.get("private_interface")
+#        var2_interface = var2_attr.get("public_interface") or \
+#                         var2_attr.get("private_interface")
+#        
         #assert var1_interface != var2_interface or var1_interface == "in"
 
         #if not direction:

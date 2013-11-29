@@ -29,6 +29,21 @@ from mathml import MathMLBaseParser
 
 __all__ = ["cellml2ode", "CellMLParser"]
 
+si_unit_map = {"ampere":"A", "becquerel":"Bq", "candela":"cd", "celsius":"gradC",
+               "coulomb":"C","dimensionless":"1", "farad":"F", "gram":"g",
+               "gray":"Gy", "henry":"H", "hertz":"Hz", "joule":"J", "katal":"kat",
+               "kelvin":"K", "kilogram":"kg", "liter":"l", "litre":"l",
+               "lumen":"lm", "lux":"lx", "meter":"m", "metre":"m", "mole":"mole",
+               "newton":"N", "ohm":"Omega", "pascal":"Pa", "radian":"rad",
+               "second":"s", "siemens":"S", "sievert":"Sv", "steradian":"sr",
+               "tesla":"T", "volt":"V", "watt":"W", "weber":"Wb", "dimensionless":"1"}
+
+prefix_map = {"deca":"da", "hecto":"h", "kilo":"k", "mega":"M", "giga":"G",
+              "tera":"T", "peta":"P", "exa":"E", "zetta":"Z", "yotta":"Y",
+              "deci":"d", "centi":"c", "milli":"m", "micro":"u", "nano":"n",
+              "pico":"p", "femto":"f", "atto":"a", "zepto":"z", "yocto":"y",
+              None:""}
+
 ui = "UNINITIALIZED"
 
 class Equation(object):
@@ -72,33 +87,46 @@ class Component(object):
     def __init__(self, name, variables, equations, state_variables=None):
         self.name = name
 
+        self.variable_types = {}
+        
         self.state_variables = OrderedDict((state, variables.pop(state, None))\
                                            for state in state_variables)
+        self.variable_types.update((state, "state_variable") \
+                                   for state in self.state_variables)
 
-        self.parameters = OrderedDict((name, value) for name, value in \
-                                      variables.items() if value is not None)
+        self.parameters = OrderedDict((name, info) for name, info in \
+                                      variables.items() if info["init"] is not None)
+
+        self.variable_types.update((param, "parameters") \
+                                   for param in self.parameters)
+
+        self.derivatives = state_variables
 
         self.parent = None
         self.children = []
         
-        self.derivatives = state_variables
+        self.dependencies = OrderedDict() 
+        self.used_in = OrderedDict() 
 
-        self.components_dependencies = OrderedDict() 
-        self.dependent_components = OrderedDict() 
-
-        # Attributes which will be populated later
-        # FIXME: Should we populate the parameters based on the variables
-        # FIXME: with initial values which are not state variables
+        # Store equations
         self.sort_and_store_equations(equations)
 
+        # Extract info
+        dummy = dict(init=None, unit="1", private=True)
+        self.equation_info = OrderedDict((eq.name, variables.get(eq.name, dummy))\
+                                         for eq in self.equations)
+        
+        self.variable_types.update((eq.name, "equation") \
+                                   for eq in self.equations)
+        
         # Get used variables
         self.used_variables = set()
         for equation in self.equations:
             self.used_variables.update(equation.used_variables)
 
         # Remove dependencies on names defined by component
-        #self.used_variables.difference_update(\
-        #    equation.name for equation in self.equations)
+        self.used_variables.difference_update(\
+            equation.name for equation in self.equations)
 
         self.used_variables.difference_update(\
             name for name in self.parameters)
@@ -160,8 +188,8 @@ class Component(object):
                              if equation.name in self.used_variables]
 
             # Register mutual dependencies
-            self.components_dependencies[component] = dep_equations
-            component.dependent_components[self] = dep_equations
+            self.dependencies[component] = dep_equations
+            component.used_in[self] = dep_equations
             
             # Add logics for dependencies of all Equations.
             for other_equation in component.equations:
@@ -169,14 +197,18 @@ class Component(object):
                     if other_equation.name in equation.used_variables:
                         equation.dependent_equations.append(other_equation)
 
-    def change_parameter_name(self, oldname, newname):
+    def change_parameter_name(self, oldname, newname=None):
         """
         Change the name of a parameter
         Assume the name is only used locally within this component
         """
         assert(oldname in self.parameters)
+
+        # If no newname is give we pick one based on the component name
+        if newname is None:
+            newname = oldname + "_" + self.name.split("_")[0]
         
-        warning("Locally change parameter name: '{0}' to '{1}' in "\
+        warning("Locally change parameter name '{0}' to '{1}' in "\
                 "component '{2}'.".format(oldname, newname, self.name))
         
         # Update parameters
@@ -189,14 +221,20 @@ class Component(object):
             while oldname in eqn.expr:
                 eqn.expr[eqn.expr.index(oldname)] = newname
 
-    def change_state_name(self, oldname, newname):
+        return newname
+
+    def change_state_name(self, oldname, newname=None):
         """
         Change the name of a state
         Assume the name is only used locally within this component
         """
         assert(oldname in self.state_variables)
         
-        warning("Locally change state name: '{0}' to '{1}' in component "\
+        # If no newname is give we pick one based on the component name
+        if newname is None:
+            newname = oldname + "_" + self.name.split("_")[0]
+        
+        warning("Locally change state name '{0}' to '{1}' in component "\
                 "'{2}'.".format(oldname, newname, self.name))
         
         # Update parameters
@@ -219,9 +257,24 @@ class Component(object):
             if oldder == eqn.name:
                 eqn.name = newder
 
-    def change_equation_name(self, oldname, newname):
+        old_eq_name = "d{0}_dt".format(oldname)
+        new_eq_name = "d{0}_dt".format(newname)
+        self.variable_types[new_eq_name]  = self.variable_types.pop(\
+            old_eq_name, "equation")
+        self.equation_info[new_eq_name] = self.equation_info.pop(\
+            old_eq_name, dict(init=None, unit="1", private=True))
+
+        return newname
+
+    def change_equation_name(self, oldname, newname=None):
         
-        warning("Locally change equation name: '{0}' to '{1}' in "\
+        assert(self.variable_types.get(oldname)=="equation")
+        
+        # If no newname is give we pick one based on the component name
+        if newname is None:
+            newname = oldname + "_" + self.name.split("_")[0]
+        
+        warning("Locally change equation name '{0}' to '{1}' in "\
                 "component '{2}'.".format(oldname, newname, self.name))
         
         # Update equations
@@ -236,33 +289,25 @@ class Component(object):
             new_equations.append(eqn)
 
         self.equations = new_equations
+        eq_info = self.equation_info.pop(oldname)
+        self.equation_info[newname] = eq_info
+        
+        return newname
 
-    def change_variable_name(self, oldname, newname):
-        vartype = self.get_variable_type(oldname)
+    def change_variable_name(self, oldname, newname=None):
+        vartype = self.variable_types.get(oldname)
 
         if vartype is None:
             error("Cannot change variable name. {0} is not a variable "\
                   "in component {1}".format(oldname, self.name))
+            return 
             
-        if vartype == "state":
-            self.change_state_name(oldname, newname)
-        elif vartype == "parameter":
-            self.change_parameter_name(oldname, newname)
-        else:
-            self.change_equation_name(oldname, newname)
+        if vartype == "state_variable":
+            return self.change_state_name(oldname, newname)
+        if vartype == "parameter":
+            return self.change_parameter_name(oldname, newname)
 
-    def get_variable_type(self, variable):
-        if variable in self.state_variables:
-            return "state"
-        elif variable in self.parameters:
-            return "parameter"
-        else:
-            for eq in self.equations:
-                if eq.name == variable:
-                    break
-            else:
-                return
-            return "equation"
+        return self.change_equation_name(oldname, newname)
 
 class CellMLParser(object):
     """
@@ -317,7 +362,7 @@ class CellMLParser(object):
         self.mathmlparser = MathMLBaseParser(self._params.use_sympy_integers)
         self.cellml_namespace = self.cellml.tag.split("}")[0] + "}"
         self.name = self.cellml.attrib['name']
-
+        self.parse_units()
         self.components = self.parse_components(targets)
         self.documentation = self.parse_documentation()
 
@@ -384,6 +429,66 @@ class CellMLParser(object):
         Splits off the namespace part from name, and returns the rest, the tag
         """
         return "".join(node.tag.split("}")[1:])
+    
+    def parse_units(self):
+        """
+        Parse any declared units in the model
+        """
+        collected_units = OrderedDict()
+        unit_map = si_unit_map.copy()
+
+        # Extend unit_map
+        for cellml_pref, pref in prefix_map.items():
+            if cellml_pref:
+                unit_map[cellml_pref+"molar"] = pref+"M"
+                collected_units[cellml_pref+"molar"] = {pref+"M": (pref+"M", "1")}
+        
+        for units in self.get_iterator("units"):
+            unit_name = units.attrib["name"]
+            
+            if unit_name in unit_map:
+                continue
+
+            collected_parts = OrderedDict()
+            for unit in units.getchildren():
+                if unit.attrib.get("multiplier"):
+                    warning("skipping multiplier in unit {0}".format(units.attrib["name"]))
+                if unit.attrib.get("multiplier"):
+                    warning("skipping multiplier in unit {0}".format(units.attrib["name"]))
+                cellml_unit = unit.attrib.get("units")
+                prefix = prefix_map[unit.attrib.get("prefix")]
+                exponent = unit.attrib.get("exponent", "1")
+                if cellml_unit in si_unit_map:
+                    abbrev = si_unit_map[cellml_unit]
+                    name = prefix+abbrev
+                    if exponent not in ["0", "1"]:
+                        fullname = name + "**" + exponent
+                    else:
+                        fullname = name
+            
+                    collected_parts[name] = (fullname, exponent)
+                elif cellml_unit in collected_units:
+                    if prefix:
+                        warning("Skipping prefix of unit '{0}'".format(cellml_unit))
+                    for name, (fullnam, part_exponent) in collected_units[cellml_unit].items():
+                        new_exponent = str(int(part_exponent) * int(exponent))
+                        if new_exponent not in ["0", "1"]:
+                            fullname = name + "**" + new_exponent
+                        else:
+                            fullname = name
+                        
+                        collected_parts[name] = (fullname, exponent)
+                    
+                else:
+                    warning("Unknown unit '{0}'".format(cellml_unit))
+                    break
+            
+            collected_units[unit_name] = collected_parts
+            unit_map[unit_name] = "*".join(fullname for fullname, exp \
+                                           in collected_parts.values())
+           
+        # Store unit map
+        self.units_map = unit_map
 
     def get_iterator(self, name, item=None):
         """
@@ -393,6 +498,239 @@ class CellMLParser(object):
         item = item if item is not None else self.cellml
         return item.getiterator(self.cellml_namespace+name)
 
+    def check_and_register_component_variables(\
+        self, comp, collected_states, collected_parameters, collected_equations):
+        """
+        Check if component variables are allready collected
+        """
+        
+        # Check for duplication of states
+        for name in comp.state_variables.keys():
+            der_name = "d{0}_dt".format(name)
+            if name in self._params.change_state_names:
+                newname = name + "_" + comp_name.split("_")[0]
+                comp.change_state_name(name, newname)
+                name = newname
+
+            # Check state name vs collected state names
+            elif name in collected_states:
+                state_comp = collected_states[name]
+                warning("Same state name: '{0}' is used in component: '{1}' "\
+                        "and '{2}'.".format(name, comp.name, state_comp.name))
+                for change_comp in [comp, state_comp]:
+                    if change_comp.state_variables[name]["private"] and \
+                           change_comp.equation_info[der_name]["private"]:
+                        new_name = change_comp.change_state_name(name)
+                        if change_comp == state_comp:
+                            collected_states[new_name] = change_comp
+                        break
+                else:
+                    warning("Could not resolve duplicated state name {0} in "\
+                            "component {1} and {2}. None of them are private "\
+                            "to the components.".format(name, comp.name,
+                                                      state_comp.name))
+
+            # Check state name vs collected parameter names
+            elif name in collected_parameters:
+                param_comp = collected_parameters[name]
+                warning("State name: '{0}' from component '{1}' is used as "\
+                        "parameter in component '{2}'.".format(\
+                            name, comp.name, param_comp.name))
+
+                # If parameter is private we change that
+                if param_comp.parameters[name]["private"]:
+                    new_name = param_comp.change_parameter_name(name)
+                    collected_parameters.pop(name)
+                    collected_parameters[new_name] = param_comp
+
+                # Elseif the state variable is private we change that one
+                elif comp.state_variables[name]["private"] and \
+                         comp.equation_info[der_name]["private"]:
+                    name = comp.change_state_name(name)
+
+                else:
+                    warning("Could not resolve duplicated state and "\
+                            "parameter name {0} in component {1} and {2}. "\
+                            "None of them are private to the "\
+                            "components.".format(name, comp.name,
+                                               param_comp.name))
+                            
+            # Check state name vs collected equation names
+            elif name in collected_equations:
+                eq_comp = collected_equations[name]
+                warning("State name '{0}' from component '{1}' is used as "\
+                        "parameter in component '{2}'.".format(\
+                            name, comp.name, eq_comp.name))
+
+                # If state is private we change it
+                if comp.state_variables[name]["private"] and \
+                       comp.equation_info[der_name]["private"]:
+                    name = comp.change_state_name(name)
+                elif eq_comp.equation_info[name]["private"]:
+                    new_name = eq_comp.change_equation_name(name)
+                    collected_equation.pop(name)
+                    collected_equation[new_name] = eq_comp
+
+                else:
+                    warning("Could not resolve duplicated state and "\
+                            "equation name {0} in component {1} and {2}. "\
+                            "None of them are private to the "\
+                            "components.".format(name, comp.name, eq_comp.name))
+                            
+            # Register the collected state
+            collected_states[name] = comp
+
+        # Check parameters
+        for name in comp.parameters.keys():
+
+            # Check parameter name vs collected state names
+            if name in collected_states:
+                state_comp = collected_states[name]
+                warning("Same parameter and state name: '{0}' is used in "\
+                        "component '{1}' and '{2}'.".format(\
+                            name, comp.name, state_comp.name))
+                # If parameter is private we change that
+                if comp.parameters[name]["private"]:
+                    name = comp.change_parameter_name(name)
+                elif state_comp.state_variables[name]["private"] and \
+                         state_comp.equation_info[der_name]["private"]:
+                    new_name = state_comp.change_state_name(name)
+                    collected_states.pop(name)
+                    collected_states[new_name] = state_comp
+                    
+                else:
+                    warning("Could not resolve duplicated state name {0} in "\
+                            "component {1} and {2}. None of them are private "\
+                            "to the components.".format(name, comp.name,
+                                                      state_comp.name))
+
+            # Check state name vs collected parameter names
+            elif name in collected_parameters:
+                param_comp = collected_parameters[name]
+                warning("Parameter name '{0}' from component '{1}' is used as "\
+                        "parameter in component '{2}'.".format(\
+                            name, comp.name, param_comp.name))
+
+                # If registered parameter is private we change that
+                if param_comp.parameters[name]["private"]:
+                    new_name = param_comp.change_parameter_name(name)
+                    collected_parameters.pop(name)
+                    collected_parameters[new_name] = param_comp
+
+                # if the parameter is private we change that one
+                elif comp.parameters[name]["private"]:
+                    name = comp.change_parameter_name(name)
+
+                else:
+                    warning("Could not resolve duplicated parameter names "\
+                            "{0} in component {1} and {2}. "\
+                            "None of them are private to the "\
+                            "components.".format(name, comp.name,
+                                               param_comp.name))
+                            
+            # Check state name vs collected equation names
+            elif name in collected_equations:
+                eq_comp = collected_equations[name]
+                warning("Parameter name '{0}' from component '{1}' "\
+                        "is used as parameter in component '{2}'.".format(\
+                            name, comp.name, eq_comp.name))
+
+                # If parameter is private we change it
+                if comp.parameters[name]["private"]:
+                    name = comp.change_parameter_name(name)
+                elif eq_comp.equation_info[name]["private"]:
+                    new_name = eq_comp.change_equation_name(name)
+                    collected_equation.pop(name)
+                    collected_equation[new_name] = eq_comp
+
+                else:
+                    warning("Could not resolve duplicated parameter and "\
+                            "equation names {0} in component {1} and {2}. "\
+                            "None of them are private to the "\
+                            "components.".format(name, comp.name, eq_comp.name))
+                            
+            collected_parameters[name] = comp
+
+        # Check equation name
+        for eq in comp.equations:
+            name = eq.name
+
+            # If the equation is private we do not care if it is duplicated
+            # elsewhere. Risky...
+            if comp.equation_info[name]["private"]:
+                collected_equations[name] = comp
+                continue
+            
+            # Check equation name vs collected state names
+            if name in collected_states:
+                state_comp = collected_states[name]
+                warning("Same equation and state name '{0}' is used in "\
+                        "component '{1}' and '{2}'.".format(\
+                            name, comp.name, state_comp.name))
+                # If equation is private we change that
+                if comp.equation_info[name]["private"]:
+                    name = comp.change_equation_name(name)
+                elif state_comp.state_variables[name]["private"] and \
+                         state_comp.equation_info[der_name]["private"]:
+                    new_name = state_comp.change_state_name(name)
+                    collected_states.pop(name)
+                    collected_states[new_name] = state_comp
+                    
+                else:
+                    warning("Could not resolve duplicated state and "\
+                            "equation name {0} in component {1} and {2}. "\
+                            "None of them are private to the "\
+                            "components.".format(name, comp.name,
+                                               state_comp.name))
+
+            # Check state name vs collected parameter names
+            elif name in collected_parameters:
+                param_comp = collected_parameters[name]
+                warning("Equation name '{0}' from component '{1}' is used as "\
+                        "parameter in component '{2}'." % (\
+                            name, comp.name, param_comp.name))
+
+                # If registered parameter is private we change that
+                if param_comp.parameters[name]["private"]:
+                    new_name = param_comp.change_parameter_name(name)
+                    collected_parameters.pop(name)
+                    collected_parameters[new_name] = param_comp
+
+                # If the parameter is private we change that one
+                elif comp.equation_info[name]["private"]:
+                    name = comp.change_equation_name(name)
+
+                else:
+                    warning("Could not resolve duplicated parameter and "\
+                            "equation name {0} in component {1} and {2}. "\
+                            "None of them are private to the "\
+                            "components.".format(name, comp.name,
+                                               param_comp.name))
+                            
+            # Check equation name vs collected equation names
+            elif name in collected_equations:
+                eq_comp = collected_equations[name]
+                warning("Equation name '{0}' from component '{1}' is used as "\
+                        "parameter in component '{2}'.".format(\
+                            name, comp.name, eq_comp.name))
+
+                # If parameter is private we change it
+                if comp.equation_info[name]["private"]:
+                    name = comp.change_equation_name(name)
+                    
+                elif eq_comp.equation_info[name]["private"]:
+                    new_name = eq_comp.change_equation_name(name)
+                    collected_equation.pop(name)
+                    collected_equation[new_name] = eq_comp
+
+                else:
+                    warning("Could not resolve duplicated parameter and "\
+                            "equation names {0} in component {1} and {2}. "\
+                            "None of them are private to the "\
+                            "components.".format(name, comp.name, eq_comp.name))
+            
+            collected_equations[name] = comp
+            
     def parse_imported_model(self):
         """
         Parse any imported models
@@ -421,39 +759,13 @@ class CellMLParser(object):
             for comp in model_parser.components:
                 components[comp.name] = comp
 
-        # Extract parameters and states
+        # Extract states, parameters and equations
         for comp in components.values():
 
-            # Check for duplicates of parameters and states
-            for name in comp.state_variables.keys():
-                if name in self._params.change_state_names:
-                    newname = name + "_" + comp_name.split("_")[0]
-                    comp.change_state_name(name, newname)
-                    name = newname
-                
-                if name in collected_states:
-                    warning("Duplicated state name: '%s' detected in "\
-                            "component: '%s'" % (name, comp.name))
-                collected_states[name] = comp
+            self.check_and_register_component_variables(\
+                comp, collected_states, collected_parameters, \
+                collected_equations)
             
-            for eq in comp.equations:
-                collected_equations[eq.name] = comp
-            
-            all_collected_names = collected_states.keys() + \
-                                  collected_parameters.keys() + \
-                                  collected_equations.keys()
-            
-            for name in comp.parameters.keys():
-                if name in all_collected_names:
-                    new_name = name + "_" + comp.name.split("_")[0]
-                    if new_name in all_collected_names:
-                        new_name = name + "_" + comp.name
-                        
-                    comp.change_parameter_name(name, new_name)
-                    name = new_name
-                collected_parameters[name] = comp
-                all_collected_names.append(name)
-
         return components, collected_states, collected_parameters,\
                collected_equations
 
@@ -502,8 +814,8 @@ class CellMLParser(object):
 
         return encapsulations, all_parents
 
-    def parse_single_component(self, comp, collected_parameters,
-                               collected_states, collected_equations):
+    def parse_single_component(self, comp, collected_states, \
+                               collected_parameters, collected_equations):
         """
         Parse a single component and create a Component object
         """
@@ -522,13 +834,12 @@ class CellMLParser(object):
             if var_name in _all_keywords:
                 var_name = var_name + "_"
 
-            if var.attrib.has_key("initial_value"):
-                initial = var.attrib["initial_value"]
-            else:
-                initial = None
-
-            # Store variables
-            variables[var_name] = initial
+            # Store variables using initial and unit
+            variables[var_name] = dict(\
+                init=var.attrib.get("initial_value"),\
+                unit=self.units_map[var.attrib.get("units")],\
+                private=not (var.attrib.get("public_interface")=="out" or \
+                             var.attrib.get("private_interface")=="out"))
 
         # Get equations
         for math in comp.getiterator(\
@@ -557,47 +868,17 @@ class CellMLParser(object):
                        state_variable not in state_variables:
                     state_variables[state_variable] = derivative
 
-        # Create and return Component
+        # Create Component
         comp = Component(comp_name, variables, equations, state_variables)
 
-        # Check for duplicates of parameters and states
-        for name in comp.state_variables.keys():
-            if name in self._params.change_state_names:
-                newname = name + "_" + comp_name.split("_")[0]
-                comp.change_state_name(name, newname)
-                name = newname
-            
-            if name in collected_states:
-                warning("Duplicated state name: '%s' detected in "\
-                        "component: '%s'" % (name, comp.name))
-            collected_states[name] = comp
-
-        for eq in comp.equations:
-            collected_equations[eq.name] = comp
-
-        all_collected_names = collected_states.keys() + \
-                              collected_parameters.keys() + \
-                              collected_equations.keys()
-
-        # FIXME: Do not automatically change name of parameter. If a parameter
-        # FIXME: is used in another component we are screwed. Therfor check
-        # FIXME: wether the parameter, state or equation are used in another
-        # FIXME: component and shift the name in that component that only
-        # FIXME: use it internally.
-        for name in comp.parameters.keys():
-            if name in all_collected_names:
-                new_name = name + "_" + comp_name.split("_")[0]
-                if new_name in all_collected_names:
-                    new_name = name + "_" + comp_name
-                    
-                comp.change_parameter_name(name, new_name)
-                name = new_name
-            collected_parameters[name] = comp
-            all_collected_names.append(name)
+        # Collect and check variables
+        self.check_and_register_component_variables(\
+            comp, collected_states, collected_parameters, \
+            collected_equations)
 
         return comp
 
-    def add_dependencies_and_sort_components(self, components):
+    def sort_components(self, components):
         
         # Check internal dependencies
         for comp0 in components:
@@ -606,7 +887,7 @@ class CellMLParser(object):
                     continue
                 comp0.check_dependencies(comp1)
 
-        def sort_components(components):
+        def simple_sort(components):
             components = deque(components)
             dependant_components = []
             sorted_components = []
@@ -619,7 +900,7 @@ class CellMLParser(object):
                     break
                 
                 if any(dep in components for dep in \
-                       component.components_dependencies):
+                       component.dependencies):
                     components.append(component)
                     dependant_components.append(component)
                 else:
@@ -627,73 +908,133 @@ class CellMLParser(object):
 
             return sorted_components, list(components)
 
-        # FIXME: We need a better heuristics for this... See pandit niederer model
-        # FIXME: which fails to extract the most obvious equation.
-
         # Initial sorting
-        sorted_components, circular_components = sort_components(components)
+        sorted_components, circular_components = simple_sort(components)
 
         # If no circular dependencies
         if not circular_components:
             return sorted_components
 
+        try:
+            import networkx as nx
+        except:
+            warning("networkx could not be imported. Circular "\
+                    "dependencies between components will not be sorted.")
+            return sorted_components + circular_components
+        
         # Collect zero and one dependencies
         zero_dep_equations = set()
         one_dep_equations = set()
-        heruistic_score = []
+        equation_map = {}
         
         # Gather zero dependent equations
         for comp in circular_components:
-            for dep_comp, equations in comp.components_dependencies.items():
+            for dep_comp, equations in comp.dependencies.items():
+                #if dep_comp not in circular_components:
+                #    continue
                 for equation in equations:
                     if not equation.dependent_equations and equation.name \
                            in comp.used_variables:
                         zero_dep_equations.add(equation)
+                        equation_map[equation.name] = equation
 
         # Check for one dependency if that is the zero one
+        one_dep_zero_dep = defaultdict(set)
         for comp in circular_components:
-            for dep_comp, equations in comp.components_dependencies.items():
+            for dep_comp, equations in comp.dependencies.items():
+                #if dep_comp not in circular_components:
+                #    continue
                 for equation in equations:
                     if len(equation.dependent_equations) == 1 and \
                            equation.name in comp.used_variables and \
                            equation.dependent_equations[0] in \
                            zero_dep_equations:
+                        equation_map[equation.name] = equation
                         one_dep_equations.add(equation)
-
-        # Create heuristic score of which equation we will start removing
-        # from components
-        for low_dep in zero_dep_equations:
-            num = 0
-            for comp in circular_components:
-                for equations in comp.components_dependencies.values():
-                    num += low_dep in equations
-            
-            heruistic_score.append((1, num, low_dep))
-
-        for low_dep in one_dep_equations:
-            num = 0
-            for comp in circular_components:
-                for equations in comp.components_dependencies.values():
-                    num += low_dep in equations
-            
-            heruistic_score.append((0, num, low_dep))
-
-        heruistic_score.sort()
-
-        print "Heuristic"
-        for deps, num, eq in heruistic_score:
-            print num, eq
+                        one_dep_zero_dep[equation.name].add(\
+                            equation.dependent_equations[0].name)
 
         # Try to eliminate circular dependency
         # Extract dependent equation to a new component
         ode_comp = Component(self.name, {}, [], {})
+
+        # Valid edges for removal
+        valid_edges = [eq.name for eq in zero_dep_equations] + \
+                      [eq.name for eq in one_dep_equations]
         
+        G = nx.MultiDiGraph()
+        G.add_nodes_from([comp.name for comp in components])
+        
+        # Build graph
+        for comp in components:
+            [G.add_edge(dep.name, comp.name, key=equation.name)
+             for dep, equations in comp.dependencies.items() \
+             for equation in equations]
+
+        # collecte edges that breaks cycles
+        cycle_breakers = []
+
+        # Collect data over the best edge to remove
+        edge_score = defaultdict(lambda : 0)
+        edge_to_nodes = defaultdict(set)
+        for cycle in nx.simple_cycles(G):
+            local_breaker = []
+            for n0, n1 in zip(cycle[:-1], cycle[1:]):
+                if all(edge in valid_edges for edge in G[n0][n1]):
+                    local_breaker.append([edge for edge in G[n0][n1]])
+                    for edge in local_breaker[-1]:
+                        edge_to_nodes[edge].add((n0, n1))
+                        
+            cycle_breakers.append(local_breaker)
+            for local_edges in local_breaker:
+                for edge in local_edges:
+                    edge_score[edge] += 1
+
+        # Sort the edges we should remove by a score given by how many
+        # cycles it breaks by being removed.
+        edge_score = sorted((edge_score[edge], edge) for edge in edge_score)
+
+        # Collect edges to be removed
+        edge_removal = set()
+        cycles_fixed = [False]*len(cycle_breakers)
+        while not all(cycles_fixed):
+            score, edge = edge_score.pop()
+
+            # Remove this/these edge/edges this iteration
+            local_removal = [edge]
+
+            # If adding a one dep edge we need to also remove its dependent edge
+            if edge in one_dep_zero_dep:
+                local_removal.extend(one_dep_zero_dep[edge])
+
+            for edge_remove in local_removal:
+                for i, local_breakers in enumerate(cycle_breakers):
+
+                    # If the cycle is fixed
+                    if cycles_fixed[i]:
+                        continue
+
+                    # Go through the collected valid breakers
+                    for j, local_edges in enumerate(local_breakers):
+
+                        # If the removed edge in in the local edges
+                        if edge_remove in local_edges:
+                            local_edges.remove(edge_remove)
+                            if len(local_edges) == 0:
+                                cycles_fixed[i] = True
+                                edge_removal.add(edge_remove)
+                                break
+
+        # Remove the edges from the graph
+        for edge in edge_removal:
+            for n0, n1 in edge_to_nodes[edge]:
+                G.remove_edge(n0, n1, key=edge)
+
+        # Move the marked edges (equations) from the relevant components
         removed_equations = {}
-        
-        # Try to eliminate circular dependency
-        while circular_components:
-            
-            deps, num, eq = heruistic_score.pop()
+        for edge in edge_removal:
+
+            eq = equation_map[edge]
             
             old_comp = eq.component
             ode_comp.equations.append(eq)
@@ -702,12 +1043,9 @@ class CellMLParser(object):
             # Store changed 
             removed_equations[eq] = old_comp
 
-            print
-            print "Moving", eq, "from", old_comp
-
-            # Transfer dependent_components to new component
+            # Transfer used_in to new component
             new_dependent_componets = OrderedDict()
-            for dep_comp, equations in old_comp.dependent_components.items():
+            for dep_comp, equations in old_comp.used_in.items():
                 assert equations
 
                 if eq not in equations or dep_comp == ode_comp:
@@ -716,23 +1054,23 @@ class CellMLParser(object):
                 # Remove dependency from old component and add it to the new
                 if len(equations) == 1:
                     new_dependent_componets[dep_comp] = \
-                                    old_comp.dependent_components.pop(dep_comp)
+                                    old_comp.used_in.pop(dep_comp)
                 else:
                     new_dependent_componets[dep_comp] = [\
-                        old_comp.dependent_components[dep_comp].pop(equations.index(eq))]
+                        old_comp.used_in[dep_comp].pop(equations.index(eq))]
 
                 # Change component dependencies
-                if old_comp in dep_comp.components_dependencies and eq in \
-                       dep_comp.components_dependencies[old_comp]:
-                    if len(dep_comp.components_dependencies[old_comp]) == 1:
-                        dep_comp.components_dependencies.pop(old_comp)
+                if old_comp in dep_comp.dependencies and eq in \
+                       dep_comp.dependencies[old_comp]:
+                    if len(dep_comp.dependencies[old_comp]) == 1:
+                        dep_comp.dependencies.pop(old_comp)
                     else:
-                        dep_comp.components_dependencies[old_comp].remove(eq)
+                        dep_comp.dependencies[old_comp].remove(eq)
 
-                if ode_comp not in dep_comp.components_dependencies:
-                    dep_comp.components_dependencies[ode_comp] = [eq]
+                if ode_comp not in dep_comp.dependencies:
+                    dep_comp.dependencies[ode_comp] = [eq]
                 else:
-                    dep_comp.components_dependencies[ode_comp].append(eq)
+                    dep_comp.dependencies[ode_comp].append(eq)
 
             # Store new component to the extracted equation
             eq.component = ode_comp
@@ -741,11 +1079,17 @@ class CellMLParser(object):
             if ode_comp not in sorted_components:
                 sorted_components.insert(0, ode_comp)
             
-            sorted_components, circular_components = sort_components(\
-                sorted_components + circular_components)
-
         # Sort newly added equations
         ode_comp.sort_and_store_equations(ode_comp.equations)
+
+        # Sort graph components and apply the sortings to the collected
+        # CellML compoents
+        sorted_components = nx.topological_sort(G)
+        components.sort(lambda n0, n1: cmp(sorted_components.index(n0.name), \
+                                           sorted_components.index(n1.name)))
+
+        # Insert the ODE component with extracted equations first
+        components.insert(0, ode_comp)
 
         warning("To avoid circular dependency the following equations "\
                 "has been moved:")
@@ -754,7 +1098,7 @@ class CellMLParser(object):
             warning("{0} : from {1} to {2} component".format(\
                 eq.name, old_comp.name, ode_comp.name))
 
-        return sorted_components
+        return components
 
     def parse_components(self, targets):
         """
@@ -809,23 +1153,8 @@ class CellMLParser(object):
             
             # Store component
             components[comp_name] = self.parse_single_component(\
-                comp, collected_parameters, collected_states, collected_equations)
+                comp, collected_states, collected_parameters, collected_equations)
 
-        for name, comp in collected_parameters.items():
-            if name in collected_states:
-                warning("Parameter name: '{0}' in component: '{1}' is a "\
-                        "duplication of a state in component {2}".format(\
-                            name, comp.name, collected_states[name].name))
-                new_name = name + "_" + comp.name.split("_")[0]
-                comp.change_parameter_name(name, new_name)
-
-            elif name in collected_equations:
-                warning("Parameter name: '{0}' in component: '{1}' is a "\
-                        "duplication of a equation in component {2}".format(\
-                            name, comp.name, collected_equations[name].name))
-                new_name = name + "_" + comp.name.split("_")[0]
-                comp.change_parameter_name(name, new_name)
-            
         # Add parent information
         for name, comp in components.items():
 
@@ -879,12 +1208,8 @@ class CellMLParser(object):
                     pass
         
         # Add dependencies and sort the components accordingly
-        components = self.add_dependencies_and_sort_components(\
-            components.values())
+        return self.sort_components(components.values())
         
-        return components
-
-
     def parse_name_mappings(self):
         new_variable_names = dict()
         same_variable_names = dict()
@@ -935,15 +1260,23 @@ class CellMLParser(object):
             new_name = comp.name.replace("_", " ")
 
             # If only 1 state it might be included in the name
+            state_name = ""
             if len(comp.state_variables) == 1:
                 state_name = comp.state_variables.keys()[0]
                 if state_name in comp.name:
                     new_name = state_name.join(part.replace("_", " ") \
                                 for part in comp.name.split(state_name))
 
+            # Captitalize first word
             single_words = new_name.split(" ")
             if len(single_words[0]) > 1 and "_" not in single_words[0]:
                 single_words[0] = single_words[0][0].upper()+single_words[0][1:]
+
+            # If first word is only a character we assume the first two
+            # words to stick together
+            elif len(single_words[0]) == 1 and len(single_words)>1 and \
+                     single_words[0] != state_name:
+                single_words = [single_words[0]+"_"+single_words[1]] + single_words[2:]
 
             return " ".join(single_words)
 
@@ -963,17 +1296,26 @@ class CellMLParser(object):
             if comp.state_variables:
                 declaration_lines.append("")
                 declaration_lines.append("states({0},".format(comp_name))
-                for name, value in comp.state_variables.items():
-                    declaration_lines.append("       {0} = {1},".format(name, value))
+                for name, info in comp.state_variables.items():
+                    if info["unit"] != "1":
+                        declaration_lines.append("       {0} = ScalarParam({1}"\
+                                ", unit=\"{2}\"),".format(name, info["init"], info["unit"]))
+                    else:
+                        declaration_lines.append("       {0} = {1},".format(\
+                            name, info["init"]))
                 declaration_lines[-1] = declaration_lines[-1][:-1]+")"
 
             # Collect initial parameters values
             if comp.parameters:
                 declaration_lines.append("")
                 declaration_lines.append("parameters({0},".format(comp_name))
-                for name, value in comp.parameters.items():
-                    declaration_lines.append("           {0} = {1},".format(\
-                        name, value))
+                for name, info in comp.parameters.items():
+                    if info["unit"] != "1":
+                        declaration_lines.append("           {0} = ScalarParam({1}"\
+                                ", unit=\"{2}\"),".format(name, info["init"], info["unit"]))
+                    else:
+                        declaration_lines.append("           {0} = {1},".format(\
+                            name, info["init"]))
                 declaration_lines[-1] = declaration_lines[-1][:-1]+")"
 
             # Collect all intermediate equations
