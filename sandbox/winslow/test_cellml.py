@@ -24,8 +24,8 @@ change_state_names = []
 #ode = load_ode(parser.name+".ode")
 
 for f in glob.glob("*.cellml"):
-    print
-    print f
+    #print
+    #print f
     params = CellMLParser.default_parameters()
     parser = CellMLParser(f, params=params)
     open(parser.name+".ode", "w").write(parser.to_gotran())

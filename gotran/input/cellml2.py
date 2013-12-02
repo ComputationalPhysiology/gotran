@@ -545,8 +545,8 @@ class CellMLParser(object):
             # Check state name vs collected state names
             elif name in collected_states:
                 state_comp = collected_states[name]
-                warning("Same state name: '{0}' is used in component: '{1}' "\
-                        "and '{2}'.".format(name, comp.name, state_comp.name))
+                begin_log("Same state name: '{0}' is used in component: '{1}' "\
+                          "and '{2}'.".format(name, comp.name, state_comp.name))
                 for change_comp in [comp, state_comp]:
                     if change_comp.state_variables[name]["private"] and \
                            change_comp.variable_info[der_name]["private"]:
@@ -559,13 +559,14 @@ class CellMLParser(object):
                             "component {1} and {2}. None of them are private "\
                             "to the components.".format(name, comp.name,
                                                       state_comp.name))
+                end_log()
 
             # Check state name vs collected parameter names
             elif name in collected_parameters:
                 param_comp = collected_parameters[name]
-                warning("State name: '{0}' from component '{1}' is used as "\
-                        "parameter in component '{2}'.".format(\
-                            name, comp.name, param_comp.name))
+                begin_log("State name: '{0}' from component '{1}' is used as "\
+                          "parameter in component '{2}'.".format(\
+                              name, comp.name, param_comp.name))
 
                 # If parameter is private we change that
                 if param_comp.parameters[name]["private"]:
@@ -584,13 +585,14 @@ class CellMLParser(object):
                             "None of them are private to the "\
                             "components.".format(name, comp.name,
                                                param_comp.name))
+                end_log()
                             
             # Check state name vs collected equation names
             elif name in collected_equations:
                 eq_comp = collected_equations[name]
-                warning("State name '{0}' from component '{1}' is used as "\
-                        "parameter in component '{2}'.".format(\
-                            name, comp.name, eq_comp.name))
+                begin_log("State name '{0}' from component '{1}' is used as "\
+                          "parameter in component '{2}'.".format(\
+                              name, comp.name, eq_comp.name))
 
                 # If state is private we change it
                 if comp.state_variables[name]["private"] and \
@@ -606,6 +608,7 @@ class CellMLParser(object):
                             "equation name {0} in component {1} and {2}. "\
                             "None of them are private to the "\
                             "components.".format(name, comp.name, eq_comp.name))
+                end_log()
                             
             # Register the collected state
             collected_states[name] = comp
@@ -617,9 +620,9 @@ class CellMLParser(object):
             if name in collected_states:
                 state_comp = collected_states[name]
                 der_name = "d{0}_dt".format(name)
-                warning("Same parameter and state name: '{0}' is used in "\
-                        "component '{1}' and '{2}'.".format(\
-                            name, comp.name, state_comp.name))
+                begin_log("Same parameter and state name: '{0}' is used in "\
+                          "component '{1}' and '{2}'.".format(\
+                              name, comp.name, state_comp.name))
                 # If parameter is private we change that
                 if comp.parameters[name]["private"]:
                     name = comp.change_parameter_name(name)
@@ -634,13 +637,14 @@ class CellMLParser(object):
                             "component {1} and {2}. None of them are private "\
                             "to the components.".format(name, comp.name,
                                                       state_comp.name))
+                end_log()
 
             # Check state name vs collected parameter names
             elif name in collected_parameters:
                 param_comp = collected_parameters[name]
-                warning("Parameter name '{0}' from component '{1}' is used as "\
-                        "parameter in component '{2}'.".format(\
-                            name, comp.name, param_comp.name))
+                begin_log("Parameter name '{0}' from component '{1}' is used as "\
+                          "parameter in component '{2}'.".format(\
+                              name, comp.name, param_comp.name))
 
                 # If registered parameter is private we change that
                 if param_comp.parameters[name]["private"]:
@@ -658,13 +662,14 @@ class CellMLParser(object):
                             "None of them are private to the "\
                             "components.".format(name, comp.name,
                                                param_comp.name))
+                end_log()
                             
             # Check state name vs collected equation names
             elif name in collected_equations:
                 eq_comp = collected_equations[name]
-                warning("Parameter name '{0}' from component '{1}' "\
-                        "is used as parameter in component '{2}'.".format(\
-                            name, comp.name, eq_comp.name))
+                begin_log("Parameter name '{0}' from component '{1}' "\
+                          "is used as parameter in component '{2}'.".format(\
+                              name, comp.name, eq_comp.name))
 
                 # If parameter is private we change it
                 if comp.parameters[name]["private"]:
@@ -679,6 +684,7 @@ class CellMLParser(object):
                             "equation names {0} in component {1} and {2}. "\
                             "None of them are private to the "\
                             "components.".format(name, comp.name, eq_comp.name))
+                end_log()
                             
             collected_parameters[name] = comp
 
@@ -701,9 +707,9 @@ class CellMLParser(object):
             if name in collected_states:
                 state_comp = collected_states[name]
                 der_name = "d{0}_dt".format(name)
-                warning("Same equation and state name '{0}' is used in "\
-                        "component '{1}' and '{2}'.".format(\
-                            name, comp.name, state_comp.name))
+                begin_log("Same equation and state name '{0}' is used in "\
+                          "component '{1}' and '{2}'.".format(\
+                              name, comp.name, state_comp.name))
                 # If equation is private we change that
                 #if comp.variable_info[name]["private"]:
                 #    name = comp.change_equation_name(name)
@@ -719,13 +725,14 @@ class CellMLParser(object):
                             "None of them are private to the "\
                             "components.".format(name, comp.name,
                                                state_comp.name))
+                end_log()
 
             # Check equation name vs collected parameter names
             elif name in collected_parameters:
                 param_comp = collected_parameters[name]
-                warning("Equation name '{0}' from component '{1}' is used as "\
-                        "parameter in component '{2}'.".format(\
-                            name, comp.name, param_comp.name))
+                begin_log("Equation name '{0}' from component '{1}' is used as "\
+                          "parameter in component '{2}'.".format(\
+                              name, comp.name, param_comp.name))
 
                 # If registered parameter is private we change that
                 if param_comp.parameters[name]["private"]:
@@ -743,13 +750,15 @@ class CellMLParser(object):
                             "None of them are private to the "\
                             "components.".format(name, comp.name,
                                                param_comp.name))
+
+                end_log()
                             
             # Check equation name vs collected equation names
             elif name in collected_equations:
                 eq_comp = collected_equations[name]
-                warning("Equation name '{0}' from component '{1}' is used as "\
-                        "equation name in component '{2}'.".format(\
-                            name, comp.name, eq_comp.name))
+                info("Equation name '{0}' from component '{1}' is used as "\
+                     "equation name in component '{2}'.".format(\
+                         name, comp.name, eq_comp.name))
 
                 # If equation is private we change it
                 #if comp.variable_info[name]["private"] and \
