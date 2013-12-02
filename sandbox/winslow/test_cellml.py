@@ -1,22 +1,35 @@
 from xml.etree import ElementTree
 from collections import defaultdict, OrderedDict
 from gotran.input.cellml2 import CellMLParser
+from gotran.model.loadmodel2 import load_ode
+from gotran import warning
+import glob
+
 import re
 
-model = "winslow_rice_jafri_marban_ororke_1999.cellml"
-#model = "iyer_mazhari_winslow_2004.cellml"
+#model = "winslow_rice_jafri_marban_ororke_1999.cellml"
+model = "iyer_mazhari_winslow_2004.cellml"
 model = "severi_fantini_charawi_difrancesco_2012.cellml"
 #model = "terkildsen_niederer_crampin_hunter_smith_2008.cellml"
-#model = "Pandit_Hinch_Niederer.cellml"
+model = "Pandit_Hinch_Niederer.cellml"
+#model = "grandi_pasqualini_bers_2010.cellml"
+#model = "maltsev_2009_paper.cellml"
 
 extract_equations = []
 change_state_names = []
 
-params = CellMLParser.default_parameters()
+#params = CellMLParser.default_parameters()
+#parser = CellMLParser(model, params=params)
+#open(parser.name+".ode", "w").write(parser.to_gotran())
+#ode = load_ode(parser.name+".ode")
 
-parser = CellMLParser(model, params=params)
-
-open(parser.name+".ode", "w").write(parser.to_gotran())
+for f in glob.glob("*.cellml"):
+    print
+    print f
+    params = CellMLParser.default_parameters()
+    parser = CellMLParser(f, params=params)
+    open(parser.name+".ode", "w").write(parser.to_gotran())
+    ode = load_ode(parser.name+".ode")
 
 mathmlparser = parser.mathmlparser
 parsed_components = parser.components
@@ -94,7 +107,7 @@ for units in parser.get_iterator("units"):
                 collected_parts[name] = (fullname, exponent)
             
         else:
-            warning("Unknown unit '{0}'".format(cellml_unit))
+            #warning("Unknown unit '{0}'".format(cellml_unit))
             break
         
     collected_units[unit_name] = collected_parts

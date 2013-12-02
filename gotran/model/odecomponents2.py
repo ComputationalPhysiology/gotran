@@ -824,16 +824,17 @@ class ODEBaseComponent(ODEObject):
                                              obj.name))
 
         # Check for reserved Expression wordings
-        if re.search(_derivative_name_template, obj.name) \
-               and not isinstance(obj, Derivatives):
-            error("The pattern d{{name}}_dt is reserved for derivatives. "
-                  "However {0} is not a Derivative.".format(obj.name))
-
-        if re.search(_algebraic_name_template, obj.name) \
-               and not isinstance(obj, AlgebraicExpression):
-            error("The pattern {alg_{{name}}_0 is reserved for algebraic "\
-                  "expressions, however {1} is not an AlgebraicExpression."\
-                  .format(obj.name))
+        #if isinstance(obj, Expression):
+        #    if re.search(_derivative_name_template, obj.name) \
+        #           and not isinstance(obj, Derivatives):
+        #        error("The pattern d{{name}}_dt is reserved for derivatives. "
+        #              "However {0} is not a Derivative.".format(obj.name))
+        #    
+        #    if re.search(_algebraic_name_template, obj.name) \
+        #           and not isinstance(obj, AlgebraicExpression):
+        #        error("The pattern {alg_{{name}}_0 is reserved for algebraic "\
+        #              "expressions, however {1} is not an AlgebraicExpression."\
+        #              .format(obj.name))
 
     def finalize_component(self):
         """
@@ -905,18 +906,22 @@ class DerivativeComponent(ODEBaseComponent):
             expr_obj = self.root.present_ode_objects.get(expr_name)
             var_obj = self.root.present_ode_objects.get(var_name)
 
-            # If the expr or variable is not declared in this ODE
-            if expr_obj is None:
-                error("Trying to register a DerivativeExpression, but "\
-                      "the expression: '{0}' is not registered in this "\
-                      "ODE.".format(expr_name))
-
-            if var_obj is None:
-                error("Trying to register a DerivativeExpression, but "\
-                      "the variable: '{0}' is not registered in this "\
-                      "ODE.".format(var_name))
-
-            self.add_derivative(expr_obj[0], var_obj[0], value)
+            # If the expr or variable is not declared in this ODE we
+            # register an intermediate
+            if expr_obj is None or var_obj is None:
+                self.add_intermediate(name, value)
+                
+            #if expr_obj is None:
+            #    error("Trying to register a DerivativeExpression, but "\
+            #          "the expression: '{0}' is not registered in this "\
+            #          "ODE.".format(expr_name))
+            #
+            #if var_obj is None:
+            #    error("Trying to register a DerivativeExpression, but "\
+            #          "the variable: '{0}' is not registered in this "\
+            #          "ODE.".format(var_name))
+            else:
+                self.add_derivative(expr_obj[0], var_obj[0], value)
 
         elif TYPE == STATE_SOLUTION_EXPRESSION:
             self.add_state_solution(expr, value)
@@ -926,7 +931,11 @@ class DerivativeComponent(ODEBaseComponent):
             # Try getting corresponding ODEObjects
             var_name = expr.groups()
             var_obj = self.root.present_ode_objects.get(var_name)
-            self.add_algebraic(var_obj, expr)
+
+            if var_obj is None:
+                self.add_intermediate(name, value)
+            else:
+                self.add_algebraic(var_obj, expr)
             
         else:
             error("Trying to register a {0} but that is not allowed in a"\

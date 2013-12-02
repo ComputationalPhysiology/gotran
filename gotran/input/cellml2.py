@@ -20,7 +20,7 @@ import urllib
 from xml.etree import ElementTree
 
 from collections import OrderedDict, deque, defaultdict
-from gotran.common import warning, error, check_arg
+from gotran.common import info, warning, error, check_arg, begin_log, end_log
 
 from modelparameters.codegeneration import _all_keywords
 from modelparameters.parameterdict import *
@@ -87,18 +87,21 @@ class Component(object):
     def __init__(self, name, variables, equations, state_variables=None):
         self.name = name
 
-        self.variable_types = {}
-        
+        self.variable_info = {}
+
         self.state_variables = OrderedDict((state, variables.pop(state, None))\
                                            for state in state_variables)
-        self.variable_types.update((state, "state_variable") \
-                                   for state in self.state_variables)
 
+        for state, info in self.state_variables.items():
+            self.variable_info[state] = info
+            self.variable_info["type"] = "state_variable"
+        
         self.parameters = OrderedDict((name, info) for name, info in \
                                       variables.items() if info["init"] is not None)
 
-        self.variable_types.update((param, "parameters") \
-                                   for param in self.parameters)
+        for param, info in self.parameters.items():
+            self.variable_info[param] = info
+            self.variable_info["type"] = "parameter"
 
         self.derivatives = state_variables
 
@@ -113,12 +116,10 @@ class Component(object):
 
         # Extract info
         dummy = dict(init=None, unit="1", private=True)
-        self.equation_info = OrderedDict((eq.name, variables.get(eq.name, dummy))\
-                                         for eq in self.equations)
-        
-        self.variable_types.update((eq.name, "equation") \
-                                   for eq in self.equations)
-        
+        for eq in self.equations:
+            self.variable_info[eq.name] = variables.get(eq.name, dummy)
+            self.variable_info[eq.name]["type"] = "equation"
+
         # Get used variables
         self.used_variables = set()
         for equation in self.equations:
@@ -136,6 +137,16 @@ class Component(object):
 
     def sort_and_store_equations(self, equations):
         
+        # Check if reserved name for state derivativeis is used as equation
+        # name 
+        derivative_names = ["d{0}_dt".format(der) for der in self.derivatives]
+        removal =[]
+        
+        for eq in equations[:]:
+            if eq.name in derivative_names and len(eq.expr) == 1 and \
+                   eq.expr[0] == eq.name:
+                equations.remove(eq)
+                
         # Check internal dependencies
         for eq0 in equations:
             
@@ -257,18 +268,18 @@ class Component(object):
             if oldder == eqn.name:
                 eqn.name = newder
 
+        # Update derivative equation
         old_eq_name = "d{0}_dt".format(oldname)
         new_eq_name = "d{0}_dt".format(newname)
-        self.variable_types[new_eq_name]  = self.variable_types.pop(\
-            old_eq_name, "equation")
-        self.equation_info[new_eq_name] = self.equation_info.pop(\
-            old_eq_name, dict(init=None, unit="1", private=True))
+        self.variable_info[new_eq_name] = self.variable_info.pop(\
+            old_eq_name, dict(init=None, unit="1", private=True, type="equation"))
 
         return newname
 
     def change_equation_name(self, oldname, newname=None):
         
-        assert(self.variable_types.get(oldname)=="equation")
+        assert(oldname in self.variable_info and \
+               self.variable_info[oldname].get("type")=="equation")
         
         # If no newname is give we pick one based on the component name
         if newname is None:
@@ -277,31 +288,31 @@ class Component(object):
         warning("Locally change equation name '{0}' to '{1}' in "\
                 "component '{2}'.".format(oldname, newname, self.name))
         
-        # Update equations
-        new_equations = []
-        for eqn in self.equations:
+        # Go through all equations and change the name used locally
+        for ind, eqn in enumerate(self.equations[:]):
             while oldname in eqn.expr:
                 eqn.expr[eqn.expr.index(oldname)] = newname
 
+            # Update the actuall equation
             if eqn.name == oldname:
                 eqn.name = newname
-
-            new_equations.append(eqn)
-
-        self.equations = new_equations
-        eq_info = self.equation_info.pop(oldname)
-        self.equation_info[newname] = eq_info
+                self.equations[ind] = eqn
+            
+        # Update meta info
+        self.variable_info[newname] = self.variable_info.pop(oldname)
         
         return newname
 
     def change_variable_name(self, oldname, newname=None):
-        vartype = self.variable_types.get(oldname)
-
-        if vartype is None:
+        if oldname not in self.variable_info:
             error("Cannot change variable name. {0} is not a variable "\
                   "in component {1}".format(oldname, self.name))
-            return 
-            
+            return
+        
+        vartype = self.variable_info[oldname]["type"]
+
+        assert(vartype in ["state_variable", "parameter", "equation"])
+
         if vartype == "state_variable":
             return self.change_state_name(oldname, newname)
         if vartype == "parameter":
@@ -326,6 +337,9 @@ class CellMLParser(object):
                                      "integers will be used instead of the "\
                                      "integers 0-10. This will turn 1/2 into a "\
                                      "sympy rational instead of the float 0.5."),
+            strip_parent_name=Param(True, description="If True strip the name from "\
+                                    "the child component it contains the name of the "\
+                                    "parent component.")
             )
     
     def __init__(self, model_source, targets=None, params=None):
@@ -359,12 +373,14 @@ class CellMLParser(object):
 
         self.model_source = model_source
         self.cellml = ElementTree.parse(fp).getroot()
+        self.name = self.cellml.attrib['name']
+        begin_log("Parsing CellML model: {0}".format(self.name))
         self.mathmlparser = MathMLBaseParser(self._params.use_sympy_integers)
         self.cellml_namespace = self.cellml.tag.split("}")[0] + "}"
-        self.name = self.cellml.attrib['name']
         self.parse_units()
         self.components = self.parse_components(targets)
         self.documentation = self.parse_documentation()
+        end_log()
 
     def parse_documentation(self):
         """
@@ -442,8 +458,11 @@ class CellMLParser(object):
             if cellml_pref:
                 unit_map[cellml_pref+"molar"] = pref+"M"
                 collected_units[cellml_pref+"molar"] = {pref+"M": (pref+"M", "1")}
-        
-        for units in self.get_iterator("units"):
+
+        parsed_twice = []
+        all_units = deque(self.get_iterator("units"))
+        while all_units:
+            units = all_units.popleft()
             unit_name = units.attrib["name"]
             
             if unit_name in unit_map:
@@ -470,8 +489,15 @@ class CellMLParser(object):
                 elif cellml_unit in collected_units:
                     if prefix:
                         warning("Skipping prefix of unit '{0}'".format(cellml_unit))
-                    for name, (fullnam, part_exponent) in collected_units[cellml_unit].items():
-                        new_exponent = str(int(part_exponent) * int(exponent))
+                    for name, (fullnam, part_exponent) in \
+                            collected_units[cellml_unit].items():
+                        new_exponent = float(part_exponent) * float(exponent)
+
+                        if new_exponent % 1.0 == 0.0:
+                            new_exponent = str(int(new_exponent))
+                        else:
+                            new_exponent = str(new_exponent)
+                            
                         if new_exponent not in ["0", "1"]:
                             fullname = name + "**" + new_exponent
                         else:
@@ -479,13 +505,17 @@ class CellMLParser(object):
                         
                         collected_parts[name] = (fullname, exponent)
                     
-                else:
-                    warning("Unknown unit '{0}'".format(cellml_unit))
+                elif units not in parsed_twice:
+                    all_units.append(units)
+                    parsed_twice.append(units)
                     break
-            
-            collected_units[unit_name] = collected_parts
-            unit_map[unit_name] = "*".join(fullname for fullname, exp \
-                                           in collected_parts.values())
+                else:
+                    warning("Unknown unit '{0}' in ".format(cellml_unit, units["name"]))
+
+            else:
+                collected_units[unit_name] = collected_parts
+                unit_map[unit_name] = "*".join(fullname for fullname, exp \
+                                               in collected_parts.values())
            
         # Store unit map
         self.units_map = unit_map
@@ -519,7 +549,7 @@ class CellMLParser(object):
                         "and '{2}'.".format(name, comp.name, state_comp.name))
                 for change_comp in [comp, state_comp]:
                     if change_comp.state_variables[name]["private"] and \
-                           change_comp.equation_info[der_name]["private"]:
+                           change_comp.variable_info[der_name]["private"]:
                         new_name = change_comp.change_state_name(name)
                         if change_comp == state_comp:
                             collected_states[new_name] = change_comp
@@ -545,7 +575,7 @@ class CellMLParser(object):
 
                 # Elseif the state variable is private we change that one
                 elif comp.state_variables[name]["private"] and \
-                         comp.equation_info[der_name]["private"]:
+                         comp.variable_info[der_name]["private"]:
                     name = comp.change_state_name(name)
 
                 else:
@@ -564,9 +594,9 @@ class CellMLParser(object):
 
                 # If state is private we change it
                 if comp.state_variables[name]["private"] and \
-                       comp.equation_info[der_name]["private"]:
+                       comp.variable_info[der_name]["private"]:
                     name = comp.change_state_name(name)
-                elif eq_comp.equation_info[name]["private"]:
+                elif eq_comp.variable_info[name]["private"]:
                     new_name = eq_comp.change_equation_name(name)
                     collected_equation.pop(name)
                     collected_equation[new_name] = eq_comp
@@ -586,6 +616,7 @@ class CellMLParser(object):
             # Check parameter name vs collected state names
             if name in collected_states:
                 state_comp = collected_states[name]
+                der_name = "d{0}_dt".format(name)
                 warning("Same parameter and state name: '{0}' is used in "\
                         "component '{1}' and '{2}'.".format(\
                             name, comp.name, state_comp.name))
@@ -593,7 +624,7 @@ class CellMLParser(object):
                 if comp.parameters[name]["private"]:
                     name = comp.change_parameter_name(name)
                 elif state_comp.state_variables[name]["private"] and \
-                         state_comp.equation_info[der_name]["private"]:
+                         state_comp.variable_info[der_name]["private"]:
                     new_name = state_comp.change_state_name(name)
                     collected_states.pop(name)
                     collected_states[new_name] = state_comp
@@ -638,7 +669,7 @@ class CellMLParser(object):
                 # If parameter is private we change it
                 if comp.parameters[name]["private"]:
                     name = comp.change_parameter_name(name)
-                elif eq_comp.equation_info[name]["private"]:
+                elif eq_comp.variable_info[name]["private"]:
                     new_name = eq_comp.change_equation_name(name)
                     collected_equation.pop(name)
                     collected_equation[new_name] = eq_comp
@@ -657,21 +688,27 @@ class CellMLParser(object):
 
             # If the equation is private we do not care if it is duplicated
             # elsewhere. Risky...
-            if comp.equation_info[name]["private"]:
-                collected_equations[name] = comp
-                continue
+            #if comp.variable_info[name]["private"]:
+            #    collected_equations[name] = comp
+            #    continue
+
+            # If the equation will be broadcasted to another name we continue
+            #print comp.name, name, self.new_variable_connections.get(comp.name, {}).keys()
+            #if name in self.new_variable_connections.get(comp.name, {}).keys():
+            #    continue
             
             # Check equation name vs collected state names
             if name in collected_states:
                 state_comp = collected_states[name]
+                der_name = "d{0}_dt".format(name)
                 warning("Same equation and state name '{0}' is used in "\
                         "component '{1}' and '{2}'.".format(\
                             name, comp.name, state_comp.name))
                 # If equation is private we change that
-                if comp.equation_info[name]["private"]:
-                    name = comp.change_equation_name(name)
-                elif state_comp.state_variables[name]["private"] and \
-                         state_comp.equation_info[der_name]["private"]:
+                #if comp.variable_info[name]["private"]:
+                #    name = comp.change_equation_name(name)
+                if state_comp.state_variables[name]["private"] and \
+                         state_comp.variable_info[der_name]["private"]:
                     new_name = state_comp.change_state_name(name)
                     collected_states.pop(name)
                     collected_states[new_name] = state_comp
@@ -683,11 +720,11 @@ class CellMLParser(object):
                             "components.".format(name, comp.name,
                                                state_comp.name))
 
-            # Check state name vs collected parameter names
+            # Check equation name vs collected parameter names
             elif name in collected_parameters:
                 param_comp = collected_parameters[name]
                 warning("Equation name '{0}' from component '{1}' is used as "\
-                        "parameter in component '{2}'." % (\
+                        "parameter in component '{2}'.".format(\
                             name, comp.name, param_comp.name))
 
                 # If registered parameter is private we change that
@@ -697,8 +734,8 @@ class CellMLParser(object):
                     collected_parameters[new_name] = param_comp
 
                 # If the parameter is private we change that one
-                elif comp.equation_info[name]["private"]:
-                    name = comp.change_equation_name(name)
+                #elif comp.variable_info[name]["private"]:
+                #    name = comp.change_equation_name(name)
 
                 else:
                     warning("Could not resolve duplicated parameter and "\
@@ -711,23 +748,25 @@ class CellMLParser(object):
             elif name in collected_equations:
                 eq_comp = collected_equations[name]
                 warning("Equation name '{0}' from component '{1}' is used as "\
-                        "parameter in component '{2}'.".format(\
+                        "equation name in component '{2}'.".format(\
                             name, comp.name, eq_comp.name))
 
-                # If parameter is private we change it
-                if comp.equation_info[name]["private"]:
-                    name = comp.change_equation_name(name)
+                # If equation is private we change it
+                #if comp.variable_info[name]["private"] and \
+                #       eq_comp.variable_info[name]["private"]:
+                #    warning("Both equations are private. We do not change "\
+                #            "name on either one of them.")
                     
-                elif eq_comp.equation_info[name]["private"]:
-                    new_name = eq_comp.change_equation_name(name)
-                    collected_equation.pop(name)
-                    collected_equation[new_name] = eq_comp
-
-                else:
-                    warning("Could not resolve duplicated parameter and "\
-                            "equation names {0} in component {1} and {2}. "\
-                            "None of them are private to the "\
-                            "components.".format(name, comp.name, eq_comp.name))
+                #elif eq_comp.variable_info[name]["private"]:
+                #    new_name = eq_comp.change_equation_name(name)
+                #    collected_equations.pop(name)
+                #    collected_equations[new_name] = eq_comp
+                #
+                #else:
+                #    warning("Could not resolve duplicated parameter and "\
+                #            "equation names {0} in component {1} and {2}. "\
+                #            "None of them are private to the "\
+                #            "components.".format(name, comp.name, eq_comp.name))
             
             collected_equations[name] = comp
             
@@ -744,7 +783,10 @@ class CellMLParser(object):
         collected_equations = dict()
 
         # Import other models
-        for model in self.get_iterator("import"):
+        imports = self.get_iterator("import")
+        if imports:
+            info("Parsing imported models:")
+        for model in imports:
             import_comp_names = dict()
 
             for comp in self.get_iterator("component", model):
@@ -755,7 +797,7 @@ class CellMLParser(object):
             model_parser = CellMLParser(\
                 model.attrib["{http://www.w3.org/1999/xlink}href"], \
                 import_comp_names)
-
+            
             for comp in model_parser.components:
                 components[comp.name] = comp
 
@@ -765,7 +807,7 @@ class CellMLParser(object):
             self.check_and_register_component_variables(\
                 comp, collected_states, collected_parameters, \
                 collected_equations)
-            
+
         return components, collected_states, collected_parameters,\
                collected_equations
 
@@ -827,6 +869,11 @@ class CellMLParser(object):
         state_variables = OrderedDict()
         #derivatives = []
 
+        # Get variables that are used outside the component
+        variables_used_in_connections = self.new_variable_connections.get(\
+            comp_name, dict()).keys() + self.same_variable_connections.get(\
+            comp_name, dict()).keys()
+                
         # Get variable and initial values
         for var in self.get_iterator("variable", comp):
 
@@ -834,13 +881,21 @@ class CellMLParser(object):
             if var_name in _all_keywords:
                 var_name = var_name + "_"
 
+            # Check connection and pair it with interface information to
+            # check if a variable is public or not
+            public = var_name in variables_used_in_connections and \
+                     (var.attrib.get("public_interface") == "out" or \
+                      var.attrib.get("private_interface") == "out")
+            
             # Store variables using initial and unit
             variables[var_name] = dict(\
-                init=var.attrib.get("initial_value"),\
-                unit=self.units_map[var.attrib.get("units")],\
-                private=not (var.attrib.get("public_interface")=="out" or \
-                             var.attrib.get("private_interface")=="out"))
-
+                init = var.attrib.get("initial_value"),\
+                unit = self.units_map[var.attrib.get("units")],\
+                private = not public,
+                public_interface = var.attrib.get("public_interface"),
+                private_interface = var.attrib.get("private_interface"),
+                )
+            
         # Get equations
         for math in comp.getiterator(\
             "{http://www.w3.org/1998/Math/MathML}math"):
@@ -879,6 +934,8 @@ class CellMLParser(object):
         return comp
 
     def sort_components(self, components):
+
+        begin_log("Sorting components with respect to dependencies")
         
         # Check internal dependencies
         for comp0 in components:
@@ -913,6 +970,7 @@ class CellMLParser(object):
 
         # If no circular dependencies
         if not circular_components:
+            end_log()
             return sorted_components
 
         try:
@@ -1004,8 +1062,10 @@ class CellMLParser(object):
             local_removal = [edge]
 
             # If adding a one dep edge we need to also remove its dependent edge
+            dep_removal = set()
             if edge in one_dep_zero_dep:
                 local_removal.extend(one_dep_zero_dep[edge])
+                dep_removal.update(one_dep_zero_dep[edge])
 
             for edge_remove in local_removal:
                 for i, local_breakers in enumerate(cycle_breakers):
@@ -1017,12 +1077,18 @@ class CellMLParser(object):
                     # Go through the collected valid breakers
                     for j, local_edges in enumerate(local_breakers):
 
-                        # If the removed edge in in the local edges
+                        # If the removed edge is in the local edges
                         if edge_remove in local_edges:
                             local_edges.remove(edge_remove)
                             if len(local_edges) == 0:
                                 cycles_fixed[i] = True
                                 edge_removal.add(edge_remove)
+                                
+                                # Check any dependent edges
+                                for dep_edge in one_dep_zero_dep.get(\
+                                    edge_remove, []):
+                                    edge_removal.add(dep_edge)
+                                
                                 break
 
         # Remove the edges from the graph
@@ -1098,6 +1164,7 @@ class CellMLParser(object):
             warning("{0} : from {1} to {2} component".format(\
                 eq.name, old_comp.name, ode_comp.name))
 
+        end_log()
         return components
 
     def parse_components(self, targets):
@@ -1105,6 +1172,11 @@ class CellMLParser(object):
         Build a dictionary containing dictionarys describing each
         component of the cellml model
         """
+
+        # First parse connections which is used to determine the interface of
+        # each variable
+        self.new_variable_connections, self.same_variable_connections = \
+                                       self.parse_connections()
 
         # Parse imported components
         components, collected_states, collected_parameters, \
@@ -1156,6 +1228,7 @@ class CellMLParser(object):
                 comp, collected_states, collected_parameters, collected_equations)
 
         # Add parent information
+        all_component_names = components.keys()
         for name, comp in components.items():
 
             if targets:
@@ -1167,8 +1240,13 @@ class CellMLParser(object):
                 comp.parent = components[parent_name]
                 
                 # If parent name in child name, reduce child name length
-                if parent_name in comp.name:
-                    comp.name = comp.name.replace(parent_name, "").strip("_")
+                if self._params.strip_parent_name and parent_name in comp.name:
+                    old_name = comp.name
+                    new_name = old_name.replace(parent_name, "").strip("_")
+                    if new_name not in all_component_names:
+                        comp.name = new_name
+                        all_component_names.remove(old_name)
+                        all_component_names.append(new_name)
 
                 components[parent_name].children.append(comp)
 
@@ -1178,28 +1256,78 @@ class CellMLParser(object):
 
         # Before dependencies are checked we change names according to
         # variable mappings in the original CellML file
-        new_variable_names, same_variable_names = self.parse_name_mappings()
-        for comp, variables in new_variable_names.items():
+        if self.new_variable_connections:
+            begin_log("\nRenaming variables through connections")
+            
+        for comp, variables in self.new_variable_connections.items():
 
             # Iterate over old and new names
             for oldname, newnames in variables.items():
+
+                # Check that the direction of the connection is correct
+                # If no variable info is registered for this comp or its
+                # children it is the wrong direction
                 
+                #print
+                #print comp, oldname
+                #print components[comp].variable_info.keys()
+                #for child in components[comp].children:
+                #    print child.name, child.variable_info.keys()
+                #    if oldname in child.variable_info.keys():
+                #        print "HURRAY"
+                #        print child.variable_info[oldname]
+                
+                if oldname not in components[comp].variable_info and all(\
+                    oldname not in child.variable_info \
+                    for child in components[comp].children):
+                    continue
+
+                # Try access var_info
+                var_info = components[comp].variable_info.get(oldname)
+
+                # If not we try components children
+                if var_info is None:
+                    for child in components[comp].children:
+                        if oldname in child.variable_info:
+                            var_info = child.variable_info[oldname]
+                            break
+
+                #print comp, oldname
+                #print var_info
+                    
+                # If variable is not intended out
+                if not (var_info.get("public_interface")=="out" or \
+                        var_info.get("private_interface")=="out"):
+                    continue
+
                 # Check if the oldname is used in any components
-                oldname_used = oldname in same_variable_names[comp]
-                
+                old_name_used = self.same_variable_connections[comp].get(oldname)
+
                 # If there are only one newname we change the name of the
                 # original equation
                 if len(newnames) == 1:
 
-                    if not oldname_used:
+                    # If not old name used or old name only used in children and
+                    # we then assume it is private to the component relationship
+                    # parent-child
+                    if not old_name_used or all(components[other_comp] in \
+                            components[comp].children for other_comp in old_name_used):
+
+                        # Get new name
                         newname = newnames.keys()[0]
-                        if components[comp].get_variable_type(oldname) is not None:
+
+                        # If oldname in component
+                        if components[comp].variable_info.get(oldname) is not None:
                             components[comp].change_variable_name(oldname, newname)
-                        else:
-                            for child in components[comp].children:
-                                if child.get_variable_type(oldname) is not None:
-                                    child.change_variable_name(oldname, newname)
-                                    break
+                        
+                        if old_name_used:
+                            for other_comp in old_name_used:
+                                components[other_comp].change_variable_name(\
+                                    oldname, newname)
+
+                        for child in components[comp].children:
+                            if child.variable_info.get(oldname) is not None:
+                                child.change_variable_name(oldname, newname)
                     else:
                         # FIXME: Add equation with name change to component
                         pass
@@ -1207,10 +1335,13 @@ class CellMLParser(object):
                     # FIXME: Add equation with name change to component
                     pass
         
+        if self.new_variable_connections:
+            end_log()
+        
         # Add dependencies and sort the components accordingly
         return self.sort_components(components.values())
         
-    def parse_name_mappings(self):
+    def parse_connections(self):
         new_variable_names = dict()
         same_variable_names = dict()
         
@@ -1218,7 +1349,7 @@ class CellMLParser(object):
             con_map = self.get_iterator("map_components", con)[0]
             comp1 = con_map.attrib["component_1"]
             comp2 = con_map.attrib["component_2"]
-            
+
             for var_map in self.get_iterator("map_variables", con):
                 var1 = var_map.attrib["variable_1"]
                 var2 = var_map.attrib["variable_2"]
@@ -1230,6 +1361,13 @@ class CellMLParser(object):
                         new_variable_names[comp1][var1] = defaultdict(list)
                     new_variable_names[comp1][var1][var2].append(comp2)
 
+                    # Register both directions
+                    if comp2 not in new_variable_names:
+                        new_variable_names[comp2] = {var2:defaultdict(list)}
+                    elif var2 not in new_variable_names[comp2]:
+                        new_variable_names[comp2][var2] = defaultdict(list)
+                    new_variable_names[comp2][var2][var1].append(comp1)
+
                 else:
                     if comp1 not in same_variable_names:
                         same_variable_names[comp1] = {var1:[comp2]}
@@ -1237,6 +1375,14 @@ class CellMLParser(object):
                         same_variable_names[comp1][var1] = [comp2]
                     else:
                         same_variable_names[comp1][var1].append(comp2)
+
+                    # Register both directions
+                    if comp2 not in same_variable_names:
+                        same_variable_names[comp2] = {var2:[comp1]}
+                    elif var2 not in same_variable_names[comp2]:
+                        same_variable_names[comp2][var2] = [comp1]
+                    else:
+                        same_variable_names[comp2][var2].append(comp1)
 
         return new_variable_names, same_variable_names
     
