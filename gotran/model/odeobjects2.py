@@ -362,7 +362,7 @@ class Parameter(ODEValueObject):
 
 class Argument(ODEValueObject):
     """
-    class for an arbitrary argument
+    class for an arbitrary argument used to add arguments to CodeComponents
     """
     def __init__(self, name):
         """

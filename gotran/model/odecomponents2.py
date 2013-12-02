@@ -1261,8 +1261,6 @@ class ODE(DerivativeComponent):
         # Attributes which will be populated later
         self._body_expressions = None
         self._mass_matrix = None
-        self._jacobian_component = None
-        self._linearized_derivatives = None
         
         # Global finalized flag
         self._is_finalized_ode = False
@@ -1442,11 +1440,16 @@ class ODE(DerivativeComponent):
 
     def _expand_expression(self, obj):
 
+        #print
+        #print "Expand:", obj.name, "##", obj.expr
+        
         # FIXME: We need to wait for the expanssion of all expressions...
         assert isinstance(obj, Expression)
 
         # Iterate over dependencies in the expression
         expression_subs = []
+        expression_subs_dict = {}
+        ns = dict()
         for sym in symbols_from_expr(obj.expr, include_derivatives=True):
 
             dep_obj = self.present_ode_objects[sympycode(sym)]
@@ -1468,7 +1471,17 @@ class ODE(DerivativeComponent):
                 # Collect intermediates to be used in substitutions below
                 expression_subs.append((dep_obj.sym, \
                                         self.expanded_expressions[dep_obj.name]))
+                expression_subs_dict[dep_obj.sym] = self.expanded_expressions[dep_obj.name]
+                ns[dep_obj.name] = self.expanded_expressions[dep_obj.name]
 
+        #for sym, expr in expression_subs:
+        #    print sym, ":::", expr
+
+        #print "SUBS:", obj.expr.subs(expression_subs)
+        #print self.ns.keys()
+        # FIXME: bug in sympy subs force us to use eval...
+        #return eval(sympycode(obj.expr), self.ns, ns)
+        return obj.expr.xreplace(expression_subs_dict)
         return obj.expr.subs(expression_subs)
 
     @property
@@ -1554,60 +1567,6 @@ class ODE(DerivativeComponent):
 
         return any(isinstance(expr, AlgebraicExpression) for expr in \
                    self.state_expressions)
-    
-    def jacobian_component(self):
-        """
-        If the ODE is finished a Jacobian component is constructed and returned
-        """
-        from algorithmcomponents import JacobianComponent
-        if not self.is_complete:
-            error("The ODE is not complete")
-
-        if not self._jacobian_component:
-            
-            self._jacobian_component = JacobianComponent(self)
-
-        return self._jacobian_component
-
-    def component_wise_derivative(self, index):
-        """
-        Return a component holding the expressions for the ith
-        state derivative 
-        """
-        from algorithmcomponents import DependentExpressionComponent
-        if not self.is_finalized:
-            error("Cannot compute component wise derivatives if ODE is "\
-                  "not finalized")
-
-        check_arg(index, int, ge=0, le=self.num_full_states)
-            
-        if self._component_wise_derivatives[index] is None:
-            expr = self.state_expressions[index]
-            state = expr.state
-            if not isinstance(expr, StateDerivative):
-                error("Expected a derivative component to be a "\
-                      "StateDerivative.")
-            self._component_wise_derivatives[index] = \
-                DependentExpressionComponent("d{0}_dt_component".format(\
-                state), self, expr)
-
-        return self._component_wise_derivatives[index]
-
-    def linearized_derivatives(self):
-        """
-        Return a component holding linearized derivative expressions 
-        """
-        from algorithmcomponents import LinearizedDerivativeComponent
-        
-        if not self.is_complete:
-            error("The ODE is not complete")
-
-        if not self._linearized_derivatives:
-            
-            self._linearized_derivatives = LinearizedDerivativeComponent(self)
-
-        return self._linearized_derivatives
-        
 
     def finalize(self):
         """
@@ -1619,7 +1578,6 @@ class ODE(DerivativeComponent):
         self._is_finalized_ode = True
         self._present_component = self.name
         self._compute_argument_indices()
-        self._component_wise_derivatives = [None]*self.num_full_states
 
     def _compute_argument_indices(self):
         """
@@ -1662,6 +1620,10 @@ class ODE(DerivativeComponent):
         Compare method to sort a list of arguments
         """
         return cmp(self.arg_index(arg0), self.arg_index(arg1))
+
+# Is it nesseary?
+class CodeComponent(object):
+    pass
 
 class ODEObjectList(list):
     """
