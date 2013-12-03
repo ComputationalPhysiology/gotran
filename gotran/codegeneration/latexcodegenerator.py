@@ -327,7 +327,7 @@ class LatexCodeGenerator(object):
         """
         return "  ${NAME}$\\hspace{{0.5cm}} & ${VAL}{UNIT}$" \
                "\\hspace{{0.5cm}} & {DESC}".format(
-                   NAME=self.format_expr(param_name), VAL=value,
+                   NAME=self.format_expr(param_name), VAL=mp_latex(sympy.sympify(value)),
                    DESC=description,
                    UNIT=" " + self.format_unit(unit) if unit != "1" else "")
 
@@ -343,7 +343,7 @@ class LatexCodeGenerator(object):
         """
         return "  ${NAME}$\\hspace{{0.5cm}} & ${VAL}{UNIT}$" \
                "\\hspace{{0.5cm}} & {DESC}".format(
-                   NAME=self.format_expr(state_name), VAL=value,
+                   NAME=self.format_expr(state_name), VAL=mp_latex(sympy.sympify(value)),
                    DESC=description,
                    UNIT=" " + self.format_unit(unit) if unit != "1" else "")
 
