@@ -25,7 +25,7 @@ from sympy.core.function import AppliedUndef
 
 # ModelParameters imports
 from modelparameters.sympytools import sp, symbols_from_expr
-from modelparameters.codegeneration import sympycode
+from modelparameters.codegeneration import sympycode, latex, latex_unit
 from modelparameters.parameters import *
 
 from gotran.common import error, check_arg, scalars, debug, DEBUG, \
@@ -136,6 +136,9 @@ class Comment(ODEObject):
         # Call super class
         super(Comment, self).__init__(comment)
 
+    def _repr_latex_(self):
+        return "$\\mathbf{{{0}}}$".format(self.name.replace(" ", "\\;"))
+
 class ODEValueObject(ODEObject):
     """
     A class for all ODE objects which has a value
@@ -239,6 +242,15 @@ class ODEValueObject(ODEObject):
         """
         return "'{0}', {1}".format(self.name, self._param.repr(\
             include_name=False))
+
+    def _repr_latex_(self):
+        """
+        Return a pretty latex representation of the ODEValue object
+        """
+        value = self.value[0] if self.is_field else self.value
+        unit_str = latex_unit(self.param.unit)
+        return "${0}{1}$".format(latex(value), "\\;{0}".format(unit_str) \
+                                 if unit_str else "")
 
     @property
     def arg_ind(self):

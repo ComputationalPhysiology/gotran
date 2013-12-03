@@ -21,7 +21,7 @@ __all__ = ["Expression", "DerivativeExpression", "AlgebraicExpression", \
 
 # ModelParameters imports
 from modelparameters.sympytools import sp, symbols_from_expr
-from modelparameters.codegeneration import sympycode
+from modelparameters.codegeneration import sympycode, latex, latex_unit
 
 # Local imports
 from gotran.common import error, check_arg, scalars, debug, DEBUG, \
@@ -96,6 +96,19 @@ class Expression(ODEValueObject):
         Return a formatted str of __init__ arguments
         """
         return "'{0}', {1}".format(self.name, sympycode(self.expr))
+
+    def _repr_latex_(self):
+        """
+        Return a pretty latex representation of the Expression object
+        """
+        
+        return "${0} = {1}$".format(self._repr_latex_name(),
+                                    self._repr_latex_expr())
+
+    def _repr_latex_expr(self):
+        return latex(self.expr)
+    def _repr_latex_name(self):
+        return "{0}".format(latex(self.name))
 
 class Intermediate(Expression):
     """
@@ -199,7 +212,10 @@ class DerivativeExpression(Intermediate):
         """
         return "{0}, {1}, {2}".format(repr(self._der_expr), repr(self._dep_var),\
                                       sympycode(self.expr))
-
+    def _repr_latex_name(self):
+        return "\\frac{{d{0}}}{{d{1}}}".format(latex(self._der_expr.name),
+                                               latex(self._dep_var.name))
+        
 class RateExpression(Intermediate):
     """
     A sub class of Expression holding single rates
@@ -288,6 +304,9 @@ class StateDerivative(StateExpression):
         """
         return "{0}, {1}".format(repr(self._state), sympycode(self.expr))
 
+    def _repr_latex_name(self):
+        return "\\frac{{d{0}}}{{dt}}".format(latex(self.state.name))
+
 class AlgebraicExpression(StateExpression):
     """
     A class for algebraic expressions which relates a State with an
@@ -319,6 +338,10 @@ class AlgebraicExpression(StateExpression):
         Return a formatted str of __init__ arguments
         """
         return "{0}, {1}".format(repr(self._state), sympycode(self.expr))
+
+
+    def _repr_latex_name(self):
+        return "0"
 
 # Tuple with Derivative types, for type checking
 Derivatives = (StateDerivative, DerivativeExpression)
