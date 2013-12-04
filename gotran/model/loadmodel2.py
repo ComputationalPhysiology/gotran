@@ -49,6 +49,7 @@ class IntermediateDispatcher(dict):
 
     def __setitem__(self, name, value):
 
+        timer = Timer("Namespace dispatcher")
         # Set the attr of the ODE
         # If a scalar or a sympy number or it is a sympy.Basic consisting of
         # sp.Symbols
@@ -88,6 +89,8 @@ class IntermediateDispatcher(dict):
                 
             else:
 
+                del timer
+                
                 # Add obj to the present component
                 sym = setattr(self.ode.present_component, name, value)
         

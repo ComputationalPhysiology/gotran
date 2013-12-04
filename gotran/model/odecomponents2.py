@@ -29,7 +29,7 @@ from modelparameters.sympytools import sp, symbols_from_expr
 from modelparameters.parameters import ScalarParam
 from modelparameters.parameterdict import ParameterDict
 from modelparameters.codegeneration import sympycode, _all_keywords
-from modelparameters.utils import tuplewrap
+from modelparameters.utils import tuplewrap, Timer
 
 # Local imports
 from gotran.common import error, debug, check_arg, check_kwarg, scalars
@@ -283,6 +283,7 @@ class ODEBaseComponent(ODEObject):
         init : scalar, ScalarParam
             The initial value of the state
         """
+        timer = Timer("Add states")
 
         # Create state
         state = State(name, init, self.time)
@@ -330,6 +331,7 @@ class ODEBaseComponent(ODEObject):
         init : scalar, ScalarParam
             The initial value of the parameter
         """
+        timer = Timer("Add parameters")
 
         param = Parameter(name, init)
 
@@ -472,6 +474,7 @@ class ODEBaseComponent(ODEObject):
         """
 
         # Create an Intermediate in the present component
+        timer = Timer("Add intermediate")
         expr = Intermediate(name, expr)
 
         self._register_component_object(expr)
@@ -491,6 +494,7 @@ class ODEBaseComponent(ODEObject):
         expr : sympy.Basic
             The expression which the differetiation should be equal
         """
+        timer = Timer("Add derivatives")
 
         if isinstance(der_expr, AppliedUndef):
             name = sympycode(der_expr)
@@ -1440,16 +1444,13 @@ class ODE(DerivativeComponent):
 
     def _expand_expression(self, obj):
 
-        #print
-        #print "Expand:", obj.name, "##", obj.expr
-        
+        timer = Timer("Expanding expression")
+
         # FIXME: We need to wait for the expanssion of all expressions...
         assert isinstance(obj, Expression)
 
         # Iterate over dependencies in the expression
-        expression_subs = []
         expression_subs_dict = {}
-        ns = dict()
         for sym in symbols_from_expr(obj.expr, include_derivatives=True):
 
             dep_obj = self.present_ode_objects[sympycode(sym)]
@@ -1469,20 +1470,9 @@ class ODE(DerivativeComponent):
             if isinstance(dep_obj, Expression):
 
                 # Collect intermediates to be used in substitutions below
-                expression_subs.append((dep_obj.sym, \
-                                        self.expanded_expressions[dep_obj.name]))
                 expression_subs_dict[dep_obj.sym] = self.expanded_expressions[dep_obj.name]
-                ns[dep_obj.name] = self.expanded_expressions[dep_obj.name]
 
-        #for sym, expr in expression_subs:
-        #    print sym, ":::", expr
-
-        #print "SUBS:", obj.expr.subs(expression_subs)
-        #print self.ns.keys()
-        # FIXME: bug in sympy subs force us to use eval...
-        #return eval(sympycode(obj.expr), self.ns, ns)
         return obj.expr.xreplace(expression_subs_dict)
-        return obj.expr.subs(expression_subs)
 
     @property
     def body_expressions(self):
@@ -1503,11 +1493,9 @@ class ODE(DerivativeComponent):
             # Iterate over all objects of the component
             for obj in comp.ode_objects:
 
-                # Skip States and Parameters
-                if isinstance(obj, SingleODEObjects):
-                    continue
-
-                body_expressions.append(obj)
+                # Only add Expressions
+                if isinstance(obj, Expression):
+                    body_expressions.append(obj)
 
         if self.is_finalized:
             self._body_expressions = body_expressions
