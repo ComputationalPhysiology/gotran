@@ -342,17 +342,17 @@ class CellMLParser(object):
                                     "parent component.")
             )
     
-    def __init__(self, model_source, targets=None, params=None):
+    def __init__(self, model_source, params=None, targets=None, ):
         """
         Arguments:
         ----------
         
         model_source: str
             Path or url to CellML file
-        targets : list, dict (optional)
-            Components of the model to parse
         params : dict
             A dict with parameters for the 
+        targets : list, dict (optional)
+            Components of the model to parse
         """
 
         targets = targets or []
@@ -513,6 +513,13 @@ class CellMLParser(object):
                     warning("Unknown unit '{0}' in ".format(cellml_unit, units["name"]))
 
             else:
+                # Try change mole*l**-1 to mM...
+                #print unit_name, collected_parts
+                #for name, (fullname, exponent) in collected_parts.items():
+                #    if "mole" in name and "l" in collected_parts and \
+                #           collected_parts["l"][1][0]!=exponent[0]:
+                #        print "FOUND"
+                        
                 collected_units[unit_name] = collected_parts
                 unit_map[unit_name] = "*".join(fullname for fullname, exp \
                                                in collected_parts.values())
@@ -805,7 +812,7 @@ class CellMLParser(object):
 
             model_parser = CellMLParser(\
                 model.attrib["{http://www.w3.org/1999/xlink}href"], \
-                import_comp_names)
+                targets=import_comp_names)
             
             for comp in model_parser.components:
                 components[comp.name] = comp

@@ -2,6 +2,7 @@ from xml.etree import ElementTree
 from collections import defaultdict, OrderedDict
 from gotran.input.cellml2 import CellMLParser
 from gotran.model.loadmodel2 import load_ode
+from modelparameters.utils import list_timings, clear_timings
 from gotran import warning
 import glob
 
@@ -30,6 +31,8 @@ for f in glob.glob("*.cellml"):
     parser = CellMLParser(f, params=params)
     open(parser.name+".ode", "w").write(parser.to_gotran())
     ode = load_ode(parser.name+".ode")
+    list_timings()
+    clear_timings()
 
 mathmlparser = parser.mathmlparser
 parsed_components = parser.components

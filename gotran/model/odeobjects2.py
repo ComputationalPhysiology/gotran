@@ -16,7 +16,7 @@
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
 __all__ = ["ODEObject", "Comment", "ODEValueObject", "Parameter", "State", \
-           "SingleODEObjects", "Time", "Dt"]
+           "SingleODEObjects", "Time", "Dt", "IndexedObject"]
 
 # System imports
 import numpy as np
@@ -81,6 +81,46 @@ class ODEObject(object):
         x.__str__() <==> str(x)
         """
         return self._name
+
+    def __gt__(self, other):
+        """
+        x.__gt__(y) <==> x>y
+        """
+        if not isinstance(other, ODEObject):
+            return False
+        return self._hash > other._hash
+        
+    def __gt__(self, other):
+        """
+        x.__gt__(y) <==> x>y
+        """
+        if not isinstance(other, ODEObject):
+            return False
+        return self._hash > other._hash
+        
+    def __lt__(self, other):
+        """
+        x.__lt__(y) <==> x<y
+        """
+        if not isinstance(other, ODEObject):
+            return False
+        return self._hash < other._hash
+        
+    def __ge__(self, other):
+        """
+        x.__gt__(y) <==> x>=y
+        """
+        if not isinstance(other, ODEObject):
+            return False
+        return self._hash >= other._hash
+        
+    def __le__(self, other):
+        """
+        x.__gt__(y) <==> x<=y
+        """
+        if not isinstance(other, ODEObject):
+            return False
+        return self._hash <= other._hash
 
     def __repr__(self):
         """
@@ -189,7 +229,6 @@ class ODEValueObject(ODEObject):
 
             # Store the Param
         self._param = value
-        self._arg_ind = -1
 
     def rename(self, name):
         """
@@ -251,22 +290,6 @@ class ODEValueObject(ODEObject):
         unit_str = latex_unit(self.param.unit)
         return "${0}{1}$".format(latex(value), "\\;{0}".format(unit_str) \
                                  if unit_str else "")
-
-    @property
-    def arg_ind(self):
-        """
-        Attribute to determine an argument index
-        """
-        return self._arg_ind
-
-    @arg_ind.setter
-    def arg_ind(self, value):
-        """
-        Set argument index
-        """
-        value = tuplewrap(value)
-        check_arg(value, tuple, itemtype=int)
-        self_arg_ind = value
 
 class State(ODEValueObject):
     """
@@ -371,6 +394,43 @@ class Parameter(ODEValueObject):
                                (self._param.value, \
                                 self._param._check_arg(), \
                                 self._param._name_arg()))
+
+class IndexedObject(ODEObject):
+    """
+    An object with a fixed index associated with it
+    """
+    def __init__(self, basename, indices):
+        """
+        Create an IndexedExpression with an associated basename
+
+        Arguments
+        ---------
+        basename : str
+            The basename of the multi index Expression
+        indices : tuple of ints
+            The indices 
+        """
+        
+        check_arg(basename, str)
+        indices = tuplewrap(indices)
+        check_arg(indices, tuple, itemtypes=int)
+        name = basename + "_" + "_".join(str(index) for index in indices)
+        super(IndexedObject, self).__init__(name, expr)
+        self._basename = basename
+        self._indices = indices
+        self._sym = sp.Symbol(name)
+
+    @property
+    def basename(self):
+        return self._basename
+
+    @property
+    def indices(self):
+        return self._indices
+
+    @property
+    def sym(self):
+        return self._sym
 
 class Argument(ODEValueObject):
     """

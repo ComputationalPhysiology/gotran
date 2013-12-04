@@ -17,7 +17,8 @@
 
 __all__ = ["Expression", "DerivativeExpression", "AlgebraicExpression", \
            "StateExpression", "StateSolution", "RateExpression", \
-           "Intermediate", "StateDerivative", "Derivatives"]
+           "Intermediate", "StateDerivative", "Derivatives", \
+           "IndexedExpression"]
 
 # ModelParameters imports
 from modelparameters.sympytools import sp, symbols_from_expr
@@ -25,7 +26,7 @@ from modelparameters.codegeneration import sympycode, latex, latex_unit
 
 # Local imports
 from gotran.common import error, check_arg, scalars, debug, DEBUG, \
-     get_log_level, Timer
+     get_log_level, Timer, tuplewrap
 from gotran.model.odeobjects2 import *
 
 class Expression(ODEValueObject):
@@ -112,7 +113,7 @@ class Expression(ODEValueObject):
 
 class Intermediate(Expression):
     """
-    An empty class for all Intermediate classes
+    A class for all Intermediate classes
     """
     def __init__(self, name, expr):
         """
@@ -342,6 +343,41 @@ class AlgebraicExpression(StateExpression):
 
     def _repr_latex_name(self):
         return "0"
+
+class IndexedExpression(Expression):
+    """
+    An expression which represents an expression with a fixed index
+    associated with it
+    """
+    def __init__(self, basename, indices, expr):
+        """
+        Create an IndexedExpression with an associated basename
+
+        Arguments
+        ---------
+        basename : str
+            The basename of the multi index Expression
+        indices : tuple of ints
+            The indices 
+        expr : sympy.Basic
+            The expression
+        """
+        
+        check_arg(basename, str)
+        indices = tuplewrap(indices)
+        check_arg(indices, tuple, itemtypes=int)
+        name = basename + "_" + "_".join(str(index) for index in indices)
+        super(IndexedExpression, self).__init__(name, expr)
+        self._basename = basename
+        self._indices = indices
+
+    @property
+    def basename(self):
+        return self._basename
+
+    @property
+    def indices(self):
+        return self._indices
 
 # Tuple with Derivative types, for type checking
 Derivatives = (StateDerivative, DerivativeExpression)

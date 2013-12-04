@@ -1494,7 +1494,7 @@ class ODE(DerivativeComponent):
             for obj in comp.ode_objects:
 
                 # Only add Expressions
-                if isinstance(obj, Expression):
+                if isinstance(obj, (Expression, Comment)):
                     body_expressions.append(obj)
 
         if self.is_finalized:
@@ -1609,10 +1609,13 @@ class ODE(DerivativeComponent):
         """
         return cmp(self.arg_index(arg0), self.arg_index(arg1))
 
-# Is it nesseary?
 class CodeComponent(object):
-    pass
-
+    """
+    A special component for creating 
+    """
+    def __init__(self, comp):
+        pass
+        
 class ODEObjectList(list):
     """
     Specialized container for ODEObjects
