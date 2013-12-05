@@ -366,7 +366,7 @@ class IndexedExpression(Expression):
         check_arg(basename, str)
         indices = tuplewrap(indices)
         check_arg(indices, tuple, itemtypes=int)
-        name = basename + "_" + "_".join(str(index) for index in indices)
+        name = basename + "_" +"_".join(str(index) for index in indices)
         super(IndexedExpression, self).__init__(name, expr)
         self._basename = basename
         self._indices = indices
