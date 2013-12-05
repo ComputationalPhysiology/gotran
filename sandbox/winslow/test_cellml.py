@@ -15,6 +15,7 @@ model = "severi_fantini_charawi_difrancesco_2012.cellml"
 model = "Pandit_Hinch_Niederer.cellml"
 #model = "grandi_pasqualini_bers_2010.cellml"
 #model = "maltsev_2009_paper.cellml"
+model = "nash_panfilov_2004.cellml"
 
 extract_equations = []
 change_state_names = []
@@ -30,9 +31,14 @@ for f in glob.glob("*.cellml"):
     params = CellMLParser.default_parameters()
     parser = CellMLParser(f, params=params)
     open(parser.name+".ode", "w").write(parser.to_gotran())
-    ode = load_ode(parser.name+".ode")
+    try:
+        ode = load_ode(parser.name+".ode")
+    except Exception, e:
+        print "***Error: Could not load gotran model", parser.name, e
+        print 
     list_timings()
     clear_timings()
+    print 
 
 mathmlparser = parser.mathmlparser
 parsed_components = parser.components

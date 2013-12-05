@@ -1071,6 +1071,7 @@ class CellMLParser(object):
         # Collect edges to be removed
         edge_removal = set()
         cycles_fixed = [False]*len(cycle_breakers)
+        
         while not all(cycles_fixed):
             score, edge = edge_score.pop()
 
@@ -1084,28 +1085,34 @@ class CellMLParser(object):
                 dep_removal.update(one_dep_zero_dep[edge])
 
             for edge_remove in local_removal:
+
+                # Iterate over the different cycles
                 for i, local_breakers in enumerate(cycle_breakers):
 
                     # If the cycle is fixed
                     if cycles_fixed[i]:
                         continue
 
-                    # Go through the collected valid breakers
-                    for j, local_edges in enumerate(local_breakers):
+                    # Go through the collected valid breakers and pick the one
+                    # with least edges first
+                    for j, local_edges in enumerate(sorted(\
+                        local_breakers, lambda o0, o1: cmp(len(o0), len(o1)))):
 
                         # If the removed edge is in the local edges
                         if edge_remove in local_edges:
                             local_edges.remove(edge_remove)
+                            edge_removal.add(edge_remove)
+
+                            # Check any dependent edges
+                            for dep_edge in one_dep_zero_dep.get(\
+                                edge_remove, []):
+                                edge_removal.add(dep_edge)
+                                
                             if len(local_edges) == 0:
                                 cycles_fixed[i] = True
-                                edge_removal.add(edge_remove)
-                                
-                                # Check any dependent edges
-                                for dep_edge in one_dep_zero_dep.get(\
-                                    edge_remove, []):
-                                    edge_removal.add(dep_edge)
                                 
                                 break
+            
 
         # Remove the edges from the graph
         for edge in edge_removal:
