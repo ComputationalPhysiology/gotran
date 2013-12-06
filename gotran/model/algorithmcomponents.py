@@ -30,12 +30,15 @@ __all__ = ["JacobianComponent", "JacobianActionComponent", \
 
 # System imports
 from collections import OrderedDict, deque, defaultdict
+from sympy.core.function import AppliedUndef
 
 # ModelParameters imports
 from modelparameters.sympytools import sp
+from modelparameters.codegeneration import sympycode
 
 # Local imports
-from gotran.common import error, debug, check_arg, check_kwarg, scalars, Timer
+from gotran.common import error, debug, check_arg, check_kwarg, scalars, Timer, \
+     warning
 from odeobjects2 import State, Parameter, IndexedObject, Comment
 from expressions2 import *
 from odecomponents2 import ODEBaseComponent, ODE
@@ -180,14 +183,7 @@ class IndexedExpressionComponent(ODEBaseComponent):
         """
         super(IndexedExpressionComponent, self).__init__(name, parent)
 
-        self._index_sizes = {}
-
-    def index_sizes(self, basename):
-        if not basename in self._index_sizes:
-            error("Index expression with basename {0} is not part of "\
-                  "this component.")
-        
-        return self._index_sizes[basename]
+        self.index_sizes = {}
 
     def add_indexed_expression(self, basename, indices, expr):
         """
@@ -374,7 +370,7 @@ class JacobianComponent(DependentExpressionComponent):
         self._num_nonzero = 0
 
         self.add_comment("Computing the sparse jacobian of {0}".format(parent.name))
-        self._index_sizes["jac"] = (N,N)
+        self.index_sizes["jac"] = (N,N)
         for i, expr in enumerate(state_exprs):
             for j, state in enumerate(states):
 
@@ -386,6 +382,7 @@ class JacobianComponent(DependentExpressionComponent):
                     jac_ij = self.add_indexed_expression("jac", (i, j), jac_ij)
                     self._jacobian[i, j] = jac_ij
 
+        # Call init deps with sorted list of objects
         self.init_deps(*self.ode_objects)
 
     @property
@@ -466,7 +463,7 @@ class JacobianActionComponent(IndexedExpressionComponent):
 
         self.add_comment("Computing the action of the jacobian")
 
-        self._index_sizes["jac_action"] = len(x)
+        self.index_sizes["jac_action"] = len(x)
         for i, expr in enumerate(jac*x):
             self._action_vector[i] = self.add_indexed_expression("jac_action",\
                                                                  i, expr)
@@ -508,7 +505,7 @@ class DiagonalJacobianActionComponent(IndexedExpressionComponent):
         self.add_comment("Computing the action of the jacobian")
 
         # Create Jacobian matrix
-        self._index_sizes["diag_jac_action"] = len(x)
+        self.index_sizes["diag_jac_action"] = len(x)
         for i, expr in enumerate(jac*x):
             self._action_vector[i] = self.add_indexed_expression(\
                 "diag_jac_action", i, expr)
@@ -551,7 +548,7 @@ class FactorizedJacobianComponent(IndexedExpressionComponent):
         # Size of system
         n = jac.rows
 
-        self._index_sizes["jac"] = (n,n)
+        self.index_sizes["jac"] = (n,n)
         def add_intermediate_if_changed(jac, jac_ij, i, j):
             # If item has changed 
             if jac_ij != jac[i,j]:
@@ -663,7 +660,7 @@ class LinearizedDerivativeComponent(DependentExpressionComponent):
         check_arg(parent, ODE)
         assert parent.is_finalized
         self._linear_derivative_indices = [0]*self.root.num_full_states
-        self._index_sizes["linearized"] = self.root.num_full_states
+        self.index_sizes["linearized"] = self.root.num_full_states
         for ind, expr in enumerate(self.root.state_expressions):
             if not isinstance(expr, StateDerivative):
                 error("Cannot generate a linearized derivative of an "\
@@ -691,6 +688,8 @@ class CommonSubExpressionODE(ODE):
         check_arg(ode, ODE)
         assert ode.is_finalized
         
+        timer = Timer("Extract common sub expressions")
+
         newname = ode.name+"_CSE"
         
         # Call super class 
@@ -759,20 +758,25 @@ class ReuseBodyVariableComponent(IndexedExpressionComponent):
         super(ReuseBodyVariableComponent, self).__init__(\
             "ReuseBodyVariables"+component.name, component.root)
 
+        timer = Timer("Subsititute reused variables")
+
         available_indices = deque()
         body_indices = []
         precent_ind = 0
         max_index = -1
         index_available_at = defaultdict(list)
 
-        # First get rid of all Comments
-        #body_expressions = [expr for expr in component.body_expressions
-        #                    if isinstance(expr, Expression)]
-
         # Collect indices
         ind = 0
         replace_dict = {}
-        for expr in component.body_expressions:
+        
+        #component.body_expressions
+        body_expressions = self._replace_derivatives(component.body_expressions)
+        for expr in body_expressions:
+
+            if isinstance(expr, DerivativeExpression):
+                error("Reuse of DerivativeExpressions are not "\
+                      "implemented: " + expr.name)
 
             # Skip expr of classes
             if not isinstance(expr, classes):
@@ -781,28 +785,12 @@ class ReuseBodyVariableComponent(IndexedExpressionComponent):
                     self.add_comment(str(expr))
                     continue
 
-                # FIXME: Should we distinguish between the different
-                # FIXME: intermediates?
-                elif isinstance(expr, Intermediate):
-                    new_expr = Intermediate(expr.name, expr.expr.xreplace(\
-                        replace_dict))
-
-                elif isinstance(expr, StateDerivative):
-                    new_expr = StateDerivative(\
-                        expr.state, expr.expr.xreplace(replace_dict))
-
-                elif isinstance(expr, AlgebraicExpression):
-                    new_expr = AlgebraicExpression(\
-                        expr.state, expr.expr.xreplace(replace_dict))
-
-                elif isinstance(expr, IndexedExpression):
-                    new_expr = IndexedExpression(\
-                        expr.basename, expr.indices, expr.expr.xreplace(replace_dict))
-
+                new_expr = self._recreate_expression(expr, replace_dict)
+                replace_dict[expr.sym] = new_expr.sym
                 self.ode_objects.append(new_expr)
                 
                 continue
-            
+
             # Check if any indices are available at this expression ind
             available_indices.extend(index_available_at[ind])
 
@@ -818,10 +806,10 @@ class ReuseBodyVariableComponent(IndexedExpressionComponent):
             replace_dict[expr.sym] = self.add_indexed_expression(\
                 "body", precent_ind, expr.expr.xreplace(replace_dict))
 
-            # Check when precent ind gets available again
-            for used_expr in reversed(self.root.object_used_in[expr]):
-                if used_expr in component.body_expressions:
-                    index_available_at[component.body_expressions.index(\
+            # Check when present ind gets available again
+            for used_expr in reversed(self.object_used_in[expr]):
+                if used_expr in body_expressions:
+                    index_available_at[body_expressions.index(\
                         used_expr)].append(precent_ind)
                     break
             else:
@@ -829,11 +817,235 @@ class ReuseBodyVariableComponent(IndexedExpressionComponent):
 
             ind += 1
         
-        self._index_sizes["body"] = max_index
+        self.index_sizes["body"] = max_index
+        if isinstance(component, IndexedExpressionComponent):
+            self.index_sizes.update(component.index_sizes)
         self._body_expressions = self.ode_objects[:]
+
+    def _recreate_expression(self, expr, replace_dict):
+        """
+        Recreate an Expression while applying the replace dict to the expression
+        """
+        # FIXME: Should we distinguish between the different
+        # FIXME: intermediates?
+        if isinstance(expr, Intermediate):
+            return  Intermediate(expr.name, expr.expr.xreplace(replace_dict))
+
+        if isinstance(expr, StateDerivative):
+            return StateDerivative(expr.state, expr.expr.xreplace(replace_dict))
+
+        if isinstance(expr, AlgebraicExpression):
+            return AlgebraicExpression(expr.state, expr.expr.xreplace(replace_dict))
+
+        if isinstance(expr, IndexedExpression):
+            return IndexedExpression(expr.basename, expr.indices,
+                                     expr.expr.xreplace(replace_dict))
+
+        error("Should not reach here")
 
     @property
     def body_expressions(self):
         return self._body_expressions
+    
+    def _replace_derivatives(self, body_expressions):
+        """
+        Replace derivatives with intermediates first
+        """
+        replace_dict = {}
+        replaced_der_exprs = {}
+        new_body_expressions = []
+        present_ode_object = {}
+        
+        # First a run to exchange all DerivativeExpressions
+        for expr in body_expressions:
 
-#class iter_body_expressions(object)
+            if isinstance(expr, Comment):
+                new_body_expressions.append(expr)
+
+            elif isinstance(expr, IndexedExpression):
+                present_ode_object[expr.name] = expr
+                new_body_expressions.append(expr)
+                
+            elif isinstance(expr.expr, sp.Number):
+                replace_dict[expr.sym] = expr.expr
+
+            elif isinstance(expr.expr, (sp.Symbol, AppliedUndef)):
+                name = sympycode(expr.expr)
+                replaced_der_exprs[expr] = present_ode_object.get(\
+                    name, self.root.present_ode_objects.get(name))
+                replace_dict[expr.sym] = expr.expr
+
+            elif isinstance(expr.expr, sp.Mul) and len(expr.expr.args)==2 and \
+                     isinstance(expr.expr.args[1], (sp.Symbol, AppliedUndef)) and \
+                     expr.expr.args[0]==-sp.S.One:
+                name = sympycode(expr.expr.args[1])
+                replaced_der_exprs[expr] = present_ode_object.get(\
+                    name, self.root.present_ode_objects.get(name))
+                replace_dict[expr.sym] = expr.expr
+
+            elif isinstance(expr, DerivativeExpression):
+                new_expr = Intermediate(expr.name, expr.expr.xreplace(replace_dict))
+
+                if isinstance(new_expr.expr, sp.Number):
+                    replace_dict[expr.sym] = new_expr.expr
+                    continue
+                
+                replaced_der_exprs[expr] = new_expr
+                replace_dict[expr.sym] = new_expr.sym
+                expr = new_expr
+                present_ode_object[expr.name] = expr
+                new_body_expressions.append(expr)
+                
+            else:
+                present_ode_object[expr.name] = expr
+                new_body_expressions.append(expr)
+
+        new_new_body_expressions = []
+
+        # Then a run to exchange all expressions using the exchanged expressions
+        replaced_exprs = {}
+        all_replaced_der_exprs = replaced_der_exprs.values()
+        for expr2 in new_body_expressions:
+
+            # If we have already exchanged this expression
+            if expr2 in all_replaced_der_exprs or \
+                   isinstance(expr2, Comment):
+                new_new_body_expressions.append(expr2)
+                continue
+
+            # Check if expr2 contains derivative symbols if so recreate it
+            for expr in replaced_der_exprs:
+                if expr.sym in expr2.expr:
+                    new_expr = self._recreate_expression(expr2, replace_dict)
+                    replaced_exprs[expr2] = new_expr
+                    new_new_body_expressions.append(new_expr)
+                    break
+            else:
+                new_new_body_expressions.append(expr2)
+            
+        # Merge the replaced expr dicts
+        replaced_exprs.update(replaced_der_exprs)
+
+        # Update object_used_in dict
+        self.object_used_in = {}
+        for expr, used_in in self.root.object_used_in.items():
+            self.object_used_in[replaced_exprs.get(expr, expr)] = \
+                    [replaced_exprs.get(used_expr, used_expr) for used_expr in used_in]
+
+        return new_new_body_expressions
+    
+def parameter_replace(self, comp, numerals=False, field_index=False,
+                      name="params", index_format="[{0}]", index_offset=0,
+                      index_offset_str="", field_index_offset_str=""):
+    """
+    Return a replace dict for parameters
+
+    Arguments
+    ---------
+    comp : ODEComponent
+        The component for which we are going to get the parameters from
+    numerals : bool
+        If True all parameters are exchanged by the numberal value
+    field_index : bool
+        If True create its own indices for field parameters
+    name : str
+        Default name used in the replace
+    index_format : str
+        The format of the index
+    index_offset : int
+        An offset for the indices
+    index_offset_str : str
+        A str which holds a variable name defining an index offset
+    field_index_offset_str : str
+        A str which holds a variable name defining an index offset for field
+        parameters
+    """
+
+    check_arg(comp, ODEComponent)
+    def index_str(ind, offset_str):
+        return index_format.format(str(ind+index_offset) + "+"+offset_str \
+                                   if offset_str else "")
+        
+    if numerals:
+        return dict((param.sym, sp.sympify(param.value)) \
+                    for param in comp.root.all_parameters)
+    replace_dict = {}
+    if field_index:
+        for ind, param in enumerate(comp.root.field_parameters):
+            replace_dict[param.sym] = sp.Symbol(name+"_field"+index_str(ind,\
+                                                field_index_offset_str))
+        for ind, param in enumerate(comp.root.parameters):
+            replace_dict[param.sym] = sp.Symbol(name+index_str(ind,\
+                                                index_offset_str))
+    else:
+        for ind, param in enumerate(comp.root.all_parameters):
+            replace_dict[param.sym] = sp.Symbol(name+index_str(ind,\
+                                                index_offset_str))
+    return replace_dict
+        
+def state_replace(self, comp, name="states", index_format="[{0}]", index_offset=0,
+                  index_offset_str=""):
+    """
+    Return a replace dict for state variables
+
+    Arguments
+    ---------
+    comp : ODEComponent
+        The component for which we are going to get the parameters from
+    name : str
+        Default name used in the replace
+    index_format : str
+        The format of the index
+    index_offset : int
+        An offset for the indices
+    index_offset_str : str
+        A str which holds a variable name defining an index offset
+    """
+
+    check_arg(comp, ODEComponent)
+    def index_str(ind, offset_str):
+        return index_format.format(str(ind+index_offset) + "+"+offset_str \
+                                   if offset_str else "")
+    
+    return dict((state.sym, sp.Symbol(name+index_str(ind, index_offset_str))) \
+                for ind, state in enumerate(comp.root.full_states))
+
+def result_replace(self, exprs, name="values", index_format="[{0}]", index_offset=0,
+                   index_offset_str=""):
+    """
+    Return a replace dict for results
+
+    Arguments
+    ---------
+    exprs : list
+        A list of expressions which should be replaced
+    name : str
+        Default name used in the replace
+    index_format : str
+        The format of the index
+    index_offset : int
+        An offset for the indices
+    index_offset_str : str
+        A str which holds a variable name defining an index offset
+    """
+
+    check_arg(exprs, list, itemtypes=Expression)
+    def index_str(ind, offset_str):
+        return index_format.format(str(ind+index_offset) + "+"+offset_str \
+                                   if offset_str else "")
+    
+    return dict((expr.sym, sp.Symbol(name+index_str(ind, index_offset_str))) \
+                for ind, expr in enumerate(exprs))
+        
+class iter_body_expressions(object):
+    """
+    class to iter over body expressions and to replace sympy symbols while
+    iterating
+    """
+    def __init__(self, comp, parameter_replace=None, state_replace=None, 
+                 result_replace=None, body_replace=None,
+                 indexstr="[{0}]", indexoffset=0, flatten_indices=True,
+                 indexoffset_str=""):
+        pass
+        
+        
