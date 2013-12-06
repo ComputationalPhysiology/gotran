@@ -1355,8 +1355,13 @@ class ODE(DerivativeComponent):
                 self._handle_expr_component(comp)
 
             # Expand and add any derivatives in the expressions
+            expression_added = False
             for der_expr in obj.expr.atoms(sp.Derivative):
-                self._expand_single_derivative(comp, obj, der_expr)
+                expression_added |= self._expand_single_derivative(comp, obj, der_expr)
+
+            # If any expression was added we need to bump the count of the ODEObject
+            if expression_added:
+                obj._recount()
 
             # Expand the Expression
             self.expanded_expressions[obj.name] = self._expand_expression(obj)
@@ -1400,6 +1405,8 @@ class ODE(DerivativeComponent):
     def _expand_single_derivative(self, comp, obj, der_expr):
         """
         Expand a single derivative and register it as new derivative expression
+        
+        Returns True if an expression was actually added
         """
 
         if not isinstance(der_expr.args[0], AppliedUndef):
@@ -1415,7 +1422,7 @@ class ODE(DerivativeComponent):
 
         # If excist continue
         if der_expr_obj:
-            return
+            return False
 
         # Get the expr and dependent variable objects
         expr_obj = self.present_ode_objects[sympycode(der_expr.args[0])][0]
@@ -1441,6 +1448,8 @@ class ODE(DerivativeComponent):
 
         # Store expression
         comp.add_derivative(expr_obj, var_obj, expr_obj.expr.diff(var_obj.sym))
+
+        return True
 
     def _expand_expression(self, obj):
 
