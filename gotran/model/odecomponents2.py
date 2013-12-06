@@ -625,11 +625,9 @@ class ODEBaseComponent(ODEObject):
         """
         Return a list of state expressions
         """
-        states = self.full_states
         return sorted((obj for obj in iter_objects(self, False, False, \
                                                    False, StateExpression)),\
-                      lambda o0, o1 : cmp(states.index(o0.state), \
-                                          states.index(o1.state)))
+                      lambda o0, o1 : cmp(o0.state, o1.state))
 
     @property
     def components(self):
