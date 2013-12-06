@@ -50,77 +50,16 @@ class ODEObject(object):
         self._name = self._check_name(name)
 
         # Unique identifyer
-        self._hash = ODEObject.__count
+        self._count = ODEObject.__count
         ODEObject.__count += 1
 
     def __hash__(self):
-        return self._hash
+        return self._count
 
-    def __eq__(self, other):
-        """
-        x.__eq__(y) <==> x==y
-        """
-
-        if not isinstance(other, type(self)):
-            return False
-
-        return self._hash == other._hash
-
-    def __ne__(self, other):
-        """
-        x.__neq__(y) <==> x==y
-        """
-
-        if not isinstance(other, type(self)):
-            return True
-
-        return self._hash != other._hash
-
-    def __str__(self):
-        """
-        x.__str__() <==> str(x)
-        """
-        return self._name
-
-    def __gt__(self, other):
-        """
-        x.__gt__(y) <==> x>y
-        """
+    def __cmp__(self, other):
         if not isinstance(other, ODEObject):
-            return False
-        return self._hash > other._hash
-        
-    def __gt__(self, other):
-        """
-        x.__gt__(y) <==> x>y
-        """
-        if not isinstance(other, ODEObject):
-            return False
-        return self._hash > other._hash
-        
-    def __lt__(self, other):
-        """
-        x.__lt__(y) <==> x<y
-        """
-        if not isinstance(other, ODEObject):
-            return False
-        return self._hash < other._hash
-        
-    def __ge__(self, other):
-        """
-        x.__gt__(y) <==> x>=y
-        """
-        if not isinstance(other, ODEObject):
-            return False
-        return self._hash >= other._hash
-        
-    def __le__(self, other):
-        """
-        x.__gt__(y) <==> x<=y
-        """
-        if not isinstance(other, ODEObject):
-            return False
-        return self._hash <= other._hash
+            return -1
+        return cmp(self._count, other._count)
 
     def __repr__(self):
         """
@@ -159,6 +98,16 @@ class ODEObject(object):
 
         return name
 
+    def _recount(self):
+        """
+        Method called when an object need to get a new count
+        """
+        old_count = self._count
+        self._count = ODEObject.__count
+        debug("Change count of {0} from {1} to {2}".format(\
+            self.name, old_count, self._count))
+        ODEObject.__count += 1
+    
 class Comment(ODEObject):
     """
     A Comment. To keep track of user comments in an ODE
