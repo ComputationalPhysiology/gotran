@@ -147,9 +147,6 @@ class StateSolution(Intermediate):
         check_arg(state, State, 0, StateSolution)
         super(StateSolution, self).__init__(sympycode(state.sym), expr)
 
-        if state.is_field:
-            error("Cannot registered a solved state that is a field_state")
-
         # Flag solved state
         state._is_solved = True
         self._state = state

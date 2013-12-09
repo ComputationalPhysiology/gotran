@@ -165,7 +165,48 @@ def reuse_body_variables(component, *classes):
     """
     check_arg(classes, tuple, itemtypes=type)
     return ReuseBodyVariableComponent(component, *classes)
-    
+
+class CodeComponent(ODEBaseComponent):
+    """
+    A class for defining an interface to generate code of a component
+    """
+    def __init__(self, name, parent):
+        """
+        Create a CodeComponent
+
+        Arguments
+        ---------
+        name : str
+            The name of the component. This str serves as the unique
+            identifier of the Component.
+        parent : ODEBaseComponent
+            The parent component of this ODEComponent in most cases the
+            root ODEComponent
+        """
+        super(CodeComponent, self).__init__(name, parent)
+        self._used_states = []
+        self._used_parameters = []
+        self._body_expressions = []
+        self._init_body_expressions()
+
+    def _init_body_expressions(self):
+        """
+        Collect expressions contained in the body
+        """
+        pass
+
+    @property
+    def used_states(self):
+        return self._used_states
+
+    @property
+    def used_parameters(self):
+        return self._used_parameters
+
+    @property
+    def body_expressions(self):
+        return self._body_expressions
+
 class IndexedExpressionComponent(ODEBaseComponent):
     """
     An ODEComponent which allows adding indexed expressions
@@ -286,7 +327,6 @@ class DependentExpressionComponent(IndexedExpressionComponent):
         not_checked = set()
         used_states = set()
         used_parameters = set()
-        used_field_parameters = set()
 
         exprs_not_in_body = []
 
@@ -304,10 +344,7 @@ class DependentExpressionComponent(IndexedExpressionComponent):
                 elif isinstance(obj, State):
                     used_states.add(obj)
                 elif isinstance(obj, Parameter):
-                    if obj.is_field:
-                        used_field_parameters.add(obj)
-                    else:
-                        used_parameters.add(obj)
+                    used_parameters.add(obj)
 
         # Collect all dependencies
         while not_checked:
@@ -321,15 +358,11 @@ class DependentExpressionComponent(IndexedExpressionComponent):
                 elif isinstance(obj, State):
                     used_states.add(obj)
                 elif isinstance(obj, Parameter):
-                    if obj.is_field:
-                        used_field_parameters.add(obj)
-                    else:
-                        used_parameters.add(obj)
+                    used_parameters.add(obj)
 
         # Sort used state, parameters and expr
         self._used_states = sorted(used_states)
         self._used_parameters = sorted(used_parameters)
-        self._used_field_parameters = sorted(used_field_parameters)
         self._body_expressions = sorted(list(exprs))
         
     @property
@@ -339,10 +372,6 @@ class DependentExpressionComponent(IndexedExpressionComponent):
     @property
     def used_parameters(self):
         return self._used_parameters
-
-    @property
-    def used_field_parameters(self):
-        return self._used_field_parameters
 
     @property
     def body_expressions(self):
@@ -713,7 +742,7 @@ class CommonSubExpressionODE(ODE):
         for state in ode.full_states:
             atoms.append(self.add_state(state.name, state.param))
 
-        for param in ode.all_parameters:
+        for param in ode.parameters:
             atoms.append(self.add_parameter(param.name, param.param))
 
         # Collect all expanded state expressions

@@ -581,36 +581,11 @@ class ODEBaseComponent(ODEObject):
         return sp.Matrix(len(states), 1, lambda i, j: states[i].sym)
 
     @property
-    def field_states(self):
-        """
-        Return a list of all field states in the component
-        """
-        return [obj for obj in iter_objects(self, False, False, False, State)\
-                if obj.is_field]
-
-    @property
-    def all_parameters(self):
+    def parameters(self):
         """
         Return a list of all parameters in the component
         """
         return ode_objects(self, Parameter)
-
-    @property
-    def parameters(self):
-        """
-        Return a list of all parameters in the component which are not field
-        parameters
-        """
-        return [obj for obj in iter_objects(self, False, False, False, \
-                                            Parameter) if not obj.is_field]
-
-    @property
-    def field_parameters(self):
-        """
-        Return a list of all field parameters in the component
-        """
-        return [obj for obj in iter_objects(self, False, False, False, \
-                                            Parameter) if obj.is_field]
 
     @property
     def intermediates(self):
@@ -666,32 +641,11 @@ class ODEBaseComponent(ODEObject):
         return len(self.full_states)
 
     @property
-    def num_field_states(self):
-        """
-        Return the number of all field states
-        """
-        return len(self.field_states)
-
-    @property
-    def num_all_parameters(self):
-        """
-        Return the number of all parameters
-        """
-        return len(self.all_parameters)
-
-    @property
     def num_parameters(self):
         """
         Return the number of all parameters
         """
         return len(self.parameters)
-
-    @property
-    def num_field_parameters(self):
-        """
-        Return the number of all field parameters
-        """
-        return len(self.field_parameters)
 
     @property
     def num_intermediates(self):
@@ -1587,9 +1541,6 @@ class ODE(DerivativeComponent):
         for ind, param in enumerate(self.parameters):
             self._arg_indices[param] = ind
         
-        for ind, param in enumerate(self.field_parameters):
-            self._arg_indices[param] = ind
-
         ind = 0
         for expr in self.body_expressions:
             if isinstance(expr, Comment):

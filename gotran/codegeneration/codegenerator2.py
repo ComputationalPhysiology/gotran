@@ -381,6 +381,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
 
     def _init_states_and_parameters(self, comp):
 
+        # FIXME: Shift to CodeComponent
         check_arg(comp, ODEBaseComponent)
 
         # Check if comp defines used_states if not use the root components
@@ -388,12 +389,11 @@ class PythonCodeGenerator(BaseCodeGenerator):
         used_states = comp.used_states if hasattr(comp, "used_states") else \
                       comp.root.full_states
         
-        used_parameters = comp.used_parameters + comp.used_field_parameters \
-                          if hasattr(comp, "used_parameters") else \
-                          comp.root.all_parameters
+        used_parameters = comp.used_parameters if hasattr(comp, "used_parameters") else \
+                          comp.root.parameters
 
         num_states = comp.root.num_full_states
-        num_parameters = comp.root.num_all_parameters
+        num_parameters = comp.root.num_parameters
 
         # Start building body
         body_lines = [""]
@@ -432,7 +432,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
             if self.params.use_parameter_names:
                 
                 # If all parameters are used
-                if len(used_parameters) == len(comp.root.all_parameters):
+                if len(used_parameters) == len(comp.root.parameters):
                     body_lines.append(", ".join(\
                         param.name for i, param in enumerate(used_parameters)) + \
                                       " = " + parameters_name)
@@ -441,7 +441,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
                 else:
                     body_lines.append("; ".join(\
                         "{0}={1}[{2}]".format(param.name, parameters_name, ind) \
-                        for ind, param in enumerate(comp.root.all_parameters) \
+                        for ind, param in enumerate(comp.root.parameters) \
                         if param in used_parameters))
 
         return body_lines

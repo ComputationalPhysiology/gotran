@@ -223,12 +223,10 @@ def load_ode(filename, name=None, **arguments):
         warning("ODE mode '{0}' is not complete.".format(ode.name))
     
     info("Loaded ODE model '{0}' with:".format(ode.name))
-    for what in ["states", "field_states", "parameters", "field_parameters",
-                 "monitored_intermediates"]:
+    for what in ["states", "parameters"]:
         num = getattr(ode, "num_{0}".format(what))
-        if num:
-            info("{0}: {1}".format(("Num "+what.replace("_", \
-                                                        " ")).rjust(25), num))
+        info("{0}: {1}".format(("Num "+what.replace("_", \
+                                                    " ")).rjust(20), num))
     return ode
 
 def _namespace_binder(namespace, ode, load_arguments):

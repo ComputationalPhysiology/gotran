@@ -145,8 +145,7 @@ class ODEValueObject(ODEObject):
         """
 
         check_arg(name, str, 0, ODEValueObject)
-        check_arg(value, scalars + (ScalarParam, list, np.ndarray, sp.Basic), \
-                  1, ODEValueObject)
+        check_arg(value, scalars + (ScalarParam, sp.Basic), 1, ODEValueObject)
 
         # Init super class
         super(ODEValueObject, self).__init__(name)
@@ -159,9 +158,6 @@ class ODEValueObject(ODEObject):
 
         elif isinstance(value, scalars):
             value = ScalarParam(value, name=name)
-
-        elif isinstance(value, (list, np.ndarray)):
-            value = ArrayParam(value, name=name)
 
         elif isinstance(value, str):
             value = ConstParam(value, name=name)
@@ -213,10 +209,6 @@ class ODEValueObject(ODEObject):
         self._param.setvalue(value)
 
     @property
-    def is_field(self):
-        return isinstance(self._param, ArrayParam)
-
-    @property
     def sym(self):
         return self._param.sym
 
@@ -235,7 +227,7 @@ class ODEValueObject(ODEObject):
         """
         Return a pretty latex representation of the ODEValue object
         """
-        value = self.value[0] if self.is_field else self.value
+        value = self.value
         unit_str = latex_unit(self.param.unit)
         return "${0}{1}$".format(latex(value), "\\;{0}".format(unit_str) \
                                  if unit_str else "")
@@ -259,8 +251,7 @@ class State(ODEValueObject):
         """
 
         # Call super class
-        check_arg(init, scalars + (ScalarParam, list, np.ndarray), \
-                  1, State)
+        check_arg(init, scalars + (ScalarParam,), 1, State)
 
         super(State, self).__init__(name, init)
         check_arg(time, Time, 2)
@@ -286,24 +277,6 @@ class State(ODEValueObject):
         return "'{0}', {1}, {2}".format(\
             self.name, repr(self._param.copy(include_name=False)), repr(self.time))
 
-    def toggle_field(self):
-        """
-        Toggle a State between scalar and field object
-        """
-        if isinstance(self._param, ArrayParam):
-            self._param = eval("ScalarParam(%s%s%s)" % \
-                               (self._param.value[0], \
-                                self._param._check_arg(), \
-                                self._param._name_arg()))
-        elif not self.is_solved:
-            
-            self._param = eval("ArrayParam(%s, 1%s%s)" % \
-                               (self._param.value, \
-                                self._param._check_arg(), \
-                                self._param._name_arg()))
-        else:
-            error("Cannot turn a solved state into a field state")
-
     @property
     def is_solved(self):
         return self._is_solved
@@ -325,24 +298,12 @@ class Parameter(ODEValueObject):
         """
 
         # Call super class
+        check_arg(init, scalars + (ScalarParam,), 1, Parameter)
+
+        # Call super class
         super(Parameter, self).__init__(name, init)
 
     init = ODEValueObject.value
-
-    def toggle_field(self):
-        """
-        Toggle a State between scalar and field object
-        """
-        if isinstance(self._param, ArrayParam):
-            self._param = eval("ScalarParam(%s%s%s)" % \
-                               (self._param.value[0], \
-                                self._param._check_arg(), \
-                                self._param._name_arg()))
-        else:
-            self._param = eval("ArrayParam(%s, 1%s%s)" % \
-                               (self._param.value, \
-                                self._param._check_arg(), \
-                                self._param._name_arg()))
 
 class IndexedObject(ODEObject):
     """
