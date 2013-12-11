@@ -20,7 +20,7 @@ __all__ = ["JacobianComponent", "JacobianActionComponent", \
            "ForwardBackwardSubstitutionComponent",
            "DependentExpressionComponent", "LinearizedDerivativeComponent",
            "CommonSubExpressionODE", "ReuseBodyVariableComponent",
-           "IndexedExpressionComponent", \
+           "CodeComponent", \
            "componentwise_derivative", \
            "linearized_derivatives", "jacobian_expressions", \
            "jacobian_action_expressions", "factorized_jacobian_expressions",
@@ -38,7 +38,7 @@ from modelparameters.codegeneration import sympycode
 
 # Local imports
 from gotran.common import error, debug, check_arg, check_kwarg, scalars, Timer, \
-     warning
+     warning, tuplewrap
 from utils import ode_primitives
 from odeobjects2 import State, Parameter, IndexedObject, Comment
 from expressions2 import *
@@ -47,6 +47,23 @@ from odecomponents2 import ODEBaseComponent, ODE
 #FIXME: Remove our own cse, or move to this module?
 from gotran.codegeneration.sympy_cse import cse
 
+def rhs_expressions(ode):
+    """
+    Return a right hand side code component 
+
+    Arguments
+    ---------
+    ode : ODE
+        The finalized ODE for which the ith derivative should be computed
+    """
+
+    check_arg(ode, ODE)
+    if not ode.is_finalized:
+        error("Cannot compute right hand side expressions if the ODE is "\
+              "not finalized")
+        
+    return RHSComponent(ode)
+    
 def componentwise_derivative(ode, index):
     """
     Return an ODEComponent holding the expressions for the ith
@@ -59,6 +76,7 @@ def componentwise_derivative(ode, index):
     index : int
         The index
     """
+    check_arg(ode, ODE)
     if not ode.is_finalized:
         error("Cannot compute component wise derivatives if ODE is "\
               "not finalized")
@@ -168,47 +186,6 @@ def reuse_body_variables(component, *classes):
 
 class CodeComponent(ODEBaseComponent):
     """
-    A class for defining an interface to generate code of a component
-    """
-    def __init__(self, name, parent):
-        """
-        Create a CodeComponent
-
-        Arguments
-        ---------
-        name : str
-            The name of the component. This str serves as the unique
-            identifier of the Component.
-        parent : ODEBaseComponent
-            The parent component of this ODEComponent in most cases the
-            root ODEComponent
-        """
-        super(CodeComponent, self).__init__(name, parent)
-        self._used_states = []
-        self._used_parameters = []
-        self._body_expressions = []
-        self._init_body_expressions()
-
-    def _init_body_expressions(self):
-        """
-        Collect expressions contained in the body
-        """
-        pass
-
-    @property
-    def used_states(self):
-        return self._used_states
-
-    @property
-    def used_parameters(self):
-        return self._used_parameters
-
-    @property
-    def body_expressions(self):
-        return self._body_expressions
-
-class IndexedExpressionComponent(ODEBaseComponent):
-    """
     An ODEComponent which allows adding indexed expressions
     """
     def __init__(self, name, parent):
@@ -223,9 +200,10 @@ class IndexedExpressionComponent(ODEBaseComponent):
         parent : ODEBaseComponent
             The parent component of this ODEComponent
         """
-        super(IndexedExpressionComponent, self).__init__(name, parent)
-
+        super(CodeComponent, self).__init__(name, parent)
+        check_arg(parent, ODE)
         self.shapes = {}
+        self._body_expressions = []
 
     def add_indexed_expression(self, basename, indices, expr):
         """
@@ -238,14 +216,25 @@ class IndexedExpressionComponent(ODEBaseComponent):
         indices : int, tuple of int
             The fixed indices identifying the expression
         expr : sympy.Basic, scalar
-            The expression
+            The expression.
         """
         # Create an IndexedExpression in the present component
         timer = Timer("Add indexed expression")
 
-        # Create indexed expression
-        expr = IndexedExpression(basename, indices, expr)
+        indices = tuplewrap(indices)
 
+        # Check that provided indices fit with the registered shape
+        if len(self.shapes[basename]) > len(indices):
+            error("Shape missmatch between indices {0} and registered "\
+                  "shape for {1}".format(indices, basename))
+
+        for dim, (index, shape_ind) in enumerate(zip(indices, self.shapes[basename])):
+            if index >= shape_ind:
+                error("Indices must be smaller or equal to the shape. Missmatch "\
+                      "in dim {0}: {1}>={2}".format(dim+1, index, shape_ind))
+
+        # Create the indexed expression
+        expr = IndexedExpression(basename, indices, expr)
         self._register_component_object(expr)
 
         return expr.sym
@@ -263,8 +252,20 @@ class IndexedExpressionComponent(ODEBaseComponent):
         """
         timer = Timer("Add indexed object")
 
+        indices = tuplewrap(indices)
+
         # Create IndexedObject
-        obj = IndexedObject(basename, init, self.time)
+        obj = IndexedObject(basename, indices)
+
+        # Check that provided indices fit with the registered shape
+        if len(self.shapes[basename]) > len(indices):
+            error("Shape missmatch between indices {0} and registered "\
+                  "shape for {1}".format(indices, basename))
+
+        for dim, (index, shape_ind) in enumerate(zip(indices, self.shapes[basename])):
+            if index >= shape_ind:
+                error("Indices must be smaller or equal to the shape. Missmatch "\
+                      "in dim {0}: {1}>={2}".format(dim+1, index, shape_ind))
 
         self._register_component_object(obj)
 
@@ -290,56 +291,69 @@ class IndexedExpressionComponent(ODEBaseComponent):
             basenames = self.shapes.keys()
         return [obj for obj in self.ode_objects if isinstance(\
             obj, IndexedObject) and obj.basename in basenames]
-        
-class DependentExpressionComponent(IndexedExpressionComponent):
+
+    @property
+    def body_expressions(self):
+        """
+        Return a list of all body expressions 
+        """
+        return self._body_expressions
+
+class DependentExpressionComponent(CodeComponent):
     """
     Component which takes a set of expressions and extracts dependent
     expressions from the ODE
     """
-    def __init__(self, name, parent, *args):
+    def __init__(self, name, parent, *result_expressions):
         """
         Create a DependentExpressionComponent
 
         Arguments
         ---------
-        args : tuple of Expressions
+        result_expressions : tuple of Expressions
+            A tuple of expressions which will be the computed result of
+            this Component
         """
         super(DependentExpressionComponent, self).__init__(\
             name, parent)
         check_arg(parent, ODE)
         self._body_expressions = []
-        self.init_deps(*args)
+        self.init_deps(*result_expressions)
 
-    def init_deps(self, *args):
+    def init_deps(self, *result_expressions):
         """
         Init the dependencies
         """
 
-        if not args:
+        if not result_expressions:
             return
 
         timer = Timer("Compute dependencies for {0}".format(self.name))
         
         ode_expr_deps = self.root.expression_dependencies
         
-        # Check passed args
-        exprs = set(args)
+        # Check passed expressions
+        exprs = set(result_expressions)
         not_checked = set()
         used_states = set()
         used_parameters = set()
 
         exprs_not_in_body = []
 
-        for arg in args:
-            check_arg(arg, (Expression, Comment), \
+        for expr in result_expressions:
+            check_arg(expr, (Expression, Comment), \
                       context=DependentExpressionComponent.init_deps)
-
-            if isinstance(arg, Comment):
+            
+            if isinstance(expr, Comment):
                 continue
 
+            #if expr not in ode_expr_deps:
+            #    error("The result expression {0} is not an expression of "\
+            #          "the {1} ODE".format(expr, self.root))
+            
             # Collect dependencies
-            for obj in ode_expr_deps[arg]:
-                if isinstance(obj, Expression):
+            for obj in ode_expr_deps[expr]:
+                if isinstance(obj, (Expression, Comment)):
                     not_checked.add(obj)
                 elif isinstance(obj, State):
                     used_states.add(obj)
@@ -352,7 +366,7 @@ class DependentExpressionComponent(IndexedExpressionComponent):
             dep_expr = not_checked.pop()
             exprs.add(dep_expr)
             for obj in ode_expr_deps[dep_expr]:
-                if isinstance(obj, Expression):
+                if isinstance(obj, (Expression, Comment)):
                     if obj not in exprs:
                         not_checked.add(obj)
                 elif isinstance(obj, State):
@@ -364,6 +378,7 @@ class DependentExpressionComponent(IndexedExpressionComponent):
         self._used_states = sorted(used_states)
         self._used_parameters = sorted(used_parameters)
         self._body_expressions = sorted(list(exprs))
+        self._result_expressions = list(result_expressions)
         
     @property
     def used_states(self):
@@ -374,14 +389,122 @@ class DependentExpressionComponent(IndexedExpressionComponent):
         return self._used_parameters
 
     @property
-    def body_expressions(self):
-        return self._body_expressions
+    def result_expressions(self):
+        """
+        Returns the expressions which are expected to be computed by
+        the body expressions
+        """
+        return self._result_expressions
 
+class RHSComponent(DependentExpressionComponent):
+    """
+    Dependent expression component for the RHS of an ODE
+    """
+    def __init__(self, parent, result_name="dy"):
+        """
+        Create an RHSComponent 
+
+        Arguments
+        ---------
+        parent : ODE
+            The parent component of this ODEComponent
+        """
+        check_arg(parent, ODE)
+        super(RHSComponent, self).__init__("RHS", parent)
+
+        check_arg(result_name, str)
+
+        timer = Timer("Computing RHS Body expressions")
+
+        # First init body expressions using the state expressions
+        self.init_deps(self.root.state_expressions)
+
+        # Second rename all collected state_expressions with indexed
+        # expressions
+        
+
+    def init_bodyexpressions(self, result_name):
+        """
+        Build a list of all body expressions in the ODE. The result of the RHS
+        is all StateExpressions. These will be replaced by IndexedExpressions.
+
+        This is facilitated by a big hack. If we are going to change name of
+        State expressions we need to:
+
+        1) Add them as new Expressions
+        2) Inherit expression_dependencies and object_used in from old
+           state_expression
+        3) Update the sympy expression in all expressions which use this
+           expressions, and recursively to all expressions using these...
+        """
+
+        # Get a copy of all state expressions
+        state_expressions = self.root.state_expressions
+        
+        # Create shape
+        self.shape[result_name] = (len(state_expressions),)
+
+        # Iterate over the state expressions in the order they were created
+        # preserving interdependencies
+        new_state_exprs = []
+        state_expr_map = {}
+        sym_replace = {}
+        used_objects = defaultdict(list)
+        for old_expr in sorted(state_expressions):
+
+            # Get index based on the original ordering
+            index = (state_expressions.index(state_expr),)
+
+            # Create the IndexedExpression
+            new_expr = IndexedExpression(result_name, index, old_expr.expr.\
+                                         xreplace(sym_replace))
+
+            # Store new expr in map
+            state_expr_map[old_expr] = new_expr
+
+            # Update sym replace dict
+            sym_replace[old_expr.sym] = new_expr.sym
+            
+            # Copy counter from old expression so they sort properly
+            new_expr._recount(old_expr._count)
+            
+            # Transfer and store dependencies
+            new_deps = set(state_expr_map.get(dep_expr, dep_expr) \
+                           for dep_expr in self.root.expression_dependencies[\
+                            old_expr])
+            self.root.expression_dependencies[new_expr] = new_deps
+
+            # Store new expression
+            new_state_exprs.append(new_expr)
+            self.root.present_ode_objects[new_deps.name] = (new_expr, self)
+            self.ode_objects.append(new_expr)
+
+            # Collect expressions which need to be re-introduced as they depends 
+            for using_expr in self.root.object_used_in[old_expr]:
+                used_objects[used_objects].append(new_expression)
+        
+        body_expressions = []
+        
+        # Iterate over all components
+        for comp_name in self.root.all_expr_components_ordered:
+
+            comp = self.root.all_components[comp_name]
+
+            # Iterate over all objects of the component
+            for obj in comp.ode_objects:
+
+                # Only add Expressions
+                if isinstance(obj, (Expression, Comment)):
+                    body_expressions.append(obj)
+        
+        self._body_expressions = body_expressions
+        
+        
 class JacobianComponent(DependentExpressionComponent):
     """
     An ODEComponent which keeps all expressions for the Jacobian of the rhs
     """
-    def __init__(self, parent):
+    def __init__(self, parent, result_name="jac"):
         """
         Create a JacobianComponent
 
@@ -390,8 +513,10 @@ class JacobianComponent(DependentExpressionComponent):
         parent : ODE
             The parent component of this ODEComponent
         """
-        super(JacobianComponent, self).__init__("Jacobian", parent)
         check_arg(parent, ODE)
+        super(JacobianComponent, self).__init__("Jacobian", parent)
+
+        check_arg(result_name, str)
 
         timer = Timer("Computing jacobian")
         
@@ -406,7 +531,7 @@ class JacobianComponent(DependentExpressionComponent):
         self._num_nonzero = 0
 
         self.add_comment("Computing the sparse jacobian of {0}".format(parent.name))
-        self.shapes["jac"] = (N,N)
+        self.shapes[result_name] = (N,N)
         
         state_dict = dict((state.sym, ind) for ind, state in enumerate(states))
         time_sym = states[0].time.sym
@@ -421,11 +546,18 @@ class JacobianComponent(DependentExpressionComponent):
                 jac_ij = expr.expr.diff(sym)
                 del time_diff
                 self._num_nonzero += 1
-                jac_ij = self.add_indexed_expression("jac", (i, j), jac_ij)
+                jac_ij = self.add_indexed_expression(result_name, \
+                                                     (i, j), jac_ij)
                 self._jacobian[i, j] = jac_ij
                 
         # Call init deps with sorted list of objects
-        self.init_deps(*self.ode_objects)
+        self.init_deps(*self.indexed_expressions(result_name))
+        
+        self._result_name = result_name
+
+    @property
+    def result_name(self):
+        return self._result_name
 
     @property
     def jacobian(self):
@@ -433,6 +565,13 @@ class JacobianComponent(DependentExpressionComponent):
         Return the jacobian matrix
         """
         return self._jacobian
+
+    @property
+    def argument_objects(self):
+        """
+        Returns a list of ODE objects which are treated as input arguments
+        """
+        return self.root.argument_objects
 
     @property
     def num_nonzero(self):
@@ -445,7 +584,7 @@ class DiagonalJacobianComponent(DependentExpressionComponent):
     """
     An ODEComponent which keeps all expressions for the Jacobian of the rhs
     """
-    def __init__(self, jacobian):
+    def __init__(self, jacobian, result_name="diag_jac"):
         """
         Create a DiagonalJacobianComponent
 
@@ -453,6 +592,8 @@ class DiagonalJacobianComponent(DependentExpressionComponent):
         ---------
         jacobian : JacobianComponent
             The Jacobian of the ODE
+        result_name : str
+            The basename of the indexed result expression
         """
         check_arg(jacobian, JacobianComponent)
         super(DiagonalJacobianComponent, self).__init__(\
@@ -463,19 +604,24 @@ class DiagonalJacobianComponent(DependentExpressionComponent):
 
         self.add_comment(what)
 
-        # Create Jacobian matrix
-        diagonal_expressions = [expr for expr in \
-                                jacobian.indexed_expressions("jac") if \
-                                expr.indices[0]==expr.indices[1]]
-        N = len(diagonal_expressions)
+        N = jacobian.jacobian.shape[0]
+        self.shapes[result_name] = (N,)
+
+        # Create IndexExpressions of the diagonal Jacobian
+        for expr in jacobian.result_expressions:
+            if expr.indices[0]==expr.indices[1]:
+                self.add_indexed_expression(result_name, expr.indices[0], \
+                                            expr.expr)
 
         self._diagonal_jacobian = sp.Matrix(N, N, lambda i, j : 0.0)
 
         for i in range(N):
-            self._diagonal_jacobian = jacobian.jacobian[i,i]
+            self._diagonal_jacobian[i,i] = jacobian.jacobian[i,i]
 
-        # Append comment
-        self.init_deps(*diagonal_expressions)
+        # Add dependent body expressions
+        self.init_deps(*self.indexed_expressions(result_name))
+
+        self._result_name = result_name
 
     @property
     def diagonal_jacobian(self):
@@ -484,11 +630,21 @@ class DiagonalJacobianComponent(DependentExpressionComponent):
         """
         return self._diagonal_jacobian
 
-class JacobianActionComponent(IndexedExpressionComponent):
+    def argument_objects(self):
+        """
+        Returns a list of ODE objects which are treated as input arguments
+        """
+        return self.root.argument_objects
+
+    @property
+    def result_name(self):
+        return self._result_name
+
+class JacobianActionComponent(CodeComponent):
     """
     Jacobian action component which returns the expressions for Jac*x
     """
-    def __init__(self, jacobian):
+    def __init__(self, jacobian, result_name="jac_action"):
         """
         Create a JacobianActionComponent
         """
@@ -505,9 +661,9 @@ class JacobianActionComponent(IndexedExpressionComponent):
 
         self.add_comment("Computing the action of the jacobian")
 
-        self.shapes["jac_action"] = (len(x),)
+        self.shapes[result_name] = (len(x),)
         for i, expr in enumerate(jac*x):
-            self._action_vector[i] = self.add_indexed_expression("jac_action",\
+            self._action_vector[i] = self.add_indexed_expression(result_name,\
                                                                  i, expr)
 
         # Get body expressions from parent and extend with jacobian expressions
@@ -516,17 +672,13 @@ class JacobianActionComponent(IndexedExpressionComponent):
             self._body_expressions.append(obj)
 
     @property
-    def body_expressions(self):
-        return self._body_expressions
-
-    @property
     def action_vector(self):
         """
         Return the vector of all action symbols
         """
         return self._action_vector
 
-class DiagonalJacobianActionComponent(IndexedExpressionComponent):
+class DiagonalJacobianActionComponent(CodeComponent):
     """
     Jacobian action component which returns the expressions for Jac*x
     """
@@ -557,17 +709,13 @@ class DiagonalJacobianActionComponent(IndexedExpressionComponent):
         self._body_expressions.extend(self.ode_objects)
 
     @property
-    def body_expressions(self):
-        return self._body_expressions
-
-    @property
     def action_vector(self):
         """
         Return the vector of all action symbols
         """
         return self._action_vector
 
-class FactorizedJacobianComponent(IndexedExpressionComponent):
+class FactorizedJacobianComponent(CodeComponent):
     """
     Class to generate expressions for symbolicaly factorizing a jacobian
     """
@@ -660,10 +808,13 @@ class FactorizedJacobianComponent(IndexedExpressionComponent):
         for obj in self.ode_objects:
             self._body_expressions.append(obj)
      
-
     @property
-    def body_expressions(self):
-        return self._body_expressions
+    def argument_objects(self):
+        """
+        Returns a list of ODE objects which are treated as input arguments
+        """
+        # FIXME:!!!
+        return self.jada
 
     @property
     def num_nonzero(self):
@@ -676,7 +827,7 @@ class FactorizedJacobianComponent(IndexedExpressionComponent):
     def factorized_jacobian(self):
         return self._factorized_jacobian
         
-class ForwardBackwardSubstitutionComponent(IndexedExpressionComponent):
+class ForwardBackwardSubstitutionComponent(CodeComponent):
     """
     Class to generate a forward backward substiution algorithm for
     symbolically factorized jacobian
@@ -718,7 +869,6 @@ class LinearizedDerivativeComponent(DependentExpressionComponent):
 
     def linear_derivative_indices(self):
         return self._linear_derivative_indices
-        
 
 class CommonSubExpressionODE(ODE):
     """
@@ -790,7 +940,7 @@ class CommonSubExpressionODE(ODE):
         self.finalize()
 
 
-class ReuseBodyVariableComponent(IndexedExpressionComponent):
+class ReuseBodyVariableComponent(CodeComponent):
     """
     Class to reuse as much body variables as possible
     """
@@ -811,7 +961,10 @@ class ReuseBodyVariableComponent(IndexedExpressionComponent):
         # Collect indices
         ind = 0
         replace_dict = {}
-        
+
+        # Create a dummy max shape
+        self.shapes["body"] = (len(component.body_expressions),)
+
         #component.body_expressions
         body_expressions = self._replace_derivatives(component.body_expressions)
         for expr in body_expressions:
@@ -885,10 +1038,6 @@ class ReuseBodyVariableComponent(IndexedExpressionComponent):
 
         error("Should not reach here")
 
-    @property
-    def body_expressions(self):
-        return self._body_expressions
-    
     def _replace_derivatives(self, body_expressions):
         """
         Replace derivatives with intermediates first
