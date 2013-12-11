@@ -54,7 +54,7 @@ class ODEObject(object):
         ODEObject.__count += 1
 
     def __hash__(self):
-        return self._count
+        return id(self)
 
     def __cmp__(self, other):
         if not isinstance(other, ODEObject):
@@ -98,15 +98,20 @@ class ODEObject(object):
 
         return name
 
-    def _recount(self):
+    def _recount(self, new_count=None):
         """
         Method called when an object need to get a new count
         """
         old_count = self._count
-        self._count = ODEObject.__count
+        if new_count is None:
+            self._count = ODEObject.__count
+            ODEObject.__count += 1
+        else:
+            check_arg(new_count, int, ge=0, le=ODEObject.__count)
+            self._count = new_count
+            
         debug("Change count of {0} from {1} to {2}".format(\
             self.name, old_count, self._count))
-        ODEObject.__count += 1
     
 class Comment(ODEObject):
     """

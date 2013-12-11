@@ -121,7 +121,6 @@ def _init_namespace(ode, load_arguments, namespace):
                           ArrayParam=ArrayParam,
                           ConstParam=ConstParam,
                           comment=ode.add_comment,
-                          monitor=ode.add_monitored,
                           sp=sp,
                           ))
 

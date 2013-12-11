@@ -218,6 +218,9 @@ class ODEBaseComponent(ODEObject):
         # Store all state expressions
         self._local_state_expressions = dict()
 
+        # Collect all comments
+        self._local_comments = []
+
         # Flag to check if component is finalized
         self._is_finalized = False
 
@@ -270,7 +273,9 @@ class ODEBaseComponent(ODEObject):
         comment : str
             The comment
         """
-        self.ode_objects.append(Comment(comment))
+        comment = Comment(comment)
+        self.ode_objects.append(comment)
+        self._local_comments.append(comment)
 
     def add_state(self, name, init):
         """
@@ -1196,9 +1201,6 @@ class ODE(DerivativeComponent):
         # An attribute keeping track of the present ODE component
         self._present_component = self.name
 
-        # Keep track of monitored intermediates
-        self.monitored_intermediates = OrderedDict()
-
         # A dict with the present ode objects
         # NOTE: hashed by name so duplicated expressions are not stored
         self.present_ode_objects = dict(t=(self._time, self), time=(self._time, self))
@@ -1208,8 +1210,8 @@ class ODE(DerivativeComponent):
 
         # Keep track of expression dependencies and in what expression
         # an object has been used in
-        self.expression_dependencies = defaultdict(list)
-        self.object_used_in = defaultdict(list)
+        self.expression_dependencies = defaultdict(set)
+        self.object_used_in = defaultdict(set)
 
         # All expanded expressions
         self.expanded_expressions = dict()
@@ -1301,10 +1303,16 @@ class ODE(DerivativeComponent):
         # If Expression
         if isinstance(obj, Expression):
 
+            # Add dependencies between registered comments and expressions so
+            # they are carried over in Code components
+            for comment in comp._local_comments:
+                self.object_used_in[comment].add(obj)
+                self.expression_dependencies[obj].add(comment)
+
             # Append the name to the list of all ordered components with
             # expressions. If the ODE is finalized we do not update components
             if not self._is_finalized_ode:
-                self._handle_expr_component(comp)
+                self._handle_expr_component(comp, obj)
 
             # Expand and add any derivatives in the expressions
             expression_added = False
@@ -1327,7 +1335,7 @@ class ODE(DerivativeComponent):
                       "any previous expressions. {0} is used in: {1}".format(\
                           obj.state, used_in))
 
-    def _handle_expr_component(self, comp):
+    def _handle_expr_component(self, comp, expr):
         """
         A help function to sort and add components in the ordered
         the intermediate expressions are added to the ODE
@@ -1337,9 +1345,13 @@ class ODE(DerivativeComponent):
             self.all_expr_components_ordered.append(comp.name)
 
             # Add a comment to the component
-            comp.add_comment("Intermediate expressions for the "\
-                             "{0} component".format(comp.name))
-        
+            comp.add_comment("Intermediate expressions for the {0} "\
+                             "component".format(comp.name))
+
+            # Recount the last added expression so the comment comes
+            # infront of the expression
+            expr._recount()
+
         # We are shifting expression components
         elif self.all_expr_components_ordered[-1] != comp.name:
 
@@ -1351,9 +1363,13 @@ class ODE(DerivativeComponent):
             self.all_expr_components_ordered.append(comp.name)
 
             # Add a comment to the component
-            comp.add_comment("Intermediate expressions for the "\
-                                 "{0} component".format(comp.name))
+            comp.add_comment("Intermediate expressions for the {0} "\
+                             "component".format(comp.name))
 
+            # Recount the last added expression so the comment comes
+            # infront of the expression
+            expr._recount()
+        
     def _expand_single_derivative(self, comp, obj, der_expr):
         """
         Expand a single derivative and register it as new derivative expression
@@ -1424,10 +1440,10 @@ class ODE(DerivativeComponent):
             dep_obj, dep_comp = dep_obj
 
             # Store object dependencies
-            self.expression_dependencies[obj].append(dep_obj)
-            self.object_used_in[dep_obj].append(obj)
+            self.expression_dependencies[obj].add(dep_obj)
+            self.object_used_in[dep_obj].add(obj)
 
-            # Expand depentent expressions
+            # Expand dependent expressions
             if isinstance(dep_obj, Expression):
 
                 # Collect intermediates to be used in substitutions below
@@ -1463,39 +1479,29 @@ class ODE(DerivativeComponent):
 
         return body_expressions
 
-    def add_monitored(self, *args):
+    @property
+    def result_expressions(self):
         """
-        Add intermediate expressions to be monitored
-
-        Arguments
-        ---------
-        args : any number of intermediates
-            Intermediates which will be monitored
+        Returns the expressions which are expected to be computed by
+        the body expressions
         """
-
-        for i, arg in enumerate(args):
-            check_arg(arg, (str, sp.Symbol, AppliedUndef), i)
-            name = arg if isinstance(str) else sympycode(arg)
-            obj = self.present_ode_objects.get(name)
-
-            if not isinstance(obj, Expression):
-                error("Can only monitor Expressions. '{0}' is not an "\
-                      "Expression.".format(obj.name))
-            
-            # Register the expanded monitored intermediate
-            self.monitored_intermediates[obj.name] = obj
+        return self.state_expressions
 
     @property
-    def num_monitored_intermediates(self):
-        return len(self.monitored_intermediates)
+    def argument_objects(self):
+        """
+        Returns a list of ODE objects which are treated as input arguments
+        """
+        return self.full_states+self.parameters
 
+    @property
     def mass_matrix(self):
         """
         Return the mass matrix as a sympy.Matrix
         """
 
-        if not self.is_complete:
-            error("The ODE is not complete")
+        if not self.is_finalized:
+            error("The ODE must be finalized")
             
         if not self._mass_matrix:
         
@@ -1526,46 +1532,6 @@ class ODE(DerivativeComponent):
             
         self._is_finalized_ode = True
         self._present_component = self.name
-        self._compute_argument_indices()
-
-    def _compute_argument_indices(self):
-        """
-        Compute the argument indices for this ODE (States, StateExpressions, Parameters)
-        """
-        self._arg_indices = {}
-        
-        for ind, state_expr in enumerate(self.state_expressions):
-            self._arg_indices[state_expr] = ind
-            self._arg_indices[state_expr.state] = ind
-
-        for ind, param in enumerate(self.parameters):
-            self._arg_indices[param] = ind
-        
-        ind = 0
-        for expr in self.body_expressions:
-            if isinstance(expr, Comment):
-                continue
-            self._arg_indices[expr] = ind
-            ind += 1
-        
-    def arg_index(self, arg):
-        """
-        Return the argument index of an ODEValueObject
-        """
-        check_arg(arg, ODEValueObject, 0, ODE.arg_index)
-
-        if not self.is_finalized:
-            error("ODE must be finalized to extract argument indices")
-        index = self._arg_indices.get(arg)
-        if index is None:
-            error("No index registered for {0}".format(arg))
-        return index
-
-    def arg_cmp(self, arg0, arg1):
-        """
-        Compare method to sort a list of arguments
-        """
-        return cmp(self.arg_index(arg0), self.arg_index(arg1))
 
 class CodeComponent(object):
     """
