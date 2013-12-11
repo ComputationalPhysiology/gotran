@@ -1,0 +1,1150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<model name="Niederer_et_al_2006" cmeta:id="Niederer_et_al_2006" xmlns="http://www.cellml.org/cellml/1.1#" xmlns:cellml="http://www.cellml.org/cellml/1.1#" xmlns:cmeta="http://www.cellml.org/metadata/1.0#">
+
+
+   <units name="per_ms">
+      <unit units="second" prefix="milli" exponent="-1"/>
+   </units>
+   <units name="ms">
+      <unit units="second" prefix="milli"/>
+   </units>
+   <units name="mM">
+      <unit units="mole" prefix="milli"/>
+      <unit units="litre" exponent="-1"/>
+   </units>
+   <units name="N_per_mm2">
+      <unit units="newton"/>
+      <unit units="metre" prefix="milli" exponent="-2"/>
+   </units>
+   <units name="per_mM_per_ms">
+      <unit units="mM" exponent="-1"/>
+      <unit units="second" prefix="milli" exponent="-1"/>
+   </units>
+   <units name="mM_per_ms">
+      <unit units="mM"/>
+      <unit units="second" prefix="milli" exponent="-1"/>
+   </units>
+
+
+   <component name="environment">
+      <variable name="time" units="ms" public_interface="out"/>
+   </component>
+
+
+   <component name="intracellular_ion_concentrations">
+      <variable name="time" units="ms" public_interface="in"/>
+      <variable name="Ca_i" units="mM" public_interface="out"/>
+      <variable name="Ca_b" units="mM" public_interface="out"/>
+      <variable name="TRPN" units="mM" initial_value="0.067593139865" public_interface="out"/>
+      <variable name="Ca_TRPN_Max" units="mM" public_interface="in"/>
+      <variable name="J_TRPN" units="mM_per_ms" public_interface="in"/>
+      <math xmlns="http://www.w3.org/1998/Math/MathML">
+         <apply>
+            <eq/>
+            <ci>Ca_b</ci>
+            <apply>
+               <minus/>
+               <ci>Ca_TRPN_Max</ci>
+               <ci>TRPN</ci>
+            </apply>
+         </apply>
+         <apply>
+            <eq/>
+            <apply>
+               <diff/>
+               <bvar>
+                  <ci>time</ci>
+               </bvar>
+               <ci>TRPN</ci>
+            </apply>
+            <ci>J_TRPN</ci>
+         </apply>
+         <apply>
+            <eq/>
+            <ci>Ca_i</ci>
+            <piecewise>
+               <piece>
+                  <apply>
+                     <times/>
+                     <cn cellml:units="dimensionless">1000</cn>
+                     <cn cellml:units="mM" type="e-notation">1.8433<sep/>-7</cn>
+                  </apply>
+                  <apply>
+                     <lt/>
+                     <ci>time</ci>
+                     <cn cellml:units="ms">1</cn>
+                  </apply>
+               </piece>
+               <piece>
+                  <apply>
+                     <times/>
+                     <cn cellml:units="dimensionless">1000</cn>
+                     <apply>
+                        <minus/>
+                        <apply>
+                           <plus/>
+                           <apply>
+                              <minus/>
+                              <apply>
+                                 <times/>
+                                 <cn cellml:units="mM">1.055</cn>
+                                 <apply>
+                                    <power/>
+                                    <apply>
+                                       <divide/>
+                                       <ci>time</ci>
+                                       <cn cellml:units="ms">1000</cn>
+                                    </apply>
+                                    <cn cellml:units="dimensionless">3</cn>
+                                 </apply>
+                              </apply>
+                              <apply>
+                                 <times/>
+                                 <cn cellml:units="mM">0.03507</cn>
+                                 <apply>
+                                    <power/>
+                                    <apply>
+                                       <divide/>
+                                       <ci>time</ci>
+                                       <cn cellml:units="ms">1000</cn>
+                                    </apply>
+                                    <cn cellml:units="dimensionless">2</cn>
+                                 </apply>
+                              </apply>
+                           </apply>
+                           <apply>
+                              <divide/>
+                              <apply>
+                                 <times/>
+                                 <cn cellml:units="mM">0.0003992</cn>
+                                 <ci>time</ci>
+                              </apply>
+                              <cn cellml:units="ms">1000</cn>
+                           </apply>
+                        </apply>
+                        <cn cellml:units="mM" type="e-notation">1.356<sep/>-6</cn>
+                     </apply>
+                  </apply>
+                  <apply>
+                     <and/>
+                     <apply>
+                        <geq/>
+                        <ci>time</ci>
+                        <cn cellml:units="ms">10</cn>
+                     </apply>
+                     <apply>
+                        <lt/>
+                        <ci>time</ci>
+                        <cn cellml:units="ms">15</cn>
+                     </apply>
+                  </apply>
+               </piece>
+               <piece>
+                  <apply>
+                     <times/>
+                     <cn cellml:units="dimensionless">1000</cn>
+                     <apply>
+                        <minus/>
+                        <apply>
+                           <plus/>
+                           <apply>
+                              <minus/>
+                              <apply>
+                                 <times/>
+                                 <cn cellml:units="mM">0.014</cn>
+                                 <apply>
+                                    <power/>
+                                    <apply>
+                                       <divide/>
+                                       <ci>time</ci>
+                                       <cn cellml:units="ms">1000</cn>
+                                    </apply>
+                                    <cn cellml:units="dimensionless">3</cn>
+                                 </apply>
+                              </apply>
+                              <apply>
+                                 <times/>
+                                 <cn cellml:units="mM">0.002555</cn>
+                                 <apply>
+                                    <power/>
+                                    <apply>
+                                       <divide/>
+                                       <ci>time</ci>
+                                       <cn cellml:units="ms">1000</cn>
+                                    </apply>
+                                    <cn cellml:units="dimensionless">2</cn>
+                                 </apply>
+                              </apply>
+                           </apply>
+                           <apply>
+                              <divide/>
+                              <apply>
+                                 <times/>
+                                 <cn cellml:units="mM">0.0001494</cn>
+                                 <ci>time</ci>
+                              </apply>
+                              <cn cellml:units="ms">1000</cn>
+                           </apply>
+                        </apply>
+                        <cn cellml:units="mM" type="e-notation">1.428<sep/>-6</cn>
+                     </apply>
+                  </apply>
+                  <apply>
+                     <and/>
+                     <apply>
+                        <geq/>
+                        <ci>time</ci>
+                        <cn cellml:units="ms">15</cn>
+                     </apply>
+                     <apply>
+                        <lt/>
+                        <ci>time</ci>
+                        <cn cellml:units="ms">55</cn>
+                     </apply>
+                  </apply>
+               </piece>
+               <piece>
+                  <apply>
+                     <times/>
+                     <cn cellml:units="dimensionless">1000</cn>
+                     <apply>
+                        <plus/>
+                        <apply>
+                           <minus/>
+                           <apply>
+                              <minus/>
+                              <apply>
+                                 <times/>
+                                 <cn cellml:units="mM" type="e-notation">1.739<sep/>-5</cn>
+                                 <apply>
+                                    <power/>
+                                    <apply>
+                                       <divide/>
+                                       <ci>time</ci>
+                                       <cn cellml:units="ms">1000</cn>
+                                    </apply>
+                                    <cn cellml:units="dimensionless">3</cn>
+                                 </apply>
+                              </apply>
+                              <apply>
+                                 <times/>
+                                 <cn cellml:units="mM" type="e-notation">3.209<sep/>-6</cn>
+                                 <apply>
+                                    <power/>
+                                    <apply>
+                                       <divide/>
+                                       <ci>time</ci>
+                                       <cn cellml:units="ms">1000</cn>
+                                    </apply>
+                                    <cn cellml:units="dimensionless">2</cn>
+                                 </apply>
+                              </apply>
+                           </apply>
+                           <apply>
+                              <divide/>
+                              <apply>
+                                 <times/>
+                                 <cn cellml:units="mM" type="e-notation">5.689<sep/>-6</cn>
+                                 <ci>time</ci>
+                              </apply>
+                              <cn cellml:units="ms">1000</cn>
+                           </apply>
+                        </apply>
+                        <cn cellml:units="mM" type="e-notation">1.719<sep/>-6</cn>
+                     </apply>
+                  </apply>
+                  <apply>
+                     <and/>
+                     <apply>
+                        <geq/>
+                        <ci>time</ci>
+                        <cn cellml:units="ms">55</cn>
+                     </apply>
+                     <apply>
+                        <lt/>
+                        <ci>time</ci>
+                        <cn cellml:units="ms">250</cn>
+                     </apply>
+                  </apply>
+               </piece>
+               <piece>
+                  <apply>
+                     <times/>
+                     <cn cellml:units="dimensionless">1000</cn>
+                     <apply>
+                        <plus/>
+                        <apply>
+                           <minus/>
+                           <apply>
+                              <plus/>
+                              <apply>
+                                 <minus/>
+                                 <apply>
+                                    <times/>
+                                    <cn cellml:units="mM">0.0001321</cn>
+                                    <apply>
+                                       <power/>
+                                       <apply>
+                                          <divide/>
+                                          <ci>time</ci>
+                                          <cn cellml:units="ms">1000</cn>
+                                       </apply>
+                                       <cn cellml:units="dimensionless">4</cn>
+                                    </apply>
+                                 </apply>
+                                 <apply>
+                                    <times/>
+                                    <cn cellml:units="mM">0.0002197</cn>
+                                    <apply>
+                                       <power/>
+                                       <apply>
+                                          <divide/>
+                                          <ci>time</ci>
+                                          <cn cellml:units="ms">1000</cn>
+                                       </apply>
+                                       <cn cellml:units="dimensionless">3</cn>
+                                    </apply>
+                                 </apply>
+                              </apply>
+                              <apply>
+                                 <times/>
+                                 <cn cellml:units="mM">0.0001374</cn>
+                                 <apply>
+                                    <power/>
+                                    <apply>
+                                       <divide/>
+                                       <ci>time</ci>
+                                       <cn cellml:units="ms">1000</cn>
+                                    </apply>
+                                    <cn cellml:units="dimensionless">2</cn>
+                                 </apply>
+                              </apply>
+                           </apply>
+                           <apply>
+                              <divide/>
+                              <apply>
+                                 <times/>
+                                 <cn cellml:units="mM" type="e-notation">3.895<sep/>-5</cn>
+                                 <ci>time</ci>
+                              </apply>
+                              <cn cellml:units="ms">1000</cn>
+                           </apply>
+                        </apply>
+                        <cn cellml:units="mM" type="e-notation">4.441<sep/>-6</cn>
+                     </apply>
+                  </apply>
+                  <apply>
+                     <and/>
+                     <apply>
+                        <geq/>
+                        <ci>time</ci>
+                        <cn cellml:units="ms">250</cn>
+                     </apply>
+                     <apply>
+                        <lt/>
+                        <ci>time</ci>
+                        <cn cellml:units="ms">490</cn>
+                     </apply>
+                  </apply>
+               </piece>
+               <otherwise>
+                  <apply>
+                     <times/>
+                     <cn cellml:units="dimensionless">1000</cn>
+                     <cn cellml:units="mM" type="e-notation">1.2148<sep/>-7</cn>
+                  </apply>
+               </otherwise>
+            </piecewise>
+         </apply>
+      </math>
+   </component>
+   <component name="thinfilaments"/>
+   <component name="tropomyosin">
+      <variable name="z" units="dimensionless" initial_value="0.014417937837" public_interface="out"/>
+      <variable name="z_max" units="dimensionless" public_interface="out"/>
+      <variable name="time" units="ms" public_interface="in"/>
+      <variable name="k_on" units="per_mM_per_ms" public_interface="in"/>
+      <variable name="k_Ref_off" units="per_ms" public_interface="in"/>
+      <variable name="gamma_trpn" units="dimensionless" public_interface="in"/>
+      <variable name="Ca_TRPN_Max" units="mM" public_interface="in"/>
+      <variable name="alpha_0" units="per_ms" initial_value="8e-3"/>
+      <variable name="alpha_r1" units="per_ms" initial_value="2e-3"/>
+      <variable name="alpha_r2" units="per_ms" initial_value="1.75e-3"/>
+      <variable name="n_Rel" units="dimensionless" initial_value="3"/>
+      <variable name="K_z" units="dimensionless" initial_value="0.15"/>
+      <variable name="n_Hill" units="dimensionless" initial_value="3"/>
+      <variable name="Ca_50ref" units="mM" initial_value="1.05e-3"/>
+      <variable name="z_p" units="dimensionless" initial_value="0.85"/>
+      <variable name="beta_1" units="dimensionless" initial_value="-4"/>
+      <variable name="Ca_50" units="mM"/>
+      <variable name="Ca_TRPN_50" units="mM"/>
+      <variable name="K_2" units="per_ms"/>
+      <variable name="K_1" units="per_ms"/>
+      <variable name="alpha_Tm" units="per_ms"/>
+      <variable name="beta_Tm" units="per_ms"/>
+      <variable name="beta_0" units="dimensionless" public_interface="in"/>
+      <variable name="Ca_b" units="mM" public_interface="in"/>
+      <variable name="lambda" units="dimensionless" public_interface="in"/>
+      <math xmlns="http://www.w3.org/1998/Math/MathML">
+         <apply>
+            <eq/>
+            <ci>K_2</ci>
+            <apply>
+               <times/>
+               <apply>
+                  <divide/>
+                  <apply>
+                     <times/>
+                     <ci>alpha_r2</ci>
+                     <apply>
+                        <power/>
+                        <ci>z_p</ci>
+                        <ci>n_Rel</ci>
+                     </apply>
+                  </apply>
+                  <apply>
+                     <plus/>
+                     <apply>
+                        <power/>
+                        <ci>z_p</ci>
+                        <ci>n_Rel</ci>
+                     </apply>
+                     <apply>
+                        <power/>
+                        <ci>K_z</ci>
+                        <ci>n_Rel</ci>
+                     </apply>
+                  </apply>
+               </apply>
+               <apply>
+                  <minus/>
+                  <cn cellml:units="dimensionless">1</cn>
+                  <apply>
+                     <divide/>
+                     <apply>
+                        <times/>
+                        <ci>n_Rel</ci>
+                        <apply>
+                           <power/>
+                           <ci>K_z</ci>
+                           <ci>n_Rel</ci>
+                        </apply>
+                     </apply>
+                     <apply>
+                        <plus/>
+                        <apply>
+                           <power/>
+                           <ci>z_p</ci>
+                           <ci>n_Rel</ci>
+                        </apply>
+                        <apply>
+                           <power/>
+                           <ci>K_z</ci>
+                           <ci>n_Rel</ci>
+                        </apply>
+                     </apply>
+                  </apply>
+               </apply>
+            </apply>
+         </apply>
+         <apply>
+            <eq/>
+            <ci>K_1</ci>
+            <apply>
+               <divide/>
+               <apply>
+                  <times/>
+                  <ci>alpha_r2</ci>
+                  <apply>
+                     <power/>
+                     <ci>z_p</ci>
+                     <apply>
+                        <minus/>
+                        <ci>n_Rel</ci>
+                        <cn cellml:units="dimensionless">1</cn>
+                     </apply>
+                  </apply>
+                  <ci>n_Rel</ci>
+                  <apply>
+                     <power/>
+                     <ci>K_z</ci>
+                     <ci>n_Rel</ci>
+                  </apply>
+               </apply>
+               <apply>
+                  <power/>
+                  <apply>
+                     <plus/>
+                     <apply>
+                        <power/>
+                        <ci>z_p</ci>
+                        <ci>n_Rel</ci>
+                     </apply>
+                     <apply>
+                        <power/>
+                        <ci>K_z</ci>
+                        <ci>n_Rel</ci>
+                     </apply>
+                  </apply>
+                  <cn cellml:units="dimensionless">2</cn>
+               </apply>
+            </apply>
+         </apply>
+         <apply>
+            <eq/>
+            <ci>z_max</ci>
+            <apply>
+               <divide/>
+               <apply>
+                  <minus/>
+                  <apply>
+                     <divide/>
+                     <ci>alpha_0</ci>
+                     <apply>
+                        <power/>
+                        <apply>
+                           <divide/>
+                           <ci>Ca_TRPN_50</ci>
+                           <ci>Ca_TRPN_Max</ci>
+                        </apply>
+                        <ci>n_Hill</ci>
+                     </apply>
+                  </apply>
+                  <ci>K_2</ci>
+               </apply>
+               <apply>
+                  <plus/>
+                  <ci>alpha_r1</ci>
+                  <ci>K_1</ci>
+                  <apply>
+                     <divide/>
+                     <ci>alpha_0</ci>
+                     <apply>
+                        <power/>
+                        <apply>
+                           <divide/>
+                           <ci>Ca_TRPN_50</ci>
+                           <ci>Ca_TRPN_Max</ci>
+                        </apply>
+                        <ci>n_Hill</ci>
+                     </apply>
+                  </apply>
+               </apply>
+            </apply>
+         </apply>
+         <apply>
+            <eq/>
+            <ci>Ca_50</ci>
+            <apply>
+               <times/>
+               <ci>Ca_50ref</ci>
+               <apply>
+                  <plus/>
+                  <cn cellml:units="dimensionless">1</cn>
+                  <apply>
+                     <times/>
+                     <ci>beta_1</ci>
+                     <apply>
+                        <minus/>
+                        <ci>lambda</ci>
+                        <cn cellml:units="dimensionless">1</cn>
+                     </apply>
+                  </apply>
+               </apply>
+            </apply>
+         </apply>
+         <apply>
+            <eq/>
+            <ci>Ca_TRPN_50</ci>
+            <apply>
+               <divide/>
+               <apply>
+                  <times/>
+                  <ci>Ca_50</ci>
+                  <ci>Ca_TRPN_Max</ci>
+               </apply>
+               <apply>
+                  <plus/>
+                  <ci>Ca_50</ci>
+                  <apply>
+                     <times/>
+                     <apply>
+                        <divide/>
+                        <ci>k_Ref_off</ci>
+                        <ci>k_on</ci>
+                     </apply>
+                     <apply>
+                        <minus/>
+                        <cn cellml:units="dimensionless">1</cn>
+                        <apply>
+                           <divide/>
+                           <apply>
+                              <times/>
+                              <apply>
+                                 <plus/>
+                                 <cn cellml:units="dimensionless">1</cn>
+                                 <apply>
+                                    <times/>
+                                    <ci>beta_0</ci>
+                                    <apply>
+                                       <minus/>
+                                       <ci>lambda</ci>
+                                       <cn cellml:units="dimensionless">1</cn>
+                                    </apply>
+                                 </apply>
+                              </apply>
+                              <cn cellml:units="dimensionless">0.5</cn>
+                           </apply>
+                           <ci>gamma_trpn</ci>
+                        </apply>
+                     </apply>
+                  </apply>
+               </apply>
+            </apply>
+         </apply>
+         <apply>
+            <eq/>
+            <ci>alpha_Tm</ci>
+            <apply>
+               <times/>
+               <ci>alpha_0</ci>
+               <apply>
+                  <power/>
+                  <apply>
+                     <divide/>
+                     <ci>Ca_b</ci>
+                     <ci>Ca_TRPN_50</ci>
+                  </apply>
+                  <ci>n_Hill</ci>
+               </apply>
+            </apply>
+         </apply>
+         <apply>
+            <eq/>
+            <ci>beta_Tm</ci>
+            <apply>
+               <plus/>
+               <ci>alpha_r1</ci>
+               <apply>
+                  <divide/>
+                  <apply>
+                     <times/>
+                     <ci>alpha_r2</ci>
+                     <apply>
+                        <power/>
+                        <ci>z</ci>
+                        <apply>
+                           <minus/>
+                           <ci>n_Rel</ci>
+                           <cn cellml:units="dimensionless">1</cn>
+                        </apply>
+                     </apply>
+                  </apply>
+                  <apply>
+                     <plus/>
+                     <apply>
+                        <power/>
+                        <ci>z</ci>
+                        <ci>n_Rel</ci>
+                     </apply>
+                     <apply>
+                        <power/>
+                        <ci>K_z</ci>
+                        <ci>n_Rel</ci>
+                     </apply>
+                  </apply>
+               </apply>
+            </apply>
+         </apply>
+         <apply>
+            <eq/>
+            <apply>
+               <diff/>
+               <bvar>
+                  <ci>time</ci>
+               </bvar>
+               <ci>z</ci>
+            </apply>
+            <apply>
+               <minus/>
+               <apply>
+                  <times/>
+                  <ci>alpha_Tm</ci>
+                  <apply>
+                     <minus/>
+                     <cn cellml:units="dimensionless">1</cn>
+                     <ci>z</ci>
+                  </apply>
+               </apply>
+               <apply>
+                  <times/>
+                  <ci>beta_Tm</ci>
+                  <ci>z</ci>
+               </apply>
+            </apply>
+         </apply>
+      </math>
+   </component>
+   <component name="troponin">
+      <variable name="J_TRPN" units="mM_per_ms" public_interface="out"/>
+      <variable name="Ca_TRPN_Max" units="mM" initial_value="70e-3" public_interface="out"/>
+      <variable name="TRPN" units="mM" public_interface="in"/>
+      <variable name="Ca_i" units="mM" public_interface="in"/>
+      <variable name="k_off" units="per_ms"/>
+      <variable name="k_on" units="per_mM_per_ms" initial_value="100" public_interface="out"/>
+      <variable name="k_Ref_off" units="per_ms" initial_value="0.2" public_interface="out"/>
+      <variable name="gamma_trpn" units="dimensionless" initial_value="2" public_interface="out"/>
+      <variable name="Tension" units="N_per_mm2" public_interface="in"/>
+      <variable name="T_ref" units="N_per_mm2" public_interface="in"/>
+      <math xmlns="http://www.w3.org/1998/Math/MathML">
+         <apply>
+            <eq/>
+            <ci>k_off</ci>
+            <piecewise>
+               <piece>
+                  <apply>
+                     <times/>
+                     <ci>k_Ref_off</ci>
+                     <apply>
+                        <minus/>
+                        <cn cellml:units="dimensionless">1</cn>
+                        <apply>
+                           <divide/>
+                           <ci>Tension</ci>
+                           <apply>
+                              <times/>
+                              <ci>gamma_trpn</ci>
+                              <ci>T_ref</ci>
+                           </apply>
+                        </apply>
+                     </apply>
+                  </apply>
+                  <apply>
+                     <gt/>
+                     <apply>
+                        <minus/>
+                        <cn cellml:units="dimensionless">1</cn>
+                        <apply>
+                           <divide/>
+                           <ci>Tension</ci>
+                           <apply>
+                              <times/>
+                              <ci>gamma_trpn</ci>
+                              <ci>T_ref</ci>
+                           </apply>
+                        </apply>
+                     </apply>
+                     <cn cellml:units="dimensionless">0.1</cn>
+                  </apply>
+               </piece>
+               <otherwise>
+                  <apply>
+                     <times/>
+                     <ci>k_Ref_off</ci>
+                     <cn cellml:units="dimensionless">0.1</cn>
+                  </apply>
+               </otherwise>
+            </piecewise>
+         </apply>
+         <apply>
+            <eq/>
+            <ci>J_TRPN</ci>
+            <apply>
+               <minus/>
+               <apply>
+                  <times/>
+                  <apply>
+                     <minus/>
+                     <ci>Ca_TRPN_Max</ci>
+                     <ci>TRPN</ci>
+                  </apply>
+                  <ci>k_off</ci>
+               </apply>
+               <apply>
+                  <times/>
+                  <ci>Ca_i</ci>
+                  <ci>TRPN</ci>
+                  <ci>k_on</ci>
+               </apply>
+            </apply>
+         </apply>
+      </math>
+   </component>
+   <component name="Myofilaments">
+      <variable name="time" units="ms" public_interface="in"/>
+      <variable name="lambda" units="dimensionless" public_interface="out"/>
+      <variable name="ExtensionRatio" units="dimensionless" public_interface="out"/>
+      <variable name="dExtensionRatiodt" units="per_ms" public_interface="out"/>
+      <variable name="lambda_prev" units="dimensionless" public_interface="out"/>
+      <math xmlns="http://www.w3.org/1998/Math/MathML">
+         <apply>
+            <eq/>
+            <ci>ExtensionRatio</ci>
+            <piecewise>
+               <piece>
+                  <cn cellml:units="dimensionless">1</cn>
+                  <apply>
+                     <gt/>
+                     <ci>time</ci>
+                     <cn cellml:units="ms" type="e-notation">3<sep/>5</cn>
+                  </apply>
+               </piece>
+               <otherwise>
+                  <cn cellml:units="dimensionless">1</cn>
+               </otherwise>
+            </piecewise>
+         </apply>
+         <apply>
+            <eq/>
+            <ci>lambda_prev</ci>
+            <ci>ExtensionRatio</ci>
+         </apply>
+         <apply>
+            <eq/>
+            <ci>dExtensionRatiodt</ci>
+            <cn cellml:units="per_ms">0</cn>
+         </apply>
+         <apply>
+            <eq/>
+            <ci>lambda</ci>
+            <piecewise>
+               <piece>
+                  <ci>ExtensionRatio</ci>
+                  <apply>
+                     <and/>
+                     <apply>
+                        <gt/>
+                        <ci>ExtensionRatio</ci>
+                        <cn cellml:units="dimensionless">0.8</cn>
+                     </apply>
+                     <apply>
+                        <leq/>
+                        <ci>ExtensionRatio</ci>
+                        <cn cellml:units="dimensionless">1.15</cn>
+                     </apply>
+                  </apply>
+               </piece>
+               <piece>
+                  <cn cellml:units="dimensionless">1.15</cn>
+                  <apply>
+                     <gt/>
+                     <ci>ExtensionRatio</ci>
+                     <cn cellml:units="dimensionless">1.15</cn>
+                  </apply>
+               </piece>
+               <otherwise>
+                  <cn cellml:units="dimensionless">0.8</cn>
+               </otherwise>
+            </piecewise>
+         </apply>
+      </math>
+   </component>
+   <component name="filament_overlap">
+      <variable name="lambda" units="dimensionless" public_interface="in"/>
+      <variable name="overlap" units="dimensionless" public_interface="out"/>
+      <variable name="beta_0" units="dimensionless" initial_value="4.9" public_interface="out"/>
+      <math xmlns="http://www.w3.org/1998/Math/MathML">
+         <apply>
+            <eq/>
+            <ci>overlap</ci>
+            <apply>
+               <plus/>
+               <cn cellml:units="dimensionless">1</cn>
+               <apply>
+                  <times/>
+                  <ci>beta_0</ci>
+                  <apply>
+                     <minus/>
+                     <ci>lambda</ci>
+                     <cn cellml:units="dimensionless">1</cn>
+                  </apply>
+               </apply>
+            </apply>
+         </apply>
+      </math>
+   </component>
+   <component name="length_independent_tension">
+      <variable name="T_ref" units="N_per_mm2" initial_value="56.2" public_interface="out"/>
+      <variable name="T_Base" units="N_per_mm2" public_interface="out"/>
+      <variable name="z" units="dimensionless" public_interface="in"/>
+      <variable name="z_max" units="dimensionless" public_interface="in"/>
+      <math xmlns="http://www.w3.org/1998/Math/MathML">
+         <apply>
+            <eq/>
+            <ci>T_Base</ci>
+            <apply>
+               <divide/>
+               <apply>
+                  <times/>
+                  <ci>T_ref</ci>
+                  <ci>z</ci>
+               </apply>
+               <ci>z_max</ci>
+            </apply>
+         </apply>
+      </math>
+   </component>
+   <component name="isometric_tension">
+      <variable name="T_0" units="N_per_mm2" public_interface="out"/>
+      <variable name="T_Base" units="N_per_mm2" public_interface="in"/>
+      <variable name="overlap" units="dimensionless" public_interface="in"/>
+      <math xmlns="http://www.w3.org/1998/Math/MathML">
+         <apply>
+            <eq/>
+            <ci>T_0</ci>
+            <apply>
+               <times/>
+               <ci>T_Base</ci>
+               <ci>overlap</ci>
+            </apply>
+         </apply>
+      </math>
+   </component>
+   <component name="Cross_Bridges">
+      <variable name="time" units="ms" public_interface="in"/>
+      <variable name="dExtensionRatiodt" units="per_ms" public_interface="in"/>
+      <variable name="Q" units="dimensionless"/>
+      <variable name="a" units="dimensionless" initial_value="0.35"/>
+      <variable name="Q_1" units="dimensionless" initial_value="0"/>
+      <variable name="Q_2" units="dimensionless" initial_value="0"/>
+      <variable name="Q_3" units="dimensionless" initial_value="0"/>
+      <variable name="A_1" units="dimensionless" initial_value="-29"/>
+      <variable name="A_2" units="dimensionless" initial_value="138"/>
+      <variable name="A_3" units="dimensionless" initial_value="129"/>
+      <variable name="alpha_1" units="per_ms" initial_value="0.03"/>
+      <variable name="alpha_2" units="per_ms" initial_value="0.13"/>
+      <variable name="alpha_3" units="per_ms" initial_value="0.625"/>
+      <variable name="T_0" units="N_per_mm2" public_interface="in"/>
+      <variable name="Tension" units="N_per_mm2" public_interface="out"/>
+      <math xmlns="http://www.w3.org/1998/Math/MathML">
+         <apply>
+            <eq/>
+            <ci>Q</ci>
+            <apply>
+               <plus/>
+               <ci>Q_1</ci>
+               <ci>Q_2</ci>
+               <ci>Q_3</ci>
+            </apply>
+         </apply>
+         <apply>
+            <eq/>
+            <ci>Tension</ci>
+            <piecewise>
+               <piece>
+                  <apply>
+                     <divide/>
+                     <apply>
+                        <times/>
+                        <ci>T_0</ci>
+                        <apply>
+                           <plus/>
+                           <apply>
+                              <times/>
+                              <ci>a</ci>
+                              <ci>Q</ci>
+                           </apply>
+                           <cn cellml:units="dimensionless">1</cn>
+                        </apply>
+                     </apply>
+                     <apply>
+                        <minus/>
+                        <cn cellml:units="dimensionless">1</cn>
+                        <ci>Q</ci>
+                     </apply>
+                  </apply>
+                  <apply>
+                     <lt/>
+                     <ci>Q</ci>
+                     <cn cellml:units="dimensionless">0</cn>
+                  </apply>
+               </piece>
+               <otherwise>
+                  <apply>
+                     <divide/>
+                     <apply>
+                        <times/>
+                        <ci>T_0</ci>
+                        <apply>
+                           <plus/>
+                           <cn cellml:units="dimensionless">1</cn>
+                           <apply>
+                              <times/>
+                              <apply>
+                                 <plus/>
+                                 <ci>a</ci>
+                                 <cn cellml:units="dimensionless">2</cn>
+                              </apply>
+                              <ci>Q</ci>
+                           </apply>
+                        </apply>
+                     </apply>
+                     <apply>
+                        <plus/>
+                        <cn cellml:units="dimensionless">1</cn>
+                        <ci>Q</ci>
+                     </apply>
+                  </apply>
+               </otherwise>
+            </piecewise>
+         </apply>
+         <apply>
+            <eq/>
+            <apply>
+               <diff/>
+               <bvar>
+                  <ci>time</ci>
+               </bvar>
+               <ci>Q_1</ci>
+            </apply>
+            <apply>
+               <minus/>
+               <apply>
+                  <times/>
+                  <ci>A_1</ci>
+                  <ci>dExtensionRatiodt</ci>
+               </apply>
+               <apply>
+                  <times/>
+                  <ci>alpha_1</ci>
+                  <ci>Q_1</ci>
+               </apply>
+            </apply>
+         </apply>
+         <apply>
+            <eq/>
+            <apply>
+               <diff/>
+               <bvar>
+                  <ci>time</ci>
+               </bvar>
+               <ci>Q_2</ci>
+            </apply>
+            <apply>
+               <minus/>
+               <apply>
+                  <times/>
+                  <ci>A_2</ci>
+                  <ci>dExtensionRatiodt</ci>
+               </apply>
+               <apply>
+                  <times/>
+                  <ci>alpha_2</ci>
+                  <ci>Q_2</ci>
+               </apply>
+            </apply>
+         </apply>
+         <apply>
+            <eq/>
+            <apply>
+               <diff/>
+               <bvar>
+                  <ci>time</ci>
+               </bvar>
+               <ci>Q_3</ci>
+            </apply>
+            <apply>
+               <minus/>
+               <apply>
+                  <times/>
+                  <ci>A_3</ci>
+                  <ci>dExtensionRatiodt</ci>
+               </apply>
+               <apply>
+                  <times/>
+                  <ci>alpha_3</ci>
+                  <ci>Q_3</ci>
+               </apply>
+            </apply>
+         </apply>
+      </math>
+   </component>
+   <group>
+      <relationship_ref relationship="containment"/>
+      <component_ref component="Myofilaments">
+         <component_ref component="thinfilaments">
+            <component_ref component="tropomyosin"/>
+            <component_ref component="troponin"/>
+         </component_ref>
+         <component_ref component="filament_overlap"/>
+         <component_ref component="Cross_Bridges"/>
+         <component_ref component="isometric_tension"/>
+         <component_ref component="length_independent_tension"/>
+      </component_ref>
+   </group>
+   <connection>
+      <map_components component_1="intracellular_ion_concentrations" component_2="environment"/>
+      <map_variables variable_1="time" variable_2="time"/>
+   </connection>
+   <connection>
+      <map_components component_1="tropomyosin" component_2="environment"/>
+      <map_variables variable_1="time" variable_2="time"/>
+   </connection>
+   <connection>
+      <map_components component_1="Myofilaments" component_2="environment"/>
+      <map_variables variable_1="time" variable_2="time"/>
+   </connection>
+   <connection>
+      <map_components component_1="Cross_Bridges" component_2="environment"/>
+      <map_variables variable_1="time" variable_2="time"/>
+   </connection>
+   <connection>
+      <map_components component_1="troponin" component_2="intracellular_ion_concentrations"/>
+      <map_variables variable_1="Ca_TRPN_Max" variable_2="Ca_TRPN_Max"/>
+      <map_variables variable_1="TRPN" variable_2="TRPN"/>
+      <map_variables variable_1="Ca_i" variable_2="Ca_i"/>
+      <map_variables variable_1="J_TRPN" variable_2="J_TRPN"/>
+   </connection>
+   <connection>
+      <map_components component_1="tropomyosin" component_2="intracellular_ion_concentrations"/>
+      <map_variables variable_1="Ca_b" variable_2="Ca_b"/>
+   </connection>
+   <connection>
+      <map_components component_1="length_independent_tension" component_2="tropomyosin"/>
+      <map_variables variable_1="z" variable_2="z"/>
+      <map_variables variable_1="z_max" variable_2="z_max"/>
+   </connection>
+   <connection>
+      <map_components component_1="troponin" component_2="Cross_Bridges"/>
+      <map_variables variable_1="Tension" variable_2="Tension"/>
+   </connection>
+   <connection>
+      <map_components component_1="troponin" component_2="length_independent_tension"/>
+      <map_variables variable_1="T_ref" variable_2="T_ref"/>
+   </connection>
+   <connection>
+      <map_components component_1="tropomyosin" component_2="troponin"/>
+      <map_variables variable_1="k_on" variable_2="k_on"/>
+      <map_variables variable_1="k_Ref_off" variable_2="k_Ref_off"/>
+      <map_variables variable_1="gamma_trpn" variable_2="gamma_trpn"/>
+      <map_variables variable_1="Ca_TRPN_Max" variable_2="Ca_TRPN_Max"/>
+   </connection>
+   <connection>
+      <map_components component_1="tropomyosin" component_2="filament_overlap"/>
+      <map_variables variable_1="beta_0" variable_2="beta_0"/>
+   </connection>
+   <connection>
+      <map_components component_1="tropomyosin" component_2="Myofilaments"/>
+      <map_variables variable_1="lambda" variable_2="lambda"/>
+   </connection>
+   <connection>
+      <map_components component_1="filament_overlap" component_2="Myofilaments"/>
+      <map_variables variable_1="lambda" variable_2="lambda"/>
+   </connection>
+   <connection>
+      <map_components component_1="isometric_tension" component_2="length_independent_tension"/>
+      <map_variables variable_1="T_Base" variable_2="T_Base"/>
+   </connection>
+   <connection>
+      <map_components component_1="isometric_tension" component_2="filament_overlap"/>
+      <map_variables variable_1="overlap" variable_2="overlap"/>
+   </connection>
+   <connection>
+      <map_components component_1="Cross_Bridges" component_2="Myofilaments"/>
+      <map_variables variable_1="dExtensionRatiodt" variable_2="dExtensionRatiodt"/>
+   </connection>
+   <connection>
+      <map_components component_1="Cross_Bridges" component_2="isometric_tension"/>
+      <map_variables variable_1="T_0" variable_2="T_0"/>
+   </connection>
+</model>
