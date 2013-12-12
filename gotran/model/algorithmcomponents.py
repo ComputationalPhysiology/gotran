@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2012 Johan Hake
+# Copyright (C) 2013 Johan Hake
 #
 # This file is part of Gotran.
 #
@@ -26,7 +26,7 @@ __all__ = ["JacobianComponent", "JacobianActionComponent", \
            "jacobian_action_expressions", "factorized_jacobian_expressions",
            "forward_backward_subst_expressions",
            "diagonal_jacobian_expressions",
-           "reuse_body_variables"]
+           "reuse_body_variables", "rhs_expressions"]
 
 # System imports
 from collections import OrderedDict, deque, defaultdict
@@ -38,7 +38,7 @@ from modelparameters.codegeneration import sympycode
 
 # Local imports
 from gotran.common import error, debug, check_arg, check_kwarg, scalars, Timer, \
-     warning, tuplewrap
+     warning, tuplewrap, parameters
 from utils import ode_primitives
 from odeobjects2 import State, Parameter, IndexedObject, Comment
 from expressions2 import *
@@ -190,20 +190,23 @@ class CodeComponent(ODEBaseComponent):
     """
     def __init__(self, name, parent):
         """
-        Create an IndexedExpressionComponent
+        Create an CodeComponent
 
         Arguments
         ---------
         name : str
             The name of the component. This str serves as the unique
             identifier of the Component.
-        parent : ODEBaseComponent
-            The parent component of this ODEComponent
+        parent : ODE
+            The parent component which need to be a ODE
         """
         super(CodeComponent, self).__init__(name, parent)
         check_arg(parent, ODE)
         self.shapes = {}
         self._body_expressions = []
+
+        # Init parameter or state replace dict
+        self._init_param_state_replace_dict()
 
     def add_indexed_expression(self, basename, indices, expr):
         """
@@ -292,6 +295,65 @@ class CodeComponent(ODEBaseComponent):
         return [obj for obj in self.ode_objects if isinstance(\
             obj, IndexedObject) and obj.basename in basenames]
 
+    def _recreate_expression(self, expr, replace_dict):
+        """
+        Recreate an Expression while applying the replace dict to the expression
+        """
+        # FIXME: Should we distinguish between the different
+        # FIXME: intermediates?
+        if isinstance(expr, Intermediate):
+            new_expr = Intermediate(expr.name, expr.expr.xreplace(replace_dict))
+
+        elif isinstance(expr, StateDerivative):
+            new_expr = StateDerivative(expr.state, expr.expr.xreplace(replace_dict))
+
+        elif isinstance(expr, AlgebraicExpression):
+            new_expr = AlgebraicExpression(expr.state, expr.expr.xreplace(replace_dict))
+
+        elif isinstance(expr, IndexedExpression):
+            new_expr = IndexedExpression(expr.basename, expr.indices,
+                                         expr.expr.xreplace(replace_dict))
+        else:
+            error("Should not reach here")
+
+        # Inherit the count of the old expression
+        new_expr._recount(expr._count)
+
+        return new_expr
+
+    def _init_param_state_replace_dict(self):
+        """
+        Create a parameter state replace dict based on the values in the
+        global parameters 
+        """
+        
+        state_param_replace_dict = {}
+
+        param_repr = parameters["code_generation"]["parameters"]["representation"]
+        param_name = parameters["code_generation"]["parameters"]["array_name"]
+        
+        state_repr = parameters["code_generation"]["states"]["representation"]
+        state_name = parameters["code_generation"]["states"]["array_name"]
+        
+        # If not having named parameters
+        if param_repr == "numerals":
+            state_param_replace_dict.update((param.sym, param.init) for \
+                                            param in self.root.parameters)
+        elif param_repr == "array":
+            self.shapes[param_name] = (self.root.num_parameters,)
+            state_param_replace_dict.update(\
+                (param.sym, IndexedObject(param_name, ind)) for \
+                ind, param in enumerate(self.root.parameters))
+
+        if state_repr == "array":
+            self.shapes[state_name] = (self.root.num_fullstates,)
+            state_param_replace_dict.update(\
+                (state.sym, IndexedObject(state_name, ind)) for \
+                ind, state in enumerate(self.root.full_states))
+
+        # Store dict
+        self._state_param_replace_dict = state_param_replace_dict
+
     @property
     def body_expressions(self):
         """
@@ -318,9 +380,9 @@ class DependentExpressionComponent(CodeComponent):
             name, parent)
         check_arg(parent, ODE)
         self._body_expressions = []
-        self.init_deps(*result_expressions)
+        self._init_deps(*result_expressions)
 
-    def init_deps(self, *result_expressions):
+    def _init_deps(self, *result_expressions):
         """
         Init the dependencies
         """
@@ -342,7 +404,7 @@ class DependentExpressionComponent(CodeComponent):
 
         for expr in result_expressions:
             check_arg(expr, (Expression, Comment), \
-                      context=DependentExpressionComponent.init_deps)
+                      context=DependentExpressionComponent._init_deps)
             
             if isinstance(expr, Comment):
                 continue
@@ -400,106 +462,102 @@ class RHSComponent(DependentExpressionComponent):
     """
     Dependent expression component for the RHS of an ODE
     """
-    def __init__(self, parent, result_name="dy"):
+    def __init__(self, ode, result_name="dy", body_name=None):
         """
         Create an RHSComponent 
 
         Arguments
         ---------
-        parent : ODE
+        ode : ODE
             The parent component of this ODEComponent
+        result_name : str
+            The name of the variable storing the result
+        body_name : str (optional)
+            If given an array with this name will be used to store all
+            intermediates in the body
         """
-        check_arg(parent, ODE)
-        super(RHSComponent, self).__init__("RHS", parent)
+        check_arg(ode, ODE)
+        super(RHSComponent, self).__init__("RHS", ode)
 
         check_arg(result_name, str)
 
         timer = Timer("Computing RHS Body expressions")
 
         # First init body expressions using the state expressions
-        self.init_deps(self.root.state_expressions)
+        self._init_deps(*self.root.state_expressions)
 
-        # Second rename all collected state_expressions with indexed
-        # expressions
+        # Then rename the state expressions
+        self._rename_body_expressions(result_name, body_name)
         
-
-    def init_bodyexpressions(self, result_name):
-        """
-        Build a list of all body expressions in the ODE. The result of the RHS
-        is all StateExpressions. These will be replaced by IndexedExpressions.
-
-        This is facilitated by a big hack. If we are going to change name of
-        State expressions we need to:
-
-        1) Add them as new Expressions
-        2) Inherit expression_dependencies and object_used in from old
-           state_expression
-        3) Update the sympy expression in all expressions which use this
-           expressions, and recursively to all expressions using these...
-        """
+    def _rename_body_expressions(self, result_name, body_name):
 
         # Get a copy of all state expressions
         state_expressions = self.root.state_expressions
         
         # Create shape
-        self.shape[result_name] = (len(state_expressions),)
+        self.shapes[result_name] = (len(state_expressions),)
 
         # Iterate over the state expressions in the order they were created
         # preserving interdependencies
         new_state_exprs = []
-        state_expr_map = {}
-        sym_replace = {}
-        used_objects = defaultdict(list)
-        for old_expr in sorted(state_expressions):
-
-            # Get index based on the original ordering
-            index = (state_expressions.index(state_expr),)
-
-            # Create the IndexedExpression
-            new_expr = IndexedExpression(result_name, index, old_expr.expr.\
-                                         xreplace(sym_replace))
-
-            # Store new expr in map
-            state_expr_map[old_expr] = new_expr
-
-            # Update sym replace dict
-            sym_replace[old_expr.sym] = new_expr.sym
+        replace_dict = {}
+        param_state_replace_dict = 
             
-            # Copy counter from old expression so they sort properly
-            new_expr._recount(old_expr._count)
+        replaced_expr_used_in = set()
+
+        new_body_expressions = []
+
+        if body_name is not None:
+            pass
+        
+        for expr in self.body_expressions:
             
-            # Transfer and store dependencies
-            new_deps = set(state_expr_map.get(dep_expr, dep_expr) \
-                           for dep_expr in self.root.expression_dependencies[\
-                            old_expr])
-            self.root.expression_dependencies[new_expr] = new_deps
+            if expr in state_expressions:
 
-            # Store new expression
-            new_state_exprs.append(new_expr)
-            self.root.present_ode_objects[new_deps.name] = (new_expr, self)
-            self.ode_objects.append(new_expr)
+                # Get index based on the original ordering
+                index = (state_expressions.index(expr),)
 
-            # Collect expressions which need to be re-introduced as they depends 
-            for using_expr in self.root.object_used_in[old_expr]:
-                used_objects[used_objects].append(new_expression)
-        
-        body_expressions = []
-        
-        # Iterate over all components
-        for comp_name in self.root.all_expr_components_ordered:
+                # Create the IndexedExpression
+                new_expr = IndexedExpression(result_name, index, expr.expr.\
+                                             xreplace(replace_dict))
 
-            comp = self.root.all_components[comp_name]
+                # Update sym replace dict
+                replace_dict[expr.sym] = new_expr.sym
+            
+                # Copy counter from old expression so they sort properly
+                new_expr._recount(expr._count)
 
-            # Iterate over all objects of the component
-            for obj in comp.ode_objects:
+                # Collect expressions we need to replace
+                replaced_expr_used_in.update(self.root.object_used_in[expr])
+                
+                new_body_expressions.append(new_expr)
+                new_state_exprs.append(new_expr)
+                self.ode_objects.append(new_expr)
 
-                # Only add Expressions
-                if isinstance(obj, (Expression, Comment)):
-                    body_expressions.append(obj)
+            elif expr
+
+            # If a replaced state expression is used in another expression we
+            # need to recreate that expression
+            elif expr in replaced_expr_used_in:
+
+                new_expr = self._recreate_expression(expr, replace_dict)
+                new_body_expressions.append(new_expr)
+                self.ode_objects.append(new_expr)
+
+            else:
+
+                # Otherwise just add the expr
+                new_body_expressions.append(expr)
+
+        self._body_expressions = sorted(new_body_expressions)
+        self._result_expressions = sorted(new_state_exprs)
         
-        self._body_expressions = body_expressions
-        
-        
+        self._result_name = result_name
+
+    @property
+    def result_name(self):
+        return self._result_name
+
 class JacobianComponent(DependentExpressionComponent):
     """
     An ODEComponent which keeps all expressions for the Jacobian of the rhs
@@ -551,7 +609,7 @@ class JacobianComponent(DependentExpressionComponent):
                 self._jacobian[i, j] = jac_ij
                 
         # Call init deps with sorted list of objects
-        self.init_deps(*self.indexed_expressions(result_name))
+        self._init_deps(*self.indexed_expressions(result_name))
         
         self._result_name = result_name
 
@@ -619,7 +677,7 @@ class DiagonalJacobianComponent(DependentExpressionComponent):
             self._diagonal_jacobian[i,i] = jacobian.jacobian[i,i]
 
         # Add dependent body expressions
-        self.init_deps(*self.indexed_expressions(result_name))
+        self._init_deps(*self.indexed_expressions(result_name))
 
         self._result_name = result_name
 
@@ -682,7 +740,7 @@ class DiagonalJacobianActionComponent(CodeComponent):
     """
     Jacobian action component which returns the expressions for Jac*x
     """
-    def __init__(self, diagonal_jacobian):
+    def __init__(self, diagonal_jacobian, result_name="diag_jac_action"):
         """
         Create a DiagonalJacobianActionComponent
         """
@@ -699,14 +757,19 @@ class DiagonalJacobianActionComponent(CodeComponent):
         self.add_comment("Computing the action of the jacobian")
 
         # Create Jacobian matrix
-        self.shapes["diag_jac_action"] = (len(x),)
+        self.shapes[result_name] = (len(x),)
         for i, expr in enumerate(jac*x):
             self._action_vector[i] = self.add_indexed_expression(\
-                "diag_jac_action", i, expr)
+                result_name, i, expr)
 
         # Get body expressions from parent and extend with jacobian expressions
         self._body_expressions = diagonal_jacobian.body_expressions[:]
         self._body_expressions.extend(self.ode_objects)
+        self._result_name = result_name
+
+    @property
+    def result_name(self):
+        return self._result_name
 
     @property
     def action_vector(self):
@@ -804,9 +867,7 @@ class FactorizedJacobianComponent(CodeComponent):
         self._num_nonzero = sum(not jac[i,j].is_zero for i in range(n) \
                                 for j in range(n))
 
-        self._body_expressions = []
-        for obj in self.ode_objects:
-            self._body_expressions.append(obj)
+        self._body_expressions = self.ode_objects[:]
      
     @property
     def argument_objects(self):
@@ -865,7 +926,7 @@ class LinearizedDerivativeComponent(DependentExpressionComponent):
                 self._linear_derivative_indices[ind] = 1
                 self.add_indexed_expression("linearized", ind, expr_diff)
 
-        self.init_deps(*self.indexed_expressions("linearized"))
+        self._init_deps(*self.indexed_expressions("linearized"))
 
     def linear_derivative_indices(self):
         return self._linear_derivative_indices
@@ -1013,30 +1074,10 @@ class ReuseBodyVariableComponent(CodeComponent):
             ind += 1
         
         self.shapes["body"] = (max_index,)
-        if isinstance(component, IndexedExpressionComponent):
+        if isinstance(component, CodeComponent):
             self.shapes.update(component.shapes)
         self._body_expressions = self.ode_objects[:]
 
-    def _recreate_expression(self, expr, replace_dict):
-        """
-        Recreate an Expression while applying the replace dict to the expression
-        """
-        # FIXME: Should we distinguish between the different
-        # FIXME: intermediates?
-        if isinstance(expr, Intermediate):
-            return Intermediate(expr.name, expr.expr.xreplace(replace_dict))
-
-        if isinstance(expr, StateDerivative):
-            return StateDerivative(expr.state, expr.expr.xreplace(replace_dict))
-
-        if isinstance(expr, AlgebraicExpression):
-            return AlgebraicExpression(expr.state, expr.expr.xreplace(replace_dict))
-
-        if isinstance(expr, IndexedExpression):
-            return IndexedExpression(expr.basename, expr.indices,
-                                     expr.expr.xreplace(replace_dict))
-
-        error("Should not reach here")
 
     def _replace_derivatives(self, body_expressions):
         """
@@ -1120,6 +1161,7 @@ class ReuseBodyVariableComponent(CodeComponent):
             #else:
             #    new_new_body_expressions.append(expr2)
 
+            # Recreate the Expression 
             new_expr = self._recreate_expression(expr2, replace_dict)
             replaced_exprs[expr2] = new_expr
             new_new_body_expressions.append(new_expr)
