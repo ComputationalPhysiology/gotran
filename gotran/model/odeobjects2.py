@@ -29,7 +29,7 @@ from modelparameters.codegeneration import sympycode, latex, latex_unit
 from modelparameters.parameters import *
 
 from gotran.common import error, check_arg, scalars, debug, DEBUG, \
-     get_log_level, Timer
+     get_log_level, Timer, parameters
 
 class ODEObject(object):
     """
@@ -329,7 +329,17 @@ class IndexedObject(ODEObject):
         check_arg(basename, str)
         indices = tuplewrap(indices)
         check_arg(indices, tuple, itemtypes=int)
-        name = basename + "_" + "_".join(str(index) for index in indices)
+
+        # Get index format and index offset from global parameters
+        index_format = parameters.code_generation.array.index_format
+        index_offset = parameters.code_generation.array.index_offset
+        
+        if index_format == "{}":
+            index_format = "{{{0}}}"
+        else:
+            index_format = index_format[0]+"{0}"+index_format[1]
+        name = basename + index_format.format(",".join(str(index+index_offset) \
+                                                       for index in indices))
         super(IndexedObject, self).__init__(name, expr)
         self._basename = basename
         self._indices = indices
