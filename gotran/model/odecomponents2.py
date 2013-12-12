@@ -765,11 +765,20 @@ class ODEBaseComponent(ODEObject):
 
         # If obj is Intermediate register it as an attribute so it can be used
         # later on.
-        # FIXME: This should pretty much be always true...
-        if isinstance(obj, (State, Parameter, Expression)):
+        if isinstance(obj, (State, Parameter, IndexedObject, Expression)):
+
+            # If indexed expression or object register the basename as a dict 
+            if isinstance(obj, (IndexedExpression, IndexedObject)):
+                if obj.basename in self.__dict__ and isinstance(\
+                    self.__dict__[obj.basename], dict):
+                    self.__dict__[obj.basename][obj.indices] = obj.sym
+                else:
+                    # FIXME: Initialize unused indices with zero
+                    self.__dict__[obj.basename] = {obj.indices:obj.sym}
 
             # Register symbol, overwrite any already excisting symbol
-            self.__dict__[obj.name] = obj.sym
+            else:
+                self.__dict__[obj.name] = obj.sym
 
         # Register the object in the root ODE,
         # (here all duplication checks and expression expansions are done)
@@ -1303,16 +1312,16 @@ class ODE(DerivativeComponent):
         # If Expression
         if isinstance(obj, Expression):
 
+            # Append the name to the list of all ordered components with
+            # expressions. If the ODE is finalized we do not update components
+            if not self._is_finalized_ode:
+                self._handle_expr_component(comp, obj)
+
             # Add dependencies between registered comments and expressions so
             # they are carried over in Code components
             for comment in comp._local_comments:
                 self.object_used_in[comment].add(obj)
                 self.expression_dependencies[obj].add(comment)
-
-            # Append the name to the list of all ordered components with
-            # expressions. If the ODE is finalized we do not update components
-            if not self._is_finalized_ode:
-                self._handle_expr_component(comp, obj)
 
             # Expand and add any derivatives in the expressions
             expression_added = False
