@@ -26,7 +26,8 @@ import input
 
 # Import classes and routines from gotran modules
 from common import DEBUG, INFO, WARNING, ERROR, CRITICAL, \
-     info, debug, warning, error, set_log_level, list_timings, GotranException
+     info, debug, warning, error, set_log_level, list_timings, \
+     GotranException, parameters
 from model import *
 from algorithms import *
 from codegeneration import *

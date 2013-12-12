@@ -30,6 +30,7 @@ from modelparameters.utils import *
 # gotran imports
 from gotran.common.dicts import *
 from gotran.common.disk import *
+from gotran.common.options import *
 
 # Set initial log level to INFO
 set_log_level(INFO)
