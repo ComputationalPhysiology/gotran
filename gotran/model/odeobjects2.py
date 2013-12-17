@@ -340,7 +340,7 @@ class IndexedObject(ODEObject):
             index_format = index_format[0]+"{0}"+index_format[1]
         name = basename + index_format.format(",".join(str(index+index_offset) \
                                                        for index in indices))
-        super(IndexedObject, self).__init__(name, expr)
+        super(IndexedObject, self).__init__(name)
         self._basename = basename
         self._indices = indices
         self._sym = sp.Symbol(name)
