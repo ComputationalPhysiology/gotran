@@ -1497,13 +1497,6 @@ class ODE(DerivativeComponent):
         return self.state_expressions
 
     @property
-    def argument_objects(self):
-        """
-        Returns a list of ODE objects which are treated as input arguments
-        """
-        return self.full_states+self.parameters
-
-    @property
     def mass_matrix(self):
         """
         Return the mass matrix as a sympy.Matrix

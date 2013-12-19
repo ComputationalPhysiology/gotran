@@ -33,6 +33,7 @@ parameters = ParameterDict(
                           "flattened. jac[2,3] -> jac[27] if the shape of jac "\
                           "is (12,12)")
             ),
+        
         parameters = ParameterDict(
             representation = OptionParam("named", ["named", "array", "numerals"],
                                          description="Controls how parameters are "\
@@ -42,6 +43,7 @@ parameters = ParameterDict(
             array_name = Param("parameters", description="The name of the array "\
                                "representing the parameters."),
             ),
+        
         states = ParameterDict(
             representation = OptionParam("named", ["named", "array"],
                                          description="Controls how states are "\
@@ -49,6 +51,24 @@ parameters = ParameterDict(
                                          " or as an indexed array."),
             array_name = Param("states", description="The name of the array "\
                                "representing the states."),
+            ),
+        
+        body = ParameterDict(
+            representation = OptionParam("named", ["named", "array", "reused_array"],
+                                         description="Controls how body variables are "\
+                                         "represented in the code. As named variables,"\
+                                         "as an indexed array or as indexed array with "\
+                                         "reuse of unused array elements."),
+            
+            array_name = Param("body", description="The name of the array "\
+                               "representing the body."),
+            
+            optimize_exprs = OptionParam("none", ["none", "numerals",
+                                                  "numerals_symbols"],
+                                         description="Remove body expressions as "\
+                                         "intermediates, which contains only a "\
+                                         "numeral or numerals and a symbol."),
+            
             ),
         ),
     )

@@ -341,12 +341,12 @@ class AlgebraicExpression(StateExpression):
     def _repr_latex_name(self):
         return "0"
 
-class IndexedExpression(Expression):
+class IndexedExpression(IndexedObject, Expression):
     """
     An expression which represents an expression with a fixed index
     associated with it
     """
-    def __init__(self, basename, indices, expr):
+    def __init__(self, basename, indices, expr, shape=None):
         """
         Create an IndexedExpression with an associated basename used in code
         generation.
@@ -359,33 +359,13 @@ class IndexedExpression(Expression):
             The indices 
         expr : sympy.Basic
             The expression
+        shape : tuple (optional)
+            A tuple with the shape of the indexed expression
         """
         
-        check_arg(basename, str)
-        indices = tuplewrap(indices)
-        check_arg(indices, tuple, itemtypes=int)
-
-        # Get index format and index offset from global parameters
-        index_format = parameters.code_generation.array.index_format
-        index_offset = parameters.code_generation.array.index_offset
+        IndexedObject.__init__(self, basename, indices, shape)
+        Expression.__init__(self, self.name, expr)
         
-        if index_format == "{}":
-            index_format = "{{{0}}}"
-        else:
-            index_format = index_format[0]+"{0}"+index_format[1]
-        name = basename + index_format.format(",".join(str(index+index_offset) \
-                                                       for index in indices))
-        super(IndexedExpression, self).__init__(name, expr)
-        self._basename = basename
-        self._indices = indices
-
-    @property
-    def basename(self):
-        return self._basename
-
-    @property
-    def indices(self):
-        return self._indices
 
 # Tuple with Derivative types, for type checking
 Derivatives = (StateDerivative, DerivativeExpression)
