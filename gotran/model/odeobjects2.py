@@ -314,7 +314,7 @@ class IndexedObject(ODEObject):
     """
     An object with a fixed index associated with it
     """
-    def __init__(self, basename, indices):
+    def __init__(self, basename, indices, shape=None):
         """
         Create an IndexedExpression with an associated basename
 
@@ -324,6 +324,8 @@ class IndexedObject(ODEObject):
             The basename of the multi index Expression
         indices : tuple of ints
             The indices 
+        shape : tuple (optional)
+            A tuple with the shape of the indexed object
         """
         
         check_arg(basename, str)
@@ -333,14 +335,32 @@ class IndexedObject(ODEObject):
         # Get index format and index offset from global parameters
         index_format = parameters.code_generation.array.index_format
         index_offset = parameters.code_generation.array.index_offset
+        flatten = parameters.code_generation.array.flatten
         
+        # If trying to flatten indices, with a rank larger than 1 a shape needs
+        # to be provided
+        if len(indices)>1 and flatten and shape is None:
+            error("A 'shape' need to be provided to generate flatten indices "\
+                  "for index expressions with rank larger than 1.")
+
+        # Create index format
         if index_format == "{}":
             index_format = "{{{0}}}"
         else:
             index_format = index_format[0]+"{0}"+index_format[1]
-        name = basename + index_format.format(",".join(str(index+index_offset) \
-                                                       for index in indices))
-        super(IndexedObject, self).__init__(name)
+
+        # If flatten indices
+        if flatten and len(indices)>1:
+            indices = (sum(reduce(lambda i, j: i*j, shape[i+1:],1)*\
+                           (index+index_offset) for i, index in \
+                           enumerate(indices)),)
+        else:
+            indices = tuple(index+index_offset for index in indices)
+
+        index_str = ",".join(str(index) for index in indices)
+        name = basename + index_format.format(index_str)
+
+        ODEObject.__init__(self, name)
         self._basename = basename
         self._indices = indices
         self._sym = sp.Symbol(name)
