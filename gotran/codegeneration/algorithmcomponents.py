@@ -34,11 +34,12 @@ from modelparameters.sympytools import sp
 # Local imports
 from gotran.common import error, info, debug, check_arg, check_kwarg, \
      scalars, Timer, warning, tuplewrap, parameters
-from utils import ode_primitives
-from odeobjects2 import State, Parameter, IndexedObject, Comment
-from expressions2 import *
-from odebasecomponent import ODEBaseComponent
-from odecomponents2 import ODE
+from gotran.model.utils import ode_primitives
+from gotran.model.odeobjects2 import State, Parameter, IndexedObject, Comment
+from gotran.model.expressions2 import *
+from gotran.model.odebasecomponent import ODEBaseComponent
+from gotran.model.odecomponents2 import ODE
+from codecomponent import CodeComponent
 
 #FIXME: Remove our own cse, or move to this module?
 from gotran.codegeneration.sympy_cse import cse
