@@ -9,7 +9,7 @@ from modelparameters.sympytools import symbols_from_expr
 from gotran.common import GotranException
 
 from gotran.model.odeobjects2 import *
-from gotran.model.odeobjects2 import ODEObject, ODEValueObject
+from gotran.model.expressions2 import StateDerivative
 from gotran.model.utils import ode_primitives
 
 from sympy import Symbol, Derivative
@@ -22,7 +22,7 @@ class TestODEObject(unittest.TestCase):
     def test_odeobjects(self):
         with self.assertRaises(TypeError) as cm:
             ODEObject(45)
-        self.assertEqual(str(cm.exception), "expected a 'str' (got '45' which "\
+        self.assertEqual(str(cm.exception), "expected 'str' (got '45' which "\
                          "is 'int') as the first argument while instantiating "\
                          "'ODEObject'")
 
@@ -32,16 +32,14 @@ class TestODEObject(unittest.TestCase):
                          "with an underscore: '_jada'")
         
         obj0 = ODEObject("jada bada")
-        self.assertEqual(str(obj0), "jada_bada")
+        self.assertEqual(str(obj0), "jada bada")
         
-        obj1 = ODEObject("jada_bada")
-
-        self.assertEqual(obj0, obj1)
-        
-        obj0.rename("bada jada")
-        self.assertEqual(str(obj0), "bada_jada")
+        obj1 = ODEObject("jada bada")
 
         self.assertNotEqual(obj0, obj1)
+        
+        obj0.rename("bada jada")
+        self.assertEqual(str(obj0), "bada jada")
 
     def test_odevalueobjects(self):
         with self.assertRaises(TypeError) as cm:
@@ -54,7 +52,6 @@ class TestODEObject(unittest.TestCase):
         
         obj = ODEValueObject("bada", 45)
         
-        self.assertFalse(obj.is_field)
         self.assertEqual(Symbol(obj.name), obj.sym)
         self.assertEqual(45, obj.value)
 
@@ -70,12 +67,8 @@ class TestODEObject(unittest.TestCase):
                          "with an underscore: '_jada'")
         
         s = State("s", 45., t)
-        self.assertFalse(s.is_field)
-        s.toggle_field()
-        self.assertTrue(s.is_field)
-        
         a = State("a", 56., t)
-        b = State("b", [40.], t)
+        b = State("b", 40., t)
 
         s_s = s.sym
         a_s = a.sym
@@ -93,8 +86,7 @@ class TestODEObject(unittest.TestCase):
                          set([sa_s, a_s, b_s, t_s]))
 
         # Test derivative
-        self.assertEqual(s.derivative.sym, Symbol("s")(t_s).diff(t_s))
-        #print sympycode(s.derivative.sym)
+        self.assertEqual(StateDerivative(s, 1.0).sym, Symbol("s")(t_s).diff(t_s))
         #print sympycode(sa_s*a_s + t_s*b_s*a_s)
         #
         #print sympycode(Derivative(sa_s, s_s))
@@ -112,15 +104,12 @@ class TestODEObject(unittest.TestCase):
                          "with an underscore: '_jada'")
         
         s = Parameter("s", 45.)
-        self.assertFalse(s.is_field)
-        s.toggle_field()
-        self.assertTrue(s.is_field)
         
         from gotran.model.utils import ode_primitives
 
         t = Time("t")
         a = State("a", 56., t)
-        b = State("b", [40.], t)
+        b = State("b", 40., t)
 
         s_s = s.sym
         a_s = a.sym

@@ -749,7 +749,7 @@ class ODEBaseComponent(ODEObject):
             if state_comp is None:
                 error("{0} is not registered in this ODE".format(name))
 
-            state, comp = state_comp
+            state, comp = state_comp.obj, state_comp.comp
 
         check_arg(state, allowed, 0)
 
@@ -1218,7 +1218,7 @@ class ODE(DerivativeComponent):
 
         # If namespace provided just keep a weak ref
         if ns is None:
-            self._ns = ns
+            self._ns = {}
         else:
             self._ns = weakref.ref(ns) 
 

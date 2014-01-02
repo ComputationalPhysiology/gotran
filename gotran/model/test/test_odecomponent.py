@@ -24,7 +24,7 @@ class TestODEComponent(unittest.TestCase):
         ode = ODE("test")
 
         # Add states and parameters
-        j=ode.add_state("j", [1.0])
+        j=ode.add_state("j", 1.0)
         i=ode.add_state("i", 2.0)
         k=ode.add_state("k", 3.0)
 
@@ -33,7 +33,6 @@ class TestODEComponent(unittest.TestCase):
         kk=ode.add_parameter("kk", 0.0)
 
         self.assertEqual(ode.num_states, 3)
-        self.assertEqual(ode.num_field_states, 1)
         self.assertEqual(ode.num_parameters, 3)
         self.assertEqual(ode.present_component, ode)
 
@@ -50,7 +49,7 @@ class TestODEComponent(unittest.TestCase):
 
         # Add a component with 2 states
         ode("jada").add_states(m=2.0, n=3.0, l=1.0, o=4.0)
-        ode("jada").add_parameters(ll=1.0, mm=[2.0])
+        ode("jada").add_parameters(ll=1.0, mm=2.0)
 
         # Define a state derivative
         ode("jada").dm_dt = ode("jada").ll - (ode("jada").m - ode.i)
@@ -59,13 +58,10 @@ class TestODEComponent(unittest.TestCase):
 
         # Test num_foo
         self.assertEqual(jada.num_states, 4)
-        self.assertEqual(jada.num_all_parameters, 2)
-        self.assertEqual(jada.num_parameters, 1)
+        self.assertEqual(jada.num_parameters, 2)
         self.assertEqual(ode.num_states, 7)
-        self.assertEqual(ode.num_all_parameters, 5)
+        self.assertEqual(ode.num_parameters, 5)
         self.assertEqual(ode.num_components, 2)
-        self.assertEqual(ode.num_field_states, 1)
-        self.assertEqual(ode.num_field_parameters, 1)
         self.assertEqual(jada.num_components, 1)
 
         # Add expressions to the component
@@ -98,7 +94,7 @@ class TestODEComponent(unittest.TestCase):
         self.assertEqual(bada.num_states, 4)
         nada.p = 1 - nada.r - nada.s - nada.q
         
-        self.assertEqual("".join(p.name for p in ode.all_parameters), "iijjkkllmmnnooppqq")
+        self.assertEqual("".join(p.name for p in ode.parameters), "iijjkkllmmnnooppqq")
         self.assertEqual("".join(s.name for s in ode.states), "jiklmnorsqp")
         self.assertFalse(ode.is_complete)
 
@@ -118,9 +114,6 @@ class TestODEComponent(unittest.TestCase):
 
         self.assertTrue(ode.is_complete)
 
-        for expr in ode.body_expressions:
-            print expr, expr.expr if hasattr(expr, "expr") else ""
-        
 
 if __name__ == "__main__":
     unittest.main()
