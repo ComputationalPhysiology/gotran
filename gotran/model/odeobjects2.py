@@ -350,6 +350,7 @@ class IndexedObject(ODEObject):
             index_format = index_format[0]+"{0}"+index_format[1]
 
         # If flatten indices
+        orig_indices = indices
         if flatten and len(indices)>1:
             indices = (sum(reduce(lambda i, j: i*j, shape[i+1:],1)*\
                            (index+index_offset) for i, index in \
@@ -362,7 +363,7 @@ class IndexedObject(ODEObject):
 
         ODEObject.__init__(self, name)
         self._basename = basename
-        self._indices = indices
+        self._indices = orig_indices
         self._sym = sp.Symbol(name)
 
     @property
