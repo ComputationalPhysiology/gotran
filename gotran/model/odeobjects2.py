@@ -67,6 +67,12 @@ class ODEObject(object):
         """
         return "{0}({1})".format(self.__class__.__name__, self._args_str())
 
+    def __str__(self):
+        """
+        x.__str__() <==> str(x)
+        """
+        return self.name
+
     @property
     def name(self):
         return self._name
