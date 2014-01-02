@@ -21,6 +21,8 @@ __all__ = ["ODE", "ODEObjectList", "ODEBaseComponent"]
 from collections import OrderedDict, defaultdict, deque
 import re
 import types
+import weakref
+import sys
 
 from sympy.core.function import AppliedUndef
 
@@ -54,6 +56,16 @@ special_expression_str = {
     RATE_EXPRESSION : "rate expression",
     STATE_SOLUTION_EXPRESSION : "state solution expression",
     }
+
+# Create a weak referenced tuple class
+class PresentObjTuple(object):
+    def __init__(self, obj, comp):
+        self.obj = obj
+        self._comp = weakref.ref(comp)
+
+    @property
+    def comp(self):
+        return self._comp()
 
 class iter_objects(object):
     """
@@ -177,8 +189,8 @@ def special_expression(name, root):
         return rate_expr, RATE_EXPRESSION
 
     state_comp = root.present_ode_objects.get(name)
-    if state_comp and isinstance(state_comp[0], State):
-        return state_comp[0], STATE_SOLUTION_EXPRESSION
+    if state_comp and isinstance(state_comp.obj, State):
+        return state_comp.obj, STATE_SOLUTION_EXPRESSION
 
     return None, INTERMEDIATE
 
@@ -207,7 +219,7 @@ class ODEBaseComponent(ODEObject):
         super(ODEBaseComponent, self).__init__(name)
 
         # Store parent component
-        self.parent = parent
+        self._parent = weakref.ref(parent)
 
         # Store ODEBaseComponent children
         self.children = OrderedDict()
@@ -225,6 +237,17 @@ class ODEBaseComponent(ODEObject):
         self._is_finalized = False
 
         self._constructed = True
+
+    @property
+    def parent(self):
+        """
+        Return the the parent if it is still alive. Otherwise it will return None
+        """
+        p = self._parent()
+        if p is None:
+            error("Cannot access parent ODEComponent. It is already "\
+                  "destroyed.")
+        return p
 
     def get_object(self, name, reversed=True, return_component=False):
 
@@ -507,7 +530,7 @@ class ODEBaseComponent(ODEObject):
 
             if der_expr is None:
                 error("{0} is not registered in this ODE".format(name))
-            der_expr = der_expr[0]
+            der_expr = der_expr.obj
 
         if isinstance(dep_var, (AppliedUndef, sp.Symbol)):
             name = sympycode(dep_var)
@@ -515,7 +538,7 @@ class ODEBaseComponent(ODEObject):
 
             if dep_var is None:
                 error("{0} is not registered in this ODE".format(name))
-            dep_var = dep_var[0]
+            dep_var = dep_var.obj
 
         # Check if der_expr is a State
         if isinstance(der_expr, State):
@@ -891,7 +914,7 @@ class DerivativeComponent(ODEBaseComponent):
             #          "the variable: '{0}' is not registered in this "\
             #          "ODE.".format(var_name))
             else:
-                self.add_derivative(expr_obj[0], var_obj[0], value)
+                self.add_derivative(expr_obj.obj, var_obj.obj, value)
 
         elif TYPE == STATE_SOLUTION_EXPRESSION:
             self.add_state_solution(expr, value)
@@ -1180,6 +1203,11 @@ class ODE(DerivativeComponent):
         A namespace which will be filled with declared ODE symbols
     """
 
+
+    def __new__(cls, *args, **kwargs):
+        self = object.__new__(cls, *args, **kwargs)
+        return self
+    
     def __init__(self, name, ns=None):
 
         # Call super class with itself as parent component
@@ -1188,7 +1216,11 @@ class ODE(DerivativeComponent):
         # Reset constructed attribute
         self._constructed = False
 
-        self.ns = ns if ns is not None else {}
+        # If namespace provided just keep a weak ref
+        if ns is None:
+            self._ns = ns
+        else:
+            self._ns = weakref.ref(ns) 
 
         # Add Time object
         # FIXME: Add information about time unit dimensions and make
@@ -1199,20 +1231,24 @@ class ODE(DerivativeComponent):
 
         # Namespace, which can be used to eval an expression
         self.ns.update({"t":time.sym, "time":time.sym})
-
+        
         # An list with all component names with expression added to them
         # The components are always sorted wrt last expression added
         self.all_expr_components_ordered = []
 
         # A dict with all components objects
-        self.all_components = {name : self}
+        self.all_components = weakref.WeakValueDictionary()
+        self.all_components[name] = self
 
         # An attribute keeping track of the present ODE component
         self._present_component = self.name
 
         # A dict with the present ode objects
         # NOTE: hashed by name so duplicated expressions are not stored
-        self.present_ode_objects = dict(t=(self._time, self), time=(self._time, self))
+        self.present_ode_objects = {}
+        self.present_ode_objects["t"] = PresentObjTuple(self._time, self)
+        self.present_ode_objects["time"] = PresentObjTuple(self._time, self)
+        #self.present_ode_objects = dict(t=(self._time, self), time=(self._time, self))
 
         # Keep track of duplicated expressions
         self.duplicated_expressions = defaultdict(list)
@@ -1231,9 +1267,22 @@ class ODE(DerivativeComponent):
         
         # Global finalized flag
         self._is_finalized_ode = False
-
+        
         # Flag that the ODE is constructed
         self._constructed = True
+
+    @property
+    def ns(self):
+        if isinstance(self._ns, dict):
+            return self._ns
+
+        # Check if ref in weakref is alive
+        ns = self._ns()
+        if isinstance(ns, dict):
+            return ns
+
+        # If not just return an empty dict
+        return {}
 
     @property
     def present_component(self):
@@ -1281,7 +1330,7 @@ class ODE(DerivativeComponent):
         # need to figure out what to do
         if duplication:
 
-            dup_obj, dup_comp = duplication
+            dup_obj, dup_comp = duplication.obj, duplication.comp
 
             # If State, Parameter or DerivativeExpression we always raise an error
             if isinstance(dup_obj, State) and isinstance(obj, StateSolution):
@@ -1306,7 +1355,7 @@ class ODE(DerivativeComponent):
                 dup_objects.append(obj)
 
         # Update global information about ode object
-        self.present_ode_objects[obj.name] = (obj, comp)
+        self.present_ode_objects[obj.name] = PresentObjTuple(obj, comp)
         self.ns.update({obj.name : obj.sym})
 
         # If Expression
@@ -1402,8 +1451,8 @@ class ODE(DerivativeComponent):
             return False
 
         # Get the expr and dependent variable objects
-        expr_obj = self.present_ode_objects[sympycode(der_expr.args[0])][0]
-        var_obj = self.present_ode_objects[sympycode(der_expr.args[1])][0]
+        expr_obj = self.present_ode_objects[sympycode(der_expr.args[0])].obj
+        var_obj = self.present_ode_objects[sympycode(der_expr.args[1])].obj
 
         # If the dependent variable is time and the expression is a state
         # variable we raise an error as the user should already have created
@@ -1446,7 +1495,7 @@ class ODE(DerivativeComponent):
                       "ODE.".format(sym, self.name))
 
             # Expand dep_obj
-            dep_obj, dep_comp = dep_obj
+            dep_obj, dep_comp = dep_obj.obj, dep_obj.comp
 
             # Store object dependencies
             self.expression_dependencies[obj].add(dep_obj)
@@ -1459,42 +1508,6 @@ class ODE(DerivativeComponent):
                 expression_subs_dict[dep_obj.sym] = self.expanded_expressions[dep_obj.name]
 
         return obj.expr.xreplace(expression_subs_dict)
-
-    @property
-    def body_expressions(self):
-        """
-        Return a list of all body expressions if ODE is finalized it will be cached
-        """
-        
-        if self._body_expressions:
-            return self._body_expressions
-
-        body_expressions = []
-
-        # Iterate over all components
-        for comp_name in self.all_expr_components_ordered:
-
-            comp = self.all_components[comp_name]
-
-            # Iterate over all objects of the component
-            for obj in comp.ode_objects:
-
-                # Only add Expressions
-                if isinstance(obj, (Expression, Comment)):
-                    body_expressions.append(obj)
-
-        if self.is_finalized:
-            self._body_expressions = body_expressions
-
-        return body_expressions
-
-    @property
-    def result_expressions(self):
-        """
-        Returns the expressions which are expected to be computed by
-        the body expressions
-        """
-        return self.state_expressions
 
     @property
     def mass_matrix(self):
