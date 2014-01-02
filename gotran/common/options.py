@@ -54,6 +54,10 @@ parameters = ParameterDict(
             ),
         
         body = ParameterDict(
+            use_cse = Param(False, description="If true will the body be "\
+                            "optimized using SymPy common sub expression "\
+                            "extraction."),
+
             representation = OptionParam("named", ["named", "array", "reused_array"],
                                          description="Controls how body variables are "\
                                          "represented in the code. As named variables,"\
