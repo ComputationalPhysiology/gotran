@@ -19,9 +19,11 @@ __all__ = ["load_ode", "exec_ode"]
 
 # System imports
 import inspect
+import sys
 import os
 import re
 import tempfile
+import weakref
 from collections import OrderedDict, deque
 
 # modelparameters import
@@ -45,7 +47,22 @@ class IntermediateDispatcher(dict):
         """
         Initalize with an ode
         """
-        self.ode = ode
+        if ode is not None:
+            self._ode = weakref.ref(ode)
+        else:
+            self._ode = None
+
+    @property
+    def ode(self):
+
+        if self._ode == None:
+            error("ode attr is not set")
+        
+        return self._ode()
+
+    @ode.setter
+    def ode(self, ode):
+        self._ode = weakref.ref(ode)
 
     def __setitem__(self, name, value):
 
@@ -115,17 +132,17 @@ def _init_namespace(ode, load_arguments, namespace):
 
     # Add Sympy matrix related stuff
     namespace.update(dict(eye=sp.eye, diag=sp.diag, Matrix=sp.Matrix, zeros=sp.zeros))
-                     
+
     namespace.update(dict(t=ode.t,
                           ScalarParam=ScalarParam,
                           ArrayParam=ArrayParam,
                           ConstParam=ConstParam,
-                          comment=ode.add_comment,
                           sp=sp,
                           ))
 
     # Add ode and model_arguments
-    _namespace_binder(namespace, ode, load_arguments)
+    _namespace_binder(namespace, weakref.ref(ode), load_arguments)
+
     return namespace
 
 def exec_ode(ode_str, name):
@@ -205,7 +222,7 @@ def load_ode(filename, name=None, **arguments):
     debug("Loading {}".format(ode.name))
 
     # Create namespace which the ode file will be executed in
-    namespace = _init_namespace(ode, arguments, intermediate_dispatcher)
+    _init_namespace(ode, arguments, intermediate_dispatcher)
 
     # Execute the file
     if (not os.path.isfile(filename)):
@@ -233,6 +250,21 @@ def _namespace_binder(namespace, ode, load_arguments):
     Add functions all bound to current ode, namespace and arguments
     """
 
+    def comment(comment):
+        """
+        Add a comment to the present ODE component
+
+        Arguments
+        ---------
+        comment : str
+            The comment
+        """
+        
+        comp = ode().present_component
+            
+        # Add the comment
+        comp.add_comment(comment)
+        
     def subode(subode, prefix=None, components=None):
         """
         Load an ODE and add it to the present ODE
@@ -253,7 +285,7 @@ def _namespace_binder(namespace, ode, load_arguments):
         check_arg(subode, str, 0)
 
         # Add the subode and update namespace
-        namespace.update(ode.add_subode(subode, prefix=prefix, \
+        namespace.update(ode().add_subode(subode, prefix=prefix, \
                                         components=components))
     
     def states(*args, **kwargs):
@@ -264,13 +296,13 @@ def _namespace_binder(namespace, ode, load_arguments):
         
         # If comp string is passed we get the component
         if args and isinstance(args[0], str):
-            comp = ode
+            comp = ode()
             args = deque(args)
             
             while args and isinstance(args[0], str):
                 comp = comp(args.popleft())
         else:
-            comp = ode.present_component
+            comp = ode().present_component
             
         # Add the states
         comp.add_states(*args, **kwargs)
@@ -282,13 +314,13 @@ def _namespace_binder(namespace, ode, load_arguments):
         
         # If comp string is passed we get the component
         if args and isinstance(args[0], str):
-            comp = ode
+            comp = ode()
             args = deque(args)
             
             while args and isinstance(args[0], str):
                 comp = comp(args.popleft())
         else:
-            comp = ode.present_component
+            comp = ode().present_component
             
         # Add the parameters and update namespace
         comp.add_parameters(*args, **kwargs)
@@ -338,13 +370,13 @@ def _namespace_binder(namespace, ode, load_arguments):
         
         check_arg(args, tuple, 0, itemtypes=str)
         
-        comp = ode
+        comp = ode()
         args = deque(args)
             
         while args:
             comp = comp(args.popleft())
 
-        assert ode.present_component == comp
+        assert ode().present_component == comp
         return comp
 
     def markov_model(*args):
@@ -359,7 +391,7 @@ def _namespace_binder(namespace, ode, load_arguments):
 
         check_arg(args, tuple, 0, itemtypes=str)
         
-        comp = ode
+        comp = ode()
         args = deque(args)
             
         while len(args)>1:
@@ -367,7 +399,7 @@ def _namespace_binder(namespace, ode, load_arguments):
 
         comp = com.add_markov_model(args[0])
 
-        assert ode.present_component == comp
+        assert ode().present_component == comp
 
     # Update provided namespace
     namespace.update(dict(
@@ -377,6 +409,7 @@ def _namespace_binder(namespace, ode, load_arguments):
         component=component,
         subode=subode,
         markov_model=markov_model,
+        comment=comment
         )
                      )
                     
