@@ -513,16 +513,21 @@ class ODE(ODEComponent):
         """
         import hashlib
 
-        # Sort wrt stringified states and parameters avoiding trouble with
-        # random ordering of **kwargs
-        def_list = sorted([repr(state.param) for state in self.full_states])
-        def_list += sorted([repr(param.param) for param in self.parameters])
-        def_list += [str(expr.expr) for expr in self.intermediates]
+        def_list = []
+        for comp in self.components:
+            if self != comp:
+                def_list.append(str(comp))
+            
+            # Sort wrt stringified states and parameters avoiding trouble with
+            # random ordering of **kwargs
+            def_list += sorted([repr(state.param) for state in comp.full_states])
+            def_list += sorted([repr(param.param) for param in comp.parameters])
+            def_list += [str(expr.expr) for expr in comp.intermediates]
         
-        # Sort state expressions wrt stringified state names
-        def_list += [str(expr.expr) for expr in sorted(\
-            self.state_expressions, cmp=lambda o0, o1: cmp(\
-                str(o0.state), str(o1.state)))]
+            # Sort state expressions wrt stringified state names
+            def_list += [str(expr.expr) for expr in sorted(\
+                self.state_expressions, cmp=lambda o0, o1: cmp(\
+                    str(o0.state), str(o1.state)))]
 
         h = hashlib.sha1()
         h.update(";".join(def_list))

@@ -1,5 +1,4 @@
 """test for odecomponent module"""
-
 import unittest
 
 import gotran
@@ -19,7 +18,7 @@ suppress_logging()
 
 class TestODEComponent(unittest.TestCase):
 
-    def setUp(self):
+    def test_creation(self):
 
         # Adding a phoney ODE
         ode = ODE("test")
@@ -41,10 +40,10 @@ class TestODEComponent(unittest.TestCase):
         ode.alpha = i*j
 
         # Add derivatives for all states in the main component
-        ode.add_comment("Some nice derivatives")
+        ode.add_comment("Some nice derivatives and an algebraic expression")
         ode.di_dt = ode.alpha + ii
         ode.dj_dt = -ode.alpha - jj
-        ode.dk_dt = kk*k*ode.alpha
+        ode.alg_k_0 = kk*k*ode.alpha
 
         self.assertEqual(ode.num_intermediates, 1)
 
@@ -105,7 +104,9 @@ class TestODEComponent(unittest.TestCase):
         nada.rates[nada.q, nada.s] = 2*exp(-i)
         nada.rates[nada.q, nada.p] = 3.0
         nada.rates[nada.p, nada.q] = 4.0
-
+        
+        
+        
         self.assertEqual(ode.present_component, nada)
         ode.finalize()
         self.assertTrue(ode.is_complete)
@@ -114,12 +115,12 @@ class TestODEComponent(unittest.TestCase):
         self.assertEqual(ode.present_component, ode)
 
         ode.save("test_ode")
-        self.ode = ode
 
-    def test_load(self):
+        # Test loading
+        ode_loaded = load_ode("test_ode")
+        self.assertEqual(ode.signature(), ode_loaded.signature())
 
-        ode = load_ode("test_ode")
-        self.assertEqual(ode.signature(), self.ode.signature())
+        
 
 if __name__ == "__main__":
     unittest.main()
