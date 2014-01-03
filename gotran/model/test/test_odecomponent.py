@@ -11,14 +11,15 @@ globals().update(sp_namespace)
 
 from gotran.common import GotranException
 
-from gotran.model.odecomponents2 import *
+from gotran.model.ode2 import *
+from gotran.model.loadmodel2 import *
 from sympy import Symbol, Derivative
 
 suppress_logging()
 
 class TestODEComponent(unittest.TestCase):
 
-    def test_creation(self):
+    def setUp(self):
 
         # Adding a phoney ODE
         ode = ODE("test")
@@ -88,7 +89,7 @@ class TestODEComponent(unittest.TestCase):
         bada = ode("bada")
         bada.add_parameters(nn=5.0, oo=3.0, qq=1.0, pp=2.0)
         
-        nada = bada.add_markov_model("nada")
+        nada = bada.add_component("nada")
         nada.add_states(("r", 3.0), ("s", 4.0), ("q", 1.0), ("p", 2.0))
         self.assertEqual(bada.num_parameters, 4)
         self.assertEqual(bada.num_states, 4)
@@ -98,22 +99,27 @@ class TestODEComponent(unittest.TestCase):
         self.assertEqual("".join(s.name for s in ode.states), "jiklmnorsqp")
         self.assertFalse(ode.is_complete)
 
-        nada.add_single_rate(nada.r, nada.s, 3*exp(-i))
-        nada.add_single_rate(nada.s, nada.r, 2.0)
+        nada.rates[nada.r, nada.s] = 3*exp(-i)
+        nada.rates[nada.s, nada.r] = 2.0
+        nada.rates[nada.s, nada.q] = 2.0
+        nada.rates[nada.q, nada.s] = 2*exp(-i)
+        nada.rates[nada.q, nada.p] = 3.0
+        nada.rates[nada.p, nada.q] = 4.0
 
-        nada.add_single_rate(nada.s, nada.q, 2.0)
-        nada.add_single_rate(nada.q, nada.s, 2*exp(-i))
-
-        nada.add_single_rate(nada.q, nada.p, 3.0)
-        nada.add_single_rate(nada.p, nada.q, 4.0)
-
-        nada.finalize_component()
-
-        self.assertEqual("".join(s.name for s in ode.full_states), "jiklmorsq")
         self.assertEqual(ode.present_component, nada)
-
+        ode.finalize()
         self.assertTrue(ode.is_complete)
 
+        self.assertEqual("".join(s.name for s in ode.full_states), "jiklmorsq")
+        self.assertEqual(ode.present_component, ode)
+
+        ode.save("test_ode")
+        self.ode = ode
+
+    def test_load(self):
+
+        ode = load_ode("test_ode")
+        self.assertEqual(ode.signature(), self.ode.signature())
 
 if __name__ == "__main__":
     unittest.main()

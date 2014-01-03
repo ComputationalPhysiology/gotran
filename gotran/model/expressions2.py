@@ -223,7 +223,7 @@ class RateExpression(Intermediate):
         check_arg(to_state, (State, StateSolution), 0, RateExpression)
         check_arg(from_state, (State, StateSolution), 1, RateExpression)
 
-        super(RateExpression, self).__init__("rate_{0}_{1}".format(\
+        super(RateExpression, self).__init__("rates_{0}_{1}".format(\
             to_state, from_state), expr)
         self._to_state = to_state
         self._from_state = from_state
@@ -235,6 +235,14 @@ class RateExpression(Intermediate):
         return "{0}, {1}, {2}".format(\
             repr(self._to_state), repr(self._from_state), sympycode(self.expr))
 
+    @property
+    def states(self):
+        """
+        Return a tuple of the two states the rate expression describes the rate
+        between
+        """
+        return self._to_state, self._from_state
+    
 class StateExpression(Expression):
     """
     An expression which determines a State.

@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2012 Johan Hake
+# Copyright (C) 2012-2014 Johan Hake
 #
 # This file is part of Gotran.
 #
@@ -15,415 +15,27 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ["DerivativeComponent", "ReactionComponent", "MarkovModelComponent",\
-           "ODE"]
+__all__ = ["ODE"]
 
 # System imports
-from collections import OrderedDict, defaultdict
-import re
+from collections import defaultdict
 import weakref
 
 from sympy.core.function import AppliedUndef
 
 # ModelParameters imports
 from modelparameters.sympytools import sp, symbols_from_expr
-from modelparameters.codegeneration import sympycode
+from modelparameters.codegeneration import sympycode, pythoncode
 from modelparameters.utils import Timer
 
 # Local imports
 from gotran.common import error, debug, check_arg, check_kwarg, scalars
 from gotran.model.odeobjects2 import *
 from gotran.model.expressions2 import *
-from odebasecomponent import *
+from gotran.model.odecomponent import *
+from gotran.model.utils import PresentObjTuple
 
-_derivative_name_template = re.compile("\Ad([a-zA-Z]\w*)_d([a-zA-Z]\w*)\Z")
-_algebraic_name_template = re.compile("\Aalg_([a-zA-Z]\w*)_0\Z")
-_rate_name_template = re.compile("\Arate_([a-zA-Z]\w*)_([a-zA-Z]\w*)\Z")
-
-# Flags for determine special expressions
-INTERMEDIATE = 0
-ALGEBRAIC_EXPRESSION = 1
-DERIVATIVE_EXPRESSION = 2
-RATE_EXPRESSION = 3
-STATE_SOLUTION_EXPRESSION = 4
-
-special_expression_str = {
-    INTERMEDIATE : "intermediate expression",
-    ALGEBRAIC_EXPRESSION : "algebraic expression",
-    DERIVATIVE_EXPRESSION : "derivative expression",
-    RATE_EXPRESSION : "rate expression",
-    STATE_SOLUTION_EXPRESSION : "state solution expression",
-    }
-
-def special_expression(name, root):
-    """
-    Check if an expression name corresponds to a special expression
-    """
-
-    alg_expr = re.search(_algebraic_name_template, name)
-    if alg_expr:
-        return alg_expr, ALGEBRAIC_EXPRESSION
-
-    der_expr = re.search(_derivative_name_template, name)
-    if der_expr:
-        return der_expr, DERIVATIVE_EXPRESSION
-
-    rate_expr = re.search(_rate_name_template, name)
-    if rate_expr:
-        return rate_expr, RATE_EXPRESSION
-
-    state_comp = root.present_ode_objects.get(name)
-    if state_comp and isinstance(state_comp.obj, State):
-        return state_comp.obj, STATE_SOLUTION_EXPRESSION
-
-    return None, INTERMEDIATE
-
-class DerivativeComponent(ODEBaseComponent):
-    """
-    ODE Component for derivative and algebraic expressions
-    """
-
-    def __init__(self, name, parent):
-        """
-        Create a DerivativeComponent
-
-        Arguments
-        ---------
-        name : str
-            The name of the component. This str serves as the unique
-            identifier of the Component.
-        parent : ODEBaseComponent
-            The parent component of this ODEComponent
-        """
-        super(DerivativeComponent, self).__init__(name, parent)
-
-    def __setattr__(self, name, value):
-        """
-        A magic function which will register expressions and simpler
-        state expressions
-        """
-
-        # If we are registering a protected attribute or an attribute
-        # during construction, just add it to the dict
-        if name[0] == "_" or not self._constructed:
-            self.__dict__[name] = value
-            return
-
-        # If no expression is registered
-        if (not isinstance(value, scalars+(sp.Number,))) \
-               and not (isinstance(value, sp.Basic) and symbols_from_expr(value)):
-            debug("Not registering: {0} as attribut. It does not contain "\
-                  "any symbols or scalars.".format(name))
-
-            # FIXME: Should we raise an error?
-            return
-
-        # Check for special expressions
-        expr, TYPE = special_expression(name, self.root)
-        
-        if TYPE == INTERMEDIATE:
-            self.add_intermediate(name, value)
-
-        elif TYPE == DERIVATIVE_EXPRESSION:
-
-            # Try getting corresponding ODEObjects
-            expr_name, var_name = expr.groups()
-            expr_obj = self.root.present_ode_objects.get(expr_name)
-            var_obj = self.root.present_ode_objects.get(var_name)
-
-            # If the expr or variable is not declared in this ODE we
-            # register an intermediate
-            if expr_obj is None or var_obj is None:
-                self.add_intermediate(name, value)
-                
-            #if expr_obj is None:
-            #    error("Trying to register a DerivativeExpression, but "\
-            #          "the expression: '{0}' is not registered in this "\
-            #          "ODE.".format(expr_name))
-            #
-            #if var_obj is None:
-            #    error("Trying to register a DerivativeExpression, but "\
-            #          "the variable: '{0}' is not registered in this "\
-            #          "ODE.".format(var_name))
-            else:
-                self.add_derivative(expr_obj.obj, var_obj.obj, value)
-
-        elif TYPE == STATE_SOLUTION_EXPRESSION:
-            self.add_state_solution(expr, value)
-
-        elif TYPE == ALGEBRAIC_EXPRESSION:
-
-            # Try getting corresponding ODEObjects
-            var_name = expr.groups()
-            var_obj = self.root.present_ode_objects.get(var_name)
-
-            if var_obj is None:
-                self.add_intermediate(name, value)
-            else:
-                self.add_algebraic(var_obj, expr)
-            
-        else:
-            error("Trying to register a {0} but that is not allowed in a"\
-                  "Derivative component.".format(special_expression_str[TYPE]))
-
-class ReactionComponent(ODEBaseComponent):
-    """
-    A class for a special type of state derivatives
-    """
-    def __init__(self, name, parent, volume, species):
-        """
-        Create an ReactionComponent
-
-        Arguments
-        ---------
-        name : str
-            The name of the component. This str serves as the unique
-            identifier of the Component.
-        parent : ODEBaseComponent
-            The parent component of this ODEComponent
-        """
-        raise NotImplementedError("ReactionComponent is not implemented")
-        super(ReactionComponent, self).__init__(name, parent)
-
-    def add_reaction(self, reactants, products, expr):
-        pass
-
-class MarkovModelComponent(ODEBaseComponent):
-    """
-    A class for a special type of state derivatives
-    """
-    def __init__(self, name, parent):
-        """
-        Create an ReactionComponent
-
-        Arguments
-        ---------
-        name : str
-            The name of the component. This str serves as the unique
-            identifier of the Component.
-        parent : ODEBaseComponent
-            The parent component of this ODEComponent
-        """
-        super(MarkovModelComponent, self).__init__(name, parent)
-        
-        # Rate attributes
-        self._rates = OrderedDict()
-
-    def add_rates(self, states, rate_matrix):
-        """
-        Use a rate matrix to set rates between states
-
-        Arguments
-        ---------
-        states : list of States, tuple of two lists of States
-            If one list is passed the rates should be a square matrix
-            and the states list determines the order of the row and column of
-            the matrix. If two lists are passed the first determines the states
-            in the row and the second the states in the column of the Matrix
-        rates_matrix : sympy.MatrixBase
-            A sympy.Matrix of the rate expressions between the states given in
-            the states argument
-        """
-
-        check_arg(states, (tuple, list), 0, MarkovModelComponent.add_rates)
-        check_arg(rate_matrix, sp.MatrixBase, 1, MarkovModelComponent.add_rates)
-
-        # If list
-        if isinstance(states, list):
-            states = (states, states)
-
-        # else tuple
-        elif len(states) != 2 and not all(isinstance(list_of_states, list) \
-                                          for list_of_states in states):
-            error("expected a tuple of 2 lists with states as the "\
-                  "states argument")
-
-        # Get all states associated with this Markov model
-        local_states = self.states
-        
-        # Check index arguments
-        for list_of_states in states:
-
-            if not all(state in local_states for state in list_of_states):
-                error("Expected the states arguments to be States in "\
-                      "the Markov model")
-
-        # Check that the length of the state lists corresponds with the shape of
-        # the rate matrix
-        if rate.shape[0] != len(states[0]) or rate.shape[1] != len(states[1]):
-            error("Shape of rates does not match given states")
-
-        for i, state_i in enumerate(states[0]):
-            for j, state_j in enumerate(states[1]):
-                value = rate[i,j]
-
-                # If 0 as rate
-                if (isinstance(value, scalars) and value == 0) or \
-                    (isinstance(value, sp.Basic) and value.is_zero):
-                    continue
-
-                if state_i == state_j:
-                    error("Cannot have a nonzero rate value between the "\
-                          "same states")
-
-                # Assign the rate
-                self.add_single_rate(state_i, state_j, value)
-
-    def add_single_rate(self, to_state, from_state, expr):
-        """
-        Add a single rate expression
-        """
-        
-        check_arg(expr, scalars + (sp.Basic,), 2, \
-                  MarkovModelComponent.add_single_rate)
-
-        expr = sp.sympify(expr)
-        
-        to_state = self._expect_state(to_state, \
-                                      allow_state_solution=True)
-        from_state = self._expect_state(from_state, \
-                                        allow_state_solution=True)
-
-        if to_state == from_state:
-            error("The two states cannot be the same.")
-
-        if (sympycode(to_state), sympycode(from_state)) in self._rates:
-            error("Rate between state {0} and {1} is already "\
-                  "registered.".format(from_state, to_state))
-
-        if to_state.sym in expr or from_state.sym in expr:
-            error("The rate expression cannot be dependent on the "\
-                  "states it connects.")
-
-        # Create a RateExpression
-        obj = RateExpression(to_state, from_state, expr)
-
-        self._register_component_object(obj)
-
-        self._rates[sympycode(to_state), sympycode(from_state)] = obj
-
-    def __setattr__(self, name, value):
-        """
-        A magic function which will register intermediates and rate expressions
-        """
-
-        # If we are registering a protected attribute or an attribute
-        # during construction, just add it to the dict
-        if name[0] == "_" or not self._constructed:
-            self.__dict__[name] = value
-            return
-
-        # If no expression is registered
-        if (not isinstance(value, scalars)) and not (isinstance(value, sp.Basic) \
-                                                     and symbols_from_expr(value)):
-            debug("Not registering: {0} as attribut. It does not contain "\
-                  "any symbols or scalars.".format(name))
-
-            # FIXME: Should we raise an error?
-            return
-
-
-        # Check for special expressions
-        expr, TYPE = special_expression(name, self.root)
-        
-        if TYPE == INTERMEDIATE:
-            self.add_intermediate(name, value)
-
-        elif TYPE == RATE_EXPRESSION:
-            to_state_name, from_state_name = rate_expr.groups()
-
-            to_state = self.ode_objects.get(to_state_name)
-            if not to_state:
-                error("Trying to register a rate expression but '{0}' is "\
-                      "not a state in this Markov model.".format(\
-                          to_state_name))
-            from_state = self.ode_objects.get(from_state_name)
-            
-            if not from_state:
-                error("Trying to register a rate expression but '{0}' is "\
-                      "not a state in this Markov model.".format(\
-                          from_state_name))
-            
-            self.add_single_rate(to_state, from_state, value)
-        
-        elif TYPE == STATE_SOLUTION_EXPRESSION:
-            self.add_state_solution(expr, value)
-
-        else:
-            error("Trying to register a {0} but that is not allowed in a"\
-                  "Markov model component.".format(special_expression_str[TYPE]))
-
-    def finalize_component(self):
-        """
-        Finalize the Markov model.
-
-        This will add the derivatives to the ode model. After this is
-        done no more rates can be added to the Markov model.
-        """
-        if self._is_finalized:
-            error("Cannot finalize a component that is already finalized")
-
-        # Derivatives
-        states = self.states
-        derivatives = defaultdict(lambda : sp.sympify(0.0))
-        rate_check = defaultdict(lambda : 0)
-
-        # Build rate information and check that each rate is added in a
-        # symetric way
-        used_states = [0]*self.num_states
-        for (from_state, to_state), rate in self._rates.items():
-
-            # Get ODEObjects
-            from_state = self.ode_objects.get(from_state)
-            to_state = self.ode_objects.get(to_state)
-
-            # Add to derivatives of the two states
-            derivatives[from_state] -= rate.sym*from_state.sym
-            derivatives[to_state] += rate.sym*from_state.sym
-            
-            if isinstance(from_state, StateSolution):
-                from_state = from_state.state
-
-            if isinstance(to_state, StateSolution):
-                to_state = to_state.state
-            
-            # Register rate
-            ind_from = states.index(from_state)
-            ind_to = states.index(to_state)
-            ind_tuple = (min(ind_from, ind_to), max(ind_from, ind_to))
-            rate_check[ind_tuple] += 1
-
-            used_states[ind_from] = 1
-            used_states[ind_to] = 1
-
-        # Check used states
-        if 0 in used_states:
-            error("No rate registered for state {0}".format(\
-                states[used_states.find(0)]))
-
-        # Check rate symetry
-        for (ind_from, ind_to), times in rate_check.items():
-            if times != 2:
-                error("Only one rate between the states {0} and {1} was "\
-                      "registered, expected two.".format(\
-                          states[ind_from], states[ind_to]))
-
-        # Add derivatives
-        for state in states:
-            
-            # Skip solved states
-            if not isinstance(state, State) or state.is_solved:
-                continue
-            
-            self.add_derivative(state, state.time.sym, derivatives[state])
-            #obj = StateDerivative(state, derivatives[state])
-            #self._register_component_object(obj)
-
-        assert self.is_locally_complete, "The Markov model should be complete..."
-            
-        self._is_finalized = True
-
-class ODE(DerivativeComponent):
+class ODE(ODEComponent):
     """
     Root ODEComponent
 
@@ -547,6 +159,121 @@ class ODE(DerivativeComponent):
         """
         pass
 
+    def save(self, basename=None):
+        """
+        Save ODE to file
+
+        Arguments
+        ---------
+        basename : str (optional)
+            The basename of the file which the ode will be saved to, if not
+            given the basename will be the same as the name of the ode.
+        """
+
+        if not self._is_finalized_ode:
+            error("ODE need to be finalized to be saved to file.")
+            
+        lines = ["# Saved Gotran model"]
+
+        comp_names = dict()
+        
+        basename = basename or self.name
+        
+        for comp in self.components:
+            if comp == self:
+                comp_name = ""
+            else:
+                present_comp = comp
+                comps = [present_comp.name]
+                while present_comp.parent != self:
+                    present_comp = present_comp.parent
+                    comps.append(present_comp.name)
+                comp_name = ", ".join("\"{0}\"".format(name) for name in reversed(comps))
+
+            comp_names[comp] = comp_name
+                    
+            states = ["{0}={1},".format(obj.name, obj.param.repr(\
+                include_name=False)) for obj in comp.ode_objects \
+                      if isinstance(obj, State)]
+            parameters = ["{0}={1},".format(obj.name, obj.param.repr(\
+                include_name=False)) for obj in comp.ode_objects \
+                          if isinstance(obj, Parameter)]
+            if states:
+                lines.append("")
+                if comp_name:
+                    lines.append("states({0},".format(comp_name))
+                else:
+                    lines.append("states({0}".format(states.pop(0)))
+                for state_code in states:
+                    lines.append("       " + state_code)
+                lines[-1] = lines[-1][:-1] + ")"
+
+            if parameters:
+                lines.append("")
+                if comp_name:
+                    lines.append("parameters({0},".format(comp_name))
+                else:
+                    lines.append("parameters({0}".format(parameters.pop(0)))
+                for param_code in parameters:
+                    lines.append("           " + param_code)
+                lines[-1] = lines[-1][:-1] + ")"
+
+        # Iterate over all components
+        for comp_name in self.all_expr_components_ordered:
+
+            comp = self.all_components[comp_name]
+
+            comp_comment = "Intermediate expressions for the {0} "\
+                           "component".format(comp.name)
+
+            # Iterate over all objects of the component and save only expressions
+            # and comments
+            for obj in comp.ode_objects:
+
+                # If saving an expression
+                if isinstance(obj, Expression):
+
+                    # If the component is a Markov model
+                    if comp.rates:
+
+                        # Do not save State derivatives
+                        if isinstance(obj, StateDerivative):
+                            continue
+
+                        # Save rate expressions slightly different
+                        elif isinstance(obj, RateExpression):
+                            lines.append("rates[{0}, {1}] = {2}".format(\
+                                sympycode(obj.states[0]), \
+                                sympycode(obj.states[1]), \
+                                sympycode(obj.expr)))
+                            continue
+
+                    # All other Expressions
+                    lines.append("{0} = {1}".format(obj.name, \
+                                                    sympycode(obj.expr)))
+
+                # If saving a comment
+                elif isinstance(obj, Comment):
+
+                    # If comment is component comment
+                    if str(obj) == comp_comment:
+                        lines.append("")
+                        comp_name = comp_names[comp] if comp_names[comp] \
+                                    else "\"{0}\"".format(basename)
+                        lines.append("component({0})".format(comp_name))
+
+                    # Just add the comment
+                    else:
+                        lines.append("")
+                        lines.append("comment(\"{0}\")".format(obj))
+
+        lines.append("")
+        # Use Python code generator to indent outputted code
+        # Write to file
+        from gotran.codegeneration.codegenerator2 import PythonCodeGenerator
+        open(basename+".ode", "w").write("\n".join(\
+            PythonCodeGenerator.indent_and_split_lines(lines)))
+                    
     def register_ode_object(self, obj, comp):
         """
         Register an ODE object in the root ODEComponent
@@ -785,10 +512,17 @@ class ODE(DerivativeComponent):
         Return a signature uniquely defining the ODE
         """
         import hashlib
-        def_list = [repr(state.param) for state in self.full_states] 
-        def_list += [repr(param.param) for param in self.parameters] 
+
+        # Sort wrt stringified states and parameters avoiding trouble with
+        # random ordering of **kwargs
+        def_list = sorted([repr(state.param) for state in self.full_states])
+        def_list += sorted([repr(param.param) for param in self.parameters])
         def_list += [str(expr.expr) for expr in self.intermediates]
-        def_list += [str(expr.expr) for expr in self.state_expressions]
+        
+        # Sort state expressions wrt stringified state names
+        def_list += [str(expr.expr) for expr in sorted(\
+            self.state_expressions, cmp=lambda o0, o1: cmp(\
+                str(o0.state), str(o1.state)))]
 
         h = hashlib.sha1()
         h.update(";".join(def_list))

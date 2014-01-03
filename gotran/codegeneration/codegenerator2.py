@@ -28,7 +28,7 @@ from modelparameters.codegeneration import ccode, cppcode, pythoncode, \
 
 # Gotran imports
 from gotran.common import check_arg, check_kwarg
-from gotran.model.odecomponents2 import ODEBaseComponent
+from gotran.model.odecomponent import ODEComponent
 
 __all__ = ["PythonCodeGenerator", "CCodeGenerator", "CppCodeGenerator", \
            "MatlabCodeGenerator"]
@@ -382,7 +382,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
     def _init_states_and_parameters(self, comp):
 
         # FIXME: Shift to CodeComponent
-        check_arg(comp, ODEBaseComponent)
+        check_arg(comp, ODEComponent)
 
         # Check if comp defines used_states if not use the root components
         # full_states attribute

@@ -33,7 +33,7 @@ from modelparameters.sympytools import sp_namespace, sp, symbols_from_expr
 
 # gotran imports
 from gotran.common import *
-from gotran.model.odecomponents2 import ODE
+from gotran.model.ode2 import ODE
 
 _for_template = re.compile("\A[ ]*for[ ]+.*in[ ]+:[ ]*\Z")
 _no_intermediate_template = re.compile(".*# NO INTERMEDIATE.*")
@@ -371,35 +371,19 @@ def _namespace_binder(namespace, ode, load_arguments):
         check_arg(args, tuple, 0, itemtypes=str)
         
         comp = ode()
+
         args = deque(args)
             
         while args:
             comp = comp(args.popleft())
 
         assert ode().present_component == comp
+
+        # Update the rates name so it points to the present components
+        # rates dictionary
+        namespace["rates"] = comp.rates
+
         return comp
-
-    def markov_model(*args):
-        """        
-        Initalize a Markov model
-
-        Arguments
-        ---------
-        args : tuple of str
-            Name of components and the Markov model
-        """
-
-        check_arg(args, tuple, 0, itemtypes=str)
-        
-        comp = ode()
-        args = deque(args)
-            
-        while len(args)>1:
-            comp = comp(args.popleft())
-
-        comp = com.add_markov_model(args[0])
-
-        assert ode().present_component == comp
 
     # Update provided namespace
     namespace.update(dict(
@@ -408,7 +392,6 @@ def _namespace_binder(namespace, ode, load_arguments):
         model_arguments=model_arguments,
         component=component,
         subode=subode,
-        markov_model=markov_model,
         comment=comment
         )
                      )
