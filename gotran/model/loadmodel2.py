@@ -265,7 +265,7 @@ def _namespace_binder(namespace, ode, load_arguments):
         # Add the comment
         comp.add_comment(comment)
         
-    def subode(subode, prefix=None, components=None):
+    def subode(subode, prefix="", components=None):
         """
         Load an ODE and add it to the present ODE
 
@@ -274,9 +274,7 @@ def _namespace_binder(namespace, ode, load_arguments):
         subode : str
             The subode which should be added.
         prefix : str (optional)
-            A prefix which all state and parameters are prefixed with. If not
-            given the name of the subode will be used as prefix. If set to
-            empty string, no prefix will be used.
+            A prefix which all state and parameters are prefixed with.
         components : list, tuple of str (optional)
             A list of components which will be extracted and added to the present
             ODE. If not given the whole ODE will be added.
@@ -285,8 +283,8 @@ def _namespace_binder(namespace, ode, load_arguments):
         check_arg(subode, str, 0)
 
         # Add the subode and update namespace
-        namespace.update(ode().add_subode(subode, prefix=prefix, \
-                                        components=components))
+        ode().add_subode(subode, prefix=prefix, \
+                         components=components)
     
     def states(*args, **kwargs):
         """

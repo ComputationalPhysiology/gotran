@@ -61,7 +61,10 @@ class CodeComponent(ODEComponent):
         """
         check_arg(ode, ODE)
         super(CodeComponent, self).__init__(name, ode)
-        
+
+        # Turn off magic attributes, see ODEComponent.__setattr__
+        # method
+        self._allow_magic_attributes = False
         for result_name, result_expressions in results.items():
             check_kwarg(result_expressions, result_name, list, \
                         itemtypes=(Expression, Comment))
@@ -82,6 +85,7 @@ class CodeComponent(ODEComponent):
                 body_expressions, **results)
         else:
             self.body_expressions = []
+
             
     def add_indexed_expression(self, basename, indices, expr):
         """
@@ -159,37 +163,6 @@ class CodeComponent(ODEComponent):
             basenames = self.shapes.keys()
         return [obj for obj in self.ode_objects if isinstance(\
             obj, IndexedObject) and obj.basename in basenames]
-
-    def _recreate_expression(self, expr, der_replace_dict, replace_dict):
-        """
-        Recreate an Expression while applying first the replace dict
-        containg all derivatives and then a replace dict containing all the rest
-        """
-
-        # First do the replacements
-        sympyexpr = expr.expr.xreplace(der_replace_dict).xreplace(replace_dict)
-        
-        # FIXME: Should we distinguish between the different
-        # FIXME: intermediates?
-        if isinstance(expr, Intermediate):
-            new_expr = Intermediate(expr.name, sympyexpr)
-
-        elif isinstance(expr, StateDerivative):
-            new_expr = StateDerivative(expr.state, sympyexpr)
-
-        elif isinstance(expr, AlgebraicExpression):
-            new_expr = AlgebraicExpression(expr.state, sympyexpr)
-
-        elif isinstance(expr, IndexedExpression):
-            new_expr = IndexedExpression(expr.basename, expr.indices, \
-                                         sympyexpr, self.shapes[expr.basename])
-        else:
-            error("Should not reach here")
-
-        # Inherit the count of the old expression
-        new_expr._recount(expr._count)
-
-        return new_expr
 
     def _init_param_state_replace_dict(self):
         """
@@ -586,8 +559,8 @@ class CodeComponent(ODEComponent):
                 if isinstance(expr, IndexedExpression) and \
                        result_name == expr.basename:
                     
-                    new_expr = self._recreate_expression(\
-                        expr, der_replace_dict, replace_dict)
+                    new_expr = recreate_expression(expr, der_replace_dict, \
+                                                   replace_dict)
 
                 # Not an indexed expression
                 else:
@@ -615,8 +588,8 @@ class CodeComponent(ODEComponent):
             # sympy expressions
             elif isinstance(expr, IndexedExpression):
 
-                new_expr = self._recreate_expression(expr, der_replace_dict, \
-                                                     replace_dict)
+                new_expr = recreate_expression(expr, der_replace_dict, \
+                                               replace_dict)
                 
                 # Store the expressions
                 store_expressions(expr, new_expr)
@@ -667,7 +640,8 @@ class CodeComponent(ODEComponent):
             # 6) If the expression is just and ordinary body expression 
             else:
 
-                new_expr = self._recreate_expression(expr, der_replace_dict, replace_dict)
+                new_expr = recreate_expression(expr, der_replace_dict, \
+                                               replace_dict)
                 
                 # Store the expressions
                 store_expressions(expr, new_expr)

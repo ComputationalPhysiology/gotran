@@ -18,7 +18,7 @@
 __all__ = ["Expression", "DerivativeExpression", "AlgebraicExpression", \
            "StateExpression", "StateSolution", "RateExpression", \
            "Intermediate", "StateDerivative", "Derivatives", \
-           "IndexedExpression"]
+           "IndexedExpression", "recreate_expression"]
 
 # ModelParameters imports
 from modelparameters.sympytools import sp, symbols_from_expr
@@ -28,6 +28,38 @@ from modelparameters.codegeneration import sympycode, latex, latex_unit
 from gotran.common import error, check_arg, scalars, debug, DEBUG, \
      get_log_level, Timer, tuplewrap, parameters
 from gotran.model.odeobjects2 import *
+
+def recreate_expression(expr, *replace_dicts):
+    """
+    Recreate an Expression while applying replace dicts in given order
+    """
+    
+    # First do the replacements
+    sympyexpr = expr.expr
+    for replace_dict in replace_dicts:
+        sympyexpr = sympyexpr.xreplace(replace_dict)
+
+    # FIXME: Should we distinguish between the different
+    # FIXME: intermediates?
+    if isinstance(expr, Intermediate):
+        new_expr = Intermediate(expr.name, sympyexpr)
+
+    elif isinstance(expr, StateDerivative):
+        new_expr = StateDerivative(expr.state, sympyexpr)
+
+    elif isinstance(expr, AlgebraicExpression):
+        new_expr = AlgebraicExpression(expr.state, sympyexpr)
+
+    elif isinstance(expr, IndexedExpression):
+        new_expr = IndexedExpression(expr.basename, expr.indices, \
+                                     sympyexpr, expr.shape)
+    else:
+        error("Should not reach here")
+
+    # Inherit the count of the old expression
+    new_expr._recount(expr._count)
+
+    return new_expr
 
 class Expression(ODEValueObject):
     """

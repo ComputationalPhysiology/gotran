@@ -51,7 +51,10 @@ class ODEComponent(ODEObject):
             The parent component of this ODEComponent
         """
 
-        self._constructed = False
+        # Turn off magic attributes (see __setattr__ method) during
+        # construction
+        self._allow_magic_attributes = False
+        
         check_arg(name, str, 0, ODEComponent)
         check_arg(parent, ODEComponent, 1, ODEComponent)
 
@@ -80,7 +83,8 @@ class ODEComponent(ODEObject):
         self._is_finalized = False
         self._is_finalizing = False
 
-        self._constructed = True
+        # Turn on magic attributes (see __setattr__ method) 
+        self._allow_magic_attributes = True
 
     @property
     def parent(self):
@@ -568,7 +572,7 @@ class ODEComponent(ODEObject):
 
         # If we are registering a protected attribute or an attribute
         # during construction, just add it to the dict
-        if name[0] == "_" or not self._constructed:
+        if name[0] == "_" or not self._allow_magic_attributes:
             self.__dict__[name] = value
             return
 

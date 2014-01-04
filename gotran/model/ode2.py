@@ -57,8 +57,9 @@ class ODE(ODEComponent):
         # Call super class with itself as parent component
         super(ODE, self).__init__(name, self)
 
-        # Reset constructed attribute
-        self._constructed = False
+        # Turn off magic attributes (see __setattr__ method) during
+        # construction
+        self._allow_magic_attributes = False
 
         # If namespace provided just keep a weak ref
         if ns is None:
@@ -106,14 +107,13 @@ class ODE(ODEComponent):
         self.expanded_expressions = dict()
 
         # Attributes which will be populated later
-        self._body_expressions = None
         self._mass_matrix = None
         
         # Global finalized flag
         self._is_finalized_ode = False
         
-        # Flag that the ODE is constructed
-        self._constructed = True
+        # Turn on magic attributes (see __setattr__ method) 
+        self._allow_magic_attributes = True
 
     @property
     def ns(self):
@@ -135,8 +135,7 @@ class ODE(ODEComponent):
         """
         return self.all_components[self._present_component]
 
-    def add_sub_ode(self, subode, prefix=None, components=None,
-                   skip_duplicated_global_parameters=True):
+    def add_subode(self, subode, prefix="", components=None):
         """
         Load an ODE and add it to the present ODE
 
@@ -147,18 +146,115 @@ class ODE(ODEComponent):
             ODE stored in that file will be loaded. If it is an ODE it will be
             added directly to the present ODE.
         prefix : str (optional)
-            A prefix which all state and parameters are prefixed with. If not
-            given the name of the subode will be used as prefix. If set to
-            empty string, no prefix will be used.
+            A prefix which all state, parameters and intermediates are
+            prefixed with. 
         components : list, tuple of str (optional)
             A list of components which will be extracted and added to the present
             ODE. If not given the whole ODE will be added.
-        skip_duplicated_global_parameters : bool (optional)
-            If true global parameters and variables will be skipped if they exists
-            in the present model.
         """
-        pass
+        
+        components = components or []
+        check_arg(subode, (str, ODE), 0, context=ODE.add_subode)
+        check_arg(prefix, str, 1, context=ODE.add_subode)
+        check_arg(components, list, 2, context=ODE.add_subode, itemtypes=str)
+        
+        # If ode is given directly 
+        if isinstance(subode, ODE):
+            ode = subode
+            
+        else:
+            # If not load external ODE
+            from loadmodel2 import load_ode
+            ode = load_ode(subode)
 
+        # Postfix prefix with "_" if prefix is not ""
+        if prefix and prefix[-1] != "_":
+            prefix += "_"
+        
+        # If extracting only a certain components
+        if components:
+            ode = ode.extract_components(ode.name, *components)
+
+        # Subs for expressions
+        subs = {}
+        old_new_map = {ode:self}
+
+        def add_comp_and_children(added, comp):
+            "Help function to recursively add components to ode"
+            
+            # Add states and parameters
+            for obj in comp.ode_objects:
+                if isinstance(obj, State):
+                    subs[obj.sym] = added.add_state(prefix+obj.name, obj.param)
+                elif isinstance(obj, Parameter):
+
+                    # If adding an ODE parameter and parameter name already
+                    # excists in the present ODE
+                    if comp == ode and str(obj) in self.present_ode_objects:
+
+                        # Skip it and add the registered symbol for substitution
+                        subs[obj.sym] = self.present_ode_objects[str(obj)].obj.sym
+                    else:
+                        subs[obj.sym] = added.add_parameter(\
+                            prefix+obj.name, obj.param)
+
+            # Add child components 
+            for child in comp.children.values():
+                added_child = added.add_component(\
+                    prefix.replace("_", " ") + child.name)
+
+                # Get corresponding component in present ODE
+                old_new_map[child] = added_child
+
+                add_comp_and_children(added_child, child)
+
+        # Recursively add states and parameters
+        add_comp_and_children(self, ode)
+        
+        # Iterate over all components to add expressions
+        for comp_name in ode.all_expr_components_ordered:
+
+            comp = ode.all_components[comp_name]
+
+            comp_comment = "Intermediate expressions for the {0} "\
+                           "component".format(comp.name)
+
+            # Get corresponding component in new ODE
+            added = old_new_map[comp]
+
+            # Iterate over all objects of the component and save only expressions
+            # and comments
+            for obj in comp.ode_objects:
+
+                # If saving an expression
+                if isinstance(obj, Expression):
+
+                    # The new sympy expression
+                    new_expr = obj.expr.xreplace(subs)
+
+                    # If the component is a Markov model
+                    if comp.rates:
+
+                        # Do not save State derivatives
+                        if isinstance(obj, StateDerivative):
+                            continue
+
+                        # Save rate expressions slightly different
+                        elif isinstance(obj, RateExpression):
+
+                            states = obj.states
+                            added._add_single_rate(subs[states[0].sym], \
+                                                   subs[states[1].sym], \
+                                                   new_expr)
+                            continue
+
+                    # All other Expressions
+                    setattr(added, prefix+str(obj), new_expr)
+                        
+                # If saving a comment
+                elif isinstance(obj, Comment) and str(obj) != comp_comment:
+                    added.add_comment(str(obj))
+        
     def save(self, basename=None):
         """
         Save ODE to file
@@ -291,10 +387,58 @@ class ODE(ODEComponent):
 
             dup_obj, dup_comp = duplication.obj, duplication.comp
 
-            # If State, Parameter or DerivativeExpression we always raise an error
+            # If a state is substituted by a state solution 
             if isinstance(dup_obj, State) and isinstance(obj, StateSolution):
                 debug("Reduce state '{0}' to {1}".format(dup_obj, obj.expr))
 
+            # If duplicated object is an ODE Parameter and the added object is
+            # either a State or a Parameter we replace the Parameter. 
+            elif isinstance(dup_obj, Parameter) and dup_comp == self and \
+                     isinstance(obj, (State, Parameter)):
+
+                # Remove the object
+                self.ode_objects.remove(dup_obj)
+
+                # FIXME: Do we need to recreate all expression the objects is used in?
+                # Replace the object from the object_used_in dict and update
+                # the correponding expressions
+                subs = {dup_obj.sym : obj.sym}
+                for expr in self.object_used_in[dup_obj]:
+                    updated_expr = recreate_expression(expr, subs)
+                    self.object_used_in[obj].add(updated_expr)
+
+                    # Exchange and update the dependencies
+                    self.expression_dependencies[expr].remove(dup_obj)
+                    self.expression_dependencies[expr].add(obj)
+
+                    # FIXME: Do not remove the dependencies
+                    #self.expression_dependencies[updated_expr] = \
+                    #            self.expression_dependencies.pop(expr)
+                    self.expression_dependencies[updated_expr] = \
+                                self.expression_dependencies[expr]
+
+                    # Replace the updated expression
+                    old_expr = self.present_ode_objects[\
+                        str(updated_expr)]
+                    
+                    if old_expr.obj != expr:
+                        error("FIXME: Got wrong expression to replace")
+
+                    # Find the index of old expression and exchange it with updated
+                    ind = old_expr.comp.ode_objects.index(expr)
+                    old_expr.comp.ode_objects[ind] = updated_expr
+
+                # Remove information about the replaced objects
+                self.object_used_in.pop(dup_obj)
+
+            # If duplicated object is an ODE Parameter and the added
+            # object is an Intermediate we raise an error.
+            elif isinstance(dup_obj, Parameter) and dup_comp == self and \
+                     isinstance(obj, Expression):
+                error("Cannot replace an ODE parameter with an Expression, "\
+                      "only with Parameters and States.")
+            
+            # If State, Parameter or DerivativeExpression we always raise an error
             elif any(isinstance(oo, (State, Parameter, Time, DerivativeExpression,
                                      AlgebraicExpression, StateSolution)) \
                      for oo in [dup_obj, obj]):
@@ -464,10 +608,156 @@ class ODE(ODEComponent):
             if isinstance(dep_obj, Expression):
 
                 # Collect intermediates to be used in substitutions below
-                expression_subs_dict[dep_obj.sym] = self.expanded_expressions[dep_obj.name]
+                expression_subs_dict[dep_obj.sym] = \
+                                    self.expanded_expressions[dep_obj.name]
 
         return obj.expr.xreplace(expression_subs_dict)
 
+    def extract_components(self, name, *components):
+        """
+        Create an ODE from a number of components
+
+        Returns an ODE including the components
+
+        Argument
+        --------
+        name : str
+            The name of the created ODE
+        components : str
+            A variable len tuple of str describing the components
+        """
+        check_arg(name, str, 0)
+        check_arg(components, tuple, 1, itemtypes=str)
+
+        components = list(components)
+
+        collected_components = set()
+
+        if self.name in components:
+            error("Can only extract sub component of this ODE.")
+        
+        # Collect components and check that the ODE has the components
+        for original_component in self.components:
+
+            # Collect components together with its children
+            if original_component.name in components:
+
+                components.remove(original_component.name)
+                collected_components.update(original_component.components)
+
+        # Check that there are no components left
+        if components:
+            if len(components)>1:
+                error("{0} are not a components of this ODE.".format(\
+                    ", ".join("'{0}'".format(comp) for comp in components)))
+            else:
+                error("'{0}' is not a component of this ODE.".format(\
+                    components[0]))
+        
+        # Collect dependencies
+        included_objects = []
+        dependencies = set()
+        for comp in self.components:
+            if comp in collected_components:
+                included_objects.extend(comp.ode_objects)
+                for expr in comp.ode_objects:
+                    if isinstance(expr, Expression):
+                        dependencies.update(self.expression_dependencies[expr])
+
+        # Remove included objects from dependencies
+        dependencies.difference_update(included_objects)
+
+        # Create return ODE
+        ode = ODE(name)
+
+        # Add dependencies as parameters to return ODE
+        subs = dict()
+        for dep in dependencies:
+            
+            # Skip time
+            if str(dep) in ["t", "time"]:
+                continue
+            subs[dep.sym] = ode.add_parameter(dep.name, dep.param.value)
+
+        # Add components together with states and parameters to the ODE
+        components = sorted(collected_components, reverse=True)
+        old_new_map = dict()
+        
+        def add_comp_and_children(comp, components, parent):
+            "Help function to add recursively components to ode"
+
+            # Add component 
+            added = parent.add_component(comp.name)
+            old_new_map[comp] = added
+
+            # Add states and parameters
+            for obj in comp.ode_objects:
+                if isinstance(obj, State):
+                    added.add_state(obj.name, obj.param)
+                elif isinstance(obj, Parameter):
+                    added.add_parameter(obj.name, obj.param)
+
+            # Remove the added component
+            components.remove(comp)
+
+            for child in comp.children.values():
+                add_comp_and_children(child, components, added)
+        
+        # Add component recursivly
+        while components:
+            add_comp_and_children(components[-1], components, ode)
+
+        # Iterate over all components to add expressions
+        for comp_name in self.all_expr_components_ordered:
+
+            comp = self.all_components[comp_name]
+
+            # If we should add component
+            if comp not in collected_components:
+                continue
+                
+            comp_comment = "Intermediate expressions for the {0} "\
+                           "component".format(comp.name)
+
+            # Get corresponding component in new ODE
+            added = old_new_map[comp]
+
+            # Iterate over all objects of the component and save only expressions
+            # and comments
+            for obj in comp.ode_objects:
+
+                # If saving an expression
+                if isinstance(obj, Expression):
+
+                    # The new sympy expression
+                    new_expr = obj.expr.xreplace(subs)
+
+                    # If the component is a Markov model
+                    if comp.rates:
+
+                        # Do not save State derivatives
+                        if isinstance(obj, StateDerivative):
+                            continue
+
+                        # Save rate expressions slightly different
+                        elif isinstance(obj, RateExpression):
+
+                            states = obj.states
+                            added._add_single_rate(states[0].sym, \
+                                                   states[1].sym, new_expr)
+                            continue
+
+                    # All other Expressions
+                    setattr(added, str(obj), new_expr)
+                        
+                # If saving a comment
+                elif isinstance(obj, Comment) and str(obj) != comp_comment:
+                    added.add_comment(str(obj))
+
+        # Finalize ode and return it
+        ode.finalize()
+        return ode
+    
     @property
     def mass_matrix(self):
         """
@@ -523,7 +813,7 @@ class ODE(ODEComponent):
             def_list += sorted([repr(state.param) for state in comp.full_states])
             def_list += sorted([repr(param.param) for param in comp.parameters])
             def_list += [str(expr.expr) for expr in comp.intermediates]
-        
+
             # Sort state expressions wrt stringified state names
             def_list += [str(expr.expr) for expr in sorted(\
                 self.state_expressions, cmp=lambda o0, o1: cmp(\

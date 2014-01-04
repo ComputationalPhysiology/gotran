@@ -12,7 +12,7 @@ from gotran.common import GotranException
 
 from gotran.model.ode2 import *
 from gotran.model.loadmodel2 import *
-from sympy import Symbol, Derivative
+from sympy import Symbol, Derivative, Matrix
 
 suppress_logging()
 
@@ -105,11 +105,16 @@ class TestODEComponent(unittest.TestCase):
         nada.rates[nada.q, nada.p] = 3.0
         nada.rates[nada.p, nada.q] = 4.0
         
-        
-        
         self.assertEqual(ode.present_component, nada)
         ode.finalize()
         self.assertTrue(ode.is_complete)
+        self.assertTrue(ode.is_dae)
+
+        # Test Mass matrix
+        vector = ode.mass_matrix*Matrix([1,1,1,1,1,1,1,1,1])
+        self.assertEqual((0,0), (vector[2], vector[5]))
+        self.assertEqual(sum(ode.mass_matrix), 7)
+        self.assertEqual(sum(vector), 7)
 
         self.assertEqual("".join(s.name for s in ode.full_states), "jiklmorsq")
         self.assertEqual(ode.present_component, ode)

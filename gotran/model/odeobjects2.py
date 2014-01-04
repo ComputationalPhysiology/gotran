@@ -371,6 +371,7 @@ class IndexedObject(ODEObject):
         self._basename = basename
         self._indices = orig_indices
         self._sym = sp.Symbol(name)
+        self._shape = shape
 
     @property
     def basename(self):
@@ -383,6 +384,10 @@ class IndexedObject(ODEObject):
     @property
     def sym(self):
         return self._sym
+
+    @property
+    def shape(self):
+        return self._shape
 
 class Argument(ODEValueObject):
     """
