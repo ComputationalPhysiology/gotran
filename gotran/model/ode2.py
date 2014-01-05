@@ -33,7 +33,6 @@ from gotran.common import error, debug, check_arg, check_kwarg, scalars
 from gotran.model.odeobjects2 import *
 from gotran.model.expressions2 import *
 from gotran.model.odecomponent import *
-from gotran.model.utils import PresentObjTuple
 
 class ODE(ODEComponent):
     """
@@ -74,6 +73,9 @@ class ODE(ODEComponent):
         self._time = time
         self.ode_objects.append(time)
 
+        # Add to object to component map
+        self.object_component = {self._time : self}
+
         # Namespace, which can be used to eval an expression
         self.ns.update({"t":time.sym, "time":time.sym})
         
@@ -90,10 +92,7 @@ class ODE(ODEComponent):
 
         # A dict with the present ode objects
         # NOTE: hashed by name so duplicated expressions are not stored
-        self.present_ode_objects = {}
-        self.present_ode_objects["t"] = PresentObjTuple(self._time, self)
-        self.present_ode_objects["time"] = PresentObjTuple(self._time, self)
-        #self.present_ode_objects = dict(t=(self._time, self), time=(self._time, self))
+        self.present_ode_objects = dict(t=self._time, time=self._time)
 
         # Keep track of duplicated expressions
         self.duplicated_expressions = defaultdict(list)
@@ -193,7 +192,7 @@ class ODE(ODEComponent):
                     if comp == ode and str(obj) in self.present_ode_objects:
 
                         # Skip it and add the registered symbol for substitution
-                        subs[obj.sym] = self.present_ode_objects[str(obj)].obj.sym
+                        subs[obj.sym] = self.present_ode_objects[str(obj)].sym
                     else:
                         subs[obj.sym] = added.add_parameter(\
                             prefix+obj.name, obj.param)
@@ -379,13 +378,13 @@ class ODE(ODEComponent):
             error("Cannot register a StateExpression, the ODE is finalized")
 
         # Check for existing object in the ODE
-        duplication = self.present_ode_objects.get(obj.name)
+        dup_obj = self.present_ode_objects.get(obj.name)
 
         # If object with same name is already registered in the ode we
         # need to figure out what to do
-        if duplication:
+        if dup_obj:
 
-            dup_obj, dup_comp = duplication.obj, duplication.comp
+            dup_comp = self.object_component[dup_obj]
 
             # If a state is substituted by a state solution 
             if isinstance(dup_obj, State) and isinstance(obj, StateSolution):
@@ -417,16 +416,10 @@ class ODE(ODEComponent):
                     self.expression_dependencies[updated_expr] = \
                                 self.expression_dependencies[expr]
 
-                    # Replace the updated expression
-                    old_expr = self.present_ode_objects[\
-                        str(updated_expr)]
-                    
-                    if old_expr.obj != expr:
-                        error("FIXME: Got wrong expression to replace")
-
                     # Find the index of old expression and exchange it with updated
-                    ind = old_expr.comp.ode_objects.index(expr)
-                    old_expr.comp.ode_objects[ind] = updated_expr
+                    old_comp = self.object_component[expr]
+                    ind = old_comp.ode_objects.index(expr)
+                    old_comp.ode_objects[ind] = updated_expr
 
                 # Remove information about the replaced objects
                 self.object_used_in.pop(dup_obj)
@@ -458,7 +451,8 @@ class ODE(ODEComponent):
                 dup_objects.append(obj)
 
         # Update global information about ode object
-        self.present_ode_objects[obj.name] = PresentObjTuple(obj, comp)
+        self.present_ode_objects[obj.name] = obj
+        self.object_component[obj] = comp
         self.ns.update({obj.name : obj.sym})
 
         # If Expression
@@ -554,8 +548,8 @@ class ODE(ODEComponent):
             return False
 
         # Get the expr and dependent variable objects
-        expr_obj = self.present_ode_objects[sympycode(der_expr.args[0])].obj
-        var_obj = self.present_ode_objects[sympycode(der_expr.args[1])].obj
+        expr_obj = self.present_ode_objects[sympycode(der_expr.args[0])]
+        var_obj = self.present_ode_objects[sympycode(der_expr.args[1])]
 
         # If the dependent variable is time and the expression is a state
         # variable we raise an error as the user should already have created
@@ -596,9 +590,6 @@ class ODE(ODEComponent):
             if dep_obj is None:
                 error("The symbol '{0}' is not declared within the '{1}' "\
                       "ODE.".format(sym, self.name))
-
-            # Expand dep_obj
-            dep_obj, dep_comp = dep_obj.obj, dep_obj.comp
 
             # Store object dependencies
             self.expression_dependencies[obj].add(dep_obj)

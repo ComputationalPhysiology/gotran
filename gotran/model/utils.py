@@ -17,7 +17,7 @@
 
 __all__ = ["ode_primitives", "INTERMEDIATE", "ALGEBRAIC_EXPRESSION", \
            "DERIVATIVE_EXPRESSION", "STATE_SOLUTION_EXPRESSION", \
-           "special_expression", "PresentObjTuple", "iter_objects", \
+           "special_expression", "iter_objects", \
            "ode_objects", "ode_components", "ODEObjectList", "RateDict"]
 
 # System imports
@@ -90,16 +90,6 @@ def special_expression(name, root):
         return state_comp.obj, STATE_SOLUTION_EXPRESSION
 
     return None, INTERMEDIATE
-
-# Create a weak referenced tuple class
-class PresentObjTuple(object):
-    def __init__(self, obj, comp):
-        self.obj = obj
-        self._comp = weakref.ref(comp)
-
-    @property
-    def comp(self):
-        return self._comp()
 
 class iter_objects(object):
     """

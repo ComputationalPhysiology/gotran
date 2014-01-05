@@ -364,7 +364,6 @@ class ODEComponent(ODEObject):
 
             if der_expr is None:
                 error("{0} is not registered in this ODE".format(name))
-            der_expr = der_expr.obj
 
         if isinstance(dep_var, (AppliedUndef, sp.Symbol)):
             name = sympycode(dep_var)
@@ -372,7 +371,6 @@ class ODEComponent(ODEObject):
 
             if dep_var is None:
                 error("{0} is not registered in this ODE".format(name))
-            dep_var = dep_var.obj
 
         # Check if der_expr is a State
         if isinstance(der_expr, State):
@@ -604,7 +602,7 @@ class ODEComponent(ODEObject):
                 self.add_intermediate(name, value)
                 
             else:
-                self.add_derivative(expr_obj.obj, var_obj.obj, value)
+                self.add_derivative(expr_obj, var_obj, value)
 
         elif TYPE == STATE_SOLUTION_EXPRESSION:
             self.add_state_solution(expr, value)
@@ -618,7 +616,7 @@ class ODEComponent(ODEObject):
             if var_obj is None:
                 self.add_intermediate(name, value)
             else:
-                self.add_algebraic(var_obj.obj, value)
+                self.add_algebraic(var_obj, value)
             
     def __call__(self, name):
         """
@@ -654,12 +652,10 @@ class ODEComponent(ODEObject):
 
         if isinstance(state, AppliedUndef):
             name = sympycode(state)
-            state_comp = self.root.present_ode_objects.get(name)
+            state = self.root.present_ode_objects.get(name)
 
-            if state_comp is None:
+            if state is None:
                 error("{0} is not registered in this ODE".format(name))
-
-            state, comp = state_comp.obj, state_comp.comp
 
         check_arg(state, allowed, 0)
 
