@@ -85,9 +85,9 @@ def special_expression(name, root):
     if der_expr:
         return der_expr, DERIVATIVE_EXPRESSION
 
-    state_comp = root.present_ode_objects.get(name)
-    if state_comp and isinstance(state_comp.obj, State):
-        return state_comp.obj, STATE_SOLUTION_EXPRESSION
+    state = root.present_ode_objects.get(name)
+    if state and isinstance(state, State):
+        return state, STATE_SOLUTION_EXPRESSION
 
     return None, INTERMEDIATE
 
