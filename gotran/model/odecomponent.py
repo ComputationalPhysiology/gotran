@@ -677,6 +677,10 @@ class ODEComponent(ODEObject):
         
         self._check_reserved_wordings(obj)
 
+        # Register the object in the root ODE,
+        # (here all duplication checks and expression expansions are done)
+        self.root.register_ode_object(obj, self)
+
         # If registering a StateExpression
         if isinstance(obj, StateExpression):
 
@@ -714,10 +718,6 @@ class ODEComponent(ODEObject):
             # Register symbol, overwrite any already excisting symbol
             else:
                 self.__dict__[obj.name] = obj.sym
-
-        # Register the object in the root ODE,
-        # (here all duplication checks and expression expansions are done)
-        self.root.register_ode_object(obj, self)
 
         # Register the object
         self.ode_objects.append(obj)
