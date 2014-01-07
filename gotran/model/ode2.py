@@ -393,7 +393,7 @@ class ODE(ODEComponent):
             # If duplicated object is an ODE Parameter and the added object is
             # either a State or a Parameter we replace the Parameter. 
             elif isinstance(dup_obj, Parameter) and dup_comp == self and \
-                     isinstance(obj, (State, Parameter)):
+                     comp != self and isinstance(obj, (State, Parameter)):
 
                 # Remove the object
                 self.ode_objects.remove(dup_obj)
@@ -402,27 +402,32 @@ class ODE(ODEComponent):
                 # Replace the object from the object_used_in dict and update
                 # the correponding expressions
                 subs = {dup_obj.sym : obj.sym}
-                for expr in self.object_used_in[dup_obj]:
-                    updated_expr = recreate_expression(expr, subs)
-                    self.object_used_in[obj].add(updated_expr)
+                subs = {}
 
-                    # Exchange and update the dependencies
-                    self.expression_dependencies[expr].remove(dup_obj)
-                    self.expression_dependencies[expr].add(obj)
-
-                    # FIXME: Do not remove the dependencies
-                    #self.expression_dependencies[updated_expr] = \
-                    #            self.expression_dependencies.pop(expr)
-                    self.expression_dependencies[updated_expr] = \
-                                self.expression_dependencies[expr]
-
-                    # Find the index of old expression and exchange it with updated
-                    old_comp = self.object_component[expr]
-                    ind = old_comp.ode_objects.index(expr)
-                    old_comp.ode_objects[ind] = updated_expr
-
-                # Remove information about the replaced objects
-                self.object_used_in.pop(dup_obj)
+                # Recursively replace object dependencies
+                self._replace_object(dup_obj, obj, subs)
+                
+                #for expr in self.object_used_in[dup_obj]:
+                #    updated_expr = recreate_expression(expr, subs)
+                #    self.object_used_in[obj].add(updated_expr)
+                #
+                #    # Exchange and update the dependencies
+                #    self.expression_dependencies[expr].remove(dup_obj)
+                #    self.expression_dependencies[expr].add(obj)
+                #
+                #    # FIXME: Do not remove the dependencies
+                #    #self.expression_dependencies[updated_expr] = \
+                #    #            self.expression_dependencies.pop(expr)
+                #    self.expression_dependencies[updated_expr] = \
+                #                self.expression_dependencies[expr]
+                #
+                #    # Find the index of old expression and exchange it with updated
+                #    old_comp = self.object_component[expr]
+                #    ind = old_comp.ode_objects.index(expr)
+                #    old_comp.ode_objects[ind] = updated_expr
+                #
+                ## Remove information about the replaced objects
+                #self.object_used_in.pop(dup_obj)
 
             # If duplicated object is an ODE Parameter and the added
             # object is an Intermediate we raise an error.
@@ -489,6 +494,41 @@ class ODE(ODEComponent):
                 error("A state solution cannot have been used in "\
                       "any previous expressions. {0} is used in: {1}".format(\
                           obj.state, used_in))
+
+    def _replace_object(self, old_obj, replaced_obj, replace_dicts):
+        """
+        Recursivley replace an expression by recreating the expression
+        using passed replace dicts
+        """
+
+        # Iterate over expressions obj is used in and replace these
+        replace_dicts[old_obj.sym] = replaced_obj.sym
+        for old_expr in self.object_used_in[old_obj]:
+            replaced_expr = recreate_expression(old_expr, replace_dicts)
+            self.object_used_in[replaced_obj].add(replaced_expr)
+
+            # Exchange and update the dependencies
+            self.expression_dependencies[old_expr].remove(old_obj)
+            self.expression_dependencies[old_expr].add(replaced_obj)
+
+            # FIXME: Do not remove the dependencies
+            #self.expression_dependencies[updated_expr] = \
+            #            self.expression_dependencies.pop(expr)
+            self.expression_dependencies[replaced_expr] = \
+                        self.expression_dependencies[old_expr]
+
+            # Find the index of old expression and exchange it with updated
+            old_comp = self.object_component[old_expr]
+
+            # Get indexed of old expr and overwrite it with new expr
+            ind = old_comp.ode_objects.index(old_expr)
+            old_comp.ode_objects[ind] = replaced_expr
+
+            # Update the expressions this expression is used in
+            self._replace_object(old_expr, replaced_expr, replace_dicts)
+
+        # Remove information about the replaced objects
+        self.object_used_in.pop(old_obj)
 
     def _handle_expr_component(self, comp, expr):
         """
