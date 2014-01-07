@@ -1,0 +1,96 @@
+# Saved Gotran model
+
+parameters(T=ScalarParam(310),
+           F=ScalarParam(96485.3415),
+           K_o=ScalarParam(5.4),
+           V_c=ScalarParam(0.016404),
+           Ca_o=ScalarParam(2),
+           Cm=ScalarParam(0.185),
+           E_Na=ScalarParam(66.5342893767),
+           Ca_i=ScalarParam(0.0002),
+           V=ScalarParam(-86.2),
+           R=ScalarParam(8314.472))
+
+parameters("Fast sodium current",
+           g_Na=ScalarParam(14.838))
+
+states("Fast sodium current", "m gate",
+       m=ScalarParam(0))
+
+states("Fast sodium current", "h gate",
+       h=ScalarParam(0.75))
+
+states("Fast sodium current", "j gate",
+       j=ScalarParam(0.75))
+
+states("Sodium dynamics",
+       Na_i=ScalarParam(11.6))
+
+parameters("Sodium dynamics",
+           Na_o=ScalarParam(140))
+
+parameters("Sodium background current",
+           g_bna=ScalarParam(0.00029))
+
+parameters("Sodium potassium pump current",
+           K_mNa=ScalarParam(40),
+           K_mk=ScalarParam(1),
+           P_NaK=ScalarParam(1.362))
+
+parameters("Sodium calcium exchanger current",
+           K_NaCa=ScalarParam(1000),
+           K_sat=ScalarParam(0.1),
+           Km_Ca=ScalarParam(1.38),
+           Km_Nai=ScalarParam(87.5),
+           alpha=ScalarParam(2.5),
+           gamma=ScalarParam(0.35))
+
+component("Fast sodium current")
+i_Na = g_Na*(m*m*m)*(V - E_Na)*h*j
+
+component("Fast sodium current", "m gate")
+m_inf = 1.0/((1 + 0.00184221158117*exp(-0.110741971207*V))*(1 +\
+    0.00184221158117*exp(-0.110741971207*V)))
+alpha_m = 1.0/(1 + exp(-12 - V/5))
+beta_m = 0.1/(1 + exp(7 + V/5)) + 0.1/(1 + 0.778800783071*exp(0.005*V))
+tau_m = alpha_m*beta_m
+dm_dt = (m_inf - m)/tau_m
+
+component("Fast sodium current", "h gate")
+h_inf = 1.0/((1 + 15212.5932857*exp(0.134589502019*V))*(1 +\
+    15212.5932857*exp(0.134589502019*V)))
+alpha_h = 4.43126792958e-07*exp(-0.147058823529*V)/(1 +\
+    2.35385266837e+17*exp(1.0*V))
+beta_h = (310000*exp(0.3485*V) + 2.7*exp(0.079*V))/(1 +\
+    2.35385266837e+17*exp(1.0*V)) + 0.77*(1 - 1/(1 +\
+    2.35385266837e+17*exp(1.0*V)))/(0.13 +\
+    0.0497581410839*exp(-0.0900900900901*V))
+tau_h = 1.0/(alpha_h + beta_h)
+dh_dt = (h_inf - h)/tau_h
+
+component("Fast sodium current", "j gate")
+j_inf = 1.0/((1 + 15212.5932857*exp(0.134589502019*V))*(1 +\
+    15212.5932857*exp(0.134589502019*V)))
+alpha_j = (37.78 + V)*(-6.948e-06*exp(-0.04391*V) - 25428*exp(0.2444*V))/((1 +\
+    2.35385266837e+17*exp(1.0*V))*(1 + 50262745826.0*exp(0.311*V)))
+beta_j = 0.6*(1 - 1/(1 + 2.35385266837e+17*exp(1.0*V)))*exp(0.057*V)/(1 +\
+    0.0407622039784*exp(-0.1*V)) + 0.02424*exp(-0.01052*V)/((1 +\
+    2.35385266837e+17*exp(1.0*V))*(1 + 0.0039608683399*exp(-0.1378*V)))
+tau_j = 1.0/(alpha_j + beta_j)
+dj_dt = (j_inf - j)/tau_j
+
+component("Sodium background current")
+i_b_Na = g_bna*(V - E_Na)
+
+component("Sodium potassium pump current")
+i_NaK = K_o*P_NaK*Na_i/((K_mNa + Na_i)*(K_mk + K_o)*(1 +\
+    0.1245*exp(-0.1*F*V/(R*T)) + 0.0353*exp(-F*V/(R*T))))
+
+component("Sodium calcium exchanger current")
+i_NaCa = K_NaCa*(-Ca_i*alpha*(Na_o*Na_o*Na_o)*exp(F*V*(-1 + gamma)/(R*T)) +\
+    Ca_o*(Na_i*Na_i*Na_i)*exp(F*V*gamma/(R*T)))/((1 + K_sat*exp(F*V*(-1 +\
+    gamma)/(R*T)))*(Km_Ca + Ca_o)*((Na_o*Na_o*Na_o) +\
+    (Km_Nai*Km_Nai*Km_Nai)))
+
+component("Sodium dynamics")
+dNa_i_dt = Cm*(-3*i_NaCa - i_b_Na - 3*i_NaK - i_Na)/(F*V_c)
