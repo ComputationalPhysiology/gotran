@@ -152,6 +152,8 @@ class ODE(ODEComponent):
             ODE. If not given the whole ODE will be added.
         """
         
+        timer = Timer("Load sub ode")
+        
         components = components or []
         check_arg(subode, (str, ODE), 0, context=ODE.add_subode)
         check_arg(prefix, str, 1, context=ODE.add_subode)
@@ -183,24 +185,45 @@ class ODE(ODEComponent):
             
             # Add states and parameters
             for obj in comp.ode_objects:
+                
+                # Check if obj already excists as a ODE parameter
+                old_obj = self.present_ode_objects.get(str(obj))
+
+                if old_obj and self.object_component[old_obj] == self:
+                    new_name = obj.name
+                else:
+                    new_name = prefix+obj.name
+                
                 if isinstance(obj, State):
-                    subs[obj.sym] = added.add_state(prefix+obj.name, obj.param)
+                    subs[obj.sym] = added.add_state(new_name, obj.param)
+                    
                 elif isinstance(obj, Parameter):
 
-                    # If adding an ODE parameter and parameter name already
-                    # excists in the present ODE
-                    if comp == ode and str(obj) in self.present_ode_objects:
+                    # If adding an ODE parameter
+                    if comp == ode:
 
-                        # Skip it and add the registered symbol for substitution
-                        subs[obj.sym] = self.present_ode_objects[str(obj)].sym
+                        # And parameter name already excists in the present ODE
+                        if str(obj) in self.present_ode_objects:
+
+                            # Skip it and add the registered symbol for
+                            # substitution
+                            subs[obj.sym] = self.present_ode_objects[\
+                                str(obj)].sym
+
+                        else:
+
+                            # If not already present just add unprefixed name
+                            subs[obj.sym] = added.add_parameter(\
+                                obj.name, obj.param)
+
                     else:
+
                         subs[obj.sym] = added.add_parameter(\
                             prefix+obj.name, obj.param)
 
             # Add child components 
             for child in comp.children.values():
-                added_child = added.add_component(\
-                    prefix.replace("_", " ") + child.name)
+                added_child = added.add_component(child.name)
 
                 # Get corresponding component in present ODE
                 old_new_map[child] = added_child
@@ -247,9 +270,89 @@ class ODE(ODEComponent):
                                                    new_expr)
                             continue
 
-                    # All other Expressions
-                    setattr(added, prefix+str(obj), new_expr)
+                    # If no prefix we just add the expression by using setattr
+                    # magic
+                    if prefix == "":
+                        setattr(added, str(obj), new_expr)
+                        new_sym = added.ode_objects.get(obj.name).sym
+
+                    elif isinstance(obj, (StateExpression, StateSolution)):
+
+                        # Get new state sym
+                        state = subs[obj.state.sym]
+
+                        if isinstance(obj, AlgebraicExpression):
+                            subs[obj.sym] = added.add_algebraic(state, new_expr)
+
+                        elif isinstance(obj, StateDerivative):
+                            subs[obj.sym] = added.add_derivative(\
+                                state, added.t, new_expr)
+                            
+                        elif isinstance(obj, StateSolution):
+                            subs[obj.sym] = added.add_state_solution(\
+                                state, new_expr)
+                        else:
+                            error("Should not reach here...")
+                            
+                    # Derivatives are tricky. Here the der expr and dep var
+                    # need to be registered in the ODE already. But they can
+                    # be registered with and without prefix, so we need to
+                    # check that.
+                    elif isinstance(obj, Derivatives):
+
+                        # Get der_expr
+                        der_expr = self.root.present_ode_objects.get(obj.der_expr.name)
+
+                        if der_expr is None:
+
+                            # If not found try prefixed version
+                            der_expr = self.root.present_ode_objects.get(\
+                                prefix+obj.der_expr.name)
+
+                            if der_expr is None:
+                                if prefix:
+                                    error("Could not find expression: "\
+                                          "({0}){1} while adding "\
+                                          "derivative".format(\
+                                              prefix, obj.der_expr))
+                                else:
+                                    error("Could not find expression: "\
+                                          "{1} while adding derivative".format(\
+                                              obj.der_expr))
+                            
+                        dep_var = self.root.present_ode_objects.get(obj.dep_var.name)
+
+                        if isinstance(dep_var, Time):
+                            dep_var = self._time
+
+                        elif dep_var is None:
+
+                            # If not found try prefixed version
+                            dep_var = self.root.present_ode_objects.get(\
+                                prefix+obj.dep_var.name)
+
+                            if dep_var is None:
+                                if prefix:
+                                    error("Could not find expression: "\
+                                          "({0}){1} while adding "\
+                                          "derivative".format(\
+                                              prefix, obj.dep_var))
+                                else:
+                                    error("Could not find expression: "\
+                                          "{1} while adding derivative".format(\
+                                              obj.dep_var))
                         
+                        subs[obj.sym] = added.add_derivative(\
+                            der_expr, dep_var, new_expr)
+
+                    elif isinstance(obj, Intermediate):
+
+                        subs[obj.sym] = added.add_intermediate(\
+                            prefix+obj.name, new_expr)
+
+                    else:
+                        error("Should not reach here!")
+
                 # If saving a comment
                 elif isinstance(obj, Comment) and str(obj) != comp_comment:
                     added.add_comment(str(obj))
@@ -264,6 +367,8 @@ class ODE(ODEComponent):
             The basename of the file which the ode will be saved to, if not
             given the basename will be the same as the name of the ode.
         """
+
+        timer = Timer("Save "+ self.name)
 
         if not self._is_finalized_ode:
             error("ODE need to be finalized to be saved to file.")
@@ -395,6 +500,8 @@ class ODE(ODEComponent):
             elif isinstance(dup_obj, Parameter) and dup_comp == self and \
                      comp != self and isinstance(obj, (State, Parameter)):
 
+                timer = Timer("Replace objects")
+
                 # Remove the object
                 self.ode_objects.remove(dup_obj)
 
@@ -502,15 +609,31 @@ class ODE(ODEComponent):
         """
 
         # Iterate over expressions obj is used in and replace these
+        self.present_ode_objects[old_obj.name] = replaced_obj
         replace_dicts[old_obj.sym] = replaced_obj.sym
+        self.object_component[replaced_obj] = self.object_component.pop(old_obj)
+        
         for old_expr in self.object_used_in[old_obj]:
+
+            # Recreate expression
             replaced_expr = recreate_expression(old_expr, replace_dicts)
+
+            # Update used_in dict
             self.object_used_in[replaced_obj].add(replaced_expr)
 
-            # Exchange and update the dependencies
-            self.expression_dependencies[old_expr].remove(old_obj)
-            self.expression_dependencies[old_expr].add(replaced_obj)
+            # Update all object used in
+            for dep in self.expression_dependencies[old_expr]:
+                if isinstance(dep, Comment):
+                    continue
+                if old_expr in self.object_used_in[dep]:
+                    self.object_used_in[dep].remove(old_expr)
+                    self.object_used_in[dep].add(replaced_expr)
 
+            # Exchange and update the dependencies
+            if old_obj in self.expression_dependencies[old_expr]:
+                self.expression_dependencies[old_expr].remove(old_obj)
+            self.expression_dependencies[old_expr].add(replaced_obj)
+            
             # FIXME: Do not remove the dependencies
             #self.expression_dependencies[updated_expr] = \
             #            self.expression_dependencies.pop(expr)
