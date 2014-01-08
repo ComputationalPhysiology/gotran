@@ -320,8 +320,5 @@ class TestODE(unittest.TestCase):
 
         ode.save()
 
-        gotran.list_timings()
-        
-        
 if __name__ == "__main__":
     unittest.main()
