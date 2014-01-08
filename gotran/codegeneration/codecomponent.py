@@ -236,7 +236,7 @@ class CodeComponent(ODEComponent):
                             for result_expr in result_exprs)
 
         # The expanded result expressions
-        expanded_result_exprs = [self.root.expanded_expressions[obj.name] \
+        expanded_result_exprs = [self.root.expanded_expression(obj) \
                                  for obj in orig_result_expressions]
 
         # Collect results and body_expressions

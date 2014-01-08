@@ -103,7 +103,7 @@ class ODE(ODEComponent):
         self.object_used_in = defaultdict(set)
 
         # All expanded expressions
-        self.expanded_expressions = dict()
+        self._expanded_expressions = dict()
 
         # Attributes which will be populated later
         self._mass_matrix = None
@@ -589,8 +589,18 @@ class ODE(ODEComponent):
             if expression_added:
                 obj._recount()
 
-            # Expand the Expression
-            self.expanded_expressions[obj.name] = self._expand_expression(obj)
+            # Get expression dependencies
+            for sym in symbols_from_expr(obj.expr, include_derivatives=True):
+
+                dep_obj = self.present_ode_objects[sympycode(sym)]
+
+                if dep_obj is None:
+                    error("The symbol '{0}' is not declared within the '{1}' "\
+                          "ODE.".format(sym, self.name))
+
+                # Store object dependencies
+                self.expression_dependencies[obj].add(dep_obj)
+                self.object_used_in[dep_obj].add(obj)
 
             # If the expression is a StateSolution the state cannot have
             # been used previously
@@ -694,6 +704,13 @@ class ODE(ODEComponent):
         Returns True if an expression was actually added
         """
 
+        # Try accessing already registered derivative expressions
+        der_expr_obj = self.present_ode_objects.get(sympycode(der_expr))
+
+        # If excist continue
+        if der_expr_obj:
+            return False
+
         if not isinstance(der_expr.args[0], AppliedUndef):
             error("Can only register Derivatives of allready registered "\
             "Expressions. Got: {0}".format(sympycode(der_expr.args[0])))
@@ -701,13 +718,6 @@ class ODE(ODEComponent):
         if not isinstance(der_expr.args[1], (AppliedUndef, sp.Symbol)):
             error("Can only register Derivatives with a single dependent "\
                   "variabe. Got: {0}".format(sympycode(der_expr.args[1])))
-
-        # Try accessing already registered derivative expressions
-        der_expr_obj = self.present_ode_objects.get(sympycode(der_expr))
-
-        # If excist continue
-        if der_expr_obj:
-            return False
 
         # Get the expr and dependent variable objects
         expr_obj = self.present_ode_objects[sympycode(der_expr.args[0])]
@@ -736,35 +746,41 @@ class ODE(ODEComponent):
 
         return True
 
-    def _expand_expression(self, obj):
+    def expanded_expression(self, expr):
+        """
+        Return the expanded expression.
 
-        timer = Timer("Expanding expression")
+        The returned expanded expression consists of the original
+        expression given by it basics objects (States, Parameters and
+        IndexedObjects)
+        """
 
-        # FIXME: We need to wait for the expanssion of all expressions...
-        assert isinstance(obj, Expression)
+        timer = Timer("Expand expression")
 
-        # Iterate over dependencies in the expression
-        expression_subs_dict = {}
-        for sym in symbols_from_expr(obj.expr, include_derivatives=True):
+        check_arg(expr, Expression)
 
-            dep_obj = self.present_ode_objects[sympycode(sym)]
+        # First check cache
+        exp_expr = self._expanded_expressions.get(expr)
 
-            if dep_obj is None:
-                error("The symbol '{0}' is not declared within the '{1}' "\
-                      "ODE.".format(sym, self.name))
+        if exp_expr is not None:
+            return exp_expr
 
-            # Store object dependencies
-            self.expression_dependencies[obj].add(dep_obj)
-            self.object_used_in[dep_obj].add(obj)
+        # If not recursively expand the expression
+        der_subs = {}
+        subs = {}
+        for obj in self.expression_dependencies[expr]:
 
-            # Expand dependent expressions
-            if isinstance(dep_obj, Expression):
+            if isinstance(obj, Derivatives):
+                der_subs[obj.sym] = self.expanded_expression(obj)
 
-                # Collect intermediates to be used in substitutions below
-                expression_subs_dict[dep_obj.sym] = \
-                                    self.expanded_expressions[dep_obj.name]
+            elif isinstance(obj, Expression):
+                subs[obj.sym] = self.expanded_expression(obj)
 
-        return obj.expr.xreplace(expression_subs_dict)
+        # Do the substitution
+        exp_expr = expr.expr.xreplace(der_subs).xreplace(subs)
+        self._expanded_expressions[expr] = exp_expr
+        
+        return exp_expr
 
     def extract_components(self, name, *components):
         """
