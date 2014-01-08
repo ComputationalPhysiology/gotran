@@ -20,7 +20,7 @@ suppress_logging()
 
 class TestODE(unittest.TestCase):
 
-    def xtest_creation(self):
+    def test_creation(self):
 
         # Adding a phoney ODE
         ode = ODE("test")
@@ -169,7 +169,7 @@ class TestODE(unittest.TestCase):
             self.assertEqual(type(obj), type(loaded_obj))
             self.assertAlmostEqual(loaded_obj.param.value, obj.param.value)
 
-    def xtest_extract_components(self):
+    def test_extract_components(self):
 
         ode = load_ode("tentusscher_2004_mcell_updated.ode")
 
@@ -211,7 +211,7 @@ class TestODE(unittest.TestCase):
         
         ode_from_file = load_ode("tentusscher_2004_mcell_updated")
         
-        ode = ODE("Tentusscher_2004")
+        ode = ODE("Tentusscher_2004_merged")
 
         # Add parameters and states
         ode.add_parameters(Na_i=ScalarParam(11.6),
@@ -317,6 +317,8 @@ class TestODE(unittest.TestCase):
 
             self.assertEqual(type(obj), type(loaded_obj))
             self.assertAlmostEqual(loaded_obj.param.value, obj.param.value)
+
+        ode.save()
 
         gotran.list_timings()
         

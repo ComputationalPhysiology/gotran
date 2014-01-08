@@ -218,8 +218,7 @@ class ODE(ODEComponent):
 
                     else:
 
-                        subs[obj.sym] = added.add_parameter(\
-                            prefix+obj.name, obj.param)
+                        subs[obj.sym] = added.add_parameter(new_name, obj.param)
 
             # Add child components 
             for child in comp.children.values():
