@@ -23,7 +23,8 @@ __all__ = ["JacobianComponent", "JacobianActionComponent", \
            "linearized_derivatives", "jacobian_expressions", \
            "jacobian_action_expressions", "factorized_jacobian_expressions",
            "forward_backward_subst_expressions",\
-           "diagonal_jacobian_expressions", "rhs_expressions"]
+           "diagonal_jacobian_expressions", "rhs_expressions", \
+           "monitored_expressions"]
 
 # System imports
 import sys
@@ -45,12 +46,12 @@ from gotran.codegeneration.sympy_cse import cse
 
 def rhs_expressions(ode, result_name="dy"):
     """
-    Return a right hand side code component 
+    Return a code component with body expressions for the right hand side
 
     Arguments
     ---------
     ode : ODE
-        The finalized ODE for which the ith derivative should be computed
+        The finalized ODE
     result_name : str
         The name of the variable storing the rhs result
     """
@@ -61,6 +62,36 @@ def rhs_expressions(ode, result_name="dy"):
               "not finalized")
         
     return CodeComponent("RHSComponent", ode, **{result_name:ode.state_expressions})
+
+def monitored_expressions(ode, monitored, result_name="monitored"):
+    """
+    Return a code component with body expressions to calculate monitored expressions
+
+    Arguments
+    ---------
+    ode : ODE
+        The finalized ODE for which the monitored expression should be computed
+    monitored : tuple, list
+        A tuple/list of strings containing the name of the monitored expressions
+    result_name : str
+        The name of the variable storing the rhs result
+    """
+
+    check_arg(ode, ODE)
+    if not ode.is_finalized:
+        error("Cannot compute right hand side expressions if the ODE is "\
+              "not finalized")
+
+    check_arg(monitored, (tuple, list), itemtypes=str)
+    monitored_exprs = []
+    for expr_str in monitored:
+        obj = ode.present_ode_objects.get(expr_str)
+        if not isinstance(obj, Expression):
+            error("{0} is not an expression in the {1} ODE".format(expr_str, ode))
+        
+        monitored_exprs.append(obj)
+    
+    return CodeComponent("MonitoredExpressions", ode, **{result_name:monitored_exprs})
     
 def componentwise_derivative(ode, index):
     """
