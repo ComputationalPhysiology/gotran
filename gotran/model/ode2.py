@@ -237,7 +237,7 @@ class ODE(ODEComponent):
 
             comp = ode.all_components[comp_name]
 
-            comp_comment = "Intermediate expressions for the {0} "\
+            comp_comment = "Expressions for the {0} "\
                            "component".format(comp.name)
 
             # Get corresponding component in new ODE
@@ -422,7 +422,7 @@ class ODE(ODEComponent):
 
             comp = self.all_components[comp_name]
 
-            comp_comment = "Intermediate expressions for the {0} "\
+            comp_comment = "Expressions for the {0} "\
                            "component".format(comp.name)
 
             # Iterate over all objects of the component and save only expressions
@@ -672,7 +672,7 @@ class ODE(ODEComponent):
             self.all_expr_components_ordered.append(comp.name)
 
             # Add a comment to the component
-            comp.add_comment("Intermediate expressions for the {0} "\
+            comp.add_comment("Expressions for the {0} "\
                              "component".format(comp.name))
 
             # Recount the last added expression so the comment comes
@@ -690,7 +690,7 @@ class ODE(ODEComponent):
             self.all_expr_components_ordered.append(comp.name)
 
             # Add a comment to the component
-            comp.add_comment("Intermediate expressions for the {0} "\
+            comp.add_comment("Expressions for the {0} "\
                              "component".format(comp.name))
 
             # Recount the last added expression so the comment comes
@@ -885,7 +885,7 @@ class ODE(ODEComponent):
             if comp not in collected_components:
                 continue
                 
-            comp_comment = "Intermediate expressions for the {0} "\
+            comp_comment = "Expressions for the {0} "\
                            "component".format(comp.name)
 
             # Get corresponding component in new ODE
