@@ -44,7 +44,7 @@ class CodeComponent(ODEComponent):
     
     The class alows extraction and manipulation of the ODE expressions.
     """
-    def __init__(self, name, ode, **results):
+    def __init__(self, name, ode, function_name, description, **results):
         """
         Creates a CodeComponent
 
@@ -55,11 +55,19 @@ class CodeComponent(ODEComponent):
             identifier of the Component.
         ode : ODE
             The parent component which need to be a ODE
+        function_name : str
+            The name of the generated function
+        description : str
+            A short description of what the code component are computing
         results : kwargs
             A dict of result expressions. The result expressions will
             be used to extract the body expressions for the code component.
         """
         check_arg(ode, ODE)
+        check_arg(name, str)
+        check_arg(description, str)
+        check_arg(function_name, str)
+
         super(CodeComponent, self).__init__(name, ode)
 
         # Turn off magic attributes, see ODEComponent.__setattr__
@@ -68,6 +76,10 @@ class CodeComponent(ODEComponent):
         for result_name, result_expressions in results.items():
             check_kwarg(result_expressions, result_name, list, \
                         itemtypes=(Expression, Comment))
+
+        # Store function name and description
+        self.function_name = function_name
+        self.description = description
         
         # Shapes for any indexed expressions or objects
         self.shapes = {}
@@ -77,6 +89,7 @@ class CodeComponent(ODEComponent):
 
         # Init parameter or state replace dict
         self._init_param_state_replace_dict()
+        self.results = results.keys()
 
         # Recreate body expressions based on the given result_expressions
         if results:
@@ -213,6 +226,9 @@ class CodeComponent(ODEComponent):
         Returns a sorted list of body expressions all used in the result expressions
         """
 
+        # Store results
+        self.results = results.keys()
+
         if not results:
             return {}, []
 
@@ -259,49 +275,156 @@ class CodeComponent(ODEComponent):
         cse_exprs, cse_result_exprs = cse(expanded_result_exprs,\
                                           symbols=sp.numbered_symbols("cse_"),\
                                           optimizations=[])
-        cse_cnt = 0
+        
+        # Map the cse_expr to an OrderedDict
+        cse_exprs = OrderedDict(cse_expr for cse_expr in cse_exprs)
+
+        # Extract the symbols into a set for fast comparison
+        cse_syms = set((sym for sym in cse_exprs))
+
+        #print
+        #print cse_syms
+
+        # Create maps between cse_expr and result expressions trying
+        # to optimized the code by weaving in the result expressions
+        # in between the cse_expr
+        
+        # A map between result expr and name and indices so we can
+        # construct IndexedExpressions
+        result_expr_map = {}
+
+        # A map between last cse_expr used in a particular result expr
+        # so that we can put the result expression right after the
+        # last cse_expr it uses.
+        last_cse_expr_used_in_result_expr = defaultdict(list)
+
+        # A map between replaced cse_sym and result_expressions
+        cse_sym_to_result_expr = {}
+
+        # Result expressions that does not contain any cse_sym
+        result_expr_without_cse_syms = []
+        
+        # A map between cse_sym and its substitutes
         cse_subs = {}
+        
+        for ind, (orig_result_expr, result_expr) in \
+                enumerate(zip(orig_result_expressions, cse_result_exprs)):
+
+            # Collect information so that we can recreate the result
+            # expression from
+            result_expr_map[result_expr] = (\
+                result_names[orig_result_expr], orig_result_expr.indices \
+                if isinstance(orig_result_expr, IndexedExpression) else ind)
+
+            # If result expression is a simple construct from a
+            # cse_symbol we replace that symbol with the result
+            # expression and define the result expression based on the
+            # symbol
+            #if result_expr in cse_syms:
+            #
+            #    # We need to collect information that the cse_sym
+            #    # should be replaced by result expression
+            #    cse_sym_to_result_expr[result_expr] = (result_expr, sp.S.One)
+            #
+            #elif isinstance(result_expr, sp.Mul) and len(result_expr.args)==2 \
+            #                and result_expr.args[1] in cse_syms and \
+            #                result_expr.args[0].is_number:
+            #
+            #    cse_sym_to_result_expr[result_expr.args[1]] = (\
+            #        result_expr, 1/result_expr.args[0])
+
+            # If result_expr does not contain any cse_sym
+            if not any(cse_sym in cse_syms for cse_sym in result_expr.atoms()):
+                result_expr_without_cse_syms.append(result_expr)
+
+            else:
+
+                # Get last cse_sym used in result expression
+                last_cse_sym = sorted((cse_sym for cse_sym in result_expr.atoms() \
+                                       if cse_sym in cse_syms), \
+                                      cmp=lambda a,b : cmp(int(a.name[4:]), \
+                                                           int(b.name[4:])))[-1]
+
+                last_cse_expr_used_in_result_expr[last_cse_sym].append(result_expr)
+
+        debug("Found {0} result expressions without any cse_syms.".format(\
+            len(result_expr_without_cse_syms)))
+
+        debug("Found {0} result expressions with a simple dependency "\
+              "of a cse_sym.".format(len(cse_sym_to_result_expr)))
+        
+        #print ""
+        #print "LAST cse_syms:", last_cse_expr_used_in_result_expr.keys()
+        
+        cse_cnt = 0
         atoms = [state.sym for state in self.root.full_states]
         atoms.extend(param.sym for param in self.root.parameters)
 
+        self.add_comment("Common sub expressions for the body and the "\
+                         "result expressions")
+        body_expressions.append(self.ode_objects[-1])
+        
         # Register the common sub expressions as Intermediates
-        for sub, expr in cse_exprs:
+        for cse_sym, expr in cse_exprs.items():
         
             # If the expression is just one of the atoms of the ODE we skip
             # the cse expressions but add a subs for the atom
             if expr in atoms:
-                cse_subs[sub] = expr
+                cse_subs[cse_sym] = expr
             else:
 
                 # Add body expression as an intermediate expression
                 sym = self.add_intermediate("cse_{0}".format(\
                     cse_cnt), expr.xreplace(cse_subs))
-                cse_subs[sub] = sym
+                cse_subs[cse_sym] = sym
                 cse_cnt += 1
                 body_expressions.append(self.ode_objects.get(sympycode(sym)))
 
-        # Register the state expressions
-        for ind, (orig_result_expr, result_expr) in \
-                enumerate(zip(orig_result_expressions, cse_result_exprs)):
+            # Check if we should add a result expressions
+            if last_cse_expr_used_in_result_expr[cse_sym]:
 
-            result_name = result_names[orig_result_expr]
+                # Iterate over all registered result expr for this cse_sym
+                for result_expr in last_cse_expr_used_in_result_expr.pop(cse_sym):
+                    result_name, indices = result_expr_map.pop(result_expr)
 
-            # Replace pure state and param expressions
-            exp_expr = result_expr.xreplace(cse_subs)
+                    # Replace pure state and param expressions
+                    exp_expr = result_expr.xreplace(cse_subs)
+                    
+                    sym = self.add_indexed_expression(result_name, indices, exp_expr)
 
-            # Add result expression as an indexed expression, if original
-            # expression already is an IndexedExpression then recreate the
-            # Expression using the same Indices
-            if isinstance(orig_result_expr, IndexedExpression):
-                sym = self.add_indexed_expression(result_name, \
-                                                  orig_result_expr.indices, exp_expr)
-            else:
-                sym = self.add_indexed_expression(result_name, ind, exp_expr)
-            expr = self.ode_objects.get(sympycode(sym))
+                    expr = self.ode_objects.get(sympycode(sym))
 
-            # Register the new result expression
-            new_results[result_name].append(expr)
-            body_expressions.append(expr)
+                    # Register the new result expression
+                    new_results[result_name].append(expr)
+                    body_expressions.append(expr)
+
+        assert(len(result_expr_map)==0)
+
+        #self.add_comment("Common sub expressions for the result expressions")
+        #body_expressions.append(self.ode_objects[-1])
+
+        # Register the result expressions
+        #for ind, (orig_result_expr, result_expr) in \
+        #        enumerate(zip(orig_result_expressions, cse_result_exprs)):
+        #
+        #    result_name = result_names[orig_result_expr]
+        #
+        #    # Replace pure state and param expressions
+        #    exp_expr = result_expr.xreplace(cse_subs)
+        #
+        #    # Add result expression as an indexed expression, if original
+        #    # expression already is an IndexedExpression then recreate the
+        #    # Expression using the same Indices
+        #    if isinstance(orig_result_expr, IndexedExpression):
+        #        sym = self.add_indexed_expression(result_name, \
+        #                                          orig_result_expr.indices, exp_expr)
+        #    else:
+        #        sym = self.add_indexed_expression(result_name, ind, exp_expr)
+        #    expr = self.ode_objects.get(sympycode(sym))
+        #
+        #    # Register the new result expression
+        #    new_results[result_name].append(expr)
+        #    body_expressions.append(expr)
 
         if might_take_time:
             info(" done")

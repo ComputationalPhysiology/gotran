@@ -44,7 +44,7 @@ from gotran.codegeneration.codecomponent import CodeComponent
 #FIXME: Remove our own cse, or move to this module?
 from gotran.codegeneration.sympy_cse import cse
 
-def rhs_expressions(ode, result_name="dy"):
+def rhs_expressions(ode, function_name="rhs", result_name="dy"):
     """
     Return a code component with body expressions for the right hand side
 
@@ -52,6 +52,8 @@ def rhs_expressions(ode, result_name="dy"):
     ---------
     ode : ODE
         The finalized ODE
+    function_name : str
+        The name of the function which should be generated
     result_name : str
         The name of the variable storing the rhs result
     """
@@ -60,10 +62,14 @@ def rhs_expressions(ode, result_name="dy"):
     if not ode.is_finalized:
         error("Cannot compute right hand side expressions if the ODE is "\
               "not finalized")
-        
-    return CodeComponent("RHSComponent", ode, **{result_name:ode.state_expressions})
+    
+    descr = "Compute the right hand side of the {0} ODE".format(ode)
+    
+    return CodeComponent("RHSComponent", ode, function_name, descr,\
+                         **{result_name:ode.state_expressions})
 
-def monitored_expressions(ode, monitored, result_name="monitored"):
+def monitored_expressions(ode, monitored, function_name="monitored_expressions",
+                          result_name="monitored"):
     """
     Return a code component with body expressions to calculate monitored expressions
 
@@ -73,6 +79,8 @@ def monitored_expressions(ode, monitored, result_name="monitored"):
         The finalized ODE for which the monitored expression should be computed
     monitored : tuple, list
         A tuple/list of strings containing the name of the monitored expressions
+    function_name : str
+        The name of the function which should be generated
     result_name : str
         The name of the variable storing the rhs result
     """
@@ -90,8 +98,10 @@ def monitored_expressions(ode, monitored, result_name="monitored"):
             error("{0} is not an expression in the {1} ODE".format(expr_str, ode))
         
         monitored_exprs.append(obj)
-    
-    return CodeComponent("MonitoredExpressions", ode, **{result_name:monitored_exprs})
+
+    descr = "Computes monitored expressions of the {0} ODE".format(ode)
+    return CodeComponent("MonitoredExpressions", ode, function_name, descr, \
+                         **{result_name:monitored_exprs})
     
 def componentwise_derivative(ode, index):
     """
@@ -119,9 +129,10 @@ def componentwise_derivative(ode, index):
         error("The ith index is not a StateDerivative: {0}".format(expr))
         
     return CodeComponent("d{0}_dt_component".format(\
-        state), ode, dy=[expr])
+        state), ode, "", "", dy=[expr])
 
-def linearized_derivatives(ode, result_name="linearized"):
+def linearized_derivatives(ode, function_name="linear_derivatives", \
+                           result_name="linearized"):
     """
     Return an ODEComponent holding the linearized derivative expressions
 
@@ -129,15 +140,17 @@ def linearized_derivatives(ode, result_name="linearized"):
     ---------
     ode : ODE
         The ODE for which derivatives should be linearized
+    function_name : str
+        The name of the function which should be generated
     result_name : str
         The name of the variable storing the linearized derivatives
     """
     if not ode.is_finalized:
         error("The ODE is not finalized")
 
-    return LinearizedDerivativeComponent(ode, result_name)
+    return LinearizedDerivativeComponent(ode, function_name, result_name)
 
-def jacobian_expressions(ode, result_name="jac"):
+def jacobian_expressions(ode, function_name="compute_jacobian", result_name="jac"):
     """
     Return an ODEComponent holding expressions for the jacobian
 
@@ -145,16 +158,19 @@ def jacobian_expressions(ode, result_name="jac"):
     ---------
     ode : ODE
         The ODE for which the jacobian expressions should be computed
+    function_name : str
+        The name of the function which should be generated
     result_name : str
         The name of the variable storing the jacobian result
     """
     if not ode.is_finalized:
         error("The ODE is not finalized")
 
-    return JacobianComponent(ode, result_name=result_name)
+    return JacobianComponent(ode, function_name=function_name, \
+                             result_name=result_name)
 
-def diagonal_jacobian_expressions(jacobian, result_name="diag_jac",\
-                                  jacobian_name="jac"):
+def diagonal_jacobian_expressions(jacobian, function_name="compute_diagonal_jacobian", \
+                                  result_name="diag_jac", jacobian_name="jac"):
     """
     Return an ODEComponent holding expressions for the diagonal jacobian
 
@@ -162,12 +178,14 @@ def diagonal_jacobian_expressions(jacobian, result_name="diag_jac",\
     ---------
     jacobian : JacobianComponent
         The Jacobian of the ODE
+    function_name : str
+        The name of the function which should be generated
     result_name : str
         The name of the variable storing the jacobian diagonal result
     jacobian_name : str (optional)
         The basename of the jacobian name used in the jacobian component
     """
-    return DiagonalJacobianComponent(jacobian, result_name, jacobian_name)
+    return DiagonalJacobianComponent(jacobian, function_name, result_name, jacobian_name)
 
 def jacobian_action_expressions(jacobian, with_body=True, \
                                 result_name="diag_jac_action",\
@@ -222,7 +240,7 @@ class JacobianComponent(CodeComponent):
     """
     An ODEComponent which keeps all expressions for the Jacobian of the rhs
     """
-    def __init__(self, ode, result_name="jac"):
+    def __init__(self, ode, function_name="compute_jacobian", result_name="jac"):
         """
         Create a JacobianComponent
 
@@ -230,11 +248,18 @@ class JacobianComponent(CodeComponent):
         ---------
         ode : ODE
             The parent component of this ODEComponent
+        function_name : str
+            The name of the function which should be generated
+        result_name : str
+            The name of the variable storing the jacobian result
         """
         check_arg(ode, ODE)
 
         # Call base class using empty result_expressions
-        super(JacobianComponent, self).__init__("Jacobian", ode)
+        descr = "Compute the jacobian of the right hand side of the "\
+                "{0} ODE".format(ode)
+        super(JacobianComponent, self).__init__("Jacobian", ode, function_name, \
+                                                descr)
 
         check_arg(result_name, str)
 
@@ -291,7 +316,8 @@ class DiagonalJacobianComponent(CodeComponent):
     """
     An ODEComponent which keeps all expressions for the Jacobian of the rhs
     """
-    def __init__(self, jacobian, result_name="diag_jac", jacobian_name="jac"):
+    def __init__(self, jacobian, function_name="compute_diagonal_jacobian", \
+                 result_name="diag_jac"):
         """
         Create a DiagonalJacobianComponent
 
@@ -299,14 +325,17 @@ class DiagonalJacobianComponent(CodeComponent):
         ---------
         jacobian : JacobianComponent
             The Jacobian of the ODE
+        function_name : str
+            The name of the function which should be generated
         result_name : str (optional)
             The basename of the indexed result expression
-        jacobian_name : str (optional)
-            The basename of the jacobian name used in the jacobian component
         """
         check_arg(jacobian, JacobianComponent)
+        
+        descr = "Compute the diagonal jacobian of the right hand side of the "\
+                "{0} ODE".format(jacobian.root)
         super(DiagonalJacobianComponent, self).__init__(\
-            "DiagonalJacobian", jacobian.root)
+            "DiagonalJacobian", jacobian.root, function_name, descr)
 
         what = "Computing diagonal jacobian"
         timer = Timer(what)
@@ -315,6 +344,7 @@ class DiagonalJacobianComponent(CodeComponent):
 
         N = jacobian.jacobian.shape[0]
         self.shapes[result_name] = (N,)
+        jacobian_name = jacobian.results[0]
 
         # Create IndexExpressions of the diagonal Jacobian
         for expr in jacobian.indexed_objects(jacobian_name):
@@ -338,8 +368,9 @@ class JacobianActionComponent(CodeComponent):
     """
     Jacobian action component which returns the expressions for Jac*x
     """
-    def __init__(self, jacobian, with_body=True, result_name="jac_action", \
-                 jacobian_name="jac"):
+    def __init__(self, jacobian, with_body=True, \
+                 function_name="compute_jacobian_action", \
+                 result_name="jac_action"):
         """
         Create a JacobianActionComponent
 
@@ -349,18 +380,21 @@ class JacobianActionComponent(CodeComponent):
             The Jacobian of the ODE
         with_body : bool
             If true, the body for computing the jacobian will be included 
+        function_name : str
+            The name of the function which should be generated
         result_name : str
             The basename of the indexed result expression
-        jacobian_name : str (optional)
-            The basename of the jacobian name used in the jacobian component
         """
         timer = Timer("Computing jacobian action component")
         check_arg(jacobian, JacobianComponent)
+        descr = "Compute the jacobian action of the right hand side of the "\
+                "{0} ODE".format(jacobian.root)
         super(JacobianActionComponent, self).__init__(\
-            "JacobianAction", jacobian.root)
+            "JacobianAction", jacobian.root, function_name, descr)
 
         x = self.root.full_state_vector
         jac = jacobian.jacobian
+        jacobian_name = jacobian.results[0]
 
         # Create Jacobian action vector
         self.action_vector = sp.Matrix(len(x), 1,lambda i,j:0)
@@ -389,6 +423,7 @@ class DiagonalJacobianActionComponent(CodeComponent):
     Jacobian action component which returns the expressions for Jac*x
     """
     def __init__(self, diagonal_jacobian, with_body=True, \
+                 function_name="compute_diagonal_jacobian_action", \
                  result_name="diag_jac_action"):
         """
         Create a DiagonalJacobianActionComponent
@@ -399,13 +434,17 @@ class DiagonalJacobianActionComponent(CodeComponent):
             The Jacobian of the ODE
         with_body : bool
             If true, the body for computing the jacobian will be included 
+        function_name : str
+            The name of the function which should be generated
         result_name : str
             The basename of the indexed result expression
         """
         timer = Timer("Computing jacobian action component")
-        check_arg(jacobian, DiagonalJacobianComponent)
+        check_arg(diagonal_jacobian, DiagonalJacobianComponent)
+        descr = "Compute the diagonal jacobian action of the right hand side "\
+                "of the {0} ODE".format(diagonal_jacobian.root)
         super(DiagonalJacobianActionComponent, self).__init__(\
-            "DiagonalJacobianAction", diagonal_jacobian.root)
+            "DiagonalJacobianAction", diagonal_jacobian.root, function_name, descr)
 
         x = self.root.full_state_vector
         jac = diagonal_jacobian.diagonal_jacobian
@@ -435,18 +474,22 @@ class FactorizedJacobianComponent(CodeComponent):
     """
     Class to generate expressions for symbolicaly factorizing a jacobian
     """
-    def __init__(self, jacobian, jacobian_name="jac"):
+    def __init__(self, jacobian, function_name="factorize_jacobian"):
         """
         Create a FactorizedJacobianComponent
         """
         
         timer = Timer("Computing factorization of jacobian")
         check_arg(jacobian, JacobianComponent)
+        descr = "Symbolicly factorize the jacobian of the {0} ODE".format(\
+            jacobian.root)
         super(FactorizedJacobianComponent, self).__init__(\
-            "FactorizedJacobian", jacobian.root)
+            "FactorizedJacobian", jacobian.root, function_name, descr)
 
         self.add_comment("Factorizing jacobian of {0}".format(jacobian.root.name))
         
+        jacobian_name = jacobian.results[0]
+
         # Get copy of jacobian
         jac = jacobian.jacobian[:,:]
         p = []
@@ -541,10 +584,12 @@ class LinearizedDerivativeComponent(CodeComponent):
     """
     A component for all linear and linearized derivatives
     """
-    def __init__(self, ode, result_name="linearized"):
+    def __init__(self, ode, function_name="linear_derivatives", \
+                 result_name="linearized"):
 
+        descr = "Computes the linearized derivatives for all linear derivatives"
         super(LinearizedDerivativeComponent, self).__init__(\
-            "LinearizedDerivatives", ode)
+            "LinearizedDerivatives", ode, function_name, descr)
         
         check_arg(ode, ODE)
         assert ode.is_finalized
