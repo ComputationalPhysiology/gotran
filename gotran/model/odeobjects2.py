@@ -177,11 +177,11 @@ class ODEValueObject(ODEObject):
             value = SlaveParam(value, name=name)
 
         # Debug
-        if get_log_level() <= DEBUG:
-            if isinstance(value, SlaveParam):
-                debug("{0}: {1} {2:.3f}".format(self.name, value.expr, value.value))
-            else:
-                debug("{0}: {1}".format(name, value.value))
+        #if get_log_level() <= DEBUG:
+        #    if isinstance(value, SlaveParam):
+        #        debug("{0}: {1} {2:.3f}".format(self.name, value.expr, value.value))
+        #    else:
+        #        debug("{0}: {1}".format(name, value.value))
 
             # Store the Param
         self._param = value
