@@ -22,7 +22,25 @@ from modelparameters.parameters import Param, OptionParam, ScalarParam
 from modelparameters.parameterdict import ParameterDict
 
 parameters = ParameterDict(
+
+    # Code Generation parameters
     code_generation = ParameterDict(
+
+        # Parameter for default argument order
+        default_arguments = OptionParam("stp", ["tsp", "stp", "spt", "ts", "st",
+                                                "tspb", "stpb", "sptb", "tsb", "stb",],
+                                        description="Default input argument order: "\
+                                        "s=states, p=parameters, t=time, b=body"),
+
+        class_code = Param(False, description="If true methods are contained "\
+                           "inside a class"),
+
+        # Parameter for the time parameter name
+        time = ParameterDict(
+            name = Param("t", description="Name of time argument")
+            ),
+
+        # Parameters for code generation of arrays
         array = ParameterDict(
             index_format=OptionParam("[]", ["[]", "{}", "()"],
                                description="The format of index notations."),
@@ -34,6 +52,7 @@ parameters = ParameterDict(
                           "is (12,12)")
             ),
         
+        # Parameters for code generation of parameters
         parameters = ParameterDict(
             representation = OptionParam("named", ["named", "array", "numerals"],
                                          description="Controls how parameters are "\
@@ -44,6 +63,7 @@ parameters = ParameterDict(
                                "representing the parameters."),
             ),
         
+        # Parameters for code generation of states
         states = ParameterDict(
             representation = OptionParam("named", ["named", "array"],
                                          description="Controls how states are "\
@@ -53,6 +73,7 @@ parameters = ParameterDict(
                                "representing the states."),
             ),
         
+        # Parameters for code generation of body expressions
         body = ParameterDict(
             use_cse = Param(False, description="If true will the body be "\
                             "optimized using SymPy common sub expression "\
@@ -72,6 +93,32 @@ parameters = ParameterDict(
                                          description="Remove body expressions as "\
                                          "intermediates, which contains only a "\
                                          "numeral or numerals and a symbol."),
+            
+            ),
+        ),
+
+    # Parameters for different input 
+    input = ParameterDict(
+        
+        # Parameters for CellML input 
+        cellml = ParameterDict(
+
+            change_state_names=Param([], description="A list of state names "\
+                                     "which should be changed to not interfere "\
+                                     "with for example a parameter name."),
+            
+            grouping=OptionParam("encapsulation", ["encapsulation", "containment"], \
+                                 description="Determines what type of grouping "\
+                                 "should be used when the cellml model is parsed."),
+            
+            use_sympy_integers=Param(False, description="If yes dedicated sympy "\
+                                     "integers will be used instead of the "\
+                                     "integers 0-10. This will turn 1/2 into a "\
+                                     "sympy rational instead of the float 0.5."),
+            
+            strip_parent_name=Param(True, description="If True strip the name from "\
+                                    "the child component it contains the name of the "\
+                                    "parent component.")
             
             ),
         ),

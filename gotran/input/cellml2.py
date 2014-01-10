@@ -25,7 +25,9 @@ from gotran.common import info, warning, error, check_arg, begin_log, end_log
 from modelparameters.codegeneration import _all_keywords
 from modelparameters.parameterdict import *
 
-from mathml import MathMLBaseParser
+# Local imports
+from gotran.common.options import parameters
+from gotran.input.mathml import MathMLBaseParser
 
 __all__ = ["cellml2ode", "CellMLParser"]
 
@@ -326,21 +328,8 @@ class CellMLParser(object):
     """
     @staticmethod
     def default_parameters():
-        return ParameterDict(
-            change_state_names=Param([], description="A list of state names "\
-                                     "which should be changed to not interfere "\
-                                     "with for example a parameter name."), 
-            grouping=OptionParam("encapsulation", ["encapsulation", "containment"], \
-                                 description="Determines what type of grouping "\
-                                 "should be used when the cellml model is parsed."),
-            use_sympy_integers=Param(False, description="If yes dedicated sympy "\
-                                     "integers will be used instead of the "\
-                                     "integers 0-10. This will turn 1/2 into a "\
-                                     "sympy rational instead of the float 0.5."),
-            strip_parent_name=Param(True, description="If True strip the name from "\
-                                    "the child component it contains the name of the "\
-                                    "parent component.")
-            )
+        # Get the default parameters from the global parameters object
+        return parameters.input.cellml.copy()
     
     def __init__(self, model_source, params=None, targets=None, ):
         """
