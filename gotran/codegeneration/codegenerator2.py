@@ -30,7 +30,8 @@ from modelparameters.codegeneration import ccode, cppcode, pythoncode, \
 from gotran.common import check_arg, check_kwarg
 from gotran.common.options import parameters
 from gotran.model.ode2 import ODE
-from gotran.model.odeobjects2 import Comment
+from gotran.model.odeobjects2 import Comment, ODEObject
+from gotran.model.expressions2 import Intermediate
 from gotran.codegeneration.codecomponent import CodeComponent
 from gotran.codegeneration.algorithmcomponents import *
 
@@ -42,89 +43,6 @@ def class_name(name):
     return name if name[0].isupper() else name[0].upper() + \
            (name[1:] if len(name) > 1 else "")    
 
-def _param_add(params, param_name, default_value, descr, excludes=None, param_type=Param,
-               option_check=None):
-    """
-    Help function to add a parameter
-    """
-    excludes = excludes or []
-    assert(isinstance(params, dict))
-    assert(isinstance(param_name, str))
-    assert(isinstance(descr, str))
-    assert(isinstance(excludes, list))
-    assert(issubclass(param_type, Param))
-    assert(isinstance(option_check, (types.NoneType, list, str, dict)))
-
-    if param_name in excludes:
-        return
-    
-    kwargs = dict(description=descr)
-    args = [default_value]
-    
-    if option_check is not None:
-        if isinstance(option_check, dict):
-            kwargs.update(option_check)
-        else:
-            args.append(option_check)
-    
-    params[param_name] = param_type(*args, **kwargs)
-
-def _default_code_params(excludes=None):
-    excludes = excludes or []
-    check_arg(excludes, list, itemtypes=str)
-
-    arg_params = {}
-
-    _param_add(arg_params, "order", "stp", \
-               descr="Input argument order: s=states, p=parameters, t=time",\
-               param_type=OptionParam, option_check=\
-               ["tsp", "stp", "spt", "ts", "st"], \
-               excludes=excludes)
-    
-    _param_add(arg_params, "states_name", "states", \
-               descr="Name of the states argument",
-               excludes=excludes)
-    
-    _param_add(arg_params, "parameters_name", "parameters", \
-               descr="Name of the parameters argument", \
-               excludes=excludes)
-    
-    _param_add(arg_params, "time_name", "t", \
-               descr="Name of the time argument", \
-               excludes=excludes)
-    
-    # Build a dict with allowed parameters
-    params = {}
-
-    _param_add(params, "use_state_names", True, \
-               "If true, use state names in code (compared to array "\
-               "with indices).",\
-               excludes=excludes)
-    
-    _param_add(params, "use_parameter_names", True, \
-               "If true, use parameter names in code (compared to array "\
-               "with indices).",\
-               excludes=excludes)
-
-    _param_add(params, "parameter_numerals", False, \
-               "If true, exchange all parameters with their initial numerical "\
-               "values.",\
-               excludes=excludes)
-
-    _param_add(params, "common_sub_expressions", False, \
-               "If true, use sympy common sub expression simplifications.",\
-               excludes=excludes)
-
-    _param_add(params, "reuse_intermediates", False, \
-               "If true, reuse intermediates to save memory in generated "\
-               "code.",\
-               excludes=excludes)
-
-    # Add arguments parameters
-    params["arguments"] = ParameterDict(**arg_params)
-    
-    # Return the ParameterDict
-    return ParameterDict(**params)
 
 def _default_generation_params(excludes=None):
     exclude = exclude or []
@@ -398,7 +316,6 @@ class PythonCodeGenerator(BaseCodeGenerator):
     def _init_arguments(self, comp, default_arguments=None):
 
         check_arg(comp, CodeComponent)
-
         default_arguments = default_arguments or self.params.default_arguments
 
         # Check if comp defines used_states if not use the root components
@@ -465,18 +382,18 @@ class PythonCodeGenerator(BaseCodeGenerator):
                         for ind, param in enumerate(comp.root.parameters) \
                         if param in used_parameters))
 
-        # If using a an array for the body variables
+        # If using an array for the body variables
         if self.params.body.representation != "named":
             
             body_name = self.params.body.array_name
             body_lines.append("")
-            body_lines.append("# Body array".format(body_name))
+            body_lines.append("# Body array {0}".format(body_name))
 
             # If passing the body argument to the method
             if  "b" in default_arguments:
                 body_lines.append("if {0} is None:".format(body_name))
                 body_lines.append(["{0} = np.zeros({1}, dtype=np.{2})".format(\
-                    body_name, comp.shapes[body_name]), self.float_type])
+                    body_name, comp.shapes[body_name], self.float_type)])
                 body_lines.append("else:".format(body_name))
                 body_lines.append(["assert isinstance({0}, np.ndarray) and "\
                                    "{1}.shape=={2}".format(\
@@ -788,34 +705,38 @@ class CCodeGenerator(BaseCodeGenerator):
     index = lambda x, i : "[{0}]".format(i)
     indent = 2
     indent_str = " "
-    to_code = lambda a,b,c : ccode(b,c)
+    to_code = lambda a,b,c : ccode(b, c, a.params.float_precision)
+    float_types = dict(single="float", double="double")
+
+    def obj_name(self, obj):
+        assert(isinstance(obj, ODEObject))
+        return obj.name if obj.name not in ["I"] else obj.name + "_"
     
-    def args(self, result_name=""):
+    def args(self, default_arguments=None, result_names=None):
 
         ret_args=[]
-        for arg in self.params.rhs_args:
+        result_names = result_names or []
+        default_arguments = default_arguments or self.params.default_arguments
+        
+        for arg in default_arguments:
             if arg == "s":
-                ret_args.append("const double* states")
+                ret_args.append("const {0}* {1}".format(self.float_type, \
+                                                        self.params.states.array_name))
             elif arg == "t":
-                ret_args.append("double time")
-            elif arg == "p" and \
-                not self.oderepr.optimization.parameter_numerals \
-                and self.params.parameters_in_signature:
-                ret_args.append("const double* parameters")
+                ret_args.append("{0} {1}".format(self.float_type, \
+                                                 self.params.time.name))
+            elif arg == "p" and self.params.parameters.representation != \
+                     "numerals":
+                ret_args.append("const {0}* {1}".format(\
+                    self.float_type, self.params.parameters.array_name))
+            elif arg == "b" and self.params.body.representation != "named":
+                ret_args.append("{0}* {1}".format(\
+                    self.float_type, self.params.body.array_name))
 
-        ret = ", ".join(ret_args)
+        for result_name in result_names:
+            ret_args.append("{0}* {1}".format(self.float_type, result_name))
         
-        if result_name:
-            ret += ", double* {0}".format(result_name)
-
-        return  ret
-
-    @staticmethod
-    def default_params():
-        
-        return ParameterDict(rhs_args = OptionParam(\
-            "stp", ["tsp", "stp", "spt"]),
-                             parameters_in_signature = True)
+        return ", ".join(ret_args)
 
     @classmethod
     def wrap_body_with_function_prototype(cls, body_lines, name, args, \
@@ -833,7 +754,7 @@ class CCodeGenerator(BaseCodeGenerator):
 
         prototype = []
         if comment:
-            prototype.append("// {1}".format(comment))
+            prototype.append("// {0}".format(comment))
 
         const = " const" if const else ""
         prototype.append("{0} {1}({2}){3}".format(return_type, name, args, const))
@@ -842,311 +763,225 @@ class CCodeGenerator(BaseCodeGenerator):
         prototype.append(body_lines)
         return prototype
     
-    def _states_and_parameters_code(self):
+    def _init_arguments(self, comp, default_arguments=None):
 
-        ode = self.oderepr.ode
+        check_arg(comp, CodeComponent)
+        default_arguments = default_arguments or self.params.default_arguments
+
+        # Check if comp defines used_states if not use the root components
+        # full_states attribute
+        # FIXME: No need for full_states here...
+        full_states = comp.root.full_states
+        used_states = comp.used_states if hasattr(comp, "used_states") else \
+                      full_states
+        
+        used_parameters = comp.used_parameters if hasattr(comp, "used_parameters") else \
+                          comp.root.parameters
+        all_parameters = comp.root.parameters
         
         # Start building body
-        body_lines = ["", "// Assign states"]
-        if self.oderepr.optimization.use_state_names:
-            for i, state in enumerate(ode.states):
-                state_name = state.name if state.name not in ["I"] \
-                             else state.name + "_"
-                body_lines.append("const double {0} = states[{1}]".format(\
-                    state_name, i))
-        
+        body_lines = []
+        def add_obj(obj, i, array_name):
+            body_lines.append("const {0} {1} = {2}[{3}]".format(\
+                self.float_type, self.obj_name(obj), array_name, i))
+            
+        if "s" in default_arguments and used_states:
+            
+            states_name = self.params.states.array_name
+            body_lines.append("")
+            body_lines.append("// Assign states")
+
+            # Generate state assign code
+            if self.params.states.representation == "named":
+
+                # If all states are used
+                if len(used_states) == len(full_states):
+                    for i, state in enumerate(used_states):
+                        add_obj(state, i, states_name)
+                else:
+                    for state in used_states:
+                        i = full_states.index(state)
+                        add_obj(state, i, states_name)
+                    
         # Add parameters code if not numerals
-        if self.params.parameters_in_signature and \
-               not self.oderepr.optimization.parameter_numerals:
+        if "p" in default_arguments and \
+               self.params.parameters.representation in ["named", "array"] and \
+               used_parameters:
+
+            parameters_name = self.params.parameters.array_name
             body_lines.append("")
             body_lines.append("// Assign parameters")
-
-            if self.oderepr.optimization.use_parameter_names:
-                for i, param in enumerate(ode.parameters):
-                    param_name = param.name if param.name not in ["I"] \
-                                 else param.name + "_"
-                    body_lines.append("const double {0} = parameters[{1}]".\
-                                      format(param_name, i))
+            
+            # Generate parameters assign code
+            if self.params.parameters.representation == "named":
+                
+                # If all states are used
+                if len(used_parameters) == len(all_parameters):
+                    for i, param in enumerate(used_parameters):
+                        add_obj(param, i, parameters_name)
+                else:
+                    for param in used_parameters:
+                        i = all_parameters.index(param)
+                        add_obj(param, i, parameters_name)
+                    
+        # If using an array for the body variables and b is not passed as argument
+        if self.params.body.representation != "named" and \
+               "b" not in default_arguments:
+            
+            body_name = self.params.body.array_name
+            body_lines.append("")
+            body_lines.append("// Body array {0}".format(body_name))
+            body_lines.append("{0} {1}[{2}]".format(self.float_type, body_name, \
+                                                    comp.shapes[body_name][0]))
 
         return body_lines
 
-    def init_states_code(self, indent=0):
+    
+
+    def init_states_code(self, ode, indent=0):
         """
         Generate code for setting initial condition
         """
 
+        float_str = "" if self.params.float_precision == "double" else "f"
         body_lines = []
-        body_lines = ["values[{0}] = {1}; // {2}".format(\
-            i, state.init if np.isscalar(state.init) else state.init[0], state.name)\
-                      for i, state in enumerate(self.oderepr.ode.states)]
+        body_lines = ["values[{0}] = {1}{2}; // {3}".format(i, state.init, \
+                                                            float_str, state.name) \
+                      for i, state in enumerate(ode.full_states)]
 
         # Add function prototype
         init_function = self.wrap_body_with_function_prototype(\
-            body_lines, "init_values", "double* values", "", "Init values")
+            body_lines, "init_state_values", "{0}* values".format(self.float_type), \
+            "", "Init values")
         
         return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
 
-    def init_param_code(self, indent=0):
+    def init_parameters_code(self, ode, indent=0):
         """
         Generate code for setting  parameters
         """
 
+        float_str = "" if self.params.float_precision == "double" else "f"
         body_lines = []
-        body_lines = ["values[{0}] = {1}; // {2}".format(\
-            i, param.init if np.isscalar(param.init) else param.init[0], param.name)\
-                      for i, param in enumerate(self.oderepr.ode.parameters)]
+        body_lines = ["values[{0}] = {1}{2}; // {3}".format(\
+            i, param.init, float_str, param.name) for i, param in enumerate(ode.parameters)]
 
         # Add function prototype
         init_function = self.wrap_body_with_function_prototype(\
-            body_lines, "parameter_values", "double* values", "", \
-            "Default parameter values")
+            body_lines, "init_parameters_values", "{0}* values".format(\
+                self.float_type), "", "Default parameter values")
         
         return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
 
-    def dy_body(self, result_name="dy"):
-        """
-        Generate body lines of code for evaluating state derivatives
-        """
+    def function_code(self, comp, indent=0, default_arguments=None, \
+                      include_signature=True, return_body_lines=False):
+
+        default_arguments = default_arguments or self.params.default_arguments
+
+        check_arg(comp, CodeComponent)
+        check_kwarg(default_arguments, "default_arguments", str)
+        check_kwarg(indent, "indent", int)
         
-        ode = self.oderepr.ode
+        body_lines = self._init_arguments(comp, default_arguments)
 
-        body_lines = self._states_and_parameters_code()
-
+        # If named body representation we need to check for duplicates
+        duplicates = set()
+        declared_duplicates = set()
+        if self.params.body.representation == "named":
+            collected_names = set()
+            for expr in comp.body_expressions:
+                if isinstance(expr, Intermediate):
+                    if expr.name in collected_names:
+                        duplicates.add(expr.name)
+                    else:
+                        collected_names.add(expr.name)
+        
         # Iterate over any body needed to define the dy
-        declared_duplicates = []
-        for expr, name in self.oderepr.iter_dy_body():
-
-            name = str(name)
-            
-            if name == "COMMENT":
+        for expr in comp.body_expressions:
+            if isinstance(expr, Comment):
                 body_lines.append("")
-                body_lines.append("// " + expr)
+                body_lines.append("// " + str(expr))
             else:
-                if name in ode._intermediate_duplicates:
-                    if name not in declared_duplicates:
-                        declared_duplicates.append(name)
-                        if name in ["I"]:
-                            name += "_"
-                        name = "double " + name
-
+                if isinstance(expr, Intermediate):
+                    if expr.name in duplicates:
+                        if expr.name not in declared_duplicates:
+                            name = "{0} {1}".format(self.float_type, \
+                                                    self.obj_name(expr))
+                            declared_duplicates.add(expr.name)
+                        else:
+                            name = "{0}".format(self.obj_name(expr))
+                    else:
+                        name = "const {0} {1}".format(self.float_type, \
+                                                      self.obj_name(expr))
+                    
                 else:
-                    if name in ["I"]:
-                        name += "_"
-                    name = "const double " + name
-
-                body_lines.append(self.to_code(expr, name))
-
-        # Add dy[i] lines
-        for ind, (state, (derivative, expr)) in enumerate(\
-            zip(ode.states, self.oderepr.iter_derivative_expr())):
-            assert(state.sym == derivative[0].sym)
-            body_lines.append(self.to_code(expr, "{0}[{1}]".format(result_name, ind)))
-
-        body_lines.append("")
-        
-        # Return the body lines
-        return body_lines
-        
-    def dy_code(self, indent=0, result_name="dy"):
-        """
-        Generate code for evaluating state derivatives
-        """
-
-        body_lines = self.dy_body(result_name)
-
-        # Add function prototype
-        dy_function = self.wrap_body_with_function_prototype(\
-            body_lines, "rhs", self.args(result_name), \
-            "", "Compute right hand side of {0}".format(self.oderepr.name))
-        
-        return "\n".join(self.indent_and_split_lines(\
-            dy_function, indent=indent))
-
-    def jacobian_body(self, result_name="jac"):
-
-        ode = self.oderepr.ode
-
-        body_lines = self._states_and_parameters_code()
-
-        # Iterate over any body needed to define the dy
-        declared_duplicates = []
-        for expr, name in self.oderepr.iter_jacobian_body():
-
-            name = str(name)
+                    name = "{0}".format(self.obj_name(expr))
+                    
+                body_lines.append(self.to_code(expr.expr, name))
+                    
+        if include_signature:
             
-            if name == "COMMENT":
-                body_lines.append("")
-                body_lines.append("// " + expr)
-            else:
-                if name in ode._intermediate_duplicates:
-                    if name not in declared_duplicates:
-                        declared_duplicates.append(name)
-                        if name in ["I"]:
-                            name += "_"
-                        name = "double " + name
+            # Add function prototype
+            body_lines = self.wrap_body_with_function_prototype(\
+                body_lines, comp.function_name, \
+                self.args(default_arguments, comp.results), "", \
+                comp.description)
 
-                else:
-                    if name in ["I"]:
-                        name += "_"
-                    name = "const double " + name
+        if return_body_lines:
+            return body_lines
+        
+        return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
+        
+    def componentwise_body(self, ode, indent=0, default_arguments=None, \
+                      include_signature=True):
 
-                body_lines.append(self.to_code(expr, name))
+        default_arguments = default_arguments or self.params.default_arguments
 
-        # Add jac[i,j] lines
-        num_states = ode.num_states
-        for (indi, indj), expr in self.oderepr.iter_jacobian_expr():
-            body_lines.append(self.to_code(expr, "{0}[{1}*{2}+{3}]".format(\
-                result_name, indi, num_states, indj)))
- 
+        float_str = "" if self.params.float_precision == "double" else "f"
+
+        # Create code for each individuate component
+        body_lines = []
+        body_lines.append("// Return value")
+        body_lines.append("{0} dy[1] = 0.0{1}".format(self.float_type, float_str))
         body_lines.append("")
-        
-        # Return the body lines
-        return body_lines
+        body_lines.append("// What component?")
+        body_lines.append("switch (id)")
 
-    def jacobian_code(self, indent=0, result_name="jac"):
-        """
-        Generate code for evaluating state derivatives
-        """
+        switch_lines = []
+        for i, state in enumerate(ode.full_states):
 
-        body_lines = self.jacobian_body(result_name)
-
-        # Add function prototype
-        jacobian_function = self.wrap_body_with_function_prototype(\
-            body_lines, "jacobian", self.args(result_name), \
-            "", "Compute jacobian of {0}".format(self.oderepr.name))
-        
-        return "\n".join(self.indent_and_split_lines(\
-            jacobian_function, indent=indent))
-
-    def jacobian_action_body(self, result_name="jac_action"):
-
-        ode = self.oderepr.ode
-
-        body_lines = self._states_and_parameters_code()
-
-        # Iterate over any body needed to define the dy
-        declared_duplicates = []
-        for expr, name in self.oderepr.iter_jacobian_action_body():
-
-            name = str(name)
+            component_code = ["", "// Component {0} state {1}".format(\
+                i, state.name), "case {0}:".format(i)]
             
-            if name == "COMMENT":
-                body_lines.append("")
-                body_lines.append("// " + expr)
-            else:
-                if name in ode._intermediate_duplicates:
-                    if name not in declared_duplicates:
-                        declared_duplicates.append(name)
-                        if name in ["I"]:
-                            name += "_"
-                        name = "double " + name
+            comp = componentwise_derivative(ode, i)
+            component_code.append(self.function_code(comp, indent, \
+                                                     default_arguments, \
+                                                     include_signature=False, \
+                                                     return_body_lines=True))
+            component_code[-1].append("break")
 
-                else:
-                    if name in ["I"]:
-                        name += "_"
-                    name = "const double " + name
-
-                body_lines.append(self.to_code(expr, name))
-
-        # Add jac[i,j] lines
-        num_states = ode.num_states
-        for ind, expr in enumerate(self.oderepr.iter_jacobian_action_expr()):
-            body_lines.append(self.to_code(expr, "{0}[{1}]".format(\
-                result_name, ind)))
- 
-        body_lines.append("")
-        
-        # Return the body lines
-        return body_lines
-
-    def jacobian_action_code(self, indent=0, result_name="jac_action"):
-        """
-        Generate code for evaluating state derivatives
-        """
-
-        body_lines = self.jacobian_action_body(result_name)
-
-        # Add function prototype
-        jacobian_action_function = self.wrap_body_with_function_prototype(\
-            body_lines, "jacobian_action", self.args(result_name), \
-            "", "Compute jacobian action of {0}".format(self.oderepr.name))
-        
-        return "\n".join(self.indent_and_split_lines(\
-            jacobian_action_function, indent=indent))
-
-    def monitored_body(self, result_name="monitored"):
-        """
-        Generate body lines of code for evaluating monitored intermediates
-        """
-
-        ode = self.oderepr.ode
-
-        # Start building body
-        body_lines = ["", "// Assign states"]
-        if self.oderepr.optimization.use_state_names:
-            for ind, state in enumerate(ode.states):
-                if state.name in self.oderepr.used_in_monitoring["states"]:
-                    body_lines.append("const double {0} = states[{1}]".format(\
-                        state.name, ind))
-        
-        # Add parameters code if not numerals
-        if self.params.parameters_in_signature and \
-               not self.oderepr.optimization.parameter_numerals:
-            body_lines.append("")
-            body_lines.append("// Assign parameters")
-
-            if self.oderepr.optimization.use_parameter_names:
-                for ind, param in enumerate(ode.parameters):
-                    if param.name in self.oderepr.used_in_monitoring["parameters"]:
-                        body_lines.append("const double {0} = parameters[{1}]".\
-                                          format(param.name, ind))
-
-        # Iterate over any body needed to define the monitored
-        declared_duplicates = []
-        for expr, name in self.oderepr.iter_monitored_body():
-
-            name = str(name)
+            switch_lines.extend(component_code)
             
-            if name == "COMMENT":
-                body_lines.append("")
-                body_lines.append("// " + expr)
-            else:
-                if name in ["I"]:
-                    name += "_"
-                name = "const double " + name
-                body_lines.append(self.to_code(expr, name))
+        default_lines = ["", "// Default", "default:"]
+        if self.language == "C++":
+            default_lines.append(["throw std::runtime_error(\"Index out of bounds\")"])
+        else:
+            default_lines.append(["// Throw an exception..."])
 
-        # Add monitored[i] lines
-        ind = 0 
-        for monitored, expr in self.oderepr.iter_monitored_expr():
-            if monitored == "COMMENT":
-                body_lines.append("")
-                body_lines.append("// " + expr)
-            else:
-                body_lines.append(self.to_code(expr, "{0}[{1}]".format(\
-                    result_name, ind)))
-                ind += 1
-
+        switch_lines.extend(default_lines)
+        body_lines.append(switch_lines)
         body_lines.append("")
+        body_lines.append("// Return component")
+        body_lines.append("return dy[0]")
         
-        # Return the body lines
-        return body_lines
-        
-    def monitored_code(self, indent=0, result_name="monitored"):
-        """
-        Generate code for evaluating monitored intermediates
-        """
-
-        body_lines = self.monitored_body(result_name)
-
         # Add function prototype
-        monitored_function = self.wrap_body_with_function_prototype(\
-            body_lines, "monitor", self.args(result_name), \
-            "", "Compute monitored intermediates {0}".format(self.oderepr.name))
-        
-        return "\n".join(self.indent_and_split_lines(\
-            monitored_function, indent=indent))
+        if include_signature:
+            body_lines = self.wrap_body_with_function_prototype(\
+                body_lines, "rhs", self.args(default_arguments), \
+                self.float_type, "Evaluate componenttwise rhs of the ODE")
 
+        return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
+        
     def dy_componentwise_body(self):
         oderepr = self.oderepr
         ode = oderepr.ode
@@ -1226,67 +1061,6 @@ class CCodeGenerator(BaseCodeGenerator):
         
         return "\n".join(self.indent_and_split_lines(\
             componentwise_function, indent=indent))
-
-    def linearized_dy_body(self, result_name="values"):
-        oderepr = self.oderepr
-        ode = oderepr.ode
-
-        # Start building body
-        body_lines = ["", "// Assign states"]
-        if self.oderepr.optimization.use_state_names:
-            for ind, state in enumerate(ode.states):
-                if state.name in self.oderepr.used_in_linear_dy["states"]:
-                    state_name = state.name if state.name not in ["I"] \
-                                 else state.name + "_"
-                    body_lines.append("const double {0} = states[{1}]".format(\
-                        state_name, ind))
-        
-        # Add parameters code if not numerals
-        if self.params.parameters_in_signature and \
-               not self.oderepr.optimization.parameter_numerals:
-            body_lines.append("")
-            body_lines.append("// Assign parameters")
-
-            if self.oderepr.optimization.use_parameter_names:
-                for ind, param in enumerate(ode.parameters):
-                    if param.name in self.oderepr.used_in_linear_dy["parameters"]:
-                        param_name = param.name if param.name not in ["I"] \
-                                     else param.name + "_"
-                        body_lines.append("const double {0} = parameters[{1}]".\
-                                          format(param_name, ind))
-
-        for expr, name in self.oderepr.iter_linerized_body():
-
-            name = str(name)
-            
-            if name == "COMMENT":
-                body_lines.append("")
-                body_lines.append("// " + expr)
-            else:
-                if name in ["I"]:
-                    name += "_"
-                name = "const double " + name
-                body_lines.append(self.to_code(expr, name))
-
-        body_lines.append("")
-        body_lines.append("// Linearized derivatives")
-
-        for id, expr in self.oderepr.iter_linerized_expr():
-            body_lines.append(self.to_code(expr, "{0}[{1}]".format(result_name, id)))
-
-        return body_lines
-
-    def linearized_dy_code(self, indent=0, result_name="values"):
-
-        body_lines = self.linearized_dy_body(result_name)
-
-        # Add function prototype
-        linearized_function = self.wrap_body_with_function_prototype(\
-            body_lines, "linearized_derivatives", self.args(result_name), \
-            "", "Compute linearized derivatives {0}".format(self.oderepr.name))
-        
-        return "\n".join(self.indent_and_split_lines(\
-            linearized_function, indent=indent))
 
     def code_list(self, indent=0):
         
