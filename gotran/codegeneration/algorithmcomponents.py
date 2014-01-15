@@ -23,7 +23,8 @@ __all__ = ["JacobianComponent", "JacobianActionComponent", \
            "linearized_derivatives", "jacobian_expressions", \
            "jacobian_action_expressions", "factorized_jacobian_expressions",
            "forward_backward_subst_expressions",\
-           "diagonal_jacobian_expressions", "rhs_expressions", \
+           "diagonal_jacobian_expressions", "rhs_expressions",\
+           "diagonal_jacobian_action_expressions", \
            "monitored_expressions"]
 
 # System imports
@@ -169,8 +170,30 @@ def jacobian_expressions(ode, function_name="compute_jacobian", result_name="jac
     return JacobianComponent(ode, function_name=function_name, \
                              result_name=result_name)
 
+def jacobian_action_expressions(jacobian, with_body=True, \
+                                function_name="compute_jacobian_action",\
+                                result_name="jac_action"):
+    """
+    Return an ODEComponent holding expressions for the jacobian action
+
+    Arguments
+    ---------
+    jacobian : JacobianComponent
+        The ODEComponent holding expressions for the jacobian
+    with_body : bool
+        If true, the body for computing the jacobian will be included 
+    function_name : str
+        The name of the function which should be generated
+    result_name : str
+        The name of the variable storing the jacobian diagonal result
+    """
+    
+    check_arg(jacobian, JacobianComponent)
+    return JacobianActionComponent(jacobian, with_body, function_name, \
+                                   result_name)
+
 def diagonal_jacobian_expressions(jacobian, function_name="compute_diagonal_jacobian", \
-                                  result_name="diag_jac", jacobian_name="jac"):
+                                  result_name="diag_jac"):
     """
     Return an ODEComponent holding expressions for the diagonal jacobian
 
@@ -182,32 +205,30 @@ def diagonal_jacobian_expressions(jacobian, function_name="compute_diagonal_jaco
         The name of the function which should be generated
     result_name : str
         The name of the variable storing the jacobian diagonal result
-    jacobian_name : str (optional)
-        The basename of the jacobian name used in the jacobian component
     """
-    return DiagonalJacobianComponent(jacobian, function_name, result_name, jacobian_name)
+    return DiagonalJacobianComponent(jacobian, function_name, result_name)
 
-def jacobian_action_expressions(jacobian, with_body=True, \
-                                result_name="diag_jac_action",\
-                                jacobian_name="jac"):
+def diagonal_jacobian_action_expressions(diagonal_jacobian, with_body=True, \
+                                         function_name="compute_diagonal_jacobian_action",\
+                                         result_name="diag_jac_action"):
     """
-    Return an ODEComponent holding expressions for the jacobian action
+    Return an ODEComponent holding expressions for the diagonal jacobian action
 
     Arguments
     ---------
-    jacobian : JacobianComponent
-        The ODEComponent holding expressions for the jacobian
+    diagonal_jacobian : DiagonalJacobianComponent
+        The ODEComponent holding expressions for the diagonal jacobian
     with_body : bool
         If true, the body for computing the jacobian will be included 
+    function_name : str
+        The name of the function which should be generated
     result_name : str
         The name of the variable storing the jacobian diagonal result
-    jacobian_name : str (optional)
-        The basename of the jacobian name used in the jacobian component
     """
     
-    check_arg(jacobian, JacobianComponent)
-    return JacobianActionComponent(jacobian, with_body, result_name, 
-                                   jacobian_name)
+    check_arg(diagonal_jacobian, DiagonalJacobianComponent)
+    return DiagonalJacobianActionComponent(diagonal_jacobian, with_body, function_name, \
+                                           result_name)
 
 def factorized_jacobian_expressions(jacobian, jacobian_name="jac"):
     """

@@ -44,6 +44,7 @@ class CodeComponent(ODEComponent):
     
     The class alows extraction and manipulation of the ODE expressions.
     """
+    
     def __init__(self, name, ode, function_name, description, **results):
         """
         Creates a CodeComponent
@@ -206,16 +207,15 @@ class CodeComponent(ODEComponent):
                                             param in self.root.parameters)
         elif param_repr == "array":
             self.shapes[param_name] = (self.root.num_parameters,)
-            
-            param_state_replace_dict.update((state.sym, indexed.sym) \
-                                            for state, indexed in \
-                                            state_param_map["states"].items())
-
-        if state_repr == "array":
-            self.shapes[state_name] = (self.root.num_full_states,)
             param_state_replace_dict.update((param.sym, indexed.sym) \
                                             for param, indexed in \
                                             state_param_map["parameters"].items())
+
+        if state_repr == "array":
+            self.shapes[state_name] = (self.root.num_full_states,)
+            param_state_replace_dict.update((state.sym, indexed.sym) \
+                                            for state, indexed in \
+                                            state_param_map["states"].items())
 
         # Store dicts
         self.param_state_replace_dict = param_state_replace_dict
@@ -483,7 +483,7 @@ class CodeComponent(ODEComponent):
         self.used_parameters = sorted(used_parameters)
 
         # Return a sorted list of all collected expressions
-        return results, sorted(list(exprs))
+        return results, sorted(exprs)
 
     def _recreate_body(self, body_expressions, **results):
         """
@@ -525,11 +525,17 @@ class CodeComponent(ODEComponent):
         # Get a copy of the map of where objects are used in and their
         # present dependencies so any updates done in these dictionaries does not
         # affect the original dicts
-        object_used_in = dict((expr, used.copy()) for expr, used in \
-                              self.root.object_used_in.items())
+        object_used_in = defaultdict(set)
+        for expr, used in self.root.object_used_in.items():
+            object_used_in[expr].update(used)
+        #object_used_in = dict((expr, used.copy()) for expr, used in \
+        #                      self.root.object_used_in.items())
 
-        expression_dependencies = dict((expr, deps.copy())for expr, deps in \
-                                       self.root.expression_dependencies.items())
+        expression_dependencies = defaultdict(set)
+        for expr, deps in self.root.expression_dependencies.items():
+            expression_dependencies[expr].update(deps)
+        #expression_dependencies = dict((expr, deps.copy()) for expr, deps in \
+        #                               self.root.expression_dependencies.items())
         
         # Get body parameters
         body_repr = parameters["code_generation"]["body"]["representation"]
@@ -553,8 +559,10 @@ class CodeComponent(ODEComponent):
         # according to state, parameters, body and result expressions
         replaced_expr_map = OrderedDict()
         new_body_expressions = []
+
         present_ode_objects = dict((state.name, state) for state in self.root.full_states)
         present_ode_objects.update((param.name, param) for param in self.root.parameters)
+        old_present_ode_objects = present_ode_objects.copy()
 
         def store_expressions(expr, new_expr):
             "Help function to store new expressions"
@@ -577,11 +585,18 @@ class CodeComponent(ODEComponent):
                 for dep in object_used_in[expr]:
                     expression_dependencies[dep].remove(expr)
                     expression_dependencies[dep].add(new_expr)
+                    
                 object_used_in[new_expr] = object_used_in.pop(expr)
 
             if expr in expression_dependencies:
                 expression_dependencies[new_expr] = expression_dependencies.pop(\
                     expr)
+
+            # Update expressions
+            #self.ode_objects.remove(expr)
+            #self.ode_objects.append(new_expr)
+
+        self.add_comment("Recreated body expressions")
 
         # The main iteration over all body_expressions
         for expr in body_expressions:
@@ -619,7 +634,7 @@ class CodeComponent(ODEComponent):
                     # Add a replace rule based on the stored sympy expression
                     sympy_expr = expr.expr.xreplace(der_replace_dict).xreplace(\
                         replace_dict)
-                    
+
                     if isinstance(expr.sym, sp.Derivative):
                         der_replace_dict[expr.sym] = sympy_expr
                     else:
@@ -637,17 +652,25 @@ class CodeComponent(ODEComponent):
                     # index information so that the index previously available
                     # for this expressions gets available at the last expressions
                     # the present expression is used in.
-                    if "reused" in body_repr:
-                        available_ind = index_available_at[expr]
+                    if isinstance(dep_expr, IndexedExpression) and \
+                           dep_expr.basename == body_name and "reused" in body_repr:
+                        ind = dep_expr.indices[0]
 
-                        # Update when ind will be available
-                        if available_ind:
-                            for used_expr in reversed(list(object_used_in[expr])):
-                                if used_expr in body_expressions:
-                                    index_available_at[used_expr].append(\
-                                        available_ind[0])
-                                    break
-                    
+                        # Remove available index information
+                        dep_used_in = sorted(object_used_in[dep_expr])
+                        for used_expr in dep_used_in:
+                            if ind in index_available_at[used_expr]:
+                                index_available_at[used_expr].remove(ind)
+
+                        # Update with new indices
+                        all_used_in = object_used_in[expr].copy()
+                        all_used_in.update(dep_used_in)
+
+                        for used_expr in sorted(all_used_in, reverse=True):
+                            if used_expr in body_expressions:
+                                index_available_at[used_expr].append(ind)
+                                break
+                            
                     # Update information about this expr beeing used
                     for dep in object_used_in[expr]:
                         expression_dependencies[dep].remove(expr)
@@ -670,6 +693,7 @@ class CodeComponent(ODEComponent):
             # expressions with the same name, similar to how this is treated in
             # the actuall ODE.
             present_ode_objects[expr.name] = expr
+            old_present_ode_objects[expr.name] = expr
 
             # 4) Handle result expression
             if expr in result_expressions:
@@ -716,7 +740,6 @@ class CodeComponent(ODEComponent):
                 
                 # Store the expressions
                 store_expressions(expr, new_expr)
-            
 
             # 5) If replacing all body exressions with an indexed expression
             elif "array" in body_repr:
@@ -731,7 +754,7 @@ class CodeComponent(ODEComponent):
                         ind = max_index
 
                     # Check when present ind gets available again
-                    for used_expr in reversed(list(object_used_in[expr])):
+                    for used_expr in sorted(object_used_in[expr], reverse=True):
                         if used_expr in body_expressions:
                             index_available_at[used_expr].append(ind)
                             break
@@ -772,7 +795,7 @@ class CodeComponent(ODEComponent):
         # Store indices for any added arrays
         if "reused_array" == body_repr:
 
-            self.shapes[body_name] = (max_index,)
+            self.shapes[body_name] = (max_index+1,)
 
         elif "array" == body_repr:
 
