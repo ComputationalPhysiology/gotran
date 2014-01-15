@@ -74,73 +74,78 @@ for use_cse in [False, True]:
         for param_repr in param_repr_opts:
             for body_repr in body_repr_opts:
                 for body_optimize in body_optimize_opts:
+                    for float_precision in ["double", "single"]:
+                        
+                        def function_closure(body_repr, body_optimize, param_repr, \
+                                             state_repr, use_cse, float_precision):
 
-                    def function_closure(body_repr, body_optimize, param_repr, \
-                                         state_repr, use_cse):
+                            # The test that will be attached to the TestCase class below
+                            def test(self):
+                                test_name = "body repr: {0}, body opt: {1}, state repr: {2}, parameter repr: {3}, use_cse: {4}, float_precision: {5}".format(body_repr, body_optimize, state_repr, param_repr, use_cse, float_precision)
+                                print "Testing code generation with parameters: " + test_name
 
-                        # The test that will be attached to the TestCase class below
-                        def test(self):
-                            test_name = "body repr: {0}, body opt: {1}, state repr: {2}, parameter repr: {3}, use_cse: {4}".format(body_repr, body_optimize, state_repr, param_repr, use_cse)
-                            print "Testing code generation with parameters: " + test_name
-                            
-                            # Update main parameters
-                            code_params["body"]["optimize_exprs"] = body_optimize
-                            code_params["body"]["representation"] = body_repr
-                            code_params["parameters"]["representation"] = param_repr
-                            code_params["states"]["representation"] = state_repr
-                            code_params["body"]["use_cse"] = use_cse
+                                # Update main parameters
+                                code_params["body"]["optimize_exprs"] = body_optimize
+                                code_params["body"]["representation"] = body_repr
+                                code_params["parameters"]["representation"] = param_repr
+                                code_params["states"]["representation"] = state_repr
+                                code_params["body"]["use_cse"] = use_cse
+                                code_params["float_precision"] = float_precision
 
-                            # Reload ODE for each test
-                            ode = load_ode("tentusscher_2004_mcell_updated.ode")
-                            codegen = PythonCodeGenerator()
-                            rhs_comp = rhs_expressions(ode)
-                            rhs_code = codegen.function_code(rhs_comp)
-                            exec rhs_code in globals(), locals()
-                            
-                            if param_repr != "numerals":
-                                rhs_values = rhs(states_values, 0.0, parameter_values)
-                            else:
-                                rhs_values = rhs(states_values, 0.0)
+                                # Reload ODE for each test
+                                ode = load_ode("tentusscher_2004_mcell_updated.ode")
+                                codegen = PythonCodeGenerator()
+                                rhs_comp = rhs_expressions(ode)
+                                rhs_code = codegen.function_code(rhs_comp)
+                                exec rhs_code in globals(), locals()
 
-                            rhs_norm = np.sqrt(np.sum(rhs_ref_values-rhs_values)**2)
+                                if param_repr != "numerals":
+                                    rhs_values = rhs(states_values, 0.0, parameter_values)
+                                else:
+                                    rhs_values = rhs(states_values, 0.0)
 
-                            # DEBUG
-                            if debug:
-                                test_name = "_".join([body_repr, body_optimize, state_repr, param_repr])
-                                test_name += "_use_cse_" + str(use_cse)
-                            
-                                open("rhs_code_{0}.py".format(test_name), "w").write(rhs_code)
-                                print "rhs norm:", rhs_norm
+                                rhs_norm = np.sqrt(np.sum(rhs_ref_values-rhs_values)**2)
 
-                            self.assertTrue(rhs_norm<1e-7)
+                                # DEBUG
+                                if debug:
+                                    test_name = "_".join([body_repr, body_optimize, state_repr, param_repr])
+                                    test_name += "_use_cse_" + str(use_cse)
 
-                            # Only evaluate jacobian if not using cse
-                            #if use_cse:
-                            #    return
-                            
-                            jac_comp = jacobian_expressions(ode)
-                            jac_code = codegen.function_code(jac_comp)
-                            exec jac_code in globals(), locals()
-                            
-                            if param_repr != "numerals":
-                                jac_values = compute_jacobian(\
-                                    states_values, 0.0, parameter_values)
-                            else:
-                                jac_values = compute_jacobian(states_values, 0.0)
+                                    open("rhs_code_{0}.py".format(test_name), "w").write(rhs_code)
+                                    print "rhs norm:", rhs_norm
 
-                            jac_norm = np.sqrt(np.sum(jac_ref_values-jac_values)**2)
-                            if debug:
-                                print "jac norm:", jac_norm
-                            
-                            self.assertTrue(jac_norm<1e-7)
+                                eps = 1e-8 if float_precision == "double" else 1e-6
+                                self.assertTrue(rhs_norm<eps)
 
-                        return test
+                                # Only evaluate jacobian if not using cse
+                                #if use_cse:
+                                #    return
 
-                    test_name = "_".join([body_repr, body_optimize, state_repr, param_repr])
-                    test_name += "_use_cse_" + str(use_cse)
+                                jac_comp = jacobian_expressions(ode)
+                                jac_code = codegen.function_code(jac_comp)
+                                exec jac_code in globals(), locals()
 
-                    test_map["test_"+test_name] = function_closure(\
-                        body_repr, body_optimize, param_repr, state_repr, use_cse)
+                                if param_repr != "numerals":
+                                    jac_values = compute_jacobian(\
+                                        states_values, 0.0, parameter_values)
+                                else:
+                                    jac_values = compute_jacobian(states_values, 0.0)
+
+                                jac_norm = np.sqrt(np.sum(jac_ref_values-jac_values)**2)
+                                if debug:
+                                    print "jac norm:", jac_norm
+
+                                eps = 1e-8 if float_precision == "double" else 1e-3
+                                self.assertTrue(jac_norm<eps)
+
+                            return test
+
+                        test_name = "_".join([body_repr, body_optimize, state_repr, param_repr])
+                        test_name += "_use_cse_" + str(use_cse)
+
+                        test_map["test_"+test_name] = function_closure(\
+                            body_repr, body_optimize, param_repr, state_repr, use_cse, \
+                        float_precision)
 
 # Generate an empy test class
 class TestCodeComponent(unittest.TestCase):pass

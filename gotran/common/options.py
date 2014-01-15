@@ -26,6 +26,11 @@ parameters = ParameterDict(
     # Code Generation parameters
     code_generation = ParameterDict(
 
+        # Float precision
+        float_precision = OptionParam("double",["double", "single"],
+                                      description="Float preceision in generate "\
+                                      "code."),
+
         # Parameter for default argument order
         default_arguments = OptionParam("stp", ["tsp", "stp", "spt", "ts", "st",
                                                 "tspb", "stpb", "sptb", "tsb", "stb",],

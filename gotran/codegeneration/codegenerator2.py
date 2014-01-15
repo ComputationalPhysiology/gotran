@@ -182,6 +182,7 @@ class BaseCodeGenerator(object):
     indent_str = " "
     max_line_length = 79
     to_code = lambda a,b,c,d : None
+    float_types = dict(single="float32", double="float64")
 
     def __init__(self, params=None):
 
@@ -189,6 +190,11 @@ class BaseCodeGenerator(object):
 
         self.params = self.default_params()
         self.params.update(params)
+
+    @property
+    def float_type(self):
+        "Return the float type"
+        return type(self).float_types[self.params.float_precision]
 
     @staticmethod
     def default_params():
@@ -216,7 +222,6 @@ class BaseCodeGenerator(object):
 
         check_kwarg(indent, "indent", int, ge=0)
         ret_lines = ret_lines or []
-
 
         # Walk through the code_lines
         for line_ind, line in enumerate(code_lines):
@@ -335,7 +340,8 @@ class PythonCodeGenerator(BaseCodeGenerator):
     # Class attributes
     language = "python"
     to_code = lambda a,b,c,d="math" : pythoncode(b,c,d)
-
+    float_types = dict(single="float32", double="float_")
+    
     def args(self, default_arguments=None, result_names=None):
         ret_args=[]
         result_names = result_names or []
@@ -469,15 +475,15 @@ class PythonCodeGenerator(BaseCodeGenerator):
             # If passing the body argument to the method
             if  "b" in default_arguments:
                 body_lines.append("if {0} is None:".format(body_name))
-                body_lines.append(["{0} = np.zeros({1}, dtype=np.float_)".format(\
-                    body_name, comp.shapes[body_name])])
+                body_lines.append(["{0} = np.zeros({1}, dtype=np.{2})".format(\
+                    body_name, comp.shapes[body_name]), self.float_type])
                 body_lines.append("else:".format(body_name))
                 body_lines.append(["assert isinstance({0}, np.ndarray) and "\
                                    "{1}.shape=={2}".format(\
                             body_name, body_name, comp.shapes[body_name])])
             else:
-                body_lines.append("{0} = np.zeros({1}, dtype=np.float_)".format(\
-                    body_name, comp.shapes[body_name]))
+                body_lines.append("{0} = np.zeros({1}, dtype=np.{2})".format(\
+                    body_name, comp.shapes[body_name], self.float_type))
 
         # If initilizing results
         if comp.results:
@@ -491,8 +497,8 @@ class PythonCodeGenerator(BaseCodeGenerator):
                     shape = (reduce(lambda a,b:a*b, shape, 1),)
 
             body_lines.append("if {0} is None:".format(result_name))
-            body_lines.append(["{0} = np.zeros({1}, dtype=np.float_)".format(\
-                result_name, shape)])
+            body_lines.append(["{0} = np.zeros({1}, dtype=np.{2})".format(\
+                result_name, shape, self.float_type)])
             body_lines.append("else:".format(result_name))
             body_lines.append(["assert isinstance({0}, np.ndarray) and "\
             "{1}.shape == {2}".format(result_name, result_name, shape)])
@@ -553,10 +559,10 @@ class PythonCodeGenerator(BaseCodeGenerator):
                       "", "# Init values"]
         body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
             state.name, state.init) for state in states)))
-        body_lines.append("init_values = np.array([{0}], dtype=np.float_)"\
+        body_lines.append("init_values = np.array([{0}], dtype=np.{1})"\
                           .format(", ".join("{0}".format(\
                 state.init if np.isscalar(state.init) else state.init[0])\
-                            for state in states)))
+                            for state in states), self.float_type))
         body_lines.append("")
         
         range_check = "lambda value : value {minop} {minvalue} and "\
@@ -612,10 +618,10 @@ class PythonCodeGenerator(BaseCodeGenerator):
                       "", "# Param values"]
         body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
             param.name, param.init) for param in parameters)))
-        body_lines.append("init_values = np.array([{0}], dtype=np.float_)"\
+        body_lines.append("init_values = np.array([{0}], dtype=np.{1})"\
                           .format(", ".join("{0}".format(\
                 param.init if np.isscalar(param.init) else param.init[0]) \
-                    for param in parameters)))
+                    for param in parameters), self.float_type))
         body_lines.append("")
         
         range_check = "lambda value : value {minop} {minvalue} and "\
