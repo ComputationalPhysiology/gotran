@@ -281,8 +281,12 @@ class JacobianComponent(CodeComponent):
                 "{0} ODE".format(ode)
         super(JacobianComponent, self).__init__("Jacobian", ode, function_name, \
                                                 descr)
-
         check_arg(result_name, str)
+
+        if ode.duplicated_expressions:
+            error("Cannot compute the jacobian including duplicated "\
+                  "expressions (yet...): {0}".format(\
+                      ", ".join(dup for dup in ode.duplicated_expressions)))
 
         timer = Timer("Computing jacobian")
         
