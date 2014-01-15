@@ -296,7 +296,7 @@ class RateDict(OrderedDict):
     def __init__(self, comp):
         from odecomponent import ODEComponent
         check_arg(comp, ODEComponent)
-        self._comp = comp
+        self._comp = weakref.ref(comp)
         super(RateDict, self).__init__()
 
     def __setitem__(self, states, expr):
@@ -320,7 +320,7 @@ class RateDict(OrderedDict):
         """
         
         if isinstance(expr, sp.Matrix):
-            self._comp._add_rates(states, expr)
+            self._comp()._add_rates(states, expr)
         else:
             check_arg(states, tuple, itemtypes=AppliedUndef)
             if len(states)!=2:
@@ -329,7 +329,7 @@ class RateDict(OrderedDict):
 
             # NOTE: the actuall item is set by the component while calling this
             # function, using _register_single_rate. See below.
-            self._comp._add_single_rate(states[0], states[1], expr)
+            self._comp()._add_single_rate(states[0], states[1], expr)
 
     def _register_single_rate(self, to_state, from_state, expr_sym):
         """
