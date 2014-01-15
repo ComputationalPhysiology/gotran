@@ -45,12 +45,11 @@ class ODE(ODEComponent):
     ns : dict (optional)
         A namespace which will be filled with declared ODE symbols
     """
-
-
     def __new__(cls, *args, **kwargs):
         self = object.__new__(cls, *args, **kwargs)
+        
         return self
-    
+
     def __init__(self, name, ns=None):
 
         # Call super class with itself as parent component
@@ -74,7 +73,8 @@ class ODE(ODEComponent):
         self.ode_objects.append(time)
 
         # Add to object to component map
-        self.object_component = {self._time : self}
+        self.object_component = weakref.WeakValueDictionary()
+        self.object_component[self._time] = self
 
         # Namespace, which can be used to eval an expression
         self.ns.update({"t":time.sym, "time":time.sym})

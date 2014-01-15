@@ -19,7 +19,6 @@ __all__ = ["load_ode", "exec_ode"]
 
 # System imports
 import inspect
-import sys
 import os
 import re
 import tempfile
@@ -217,6 +216,7 @@ def load_ode(filename, name=None, **arguments):
 
     # Create an ODE which will be populated with data when ode file is loaded
     ode = ODE(name, intermediate_dispatcher)
+    
     intermediate_dispatcher.ode = ode
 
     debug("Loading {}".format(ode.name))
