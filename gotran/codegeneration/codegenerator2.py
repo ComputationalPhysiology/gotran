@@ -99,7 +99,7 @@ class BaseCodeGenerator(object):
     indent = 4
     indent_str = " "
     max_line_length = 79
-    to_code = lambda a,b,c,d : None
+    to_code = lambda self,b,c,d : None
     float_types = dict(single="float32", double="float64")
 
     def __init__(self, params=None):
@@ -257,7 +257,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
 
     # Class attributes
     language = "python"
-    to_code = lambda a,b,c,d="math" : pythoncode(b,c,d)
+    to_code = lambda self, expr, name, ns="math" : pythoncode(expr, name, ns)
     float_types = dict(single="float32", double="float_")
     
     def args(self, default_arguments=None, result_names=None):
@@ -345,7 +345,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
                 # If all states are used
                 if len(used_states) == len(comp.root.full_states):
                     body_lines.append(", ".join(\
-                        state.name for i, state in enumerate(used_states)) + \
+                        state.name for i, state in enumerate(comp.root.full_states)) + \
                                       " = " + states_name)
                     
                 # If only a limited number of states are used
@@ -705,7 +705,7 @@ class CCodeGenerator(BaseCodeGenerator):
     index = lambda x, i : "[{0}]".format(i)
     indent = 2
     indent_str = " "
-    to_code = lambda a,b,c : ccode(b, c, a.params.float_precision)
+    to_code = lambda self, expr, name : ccode(expr, name, self.params.float_precision)
     float_types = dict(single="float", double="double")
 
     def obj_name(self, obj):
@@ -799,8 +799,9 @@ class CCodeGenerator(BaseCodeGenerator):
                     for i, state in enumerate(used_states):
                         add_obj(state, i, states_name)
                 else:
-                    for state in used_states:
-                        i = full_states.index(state)
+                    for i, state in enumerate(full_states):
+                        if state not in used_states:
+                            continue
                         add_obj(state, i, states_name)
                     
         # Add parameters code if not numerals
@@ -817,11 +818,12 @@ class CCodeGenerator(BaseCodeGenerator):
                 
                 # If all states are used
                 if len(used_parameters) == len(all_parameters):
-                    for i, param in enumerate(used_parameters):
+                    for i, param in enumerate(all_parameters):
                         add_obj(param, i, parameters_name)
                 else:
-                    for param in used_parameters:
-                        i = all_parameters.index(param)
+                    for i, param in enumerate(all_parameters):
+                        if param not in used_parameters:
+                            continue
                         add_obj(param, i, parameters_name)
                     
         # If using an array for the body variables and b is not passed as argument
@@ -835,8 +837,6 @@ class CCodeGenerator(BaseCodeGenerator):
                                                     comp.shapes[body_name][0]))
 
         return body_lines
-
-    
 
     def init_states_code(self, ode, indent=0):
         """
@@ -982,125 +982,49 @@ class CCodeGenerator(BaseCodeGenerator):
 
         return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
         
-    def dy_componentwise_body(self):
-        oderepr = self.oderepr
-        ode = oderepr.ode
-        componentwise_dy_body = []
-        for id, ((subs, expr), used) in enumerate(zip(\
-            oderepr.iter_componentwise_dy(), oderepr.used_in_single_dy)):
-            body_lines = []
-            if oderepr.optimization.use_state_names:
-                body_lines.append("// Assign states")
-                for ind, state in enumerate(ode.states):
-                    if state.name in used["states"]:
-                        state_name = state.name if state.name not in ["I"] \
-                                     else state.name + "_"
-                        body_lines.append("const double {0} = states[{1}]".format(\
-                            state_name, ind))
-
+    def code_list(self, ode, include_jacobian=True, monitored=None, indent=0):
         
-            # Add parameters code if not numerals
-            if self.params.parameters_in_signature and \
-                   not self.oderepr.optimization.parameter_numerals:
+        monitored = monitored or []
+        check_arg(ode, ODE)
+        check_kwarg(monitored, "monitored", list, itemtypes=str)
+        rhs = rhs_expressions(ode)
 
-                if self.oderepr.optimization.use_parameter_names:
-                    body_lines.append("")
-                    body_lines.append("// Assign parameters")
-                    for ind, param in enumerate(ode.parameters):
-                        if param.name in used["parameters"]:
-                            param_name = param.name if param.name not in ["I"] \
-                                         else param.name + "_"
-                            body_lines.append("const double {0} = parameters[{1}]".\
-                                              format(param_name, ind))
-
-            if subs:
-                body_lines.append("")
-                body_lines.append("// Common sub expressions for derivative {0}".format(id))
-                
-            for name, sub_expr in subs:
-                if name in ["I"]:
-                    name += "_"
-                name = "const double " + str(name)
-                body_lines.append(self.to_code(sub_expr, name))
-
-            body_lines.append("")
-            body_lines.append("// The expression")
-            body_lines.append("return " + self.to_code(expr, None))
-            body_lines.append("break")
-
-            componentwise_dy_body.append("")
-            componentwise_dy_body.append("// Component {0}".format(id))
-            componentwise_dy_body.append("case {0}:".format(id))
-            componentwise_dy_body.append(body_lines)
-
-        body = ["// What component?"]
-        body.append("switch (id)")
-        componentwise_dy_body.append("")
-        componentwise_dy_body.append("default:")
-        default_lines = []
-        if self.language == "C++":
-            default_lines.append("throw std::runtime_error(\"Index out of bounds\")")
-        else:
-            default_lines.append("// Throw an exception...")
-        default_lines.append("return 0.0")
-        componentwise_dy_body.append(default_lines)
-        body.append(componentwise_dy_body)
-        
-        return body
-
-
-    def dy_componentwise_code(self, indent=0):
-
-        body_lines = self.dy_componentwise_body()
-
-        # Add function prototype
-        args = "unsigned int id, " + self.args()
-        componentwise_function = self.wrap_body_with_function_prototype(\
-            body_lines, "componentwise", args, \
-            "double", "Compute componentwise rhs {0}".format(self.oderepr.name))
-        
-        return "\n".join(self.indent_and_split_lines(\
-            componentwise_function, indent=indent))
-
-    def code_list(self, indent=0):
-        
-        code = [self.init_param_code(indent),
-                self.init_states_code(indent),
-                self.dy_code(indent),
-                self.monitored_code(indent),
-                self.dy_componentwise_code(indent),
-                self.linearized_dy_code(indent),
+        code = [self.init_parameters_code(ode, indent),
+                self.init_states_code(ode, indent),
+                self.function_code(rhs, indent),
                 ]
 
-        if self.oderepr.optimization.generate_jacobian:
-            code += [self.jacobian_code(indent)]
+        if monitored:
+            code += [self.function_code(monitored_expressions(\
+                ode, monitored), indent)]
+
+        if include_jacobian:
+            code += [self.function_code(jacobian_expressions(ode), indent)]
 
         return code
 
-    def module_code(self):
+    def module_code(self, ode):
         
-        code_list = self.code_list()
+        code_list = self.code_list(ode)
 
         return  """// Gotran generated code for the "{0}" model
 
 {1}
-""".format(self.oderepr.ode.name, "\n\n".join(code_list))
+""".format(ode.name, "\n\n".join(code_list))
 
 class CppCodeGenerator(CCodeGenerator):
     
     language = "C++"
 
     # Class attributes
-    to_code = lambda a,b,c : cppcode(b,c)
+    to_code = lambda self, expr, name : cppcode(expr, name, self.params.float_precision)
 
-    def class_code(self):
+    def class_code(self, ode):
         """
         Generate class code
         """
 
-        name = self.oderepr.class_name
-
-        code_list = self.code_list(indent=2)
+        code_list = self.code_list(ode, indent=2)
 
         return  """
 // Gotran generated class for the "{0}" model        
@@ -1112,7 +1036,7 @@ public:
 {2}
 
 }};
-""".format(name, self.oderepr.class_name, "\n\n".join(code_list))
+""".format(ode.name, class_name(ode.name), "\n\n".join(code_list))
 
 class MatlabCodeGenerator(BaseCodeGenerator):
     """
@@ -1129,7 +1053,7 @@ class MatlabCodeGenerator(BaseCodeGenerator):
     index = lambda x, i : "({0})".format(i)
     indent = 2
     indent_str = " "
-    to_code = lambda a,b,c : matlabcode(b,c)
+    to_code = lambda self, expr, name : matlabcode(expr, name)
 
     def wrap_body_with_function_prototype(self, body_lines, name, args, \
                                           return_args="", comment=""):
