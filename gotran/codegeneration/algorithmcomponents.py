@@ -45,7 +45,7 @@ from gotran.codegeneration.codecomponent import CodeComponent
 #FIXME: Remove our own cse, or move to this module?
 from gotran.codegeneration.sympy_cse import cse
 
-def rhs_expressions(ode, function_name="rhs", result_name="dy"):
+def rhs_expressions(ode, function_name="rhs", result_name="dy", params=None):
     """
     Return a code component with body expressions for the right hand side
 
@@ -57,6 +57,8 @@ def rhs_expressions(ode, function_name="rhs", result_name="dy"):
         The name of the function which should be generated
     result_name : str
         The name of the variable storing the rhs result
+    params : dict
+        Parameters determining how the code should be generated
     """
 
     check_arg(ode, ODE)
@@ -67,10 +69,10 @@ def rhs_expressions(ode, function_name="rhs", result_name="dy"):
     descr = "Compute the right hand side of the {0} ODE".format(ode)
     
     return CodeComponent("RHSComponent", ode, function_name, descr,\
-                         **{result_name:ode.state_expressions})
+                         params=params, **{result_name:ode.state_expressions})
 
 def monitored_expressions(ode, monitored, function_name="monitored_expressions",
-                          result_name="monitored"):
+                          result_name="monitored", params=None):
     """
     Return a code component with body expressions to calculate monitored expressions
 
@@ -84,6 +86,8 @@ def monitored_expressions(ode, monitored, function_name="monitored_expressions",
         The name of the function which should be generated
     result_name : str
         The name of the variable storing the rhs result
+    params : dict
+        Parameters determining how the code should be generated
     """
 
     check_arg(ode, ODE)
@@ -102,9 +106,9 @@ def monitored_expressions(ode, monitored, function_name="monitored_expressions",
 
     descr = "Computes monitored expressions of the {0} ODE".format(ode)
     return CodeComponent("MonitoredExpressions", ode, function_name, descr, \
-                         **{result_name:monitored_exprs})
+                         params=params, **{result_name:monitored_exprs})
     
-def componentwise_derivative(ode, index):
+def componentwise_derivative(ode, index, params=None):
     """
     Return an ODEComponent holding the expressions for the ith
     state derivative
@@ -115,6 +119,8 @@ def componentwise_derivative(ode, index):
         The finalized ODE for which the ith derivative should be computed
     index : int
         The index
+    params : dict
+        Parameters determining how the code should be generated
     """
     check_arg(ode, ODE)
     if not ode.is_finalized:
@@ -130,10 +136,10 @@ def componentwise_derivative(ode, index):
         error("The ith index is not a StateDerivative: {0}".format(expr))
         
     return CodeComponent("d{0}_dt_component".format(\
-        state), ode, "", "", dy=[expr])
+        state), ode, "", "", params=params, dy=[expr])
 
 def linearized_derivatives(ode, function_name="linear_derivatives", \
-                           result_name="linearized"):
+                           result_name="linearized", params=None):
     """
     Return an ODEComponent holding the linearized derivative expressions
 
@@ -145,13 +151,16 @@ def linearized_derivatives(ode, function_name="linear_derivatives", \
         The name of the function which should be generated
     result_name : str
         The name of the variable storing the linearized derivatives
+    params : dict
+        Parameters determining how the code should be generated
     """
     if not ode.is_finalized:
         error("The ODE is not finalized")
 
-    return LinearizedDerivativeComponent(ode, function_name, result_name)
+    return LinearizedDerivativeComponent(ode, function_name, result_name, params)
 
-def jacobian_expressions(ode, function_name="compute_jacobian", result_name="jac"):
+def jacobian_expressions(ode, function_name="compute_jacobian", \
+                         result_name="jac", params=None):
     """
     Return an ODEComponent holding expressions for the jacobian
 
@@ -163,16 +172,18 @@ def jacobian_expressions(ode, function_name="compute_jacobian", result_name="jac
         The name of the function which should be generated
     result_name : str
         The name of the variable storing the jacobian result
+    params : dict
+        Parameters determining how the code should be generated
     """
     if not ode.is_finalized:
         error("The ODE is not finalized")
 
     return JacobianComponent(ode, function_name=function_name, \
-                             result_name=result_name)
+                             result_name=result_name, params=params)
 
 def jacobian_action_expressions(jacobian, with_body=True, \
                                 function_name="compute_jacobian_action",\
-                                result_name="jac_action"):
+                                result_name="jac_action", params=None):
     """
     Return an ODEComponent holding expressions for the jacobian action
 
@@ -186,14 +197,16 @@ def jacobian_action_expressions(jacobian, with_body=True, \
         The name of the function which should be generated
     result_name : str
         The name of the variable storing the jacobian diagonal result
+    params : dict
+        Parameters determining how the code should be generated
     """
     
     check_arg(jacobian, JacobianComponent)
     return JacobianActionComponent(jacobian, with_body, function_name, \
-                                   result_name)
+                                   result_name, params=params)
 
 def diagonal_jacobian_expressions(jacobian, function_name="compute_diagonal_jacobian", \
-                                  result_name="diag_jac"):
+                                  result_name="diag_jac", params=None):
     """
     Return an ODEComponent holding expressions for the diagonal jacobian
 
@@ -205,12 +218,15 @@ def diagonal_jacobian_expressions(jacobian, function_name="compute_diagonal_jaco
         The name of the function which should be generated
     result_name : str
         The name of the variable storing the jacobian diagonal result
+    params : dict
+        Parameters determining how the code should be generated
     """
-    return DiagonalJacobianComponent(jacobian, function_name, result_name)
+    return DiagonalJacobianComponent(jacobian, function_name, result_name, \
+                                     params=params)
 
 def diagonal_jacobian_action_expressions(diagonal_jacobian, with_body=True, \
                                          function_name="compute_diagonal_jacobian_action",\
-                                         result_name="diag_jac_action"):
+                                         result_name="diag_jac_action", params=None):
     """
     Return an ODEComponent holding expressions for the diagonal jacobian action
 
@@ -224,13 +240,15 @@ def diagonal_jacobian_action_expressions(diagonal_jacobian, with_body=True, \
         The name of the function which should be generated
     result_name : str
         The name of the variable storing the jacobian diagonal result
+    params : dict
+        Parameters determining how the code should be generated
     """
     
     check_arg(diagonal_jacobian, DiagonalJacobianComponent)
     return DiagonalJacobianActionComponent(diagonal_jacobian, with_body, function_name, \
-                                           result_name)
+                                           result_name, params=params)
 
-def factorized_jacobian_expressions(jacobian, jacobian_name="jac"):
+def factorized_jacobian_expressions(jacobian, params=None):
     """
     Return an ODEComponent holding expressions for the factorized jacobian
 
@@ -238,13 +256,13 @@ def factorized_jacobian_expressions(jacobian, jacobian_name="jac"):
     ---------
     jacobian : JacobianComponent
         The ODEComponent holding expressions for the jacobian
-    jacobian_name : str (optional)
-        The basename of the jacobian name used in the jacobian component
+    params : dict
+        Parameters determining how the code should be generated
     """
     check_arg(jacobian, JacobianComponent)
-    return FactorizedJacobianComponent(jacobian, jacobian_name)
+    return FactorizedJacobianComponent(jacobian, params=params)
 
-def forward_backward_subst_expressions(factorized):
+def forward_backward_subst_expressions(factorized, params=None):
     """
     Return an ODEComponent holding expressions for the forward backward
     substitions for a factorized jacobian
@@ -253,15 +271,18 @@ def forward_backward_subst_expressions(factorized):
     ---------
     factoriced : FactorizedJacobianComponent
         The ODEComponent holding expressions for the factorized jacobian
+    params : dict
+        Parameters determining how the code should be generated
     """
     check_arg(factoriced, FactorizedJacobianComponent)
-    return ForwardBackwardSubstitutionComponent(jacobian)
+    return ForwardBackwardSubstitutionComponent(jacobian, params=params)
 
 class JacobianComponent(CodeComponent):
     """
     An ODEComponent which keeps all expressions for the Jacobian of the rhs
     """
-    def __init__(self, ode, function_name="compute_jacobian", result_name="jac"):
+    def __init__(self, ode, function_name="compute_jacobian", \
+                 result_name="jac", params=None):
         """
         Create a JacobianComponent
 
@@ -273,6 +294,8 @@ class JacobianComponent(CodeComponent):
             The name of the function which should be generated
         result_name : str
             The name of the variable storing the jacobian result
+        params : dict
+            Parameters determining how the code should be generated
         """
         check_arg(ode, ODE)
 
@@ -280,7 +303,7 @@ class JacobianComponent(CodeComponent):
         descr = "Compute the jacobian of the right hand side of the "\
                 "{0} ODE".format(ode)
         super(JacobianComponent, self).__init__("Jacobian", ode, function_name, \
-                                                descr)
+                                                descr, params=params)
         check_arg(result_name, str)
 
         if ode.duplicated_expressions:
@@ -342,7 +365,7 @@ class DiagonalJacobianComponent(CodeComponent):
     An ODEComponent which keeps all expressions for the Jacobian of the rhs
     """
     def __init__(self, jacobian, function_name="compute_diagonal_jacobian", \
-                 result_name="diag_jac"):
+                 result_name="diag_jac", params=None):
         """
         Create a DiagonalJacobianComponent
 
@@ -354,13 +377,16 @@ class DiagonalJacobianComponent(CodeComponent):
             The name of the function which should be generated
         result_name : str (optional)
             The basename of the indexed result expression
+        params : dict
+            Parameters determining how the code should be generated
         """
         check_arg(jacobian, JacobianComponent)
         
         descr = "Compute the diagonal jacobian of the right hand side of the "\
                 "{0} ODE".format(jacobian.root)
         super(DiagonalJacobianComponent, self).__init__(\
-            "DiagonalJacobian", jacobian.root, function_name, descr)
+            "DiagonalJacobian", jacobian.root, function_name, descr, \
+            params=params)
 
         what = "Computing diagonal jacobian"
         timer = Timer(what)
@@ -395,7 +421,7 @@ class JacobianActionComponent(CodeComponent):
     """
     def __init__(self, jacobian, with_body=True, \
                  function_name="compute_jacobian_action", \
-                 result_name="jac_action"):
+                 result_name="jac_action", params=None):
         """
         Create a JacobianActionComponent
 
@@ -409,13 +435,16 @@ class JacobianActionComponent(CodeComponent):
             The name of the function which should be generated
         result_name : str
             The basename of the indexed result expression
+        params : dict
+            Parameters determining how the code should be generated
         """
         timer = Timer("Computing jacobian action component")
         check_arg(jacobian, JacobianComponent)
         descr = "Compute the jacobian action of the right hand side of the "\
                 "{0} ODE".format(jacobian.root)
         super(JacobianActionComponent, self).__init__(\
-            "JacobianAction", jacobian.root, function_name, descr)
+            "JacobianAction", jacobian.root, function_name, descr, \
+            params=params)
 
         x = self.root.full_state_vector
         jac = jacobian.jacobian
@@ -449,7 +478,7 @@ class DiagonalJacobianActionComponent(CodeComponent):
     """
     def __init__(self, diagonal_jacobian, with_body=True, \
                  function_name="compute_diagonal_jacobian_action", \
-                 result_name="diag_jac_action"):
+                 result_name="diag_jac_action", params=None):
         """
         Create a DiagonalJacobianActionComponent
 
@@ -463,13 +492,16 @@ class DiagonalJacobianActionComponent(CodeComponent):
             The name of the function which should be generated
         result_name : str
             The basename of the indexed result expression
+        params : dict
+            Parameters determining how the code should be generated
         """
         timer = Timer("Computing jacobian action component")
         check_arg(diagonal_jacobian, DiagonalJacobianComponent)
         descr = "Compute the diagonal jacobian action of the right hand side "\
                 "of the {0} ODE".format(diagonal_jacobian.root)
         super(DiagonalJacobianActionComponent, self).__init__(\
-            "DiagonalJacobianAction", diagonal_jacobian.root, function_name, descr)
+            "DiagonalJacobianAction", diagonal_jacobian.root, function_name, \
+            descr, params=params)
 
         x = self.root.full_state_vector
         jac = diagonal_jacobian.diagonal_jacobian
@@ -499,9 +531,21 @@ class FactorizedJacobianComponent(CodeComponent):
     """
     Class to generate expressions for symbolicaly factorizing a jacobian
     """
-    def __init__(self, jacobian, function_name="factorize_jacobian"):
+    def __init__(self, jacobian, function_name="factorize_jacobian", \
+                 params=None):
         """
         Create a FactorizedJacobianComponent
+
+        Arguments
+        ---------
+        jacobian : JacobianComponent
+            The Jacobian of the ODE
+        with_body : bool
+            If true, the body for computing the jacobian will be included 
+        function_name : str
+            The name of the function which should be generated
+        params : dict
+            Parameters determining how the code should be generated
         """
         
         timer = Timer("Computing factorization of jacobian")
@@ -509,7 +553,8 @@ class FactorizedJacobianComponent(CodeComponent):
         descr = "Symbolicly factorize the jacobian of the {0} ODE".format(\
             jacobian.root)
         super(FactorizedJacobianComponent, self).__init__(\
-            "FactorizedJacobian", jacobian.root, function_name, descr)
+            "FactorizedJacobian", jacobian.root, function_name, descr, \
+            params=params)
 
         self.add_comment("Factorizing jacobian of {0}".format(jacobian.root.name))
         
@@ -596,13 +641,14 @@ class ForwardBackwardSubstitutionComponent(CodeComponent):
     Class to generate a forward backward substiution algorithm for
     symbolically factorized jacobian
     """
-    def __init__(self, factorized, jacobian_name="jac", residual_name="dx"):
+    def __init__(self, factorized, jacobian_name="jac", residual_name="dx", \
+                 params=None):
         """
         Create a JacobianForwardBackwardSubstComponent
         """
         check_arg(factorized, FactorizedJacobianComponent)
         super(ForwardBackwardSubstitutionComponent, self).__init__(\
-            "ForwardBackwardSubst", factorized.root)
+            "ForwardBackwardSubst", factorized.root, params=params)
         check_arg(parent, ODE)
 
 class LinearizedDerivativeComponent(CodeComponent):
@@ -610,11 +656,25 @@ class LinearizedDerivativeComponent(CodeComponent):
     A component for all linear and linearized derivatives
     """
     def __init__(self, ode, function_name="linear_derivatives", \
-                 result_name="linearized"):
+                 result_name="linearized", params=None):
+        """
+        Return an ODEComponent holding the linearized derivative expressions
+    
+        Arguments
+        ---------
+        ode : ODE
+            The ODE for which derivatives should be linearized
+        function_name : str
+            The name of the function which should be generated
+        result_name : str
+            The name of the variable storing the linearized derivatives
+        params : dict
+            Parameters determining how the code should be generated
+        """
 
         descr = "Computes the linearized derivatives for all linear derivatives"
         super(LinearizedDerivativeComponent, self).__init__(\
-            "LinearizedDerivatives", ode, function_name, descr)
+            "LinearizedDerivatives", ode, function_name, descr, params=params)
         
         check_arg(ode, ODE)
         assert ode.is_finalized

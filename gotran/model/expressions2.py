@@ -52,7 +52,7 @@ def recreate_expression(expr, *replace_dicts):
 
     elif isinstance(expr, IndexedExpression):
         new_expr = IndexedExpression(expr.basename, expr.indices, \
-                                     sympyexpr, expr.shape)
+                                     sympyexpr, expr.shape, expr._array_params)
     else:
         error("Should not reach here")
 
@@ -386,7 +386,7 @@ class IndexedExpression(IndexedObject, Expression):
     An expression which represents an expression with a fixed index
     associated with it
     """
-    def __init__(self, basename, indices, expr, shape=None):
+    def __init__(self, basename, indices, expr, shape=None, array_params=None):
         """
         Create an IndexedExpression with an associated basename used in code
         generation.
@@ -401,9 +401,11 @@ class IndexedExpression(IndexedObject, Expression):
             The expression
         shape : tuple (optional)
             A tuple with the shape of the indexed expression
+        array_params : dict
+            Parameters to create the array name for the indexed object
         """
         
-        IndexedObject.__init__(self, basename, indices, shape)
+        IndexedObject.__init__(self, basename, indices, shape, array_params)
         Expression.__init__(self, self.name, expr)
         
 

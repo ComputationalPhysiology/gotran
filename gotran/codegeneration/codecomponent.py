@@ -44,8 +44,15 @@ class CodeComponent(ODEComponent):
     
     The class alows extraction and manipulation of the ODE expressions.
     """
+
+    @staticmethod
+    def default_parameters():
+        """
+        Return the default parameters for code generation 
+        """
+        return parameters.code_generation.copy()
     
-    def __init__(self, name, ode, function_name, description, **results):
+    def __init__(self, name, ode, function_name, description, params=None, **results):
         """
         Creates a CodeComponent
 
@@ -60,14 +67,18 @@ class CodeComponent(ODEComponent):
             The name of the generated function
         description : str
             A short description of what the code component are computing
+        params : dict
+            Parameters determining how the code should be generated
         results : kwargs
             A dict of result expressions. The result expressions will
             be used to extract the body expressions for the code component.
         """
+        params = params or {}
         check_arg(ode, ODE)
         check_arg(name, str)
         check_arg(description, str)
         check_arg(function_name, str)
+        check_kwarg(params, "params", dict)
 
         super(CodeComponent, self).__init__(name, ode)
 
@@ -77,6 +88,10 @@ class CodeComponent(ODEComponent):
         for result_name, result_expressions in results.items():
             check_kwarg(result_expressions, result_name, list, \
                         itemtypes=(Expression, Comment))
+
+        # Store parameters
+        self._params = self.default_parameters()
+        self._params.update(params)
 
         # Store function name and description
         self.function_name = function_name
@@ -130,7 +145,8 @@ class CodeComponent(ODEComponent):
                       "in dim {0}: {1}>={2}".format(dim+1, index, shape_ind))
 
         # Create the indexed expression
-        expr = IndexedExpression(basename, indices, expr, self.shapes[basename])
+        expr = IndexedExpression(basename, indices, expr, self.shapes[basename], \
+                                 self._params.array)
         self._register_component_object(expr)
 
         return expr.sym
@@ -161,7 +177,8 @@ class CodeComponent(ODEComponent):
                       "in dim {0}: {1}>={2}".format(dim+1, index, shape_ind))
 
         # Create IndexedObject
-        obj = IndexedObject(basename, indices, self.shapes[basename])
+        obj = IndexedObject(basename, indices, self.shapes[basename], \
+                            self._params.array)
         self._register_component_object(obj)
 
         # Return the sympy version of the object
@@ -186,18 +203,21 @@ class CodeComponent(ODEComponent):
         
         param_state_replace_dict = {}
 
-        param_repr = parameters["code_generation"]["parameters"]["representation"]
-        param_name = parameters["code_generation"]["parameters"]["array_name"]
+        array_params = self._params["array"]
+        param_repr = self._params["parameters"]["representation"]
+        param_name = self._params["parameters"]["array_name"]
         
-        state_repr = parameters["code_generation"]["states"]["representation"]
-        state_name = parameters["code_generation"]["states"]["array_name"]
+        state_repr = self._params["states"]["representation"]
+        state_name = self._params["states"]["array_name"]
 
         # Create a map between states, parameters 
         state_param_map = dict(states=OrderedDict(\
-            (state, IndexedObject(state_name, ind)) \
+            (state, IndexedObject(state_name, ind, \
+                                  (self.root.num_full_states,), array_params)) \
             for ind, state in enumerate(self.root.full_states)),
                                parameters=OrderedDict(\
-                                   (param, IndexedObject(param_name, ind)) \
+            (param, IndexedObject(param_name, ind, \
+                                  (self.root.num_parameters, ), array_params)) \
                                    for ind, param in enumerate(\
                                        self.root.parameters)))
         
@@ -233,7 +253,7 @@ class CodeComponent(ODEComponent):
             return {}, []
 
         # Check if we are using common sub expressions for body
-        if parameters["code_generation"]["body"]["use_cse"]:
+        if self._params["body"]["use_cse"]:
             return self._body_from_cse(**results)
         else:
             return self._body_from_dependencies(**results)
@@ -526,12 +546,12 @@ class CodeComponent(ODEComponent):
         #                               self.root.expression_dependencies.items())
         
         # Get body parameters
-        body_repr = parameters["code_generation"]["body"]["representation"]
-        optimize_exprs = parameters["code_generation"]["body"]["optimize_exprs"]
+        body_repr = self._params["body"]["representation"]
+        optimize_exprs = self._params["body"]["optimize_exprs"]
 
         # Set body related variables if the body should be represented by an array
         if "array" in body_repr:
-            body_name = parameters["code_generation"]["body"]["array_name"]
+            body_name = self._params["body"]["array_name"]
             available_indices = deque()
             body_indices = []
             max_index = -1
@@ -708,7 +728,9 @@ class CodeComponent(ODEComponent):
                     # NOTE: params
                     new_expr = IndexedExpression(result_name, index, expr.expr.\
                                                  xreplace(der_replace_dict).\
-                                                 xreplace(replace_dict))
+                                                 xreplace(replace_dict), \
+                                                 (len(results[result_name]), ),
+                                                 array_params=self._params.array)
 
                     self.indexed_map[new_expr.basename][expr] = new_expr
 
@@ -761,7 +783,8 @@ class CodeComponent(ODEComponent):
                 # Create the IndexedExpression
                 new_expr = IndexedExpression(body_name, ind, expr.expr.\
                                              xreplace(der_replace_dict).\
-                                             xreplace(replace_dict))
+                                             xreplace(replace_dict),
+                                             array_params=self._params.array)
 
                 self.indexed_map[body_name][expr] = new_expr
 

@@ -106,7 +106,7 @@ class BaseCodeGenerator(object):
 
         params = params or {}
 
-        self.params = self.default_params()
+        self.params = self.default_parameters()
         self.params.update(params)
 
     @property
@@ -115,7 +115,7 @@ class BaseCodeGenerator(object):
         return type(self).float_types[self.params.float_precision]
 
     @staticmethod
-    def default_params():
+    def default_parameters():
         # Start out with a copy of the global parameters
         return parameters.code_generation.copy()
 
@@ -648,7 +648,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
         monitored = monitored or []
         check_arg(ode, ODE)
         check_kwarg(monitored, "monitored", list, itemtypes=str)
-        rhs = rhs_expressions(ode)
+        rhs = rhs_expressions(ode, params=self.params)
 
         code = [self.init_parameters_code(ode, indent),
                 self.init_states_code(ode, indent),
@@ -659,10 +659,11 @@ class PythonCodeGenerator(BaseCodeGenerator):
 
         if monitored:
             code += [self.function_code(monitored_expressions(\
-                ode, monitored), indent)]
+                ode, monitored, params=self.params), indent)]
 
         if include_jacobian:
-            code += [self.function_code(jacobian_expressions(ode), indent)]
+            code += [self.function_code(jacobian_expressions(\
+                ode, params=self.params), indent)]
 
         return code
 

@@ -44,7 +44,7 @@ ode = load_ode("tentusscher_2004_mcell_updated.ode")
 codegen = PythonCodeGenerator()
 
 # Options for code generation
-default_params = parameters["code_generation"]
+default_params = parameters["code_generation"].copy()
 
 state_repr_opts = sorted(dict.__getitem__(default_params.states, "representation")._options)
 param_repr_opts = dict.__getitem__(default_params.parameters, "representation")._options
@@ -65,7 +65,7 @@ if debug:
     print "REF RHS:", rhs_ref_values
     print "REF JAC:", jac_ref_values
 
-code_params = parameters["code_generation"]
+code_params = parameters["code_generation"].copy()
 
 test_map = {}
 
@@ -77,15 +77,22 @@ def function_closure(body_repr, body_optimize, param_repr, \
 
     # The test that will be attached to the TestCase class below
     def test(self):
-        test_name = "body repr: {0}, body opt: {1}, state repr: {2}, "\
-                    "parameter repr: {3}, use_cse: {4}, float_precision: "\
-                    "{5}, state_name: {6}, param_name: {7}, body_name: {8}, "\
-                    "body_in_arg: {9}".format(\
+        test_name = """
+        body repr:       {0}, 
+        body opt:        {1},
+        state repr:      {2}, 
+        parameter repr:  {3},
+        use_cse:         {4},
+        float_precision: {5},
+        state_name:      {6},
+        param_name:      {7},
+        body_name:       {8}, 
+        body_in_arg:     {9}""".format(\
             body_repr, body_optimize, state_repr, param_repr, use_cse, \
             float_precision, states_name, parameters_name, body_array_name, body_in_arg)
-        print "Testing code generation with parameters: " + test_name
+        print "\nTesting code generation with parameters: " + test_name
 
-        # Update main parameters
+        # Update code_params
         code_params["body"]["optimize_exprs"] = body_optimize
         code_params["body"]["representation"] = body_repr
         code_params["body"]["array_name"] =  body_array_name
@@ -99,8 +106,8 @@ def function_closure(body_repr, body_optimize, param_repr, \
 
         # Reload ODE for each test
         ode = load_ode("tentusscher_2004_mcell_updated.ode")
-        codegen = PythonCodeGenerator()
-        rhs_comp = rhs_expressions(ode)
+        codegen = PythonCodeGenerator(code_params)
+        rhs_comp = rhs_expressions(ode, params=code_params)
         rhs_code = codegen.function_code(rhs_comp)
         exec rhs_code in globals(), locals()
 
@@ -129,11 +136,12 @@ def function_closure(body_repr, body_optimize, param_repr, \
         eps = 1e-8 if float_precision == "double" else 1e-6
         self.assertTrue(rhs_norm<eps)
 
-        # Only evaluate jacobian if not using cse
-        #if use_cse:
-        #    return
+        # Only evaluate jacobian if using full body_optimization and body repr is reused_array
+        if body_optimize != "numerals_symbols" and body_repr != "reused_array" \
+               and param_repr == "named":
+            return
 
-        jac_comp = jacobian_expressions(ode)
+        jac_comp = jacobian_expressions(ode, params=code_params)
         jac_code = codegen.function_code(jac_comp)
         exec jac_code in globals(), locals()
 
@@ -156,7 +164,7 @@ def function_closure(body_repr, body_optimize, param_repr, \
 
             open("jac_code_{0}.py".format(test_name), "w").write(jac_code)
             print "jac norm:", jac_norm
-            print "JAC", jac_values
+            #print "JAC", jac_values
 
         eps = 1e-8 if float_precision == "double" else 1e-3
         self.assertTrue(jac_norm<eps)
@@ -167,11 +175,11 @@ def function_closure(body_repr, body_optimize, param_repr, \
 for use_cse in [False, True]:
 #for use_cse in [False]:
     for state_repr in state_repr_opts:
-    #for state_repr in ["named"]:
+    #for state_repr in ["array"]:
         for param_repr in param_repr_opts:
-        #for param_repr in ["named"]:
+        #for param_repr in ["array"]:
             for body_repr in body_repr_opts:
-            #for body_repr in ["named"]:
+            #for body_repr in ["array"]:
                 for body_optimize in body_optimize_opts:
                 #for body_optimize in ["none"]:
                     for float_precision in ["double", "single"]:
@@ -180,14 +188,58 @@ for use_cse in [False, True]:
                         test_name = "_".join([body_repr, body_optimize, \
                                               state_repr, param_repr, float_precision])
                         test_name += "_use_cse_" + str(use_cse)
-
                         test_map["test_"+test_name] = function_closure(\
                             body_repr, body_optimize, param_repr, state_repr, use_cse, \
                         float_precision)
 
 # Generate an empy test class
-class TestCodeComponent(unittest.TestCase):pass
+class TestCodeComponent(unittest.TestCase):
 
+    def test_param_setting(self):
+        "Test that different ways of setting parameters generates the same code"
+
+        # Generate basic code
+        def generate_code(code_params=None):
+            ode = load_ode("tentusscher_2004_mcell_updated.ode")
+            codegen = PythonCodeGenerator(code_params)
+            jac = jacobian_expressions(ode, params=code_params)
+
+            comps = [rhs_expressions(ode, params=code_params),
+                     monitored_expressions(\
+                         ode, ["i_NaK", "i_NaCa", "i_CaL", "d_fCa"], \
+                         params=code_params),
+                     componentwise_derivative(ode, 15, params=code_params),
+                     linearized_derivatives(ode, params=code_params),
+                     jac, diagonal_jacobian_expressions(jac, params=code_params),
+                     jacobian_action_expressions(jac, params=code_params)]
+
+            return [codegen.function_code(comp) for comp in comps]
+
+        # Reset main parameters
+        parameters.code_generation.update(default_params)
+
+        # Generate code based on default parameters
+        default_codes = generate_code()
+
+        # Update code parameters
+        code_params["body"]["optimize_exprs"] = "none"
+        code_params["body"]["representation"] = "array"
+        code_params["body"]["array_name"] =  "JADA"
+        code_params["parameters"]["representation"] = "named"
+        code_params["states"]["representation"] = "array"
+        code_params["states"]["array_name"] = "STATES"
+        code_params["body"]["use_cse"] = False
+        code_params["float_precision"] = "double"
+
+        # Code from updated parameters
+        updated_codes = generate_code(code_params)
+        for updated_code, default_code in zip(updated_codes, default_codes):
+            self.assertNotEqual(updated_code, default_code)
+
+        default_codes2 = generate_code(default_params)
+        for default_code2, default_code in zip(default_codes2, default_codes):
+            self.assertEqual(default_code2, default_code)
+        
 for param_name, state_name, body_name in [["PARAMETERS", "STATES", "ALGEBRAIC"], \
                                           ["params", "states", "algebraic"]]:
     for use_cse in [False, True]:
@@ -200,6 +252,8 @@ for param_name, state_name, body_name in [["PARAMETERS", "STATES", "ALGEBRAIC"],
                 setattr(TestCodeComponent, "test_"+test_name, function_closure(\
                     body_repr, "none", "array", "array", use_cse, \
                         "double", param_name, state_name, body_name, body_in_arg))
+                
+    
 
 # Populate the test class with methods
 for test_name, test_function in test_map.items():
