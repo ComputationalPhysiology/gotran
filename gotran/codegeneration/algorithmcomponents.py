@@ -689,7 +689,7 @@ class LinearizedDerivativeComponent(CodeComponent):
             if expr_diff and expr.state.sym not in expr_diff:
 
                 self.linear_derivative_indices[ind] = 1
-                self.add_indexed_expression("linearized", ind, expr_diff)
+                self.add_indexed_expression(result_name, ind, expr_diff)
 
         # Call recreate body with the jacobian action expressions as the 
         # result expressions
