@@ -209,6 +209,7 @@ class CodeComponent(ODEComponent):
         
         state_repr = self._params["states"]["representation"]
         state_name = self._params["states"]["array_name"]
+        time_name = self._params["time"]["name"]
 
         # Create a map between states, parameters 
         state_param_map = dict(states=OrderedDict(\
@@ -236,6 +237,8 @@ class CodeComponent(ODEComponent):
             param_state_replace_dict.update((state.sym, indexed.sym) \
                                             for state, indexed in \
                                             state_param_map["states"].items())
+
+        param_state_replace_dict[self.root._time.sym] = sp.Symbol(time_name)
 
         # Store dicts
         self.param_state_replace_dict = param_state_replace_dict

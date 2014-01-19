@@ -920,6 +920,9 @@ class CCodeGenerator(BaseCodeGenerator):
                     
                 body_lines.append(self.to_code(expr.expr, name))
                     
+        if return_body_lines:
+            return body_lines
+        
         if include_signature:
             
             # Add function prototype
@@ -928,13 +931,10 @@ class CCodeGenerator(BaseCodeGenerator):
                 self.args(default_arguments, comp.results), "", \
                 comp.description)
 
-        if return_body_lines:
-            return body_lines
-        
         return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
         
-    def componentwise_body(self, ode, indent=0, default_arguments=None, \
-                      include_signature=True):
+    def componentwise_code(self, ode, indent=0, default_arguments=None, \
+                      include_signature=True, return_body_lines=False):
 
         default_arguments = default_arguments or self.params.default_arguments
 
@@ -943,7 +943,7 @@ class CCodeGenerator(BaseCodeGenerator):
         # Create code for each individuate component
         body_lines = []
         body_lines.append("// Return value")
-        body_lines.append("{0} dy[1] = 0.0{1}".format(self.float_type, float_str))
+        body_lines.append("{0} dy[1] = {{0.0{1}}}".format(self.float_type, float_str))
         body_lines.append("")
         body_lines.append("// What component?")
         body_lines.append("switch (id)")
@@ -954,7 +954,7 @@ class CCodeGenerator(BaseCodeGenerator):
             component_code = ["", "// Component {0} state {1}".format(\
                 i, state.name), "case {0}:".format(i)]
             
-            comp = componentwise_derivative(ode, i)
+            comp = componentwise_derivative(ode, i, params=self.params)
             component_code.append(self.function_code(comp, indent, \
                                                      default_arguments, \
                                                      include_signature=False, \
@@ -975,6 +975,9 @@ class CCodeGenerator(BaseCodeGenerator):
         body_lines.append("// Return component")
         body_lines.append("return dy[0]")
         
+        if return_body_lines:
+            return body_lines
+
         # Add function prototype
         if include_signature:
             body_lines = self.wrap_body_with_function_prototype(\
@@ -988,7 +991,7 @@ class CCodeGenerator(BaseCodeGenerator):
         monitored = monitored or []
         check_arg(ode, ODE)
         check_kwarg(monitored, "monitored", list, itemtypes=str)
-        rhs = rhs_expressions(ode)
+        rhs = rhs_expressions(ode, params=self.params)
 
         code = [self.init_parameters_code(ode, indent),
                 self.init_states_code(ode, indent),
@@ -997,10 +1000,11 @@ class CCodeGenerator(BaseCodeGenerator):
 
         if monitored:
             code += [self.function_code(monitored_expressions(\
-                ode, monitored), indent)]
+                ode, monitored, params=self.params), indent)]
 
         if include_jacobian:
-            code += [self.function_code(jacobian_expressions(ode), indent)]
+            code += [self.function_code(jacobian_expressions(\
+                ode, params=self.params), indent)]
 
         return code
 
