@@ -533,11 +533,12 @@ class ODERepresentation(object):
                 nnz += not _iszero(A[i,j])
 
         total_op = new_count+zero_operations
-        print "Num non zeros in factorized jacobian:", nnz, int(nnz*1.0/n2*100), "%"
-        print "Num non-zero operations while factorizing matrix:", \
-              new_count, new_count*1.0/total_op*100, "%"
-        print "Num zero operations while factorizing matrix:", \
-              zero_operations, int(zero_operations*1.0/total_op*100), "%"
+        if total_op != 0:
+            print "Num non zeros in factorized jacobian:", nnz, int(nnz*1.0/n2*100), "%"
+            print "Num non-zero operations while factorizing matrix:", \
+                  new_count, new_count*1.0/total_op*100, "%"
+            print "Num zero operations while factorizing matrix:", \
+                  zero_operations, int(zero_operations*1.0/total_op*100), "%"
         factorizing_nnz_operations = new_count 
         
         self._jacobian_factorization_operations = operations
@@ -609,9 +610,10 @@ class ODERepresentation(object):
             b.row(i, lambda x,k: x / A[i,i])
 
         total_count = zero_operations + new_count*1.0
-        print "Num operations while forward/backward substituting matrix:"
-        print "Zero operations:", zero_operations, int(100*zero_operations/total_count), "%"
-        print "Non-zero operations:", new_count, int(100*new_count/total_count), "%"
+        if total_count != 0:
+            print "Num operations while forward/backward substituting matrix:"
+            print "Zero operations:", zero_operations, int(100*zero_operations/total_count), "%"
+            print "Non-zero operations:", new_count, int(100*new_count/total_count), "%"
 
         self._jacobian_fb_substitution_operations = operations
 
