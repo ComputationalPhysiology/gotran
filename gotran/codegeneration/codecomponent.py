@@ -50,7 +50,7 @@ class CodeComponent(ODEComponent):
         """
         Return the default parameters for code generation 
         """
-        return parameters.code_generation.copy()
+        return parameters.generation.code.copy()
     
     def __init__(self, name, ode, function_name, description, params=None, **results):
         """
@@ -503,7 +503,7 @@ class CodeComponent(ODEComponent):
         In this method are all expressions replaced with something that should
         be used to generate code. The parameters in:
 
-            parameters["code_generation"]
+            parameters["generation"]["code"]
 
         decides how parameters, states, body expressions and indexed expressions
         are represented.

@@ -43,13 +43,22 @@ code_params["states"]["array_name"] = "STATES"
 code_params["body"]["use_cse"] = False
 code_params["float_precision"] = "double"
 
-codegen = PythonCodeGenerator(code_params)
-jac = jacobian_expressions(ode, params=code_params)
-rhs = rhs_expressions(ode, params=code_params)
+from goss.codegeneration2 import GossCodeGenerator
+from goss.compilemodule2 import jit
+
+#gcg = GossCodeGenerator(ode, ["V"], ["g_Na", "g_Kr"], ["E_Na", "E_Ca"])
+#print gcg.class_code()
+
+ode = jit(ode, ["V"], ["g_Na", "g_Kr"], ["E_Na", "E_Ca"])
+
+
+#codegen = PythonCodeGenerator(code_params)
+#jac = jacobian_expressions(ode, params=code_params)
+#rhs = rhs_expressions(ode, params=code_params)
 #monitored =monitored_expressions(ode, ["i_NaK", "i_NaCa", "i_CaL", "d_fCa"], \
 #                                 params=code_params)
 
-print codegen.function_code(rhs)
+#print codegen.function_code(rhs)
 
 #rhs = rhs_expressions(ode)
 #comp = componentwise_derivative(ode, 15)

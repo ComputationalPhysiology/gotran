@@ -325,7 +325,7 @@ class IndexedObject(ODEObject):
         """
         Return the default parameters for formating the array
         """
-        return parameters.code_generation.array.copy()
+        return parameters.generation.code.array.copy()
     
     def __init__(self, basename, indices, shape=None, array_params=None):
         """

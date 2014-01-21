@@ -36,52 +36,12 @@ from gotran.codegeneration.codecomponent import CodeComponent
 from gotran.codegeneration.algorithmcomponents import *
 
 __all__ = ["PythonCodeGenerator", "CCodeGenerator", "CppCodeGenerator", \
-           "MatlabCodeGenerator"]
+           "MatlabCodeGenerator", "class_name"]
 
 def class_name(name):
     check_arg(name, str)
     return name if name[0].isupper() else name[0].upper() + \
            (name[1:] if len(name) > 1 else "")    
-
-
-def _default_generation_params(excludes=None):
-    exclude = exclude or []
-    check_arg(excludes, list, itemtypes=str)
-
-    # Build a dict with allowed parameters
-    params = {}
-
-    _param_add(params, "jacobian", False, \
-               "If true, generate code for computing the jacobian of the rhs.",\
-               excludes)
-
-    _param_add(params, "transposed_jacobian", False, \
-               "If true, generate code for computing the transposed jacobian "\
-               "of the rhs.",\
-               excludes)
-
-    _param_add(params, "jacobian_lu_factorization", False, \
-               "If true, generate code for computing the symbolic factorization "\
-               "of the jacobian.",\
-               excludes)
-
-    _param_add(params, "jacobian_forward_backward_subst", False, \
-               "If true, generate code for computing the symbolic forward "\
-               "backward substitution of a factoriced jacobian.",\
-               excludes)
-
-    _param_add(params, "componentwise_rhs_evaluation", False, \
-               "If true, generate code for computing componentwise evaluation "\
-               "of the rhs.",\
-               excludes)
-
-    _param_add(params, "linearized_rhs_evaluation", False, \
-               "If true, generate code for computing linearized evaluation of "\
-               "linear rhs terms.",\
-               excludes)
-
-    # Return the ParameterDict
-    return ParameterDict(**params)
 
 class BaseCodeGenerator(object):
     """
@@ -112,12 +72,105 @@ class BaseCodeGenerator(object):
     @property
     def float_type(self):
         "Return the float type"
-        return type(self).float_types[self.params.float_precision]
+        return type(self).float_types[self.params.code.float_precision]
 
     @staticmethod
     def default_parameters():
         # Start out with a copy of the global parameters
-        return parameters.code_generation.copy()
+        return parameters.generation.copy()
+
+    def code_list(self, ode,
+                  monitored=None, 
+                  include_init=True,
+                  include_index_map=True,
+                  indent=0):
+        """
+        Generate a list of code snippets
+
+        Arguments
+        ---------
+        ode : ODE
+            The ODE for which code will be generated
+        monitored : list
+            A list of name of monitored intermediates for which evaluation
+            code will be generated.
+        include_init : bool
+            If True, code for initializing the states and parameters will
+            be generated.
+        include_index_map : bool
+            If True, code for mapping a str to a index for the corresponding,
+            state, parameters or monitored will be generated.
+        indent : int
+            The indentation level for the generated code
+        """
+
+        monitored = monitored or []
+        check_arg(ode, ODE)
+        check_kwarg(monitored, "monitored", list, itemtypes=str)
+        functions = self.params.functions
+
+        code = []
+
+        # If generate init code
+        if include_init:
+            code.append(self.init_states_code(ode, indent))
+            code.append(self.init_parameters_code(ode, indent))
+
+        # If generate index map code
+        if include_index_map:
+            code.append(self.state_name_to_index_code(ode, indent)) 
+            code.append(self.param_name_to_index_code(ode, indent))
+        
+        comps = []
+
+        # Code for the right hand side evaluation?
+        if functions.rhs.generate:
+            comps.append(rhs_expressions(\
+                ode, function_name=functions.rhs.function_name,
+                result_name=functions.rhs.result_name,
+                params=self.params.code))
+
+        # Code for any monitored intermediates
+        if monitored and functions.monitored.generate:
+            if include_index_map:
+                code.append(self.monitor_name_to_index_code(ode, monitored, indent))
+                
+            comps.append(monitored_expressions(\
+                ode, monitored,
+                function_name=functions.monitored.function_name,
+                result_name=functions.monitored.result_name,
+                params=self.params.code))
+
+        # Code for generation of the jacobian of the right hand side
+        if functions.jacobian.generate:
+            jac = jacobian_expressions(\
+                ode, function_name=functions.jacobian.function_name,
+                result_name=functions.jacobian.result_name,
+                params=self.params.code)
+            
+            comps.append(jac)
+
+            # Code for the symbolic factorization of the jacobian
+            if functions.lu_factorization.generate:
+
+                lu_fact = factorized_jacobian_expressions(\
+                    jac, function_name=functions.lu_factorization.function_name,
+                    params=self.params.code)
+                
+                comps.append(lu_fact)
+
+                # Code for the forward backward substituion for a factorized jacobian 
+                if functions.forward_backward_subst.generate:
+                    fb_subst = factorized_jacobian_expressions(\
+                        lu_fact, function_name=functions.forward_backward_subst.\
+                        function_name, params=self.params.code)
+                
+                    comps.append(fb_subst)
+
+        # Create code snippest of all 
+        code.extend(self.function_code(comp, indent=indent) for comp in comps)
+
+        return code
 
     @classmethod
     def indent_and_split_lines(cls, code_lines, indent=0, ret_lines=None, \
@@ -263,29 +316,35 @@ class PythonCodeGenerator(BaseCodeGenerator):
     def args(self, default_arguments=None, result_names=None):
         ret_args=[]
         result_names = result_names or []
+
+        params = self.params.code
         
-        default_arguments = default_arguments or self.params.default_arguments
-        if self.params.class_code:
-            ret_args.append("self")
+        default_arguments = default_arguments or params.default_arguments
 
         for arg in default_arguments:
             if arg == "s":
-                ret_args.append(self.params.states.array_name)
+                ret_args.append(params.states.array_name)
             elif arg == "t":
-                ret_args.append(self.params.time.name)
-            elif arg == "p" and self.params.parameters.representation != \
+                ret_args.append(params.time.name)
+            elif arg == "p" and params.parameters.representation != \
                      "numerals":
-                ret_args.append(self.params.parameters.array_name)
-            elif arg == "b" and self.params.body.representation != "named":
-                ret_args.append("{0}=None".format(self.params.body.array_name))
+                ret_args.append(params.parameters.array_name)
+            elif arg == "b" and params.body.representation != "named":
+                ret_args.append("{0}=None".format(params.body.array_name))
 
         for result_name in result_names:
             ret_args.append("{0}=None".format(result_name))
         
         return ", ".join(ret_args)
 
+    def decorators(self):
+        # FIXME: Make this extendable with mode decorators or make it possible
+        # FIXME: to use other standard decorators like classmethod
+        return "@staticmethod" if self.params.class_code else ""
+
     @staticmethod
-    def wrap_body_with_function_prototype(body_lines, name, args, comment=""):
+    def wrap_body_with_function_prototype(body_lines, name, args, \
+                                          comment="", decorators=""):
         """
         Wrap a passed body of lines with a function prototype
         """
@@ -293,8 +352,16 @@ class PythonCodeGenerator(BaseCodeGenerator):
         check_arg(name, str)
         check_arg(args, str)
         check_arg(comment, (str, list))
-        
-        prototype = ["def {0}({1}):".format(name, args)]
+        check_arg(decorators, (str, list))
+
+        prototype = []
+        if decorators:
+            if isinstance(decorators, list):
+                prototype.extend(decorators)
+            else:
+                prototype.append(decorators)
+            
+        prototype.append("def {0}({1}):".format(name, args))
         body = []
 
         # Wrap comment if any
@@ -316,7 +383,8 @@ class PythonCodeGenerator(BaseCodeGenerator):
     def _init_arguments(self, comp, default_arguments=None):
 
         check_arg(comp, CodeComponent)
-        default_arguments = default_arguments or self.params.default_arguments
+        params = self.params.code
+        default_arguments = default_arguments or params.default_arguments
 
         # Check if comp defines used_states if not use the root components
         # full_states attribute
@@ -334,13 +402,13 @@ class PythonCodeGenerator(BaseCodeGenerator):
         body_lines = []
         if "s" in default_arguments and used_states:
             
-            states_name = self.params.states.array_name
+            states_name = params.states.array_name
             body_lines.append("")
             body_lines.append("# Assign states")
             body_lines.append("assert(len({0}) == {1})".format(states_name, \
                                                                num_states))
             # Generate state assign code
-            if self.params.states.representation == "named":
+            if params.states.representation == "named":
                 
                 # If all states are used
                 if len(used_states) == len(comp.root.full_states):
@@ -357,17 +425,17 @@ class PythonCodeGenerator(BaseCodeGenerator):
         
         # Add parameters code if not numerals
         if "p" in default_arguments and \
-               self.params.parameters.representation in ["named", "array"] and \
+               params.parameters.representation in ["named", "array"] and \
                used_parameters:
 
-            parameters_name = self.params.parameters.array_name
+            parameters_name = params.parameters.array_name
             body_lines.append("")
             body_lines.append("# Assign parameters")
             body_lines.append("assert(len({0}) == {1})".format(\
                         parameters_name, num_parameters))
             
             # Generate parameters assign code
-            if self.params.parameters.representation == "named":
+            if params.parameters.representation == "named":
                 
                 # If all parameters are used
                 if len(used_parameters) == len(comp.root.parameters):
@@ -383,9 +451,9 @@ class PythonCodeGenerator(BaseCodeGenerator):
                         if param in used_parameters))
 
         # If using an array for the body variables
-        if self.params.body.representation != "named":
+        if params.body.representation != "named":
             
-            body_name = self.params.body.array_name
+            body_name = params.body.array_name
             body_lines.append("")
             body_lines.append("# Body array {0}".format(body_name))
 
@@ -410,7 +478,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
         for result_name in comp.results:
             shape = comp.shapes[result_name]
             if len(shape) > 1:
-                if self.params.array.flatten:
+                if params.array.flatten:
                     shape = (reduce(lambda a,b:a*b, shape, 1),)
 
             body_lines.append("if {0} is None:".format(result_name))
@@ -425,7 +493,8 @@ class PythonCodeGenerator(BaseCodeGenerator):
     def function_code(self, comp, indent=0, default_arguments=None, \
                       include_signature=True):
 
-        default_arguments = default_arguments or self.params.default_arguments
+        default_arguments = default_arguments or \
+                            self.params.code.default_arguments
 
         check_arg(comp, CodeComponent)
         check_kwarg(default_arguments, "default_arguments", str)
@@ -455,7 +524,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
             body_lines = self.wrap_body_with_function_prototype(\
                 body_lines, comp.function_name, \
                 self.args(default_arguments, comp.results), \
-                comp.description)
+                comp.description, self.decorators())
         
         return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
         
@@ -465,7 +534,6 @@ class PythonCodeGenerator(BaseCodeGenerator):
         """
 
         check_arg(ode, ODE)
-        self_arg = self.params.class_code
 
         # Get all full states
         states = ode.full_states
@@ -509,12 +577,10 @@ class PythonCodeGenerator(BaseCodeGenerator):
         body_lines.append("")
         body_lines.append("return init_values")
 
-        args = "self, **values" if self_arg else "**values"
-        
         # Add function prototype
         init_function = self.wrap_body_with_function_prototype(\
-            body_lines, "init_state_values", args, \
-            "Initialize state values")
+            body_lines, "init_state_values", "**values", \
+            "Initialize state values", self.decorators())
         
         return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
 
@@ -524,7 +590,6 @@ class PythonCodeGenerator(BaseCodeGenerator):
         """
 
         check_arg(ode, ODE)
-        self_arg = self.params.class_code
 
         # Get all parameters
         parameters = ode.parameters
@@ -567,12 +632,10 @@ class PythonCodeGenerator(BaseCodeGenerator):
         body_lines.append("")
         body_lines.append("return init_values")
         
-        args = "self, **values" if self_arg else "**values"
-        
         # Add function prototype
         function = self.wrap_body_with_function_prototype(\
             body_lines, "init_parameter_values", \
-            args, "Initialize parameter values")
+            "**values", "Initialize parameter values", self.decorators())
         
         return "\n".join(self.indent_and_split_lines(function, indent=indent))
 
@@ -581,7 +644,6 @@ class PythonCodeGenerator(BaseCodeGenerator):
         Return code for index handling for states
         """
         check_arg(ode, ODE)
-        self_arg = self.params.class_code
         states = ode.full_states
 
         body_lines = []
@@ -600,12 +662,10 @@ class PythonCodeGenerator(BaseCodeGenerator):
         body_lines.append("else:")
         body_lines.append(["return indices[0]"])
         
-        args = "self, *states" if self_arg else "*states"
-        
         # Add function prototype
         function = self.wrap_body_with_function_prototype(\
             body_lines, "state_indices", \
-            args, "State indices")
+            "*states", "State indices", self.decorators())
         
         return "\n".join(self.indent_and_split_lines(function, indent=indent))
 
@@ -615,7 +675,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
         """
 
         check_arg(ode, ODE)
-        self_arg = self.params.class_code
+        
         parameters = ode.parameters
 
         body_lines = []
@@ -634,59 +694,77 @@ class PythonCodeGenerator(BaseCodeGenerator):
         body_lines.append("else:")
         body_lines.append(["return indices[0]"])
 
-        args = "self, *params" if self_arg else "*params"
-        
         # Add function prototype
         function = self.wrap_body_with_function_prototype(\
             body_lines, "parameter_indices", \
-            args, "Parameter indices")
+            "**params", "Parameter indices", self.decorators())
         
         return "\n".join(self.indent_and_split_lines(function, indent=indent))
 
-    def code_list(self, ode, include_jacobian=True, monitored=None, indent=0):
-
-        monitored = monitored or []
+    def monitor_name_to_index_code(self, ode, monitored, indent=0):
+        """
+        Return code for index handling for monitored
+        """
         check_arg(ode, ODE)
-        check_kwarg(monitored, "monitored", list, itemtypes=str)
-        rhs = rhs_expressions(ode, params=self.params)
 
-        code = [self.init_parameters_code(ode, indent),
-                self.init_states_code(ode, indent),
-                self.function_code(rhs, indent),
-                self.state_name_to_index_code(ode, indent), 
-                self.param_name_to_index_code(ode, indent),
-                ]
+        for expr_str in monitored:
+            obj = ode.present_ode_objects.get(expr_str)
+            if not isinstance(obj, Intermediate):
+                error("{0} is not an intermediate in the {1} ODE".format(\
+                    expr_str, ode))
 
-        if monitored:
-            code += [self.function_code(monitored_expressions(\
-                ode, monitored, params=self.params), indent)]
+        body_lines = []
+        body_lines.append("monitor_inds = dict({0})".format(\
+            ", ".join("{0}={1}".format(monitor, i) for i, monitor \
+                      in enumerate(monitored))))
+        body_lines.append("")
+        body_lines.append("indices = []")
+        body_lines.append("for monitor in monitored:")
+        body_lines.append(\
+            ["if monitor not in monitor_inds:",
+             ["raise ValueError(\"Unknown monitored: '{0}'\".format(monitor))"],
+             "indices.append(monitor_inds[monitor])"])
+        body_lines.append("if len(indices)>1:")
+        body_lines.append(["return indices"])
+        body_lines.append("else:")
+        body_lines.append(["return indices[0]"])
+        
+        # Add function prototype
+        function = self.wrap_body_with_function_prototype(\
+            body_lines, "monitor_indices", \
+            "*monitored", "Monitor indices", self.decorators())
+        
+        return "\n".join(self.indent_and_split_lines(function, indent=indent))
 
-        if include_jacobian:
-            code += [self.function_code(jacobian_expressions(\
-                ode, params=self.params), indent)]
-
-        return code
-
-    def class_code(self, ode):
+    def class_code(self, ode, monitored=None):
         """
         Generate class code
         """
 
+        # Force class code param to be True
+        class_code_param = self.params.class_code
+        self.params.class_code = True
+
         check_arg(ode, ODE)
         name = class_name(ode.name)
-        code_list = self.code_list(ode, indent=1)
+        code_list = self.code_list(ode, monitored=monitored, indent=1)
 
+        self.params.class_code = class_code_param
         return  """
 class {0}:
 
-    @staticmethod
 {1}
-""".format(name, "\n\n    @staticmethod\n".join(code_list))
+""".format(name, "\n\n".join(code_list))
 
-    def module_code(self, ode):
+    def module_code(self, ode, monitored=None):
+
+        # Force class code param to be False
+        class_code_param = self.params.class_code
+        self.params.class_code = False
 
         check_arg(ode, ODE)
-        code_list = self.code_list(ode)
+        code_list = self.code_list(ode, monitored)
+        self.params.class_code = class_code_param
 
         return  """# Gotran generated code for the  "{0}" model
 from __future__ import division
@@ -706,7 +784,8 @@ class CCodeGenerator(BaseCodeGenerator):
     index = lambda x, i : "[{0}]".format(i)
     indent = 2
     indent_str = " "
-    to_code = lambda self, expr, name : ccode(expr, name, self.params.float_precision)
+    to_code = lambda self, expr, name : ccode(expr, name, \
+                                              self.params.code.float_precision)
     float_types = dict(single="float", double="double")
 
     def obj_name(self, obj):
@@ -717,22 +796,23 @@ class CCodeGenerator(BaseCodeGenerator):
 
         ret_args=[]
         result_names = result_names or []
-        default_arguments = default_arguments or self.params.default_arguments
+        params = self.params.code
+        default_arguments = default_arguments or params.default_arguments
         
         for arg in default_arguments:
             if arg == "s":
                 ret_args.append("const {0}* {1}".format(self.float_type, \
-                                                        self.params.states.array_name))
+                                                        params.states.array_name))
             elif arg == "t":
                 ret_args.append("{0} {1}".format(self.float_type, \
-                                                 self.params.time.name))
-            elif arg == "p" and self.params.parameters.representation != \
+                                                 params.time.name))
+            elif arg == "p" and params.parameters.representation != \
                      "numerals":
                 ret_args.append("const {0}* {1}".format(\
-                    self.float_type, self.params.parameters.array_name))
-            elif arg == "b" and self.params.body.representation != "named":
+                    self.float_type, params.parameters.array_name))
+            elif arg == "b" and params.body.representation != "named":
                 ret_args.append("{0}* {1}".format(\
-                    self.float_type, self.params.body.array_name))
+                    self.float_type, params.body.array_name))
 
         for result_name in result_names:
             ret_args.append("{0}* {1}".format(self.float_type, result_name))
@@ -767,7 +847,8 @@ class CCodeGenerator(BaseCodeGenerator):
     def _init_arguments(self, comp, default_arguments=None):
 
         check_arg(comp, CodeComponent)
-        default_arguments = default_arguments or self.params.default_arguments
+        params = self.params.code
+        default_arguments = default_arguments or params.default_arguments
 
         # Check if comp defines used_states if not use the root components
         # full_states attribute
@@ -788,12 +869,12 @@ class CCodeGenerator(BaseCodeGenerator):
             
         if "s" in default_arguments and used_states:
             
-            states_name = self.params.states.array_name
+            states_name = params.states.array_name
             body_lines.append("")
             body_lines.append("// Assign states")
 
             # Generate state assign code
-            if self.params.states.representation == "named":
+            if params.states.representation == "named":
 
                 # If all states are used
                 if len(used_states) == len(full_states):
@@ -807,15 +888,15 @@ class CCodeGenerator(BaseCodeGenerator):
                     
         # Add parameters code if not numerals
         if "p" in default_arguments and \
-               self.params.parameters.representation in ["named", "array"] and \
+               params.parameters.representation in ["named", "array"] and \
                used_parameters:
 
-            parameters_name = self.params.parameters.array_name
+            parameters_name = params.parameters.array_name
             body_lines.append("")
             body_lines.append("// Assign parameters")
             
             # Generate parameters assign code
-            if self.params.parameters.representation == "named":
+            if params.parameters.representation == "named":
                 
                 # If all states are used
                 if len(used_parameters) == len(all_parameters):
@@ -828,10 +909,10 @@ class CCodeGenerator(BaseCodeGenerator):
                         add_obj(param, i, parameters_name)
                     
         # If using an array for the body variables and b is not passed as argument
-        if self.params.body.representation != "named" and \
+        if params.body.representation != "named" and \
                "b" not in default_arguments:
             
-            body_name = self.params.body.array_name
+            body_name = params.body.array_name
             body_lines.append("")
             body_lines.append("// Body array {0}".format(body_name))
             body_lines.append("{0} {1}[{2}]".format(self.float_type, body_name, \
@@ -844,7 +925,7 @@ class CCodeGenerator(BaseCodeGenerator):
         Generate code for setting initial condition
         """
 
-        float_str = "" if self.params.float_precision == "double" else "f"
+        float_str = "" if params.float_precision == "double" else "f"
         body_lines = []
         body_lines = ["values[{0}] = {1}{2}; // {3}".format(i, state.init, \
                                                             float_str, state.name) \
@@ -862,7 +943,7 @@ class CCodeGenerator(BaseCodeGenerator):
         Generate code for setting  parameters
         """
 
-        float_str = "" if self.params.float_precision == "double" else "f"
+        float_str = "" if self.params.code.float_precision == "double" else "f"
         body_lines = []
         body_lines = ["values[{0}] = {1}{2}; // {3}".format(\
             i, param.init, float_str, param.name) for i, param in enumerate(ode.parameters)]
@@ -874,10 +955,86 @@ class CCodeGenerator(BaseCodeGenerator):
         
         return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
 
+    def state_name_to_index_code(self, ode, indent=0):
+        """
+        Return code for index handling for states
+        """
+        check_arg(ode, ODE)
+        states = ode.full_states
+        
+        max_length = max(len(state.name) for state in states)
+        
+        body_lines = ["\\ State names"]
+        body_lines.append("char names[][{0}] = {{{1}}}".format(\
+            max_length+1, ", ".join("\"{0}\"".format(state.name) for state \
+                                    in states)))
+        body_lines.append("")
+        body_lines.append("for (int i=0; i<{0}; i++)".format(len(states)))
+        body_lines.append(["if (strcmp(names[i], name)==0)",\
+                           ["return i"]])
+        body_lines.append("return -1")
+        
+        # Add function prototype
+        function = self.wrap_body_with_function_prototype(\
+            body_lines, "state_index", \
+            "const char name[]", "State index")
+        
+        return "\n".join(self.indent_and_split_lines(function, indent=indent))
+
+    def param_name_to_index_code(self, ode, indent=0):
+        """
+        Return code for index handling for a parameter
+        """
+        check_arg(ode, ODE)
+        parameters = ode.parameters
+        
+        max_length = max(len(param.name) for param in parameters)
+        
+        body_lines = ["\\ Parameter names"]
+        body_lines.append("char names[][{0}] = {{{1}}}".format(\
+            max_length + 1, ", ".join("\"{0}\"".format(param.name) for param \
+                                      in parameters)))
+        body_lines.append("")
+        body_lines.append("for (int i=0; i<{0}; i++)".format(len(parameters)))
+        body_lines.append(["if (strcmp(names[i], name)==0)",\
+                           ["return i"]])
+        body_lines.append("return -1")
+        
+        # Add function prototype
+        function = self.wrap_body_with_function_prototype(\
+            body_lines, "parameter_index", \
+            "const char name[]", "Parameter index")
+        
+        return "\n".join(self.indent_and_split_lines(function, indent=indent))
+
+    def monitor_name_to_index_code(self, ode, monitored, indent=0):
+        """
+        Return code for index handling for monitored
+        """
+        max_length = max(len(monitor) for monitor in monitored)
+        
+        body_lines = ["\\ Monitored names"]
+        body_lines.append("char names[][{0}] = {{{1}}}".format(\
+            max_length + 1, ", ".join("\"{0}\"".format(monitor) for monitor \
+                                    in monitored)))
+        body_lines.append("")
+        body_lines.append("for (int i=0; i<{0}; i++)".format(len(parameters)))
+        body_lines.append(["if (strcmp(names[i], name)==0)",\
+                           ["return i"]])
+        body_lines.append("return -1")
+        
+        # Add function prototype
+        function = self.wrap_body_with_function_prototype(\
+            body_lines, "monitored_index", \
+            "const char name[]", "Monitor index")
+        
+        return "\n".join(self.indent_and_split_lines(function, indent=indent))
+        
     def function_code(self, comp, indent=0, default_arguments=None, \
                       include_signature=True, return_body_lines=False):
 
-        default_arguments = default_arguments or self.params.default_arguments
+        params = self.params.code
+        default_arguments = default_arguments or params.default_arguments
 
         check_arg(comp, CodeComponent)
         check_kwarg(default_arguments, "default_arguments", str)
@@ -888,7 +1045,7 @@ class CCodeGenerator(BaseCodeGenerator):
         # If named body representation we need to check for duplicates
         duplicates = set()
         declared_duplicates = set()
-        if self.params.body.representation == "named":
+        if params.body.representation == "named":
             collected_names = set()
             for expr in comp.body_expressions:
                 if isinstance(expr, Intermediate):
@@ -936,9 +1093,10 @@ class CCodeGenerator(BaseCodeGenerator):
     def componentwise_code(self, ode, indent=0, default_arguments=None, \
                       include_signature=True, return_body_lines=False):
 
-        default_arguments = default_arguments or self.params.default_arguments
+        params = self.params.code
+        default_arguments = default_arguments or params.default_arguments
 
-        float_str = "" if self.params.float_precision == "double" else "f"
+        float_str = "" if params.float_precision == "double" else "f"
 
         # Create code for each individuate component
         body_lines = []
@@ -954,7 +1112,7 @@ class CCodeGenerator(BaseCodeGenerator):
             component_code = ["", "// Component {0} state {1}".format(\
                 i, state.name), "case {0}:".format(i)]
             
-            comp = componentwise_derivative(ode, i, params=self.params)
+            comp = componentwise_derivative(ode, i, params=params)
             component_code.append(self.function_code(comp, indent, \
                                                      default_arguments, \
                                                      include_signature=False, \
@@ -986,33 +1144,15 @@ class CCodeGenerator(BaseCodeGenerator):
 
         return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
         
-    def code_list(self, ode, include_jacobian=True, monitored=None, indent=0):
-        
-        monitored = monitored or []
-        check_arg(ode, ODE)
-        check_kwarg(monitored, "monitored", list, itemtypes=str)
-        rhs = rhs_expressions(ode, params=self.params)
-
-        code = [self.init_parameters_code(ode, indent),
-                self.init_states_code(ode, indent),
-                self.function_code(rhs, indent),
-                ]
-
-        if monitored:
-            code += [self.function_code(monitored_expressions(\
-                ode, monitored, params=self.params), indent)]
-
-        if include_jacobian:
-            code += [self.function_code(jacobian_expressions(\
-                ode, params=self.params), indent)]
-
-        return code
 
     def module_code(self, ode):
         
         code_list = self.code_list(ode)
 
-        return  """// Gotran generated code for the "{0}" model
+        return  """
+#include <math.h>
+#include <string.h>
+// Gotran generated code for the "{0}" model
 
 {1}
 """.format(ode.name, "\n\n".join(code_list))

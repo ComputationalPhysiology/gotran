@@ -248,7 +248,9 @@ def diagonal_jacobian_action_expressions(diagonal_jacobian, with_body=True, \
     return DiagonalJacobianActionComponent(diagonal_jacobian, with_body, function_name, \
                                            result_name, params=params)
 
-def factorized_jacobian_expressions(jacobian, params=None):
+def factorized_jacobian_expressions(jacobian, \
+                                    function_name="lu_factorize", \
+                                    params=None):
     """
     Return an ODEComponent holding expressions for the factorized jacobian
 
@@ -260,7 +262,7 @@ def factorized_jacobian_expressions(jacobian, params=None):
         Parameters determining how the code should be generated
     """
     check_arg(jacobian, JacobianComponent)
-    return FactorizedJacobianComponent(jacobian, params=params)
+    return FactorizedJacobianComponent(jacobian, function_name, params=params)
 
 def forward_backward_subst_expressions(factorized, params=None):
     """
@@ -531,7 +533,7 @@ class FactorizedJacobianComponent(CodeComponent):
     """
     Class to generate expressions for symbolicaly factorizing a jacobian
     """
-    def __init__(self, jacobian, function_name="factorize_jacobian", \
+    def __init__(self, jacobian, function_name="lu_factorize", \
                  params=None):
         """
         Create a FactorizedJacobianComponent

@@ -30,8 +30,6 @@ from gotran.codegeneration.codegenerator2 import *
 
 suppress_logging()
 
-#default_params = parameters["code_generation"].copy()
-
 def get_indexed(comp, name):
     check_arg(comp, CodeComponent)
     return [expr for expr in comp.body_expressions \
@@ -44,7 +42,7 @@ ode = load_ode("tentusscher_2004_mcell_updated.ode")
 codegen = PythonCodeGenerator()
 
 # Options for code generation
-default_params = parameters["code_generation"].copy()
+default_params = parameters["generation"]["code"].copy()
 
 state_repr_opts = sorted(dict.__getitem__(default_params.states, "representation")._options)
 param_repr_opts = dict.__getitem__(default_params.parameters, "representation")._options
@@ -65,7 +63,7 @@ if debug:
     print "REF RHS:", rhs_ref_values
     print "REF JAC:", jac_ref_values
 
-code_params = parameters["code_generation"].copy()
+code_params = parameters["generation"]["code"].copy()
 
 test_map = {}
 
@@ -216,7 +214,7 @@ class TestCodeComponent(unittest.TestCase):
             return [codegen.function_code(comp) for comp in comps]
 
         # Reset main parameters
-        parameters.code_generation.update(default_params)
+        parameters["generation"]["code"].update(default_params)
 
         # Generate code based on default parameters
         default_codes = generate_code()
