@@ -534,7 +534,7 @@ class CellMLParser(object):
         for name in comp.state_variables.keys():
             der_name = "d{0}_dt".format(name)
             if name in self._params.change_state_names:
-                newname = name + "_" + comp_name.split("_")[0]
+                newname = name + "_" + comp.name.split("_")[0]
                 comp.change_state_name(name, newname)
                 name = newname
 
@@ -1512,9 +1512,9 @@ def cellml2ode(model_source, **options):
         Optional parameters to control cellml parser
     """
     check_arg(model_source, str)
-    from gotran import exec_ode
+    from gotran.model.loadmodel2 import exec_ode
     params = CellMLParser.default_parameters()
-    params.update(params)
+    params.update(options)
     cellml = CellMLParser(model_source, params=params)
     return exec_ode(cellml.to_gotran(), cellml.name)
     
