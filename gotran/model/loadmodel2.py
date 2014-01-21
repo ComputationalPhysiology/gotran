@@ -144,20 +144,31 @@ def _init_namespace(ode, load_arguments, namespace):
 
     return namespace
 
-def exec_ode(ode_str, name):
+def exec_ode(ode_str, name, **arguments):
     """
     Execute an ode given by a str
+
+    Arguments
+    ---------
+    ode_str : str
+        The ode as a str
+    name : str 
+        The name of ODE
+    arguments : dict (optional)
+        Optional arguments which can control loading of model
     """
+    # Dict to collect declared intermediates
+    intermediate_dispatcher = IntermediateDispatcher()
+
     # Create an ODE which will be populated with data when ode file is loaded
-    ode = ODE(name, return_namespace=True)
+    ode = ODE(name, intermediate_dispatcher)
+
+    intermediate_dispatcher.ode = ode
 
     debug("Loading {}".format(ode.name))
 
-    # Dict to collect declared intermediates
-    intermediate_dispatcher = IntermediateDispatcher(ode)
-
     # Create namespace which the ode file will be executed in
-    namespace = _init_namespace(ode, {}, intermediate_dispatcher)
+    _init_namespace(ode, arguments, intermediate_dispatcher)
 
     # Write str to file
     open("_tmp_gotrand.ode", "w").write(ode_str)
@@ -174,11 +185,10 @@ def exec_ode(ode_str, name):
         warning("ODE mode '{0}' is not complete.".format(ode.name))
     
     info("Loaded ODE model '{0}' with:".format(ode.name))
-    for what in ["states", "parameters"]:
+    for what in ["full_states", "parameters"]:
         num = getattr(ode, "num_{0}".format(what))
-        if num:
-            info("{0}: {1}".format(("Num "+what).rjust(22), num))
-
+        info("{0}: {1}".format(("Num "+what.replace("_", \
+                                                    " ")).rjust(20), num))
     return ode
 
 def load_ode(filename, name=None, **arguments):
@@ -239,7 +249,7 @@ def load_ode(filename, name=None, **arguments):
         warning("ODE mode '{0}' is not complete.".format(ode.name))
     
     info("Loaded ODE model '{0}' with:".format(ode.name))
-    for what in ["states", "parameters"]:
+    for what in ["full_states", "parameters"]:
         num = getattr(ode, "num_{0}".format(what))
         info("{0}: {1}".format(("Num "+what.replace("_", \
                                                     " ")).rjust(20), num))
