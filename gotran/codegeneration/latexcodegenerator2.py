@@ -238,7 +238,7 @@ class LatexCodeGenerator(object):
         """
         param_str = "\\\\\n".join(
             self.format_param_table_row(par)
-            for par in self.ode.all_parameters)
+            for par in self.ode.parameters)
         param_table_opts = self.format_options(exclude=["page_columns"])
         param_table_output = _param_table_template.format(
             OPTS=param_table_opts["begin"], BODY=param_str,
