@@ -15,6 +15,7 @@ import instant
 from gotran.model.loadmodel2 import load_ode
 from gotran.codegeneration.compilemodule2 import compile_module
 from gotran.common.options import parameters
+from gotran.common import error
 
 def main(filename, params):
 
@@ -41,6 +42,11 @@ def main(filename, params):
     
     # Compile executeable code from gotran ode
     ode = load_ode(filename)
+
+    # Check for DAE
+    if ode.is_dae:
+        error("Can only integrate pure ODEs. {0} includes algebraic states "\
+              "and is hence a DAE.")
     
     # Get monitored and plot states
     plot_states = params.plot
@@ -60,10 +66,10 @@ def main(filename, params):
         init_conditions = []
 
     if len(parameter_values) % 2 != 0:
-        raise RuntimeError("Expected an even number of values for 'parameters'")
+        error("Expected an even number of values for 'parameters'")
 
     if len(init_conditions) % 2 != 0:
-        raise RuntimeError("Expected an even number of values for 'initial_conditions'")
+        error("Expected an even number of values for 'initial_conditions'")
 
     user_params = dict()
     for param_name, param_value in [(parameter_values[i*2], parameter_values[i*2+1]) \
@@ -152,10 +158,10 @@ if __name__ == "__main__":
     params.parse_args(usage="usage: %prog FILE [options]")
     
     if len(sys.argv) < 2:
-        raise RuntimeError("Expected a single gotran file argument")
+        error("Expected a single gotran file argument.")
 
     if not os.path.isfile(sys.argv[1]):
-        raise IOError("Expected the argument to be a file")
+        error("Expected the argument to be a file.", exception=IOError)
 	 
     file_name = sys.argv[1]
     main(file_name, params)
