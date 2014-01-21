@@ -472,7 +472,7 @@ def configure_instant():
 
     instant_kwargs['swig_include_dirs'] = swig_include_dirs
     instant_kwargs['include_dirs'] = [numpy.get_include()]
-    instant_kwargs['system_headers'] = ["numpy/arrayobject.h", "math.h", "complex.h"]
+    instant_kwargs['system_headers'] = ["numpy/arrayobject.h", "math.h"]#, "complex.h"]
     instant_kwargs['swigargs'] =['-O -c++']
     instant_kwargs['cppargs'] = ['-O2']
 

@@ -790,6 +790,7 @@ class CCodeGenerator(BaseCodeGenerator):
 
     def obj_name(self, obj):
         assert(isinstance(obj, ODEObject))
+        return obj.name
         return obj.name if obj.name not in ["I"] else obj.name + "_"
     
     def args(self, default_arguments=None, result_names=None):
@@ -925,7 +926,7 @@ class CCodeGenerator(BaseCodeGenerator):
         Generate code for setting initial condition
         """
 
-        float_str = "" if params.float_precision == "double" else "f"
+        float_str = "" if self.params.code.float_precision == "double" else "f"
         body_lines = []
         body_lines = ["values[{0}] = {1}{2}; // {3}".format(i, state.init, \
                                                             float_str, state.name) \
@@ -1162,7 +1163,8 @@ class CppCodeGenerator(CCodeGenerator):
     language = "C++"
 
     # Class attributes
-    to_code = lambda self, expr, name : cppcode(expr, name, self.params.float_precision)
+    to_code = lambda self, expr, name : cppcode(\
+        expr, name, self.params.code.float_precision)
 
     def class_code(self, ode):
         """
