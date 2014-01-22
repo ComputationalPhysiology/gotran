@@ -367,9 +367,10 @@ class AlgebraicExpression(StateExpression):
             state), state, expr)
 
         # Check that the expr is dependent on the state
-        if state.sym not in self.sym:
-            error("Cannot create an AlgebraicExpression as {0} is not "\
-                  "dependent on {1}".format(state, expr))
+        # FIXME: No need because Simone says so!
+        #if state.sym not in self.sym:
+        #    error("Cannot create an AlgebraicExpression as {0} is not "\
+        #          "dependent on {1}".format(state, expr))
 
     def _args_str(self):
         """
