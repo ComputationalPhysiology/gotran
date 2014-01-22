@@ -35,7 +35,7 @@ from modelparameters.sympytools import sp
 
 # Local imports
 from gotran.common import error, info, debug, check_arg, check_kwarg, \
-     scalars, Timer, warning, tuplewrap, parameters
+     scalars, Timer, warning, tuplewrap, parameters, warning
 from gotran.model.utils import ode_primitives
 from gotran.model.odeobjects2 import State, Parameter, IndexedObject, Comment
 from gotran.model.expressions2 import *
@@ -133,7 +133,7 @@ def componentwise_derivative(ode, index, params=None):
     expr = ode.state_expressions[index]
     state = expr.state
     if not isinstance(expr, StateDerivative):
-        error("The ith index is not a StateDerivative: {0}".format(expr))
+        warning("The ith index is not a StateDerivative: {0}".format(expr))
         
     return CodeComponent("d{0}_dt_component".format(\
         state), ode, "", "", params=params, dy=[expr])
@@ -684,6 +684,7 @@ class LinearizedDerivativeComponent(CodeComponent):
         self.shapes[result_name] = (self.root.num_full_states,)
         for ind, expr in enumerate(self.root.state_expressions):
             if not isinstance(expr, StateDerivative):
+                continue
                 error("Cannot generate a linearized derivative of an "\
                       "algebraic expression.")
             expr_diff = expr.expr.diff(expr.state.sym)
