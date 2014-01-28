@@ -95,11 +95,17 @@ class Expression(ODEValueObject):
             error("expected the expression to contain at least one "\
                   "Symbol or Number.")
 
-        # Collect dependent symbols
-        self.dependent = tuple(symbols_from_expr(expr))
-
         # Call super class with expression as the "value"
         super(Expression, self).__init__(name, expr)
+
+        # Collect dependent symbols
+        dependent = tuple(sorted(symbols_from_expr(expr), \
+                                 cmp=lambda a,b:cmp(sympycode(a), sympycode(b))))
+
+        if dependent:
+            self._sym = self.param.sym(*dependent)
+        else:
+            self._sym = self.param.sym
 
     @property
     def expr(self):
@@ -112,10 +118,7 @@ class Expression(ODEValueObject):
     def sym(self):
         """
         """
-        if self.dependent:
-            return self._param.sym(*self.dependent)
-        else:
-            return self._param.sym
+        return self._sym
 
     @property
     def is_state_expression(self):
@@ -214,6 +217,7 @@ class DerivativeExpression(Intermediate):
         check_arg(dep_var, (State, Expression, Time), 1, DerivativeExpression)
 
         # Check that the der_expr is dependent on var
+        #print "DERIVATIVES:", der_expr.sym, "DEPENDENT:", dep_var.sym, "EXPRESSION:", expr
         if dep_var.sym not in der_expr.sym:
             error("Cannot create a DerivativeExpression as {0} is not "\
                   "dependent on {1}".format(der_expr, dep_var))
