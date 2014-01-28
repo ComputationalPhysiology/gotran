@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-05-07 -- 2014-01-21"
+__date__ = "2013-05-07 -- 2014-01-28"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
 from gotran import *
 from gotran.model.loadmodel2 import load_ode
+from gotran.model.odeobjects2 import Comment
 
 def main(filename, params):
 
@@ -34,6 +35,7 @@ def main(filename, params):
                 if comp.intermediates:
                     print "    Intermediates: ", ", ".join(\
                         interm.name for interm in comp.intermediates)
+                    print "    Dependencies:  ", ", ".join(set(dep.name for interm in comp.intermediates for dep in ode.expression_dependencies[interm] if not isinstance(dep, Comment) and dep not in comp.full_states+comp.parameters))
 
 if __name__ == "__main__":
     import sys, os
