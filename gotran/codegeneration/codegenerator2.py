@@ -27,11 +27,11 @@ from modelparameters.codegeneration import ccode, cppcode, pythoncode, \
      sympycode, matlabcode
 
 # Gotran imports
-from gotran.common import check_arg, check_kwarg
+from gotran.common import check_arg, check_kwarg, error
 from gotran.common.options import parameters
 from gotran.model.ode2 import ODE
 from gotran.model.odeobjects2 import Comment, ODEObject
-from gotran.model.expressions2 import Intermediate
+from gotran.model.expressions2 import Expression, Intermediate
 from gotran.codegeneration.codecomponent import CodeComponent
 from gotran.codegeneration.algorithmcomponents import *
 
@@ -709,9 +709,9 @@ class PythonCodeGenerator(BaseCodeGenerator):
 
         for expr_str in monitored:
             obj = ode.present_ode_objects.get(expr_str)
-            if not isinstance(obj, Intermediate):
-                error("{0} is not an intermediate in the {1} ODE".format(\
-                    expr_str, ode))
+            if not isinstance(obj, Expression):
+                error("{0} is not an intermediate or state expression in "\
+                      "the {1} ODE".format(expr_str, ode))
 
         body_lines = []
         body_lines.append("monitor_inds = dict({0})".format(\

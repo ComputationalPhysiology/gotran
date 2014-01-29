@@ -3,7 +3,7 @@
 
 from __future__ import division
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-03-13 -- 2014-01-21"
+__date__ = "2013-03-13 -- 2014-01-29"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -51,8 +51,10 @@ def main(filename, params):
     # Get monitored and plot states
     plot_states = params.plot
     state_names = [state.name for state in ode.full_states]
-    monitored = [plot_states.pop(plot_states.index(name)) \
-                 for name in plot_states[:] if name not in state_names]
+    monitored_plot = [plot_states.pop(plot_states.index(name)) \
+                      for name in plot_states[:] if name not in state_names]
+    
+    monitored = [expr.name for expr in ode.intermediates + ode.state_expressions]
 
     module = compile_module(ode, params.code.language, monitored, generation)
 
@@ -104,31 +106,29 @@ def main(filename, params):
         return
     
     plot_inds = [module.state_indices(state) for state in plot_states]
-    plot_results = [[] for state in plot_states]
+    #plot_results = [[] for state in plot_states]
     
-    monitored_values = [[] for monitor in monitored]
-    
-    for time, res in zip(tsteps, results):
-        for ind, plot_ind in enumerate(plot_inds):
-            plot_results[ind].append(res[plot_ind])
+    monitored_values = [[] for monitor in monitored_plot]
+    monitor_inds = np.array([monitored.index(monitor) \
+                             for monitor in monitored_plot], dtype=int)
+    monitored_get_values = np.zeros(len(monitored), dtype=np.float_)
 
-        if monitored:
-            for ind, value in enumerate(module.monitor(res, time, model_params)):
-                monitored_values[ind].append(value)
+    # Allocate memory
+    plot_values = np.zeros((len(plot_states)+len(monitored_plot), len(results)))
 
-    # Build plot arguments
-    plot_args = []
-    for plot_result in plot_results:
-        plot_args.append(tsteps)
-        plot_args.append(np.array(plot_result))
-
-    for plot_result in monitored_values:
-        plot_args.append(tsteps)
-        plot_args.append(np.array(plot_result))
-
-    pylab.plot(*plot_args)
+    for ind, (time, res) in enumerate(zip(tsteps, results)):
+        
+        if plot_states:
+            plot_values[:len(plot_states), ind] = res[plot_inds]
+        if monitored_plot:
+            module.monitor(res, time, model_params, monitored_get_values)
+            plot_values[len(plot_states):, ind] = monitored_get_values[\
+                monitor_inds]
+        
+    # Plot data
+    pylab.plot(tsteps, np.transpose(plot_values))
     pylab.legend(["$\\mathrm{{{0}}}$".format(latex(value))
-                  for value in plot_states + monitored])
+                  for value in plot_states + monitored_plot])
     pylab.xlabel("time")
     pylab.title(ode.name.replace("_", "\\_"))
     pylab.show()
