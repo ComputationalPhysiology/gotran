@@ -13,6 +13,7 @@ import pylab
 import numpy as np
 import instant
 from gotran.model.loadmodel2 import load_ode
+from gotran.model.utils import DERIVATIVE_EXPRESSION, special_expression
 from gotran.codegeneration.compilemodule2 import compile_module
 from gotran.common.options import parameters
 from gotran.common import error
@@ -126,9 +127,23 @@ def main(filename, params):
                 monitor_inds]
         
     # Plot data
+
+    # Fixes for derivatives
+    monitored_plot_updated = []
+    for monitor in monitored_plot:
+        expr, what = special_expression(monitor, ode)
+        if what == DERIVATIVE_EXPRESSION:
+            var, dep = expr.groups()
+            if var in ode.present_ode_objects and dep in ode.present_ode_objects:
+                monitored_plot_updated.append("d{0}/d{1}".format(var, dep))
+            else:
+                monitored_plot_updated.append(monitor)
+        else:
+            monitored_plot_updated.append(monitor)
+        
     pylab.plot(tsteps, np.transpose(plot_values))
     pylab.legend(["$\\mathrm{{{0}}}$".format(latex(value))
-                  for value in plot_states + monitored_plot])
+                  for value in plot_states + monitored_plot_updated])
     pylab.xlabel("time")
     pylab.title(ode.name.replace("_", "\\_"))
     pylab.show()
