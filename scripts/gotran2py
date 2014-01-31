@@ -2,61 +2,43 @@
 
 import os
 
-from gotran.codegeneration.oderepresentation import ODERepresentation, \
-     _default_params
-from gotran.codegeneration.codegenerator import CodeGenerator
-from gotran.model import load_ode
+from gotran.model.loadmodel2 import load_ode
+from gotran.codegeneration.codegenerator2 import PythonCodeGenerator
+from gotran.common.options import parameters
+from gotran.common import error
 
 def main(filename, params):
     """
-    Create a python module from a gotran model
+    Create a c header file from a gotran model
     """
-
-    if not params.sympy_contraction:
-        # A hack to avoid sympy contractions
-        import gotran.codegeneration.avoidsympycontractions
 
     # Load Gotran model
     ode = load_ode(filename)
 
-    # Check for completness
-    if not ode.is_complete:
-        return 
-
-    # Create an ODE representation
-    oderepr = ODERepresentation(ode, **params.copy(True))
-
-    # Create a python code generator
-    code_params = CodeGenerator.default_params()
-    code_params.rhs_args = params.rhs_args
-    
-    gen = CodeGenerator(oderepr, code_params)
+    # Create a C code generator
+    gen = PythonCodeGenerator(params)
 
     output = params.output
 
     if output:
-        if not(len(output)>3 and output[-3:] == ".py"):
+        if not(len(output)>2 and output[-2:] == ".py"):
             output += ".py"
     else:
         output = filename.replace(".ode", "")+".py"
 
     f = open(output, "w")
-    f.write(gen.module_code())
 
+    f.write(gen.module_code(ode))
 
 if __name__ == "__main__":
-    import sys
-    from modelparameters.parameterdict import ParameterDict, OptionParam, Param
+    import sys, os
+    from modelparameters.parameterdict import *
+
+    generation_params=parameters.generation.copy()
     
-    params = _default_params()
     params = ParameterDict(\
-        rhs_args = OptionParam("stp", ["tsp", "stp", "spt"], \
-                description="Argument order of the generated rhs function. "\
-                               "s=states, p=parameters, t=time"),
-        sympy_contraction = Param(True, description="If True sympy contraction"\
-                                  " will be used, turning (V-3)/2 into V/2-3/2"),\
         output = Param("", description="Specify output file name"),\
-        **params)
+        **generation_params)
     params.parse_args(usage="usage: %prog FILE [options]")#sys.argv[2:])
     
     if len(sys.argv) < 2:

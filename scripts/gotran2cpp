@@ -2,32 +2,21 @@
 
 import os
 
-from gotran.codegeneration.oderepresentation import ODERepresentation, \
-     _default_params
-from gotran.codegeneration.codegenerator import CppCodeGenerator
-from gotran.model import load_ode
+from gotran.model.loadmodel2 import load_ode
+from gotran.codegeneration.codegenerator2 import CppCodeGenerator
+from gotran.common.options import parameters
+from gotran.common import error
 
 def main(filename, params):
     """
     Create a c header file from a gotran model
     """
 
-    if not params.sympy_contraction:
-        # A hack to avoid sympy contractions
-        import gotran.codegeneration.avoidsympycontractions
-
     # Load Gotran model
     ode = load_ode(filename)
 
-    # Check for completness
-    if not ode.is_complete:
-        return 
-
-    # Create an ODE representation
-    oderepr = ODERepresentation(ode, **params.copy(True))
-
-    # Create a Cpp code generator
-    gen = CppCodeGenerator(oderepr)
+    # Create a C code generator
+    gen = CppCodeGenerator(params)
 
     output = params.output
 
@@ -38,29 +27,28 @@ def main(filename, params):
         output = filename.replace(".ode", "")+".h"
 
     f = open(output, "w")
-    f.write("#include <stdexcept>\n")
-    f.write("#include <cmath>\n")
-    if params.generate_class:
-        f.write(gen.class_code())
+    if params.system_headers:
+        f.write("#include <cmath>\n")
+        f.write("#include <cstring>\n")
+        f.write("#include <stdexcept>\n")
+
+    if params.class_code:
+        f.write(gen.class_code(ode))
     else:
-        f.write(gen.module_code())
+        f.write(gen.module_code(ode))
 
 if __name__ == "__main__":
-    import sys
-    from modelparameters.parameterdict import ParameterDict, OptionParam, Param
+    import sys, os
+    from modelparameters.parameterdict import *
+
+    generation_params=parameters.generation.copy()
     
-    params = _default_params(["generate_lu_factorization",
-                              "generate_linearized_evaluation",
-                              "generate_forward_backward_subst"])
     params = ParameterDict(\
-        generate_class = Param(True, description="Generate C++ class"),\
-        rhs_args = OptionParam("stp", ["tsp", "stp", "spt"], \
-                description="Argument order of the generated rhs function. "\
-                               "s=states, p=parameters, t=time"),
-        sympy_contraction = Param(True, description="If True sympy contraction"\
-                                  " will be used, turning (V-3)/2 into V/2-3/2"),\
         output = Param("", description="Specify output file name"),\
-        **params)
+        system_headers = Param(True, description="If true system "\
+                               "headers needed to compile moudle is "\
+                               "included."),\
+        **generation_params)
     params.parse_args(usage="usage: %prog FILE [options]")#sys.argv[2:])
     
     if len(sys.argv) < 2:

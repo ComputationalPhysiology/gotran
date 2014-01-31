@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-from gotran.codegeneration import LatexCodeGenerator, _default_latex_params
-from gotran.model import load_ode
+from gotran.codegeneration.latexcodegenerator2 import LatexCodeGenerator,\
+     _default_latex_params
+from gotran.model.loadmodel2 import load_ode
 from gotran import info
 
 def main(filename, params):
@@ -38,7 +39,7 @@ if __name__ == '__main__':
 
     params = _default_latex_params()
     params = ParameterDict(\
-        sympy_contraction = Param(False, description="If True sympy contraction"\
+        sympy_contraction = Param(True, description="If True sympy contraction"\
                                   " will be used, turning (V-3)/2 into V/2-3/2"),\
         **params)
     params.parse_args(usage="usage: %prog FILE [options]")
