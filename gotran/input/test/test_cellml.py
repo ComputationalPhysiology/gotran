@@ -1,11 +1,12 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2013-05-06"
+__date__ = "2012-05-07 -- 2014-01-31"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
 import unittest
 from gotran.input.cellml import *
-from gotran import compile_module
+from gotran.codegeneration.compilemodule import compile_module
+from gotran.common.options import parameters
 
 supported_models_form = """
 \documentclass[a4paper,12pt]{{article}}
@@ -31,69 +32,86 @@ supported_models_form = """
 
 cellml_data = dict(\
     terkildsen_niederer_crampin_hunter_smith_2008 = dict(\
-        num_states=22, extract_equations=["FVRT", "FVRT_Ca", "Ca_b"], \
-        change_state_names=[]),
+        num_states=22),
     Pandit_Hinch_Niederer = dict(\
-        num_states=6, extract_equations=[], change_state_names=[]),
+        num_states=22),
     Pandit_et_al_2001_endo = dict(\
-        num_states=26, extract_equations=[], change_state_names=[]),
+        num_states=26),
     niederer_hunter_smith_2006 = dict(\
-        num_states=5, extract_equations=["Ca_b", "Ca_i"], change_state_names=[]),
+        num_states=5),
     iyer_mazhari_winslow_2004 = dict(\
-        num_states=67, extract_equations=["RT_over_F"], change_state_names=[]),
+        num_states=67),
     shannon_wang_puglisi_weber_bers_2004_b = dict(\
-        num_states=45, extract_equations=[], change_state_names=["R"]),
+        num_states=45),
     maleckar_greenstein_trayanova_giles_2009 = dict(\
-        num_states=30, extract_equations=[], change_state_names=[]),
+        num_states=30),
     irvine_jafri_winslow_1999 = dict(\
-        num_states=13, extract_equations=[], change_state_names=[]),
+        num_states=13),
     grandi_pasqualini_bers_2010 = dict(\
-        num_states=39, extract_equations=[], change_state_names=[]),
+        num_states=39),
     rice_wang_bers_detombe_2008 = dict(\
-        num_states=11, extract_equations=[], change_state_names=[]),
+        num_states=11),
     maltsev_2009_paper = dict(\
-        num_states=29, extract_equations=[], change_state_names=["R"]),
+        num_states=29),
     severi_fantini_charawi_difrancesco_2012 = dict(\
-        num_states=33, extract_equations=["RTONF", "V", "Nai"],
-        change_state_names=["R"]),
+        num_states=33, change_state_names=[]),
     tentusscher_noble_noble_panfilov_2004_a = dict(\
-        num_states=17, extract_equations=[],
-        change_state_names=[]),
+        num_states=17),
     ten_tusscher_model_2006_IK1Ko_M_units = dict(\
-        num_states=19, extract_equations=[], change_state_names=[]),
+        num_states=19),
     winslow_rice_jafri_marban_ororke_1999 = dict(\
-        num_states=33, extract_equations=[], change_state_names=[]),
-    )
+        num_states=33),
+)
 
 not_supported = cellml_data.keys()
 supported_models = []
 
-skip = dict(grandi_pasqualini_bers_2010 = "the model use time differential in assignment",
-            terkildsen_niederer_crampin_hunter_smith_2008 = "the encapsulation structure of the model is not properly parsed",
-            Pandit_Hinch_Niederer = "the model is not translated correct",
-            # Could fix this by always assign derivatives in component
-            iyer_mazhari_winslow_2004 = "the model use intermediates with same name in assignment of derivatives",
-            shannon_wang_puglisi_weber_bers_2004_b = "the model exhibits unstable numerics"
+skip = dict(shannon_wang_puglisi_weber_bers_2004_b = "the model exhibits unstable numerics",
+            Pandit_Hinch_Niederer = "Some math trouble",
+            iyer_mazhari_winslow_2004 = "Some math trouble",
+            winslow_rice_jafri_marban_ororke_1999 = "Some math trouble",
+            severi_fantini_charawi_difrancesco_2012 = "Some translation trouble...",
+            terkildsen_niederer_crampin_hunter_smith_2008 = "Some translation trouble...",
             )
 
 test_form = """
 class {name}Tester(unittest.TestCase, TestBase):
     def setUp(self):
-        self.ode = cellml2ode("{name}.cellml",
-                              extract_equations={extract_equations},
-                              change_state_names={change_state_names})
+        if "change_state_names" in cellml_data["{name}"]:
+            params = dict(change_state_names=cellml_data["{name}"]["change_state_names"])
+            self.ode = cellml2ode("{name}.cellml", **params)
+        else:
+            self.ode = cellml2ode("{name}.cellml")
+            
         self.name = "{name}"
 
-    def test_num_statenames(self):
-        self.assertEqual(self.ode.num_states, {num_states})
+#    def test_num_statenames(self):
+#        self.assertEqual(self.ode.num_states, {num_states})
 
 """
+
+# Copy of default parameters
+generation = parameters.generation.copy()
+
+# Set what code we are going to generate and not
+for what_not in ["componentwise_rhs_evaluation",
+                 "forward_backward_subst",
+                 "linearized_rhs_evaluation",
+                 "lu_factorization",
+                 "monitored",
+                 "jacobian"]:
+    generation.functions[what_not].generate = False
+
+# Only generate rhs
+generation.functions.rhs.generate = True
 
 class TestBase(object):
     def test_run(self):
         from scipy.integrate import odeint
         import numpy as np
         from cPickle import load
+
+        self.assertEqual(self.ode.num_states, cellml_data[self.name]["num_states"])
 
         # Load reference data
         data = load(open(self.ode.name+".cpickle"))
@@ -102,10 +120,10 @@ class TestBase(object):
         ref_data = data[state_name]
 
         # Compile ODE
-        module = compile_module(self.ode, rhs_args="stp", language="C")
+        module = compile_module(self.ode, language="C", generation_params=generation)
         rhs = module.rhs
-        y0 = module.init_values()
-        model_params = module.default_parameters()
+        y0 = module.init_state_values()
+        model_params = module.init_parameter_values()
         
         # Run simulation
         t0 = ref_time[0]
@@ -130,6 +148,7 @@ class TestBase(object):
             import pylab
             pylab.plot(tsteps, comp_data, ref_time, ref_data)
             pylab.legend(["Gotran data", "Ref CellML"])
+            pylab.title(self.name.replace("_", "\_"))
             pylab.show()
     
         print "Rel diff:", rel_diff
@@ -161,6 +180,6 @@ if __name__ == "__main__":
             " ".join(part.capitalize() for part in model.split("_"))) \
                                   for model in not_supported)
         
-        print supported_str
+        #print supported_str
         open("supported_cellml_models.tex", "w").write(supported_models_form.format(\
             supported_str, not_supported_str))

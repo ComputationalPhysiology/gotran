@@ -8,8 +8,8 @@ from modelparameters.sympytools import symbols_from_expr
 
 from gotran.common import GotranException
 
-from gotran.model.odeobjects2 import *
-from gotran.model.expressions2 import StateDerivative
+from gotran.model.odeobjects import *
+from gotran.model.expressions import StateDerivative
 from gotran.model.utils import ode_primitives
 
 from sympy import Symbol, Derivative

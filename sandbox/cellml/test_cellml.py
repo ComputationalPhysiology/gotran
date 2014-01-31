@@ -1,7 +1,7 @@
 from xml.etree import ElementTree
 from collections import defaultdict, OrderedDict
 from gotran.input.cellml2 import CellMLParser
-from gotran.model.loadmodel2 import load_ode
+from gotran.model.loadmodel import load_ode
 from modelparameters.utils import list_timings, clear_timings
 from gotran import warning
 import glob

@@ -17,13 +17,15 @@
 
 import odeobjects
 import expressions
-import odecomponents
+import odecomponent
+import utils
 import ode
 import loadmodel
+ 
 
 # gotran imports
 from odeobjects import *
-from odecomponents import *
+from odecomponent import *
 from expressions import *
 from ode import *
 from loadmodel import *

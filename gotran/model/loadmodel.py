@@ -22,18 +22,19 @@ import inspect
 import os
 import re
 import tempfile
-from collections import OrderedDict
+import weakref
+from collections import OrderedDict, deque
 
 # modelparameters import
 from modelparameters.parameters import Param, ScalarParam, ArrayParam, \
      ConstParam, scalars
-from modelparameters.sympytools import sp_namespace, sp
+from modelparameters.sympytools import sp_namespace, sp, symbols_from_expr
 
 # gotran imports
 from gotran.common import *
 from gotran.model.ode import ODE
 
-_for_template = re.compile("for.*in .*:")
+_for_template = re.compile("\A[ ]*for[ ]+.*in[ ]+:[ ]*\Z")
 _no_intermediate_template = re.compile(".*# NO INTERMEDIATE.*")
 
 class IntermediateDispatcher(dict):
@@ -41,24 +42,36 @@ class IntermediateDispatcher(dict):
     Dispatch intermediates to ODE attributes
     """
     
-    def __init__(self, ode):
+    def __init__(self, ode=None):
         """
         Initalize with an ode
         """
-        from ode import ODE
-        check_arg(ode, ODE)
-        self._ode = ode
+        if ode is not None:
+            self._ode = weakref.ref(ode)
+        else:
+            self._ode = None
+
+    @property
+    def ode(self):
+
+        if self._ode == None:
+            error("ode attr is not set")
+        
+        return self._ode()
+
+    @ode.setter
+    def ode(self, ode):
+        self._ode = weakref.ref(ode)
 
     def __setitem__(self, name, value):
 
+        timer = Timer("Namespace dispatcher")
         # Set the attr of the ODE
         # If a scalar or a sympy number or it is a sympy.Basic consisting of
         # sp.Symbols
 
         if isinstance(value, scalars) or isinstance(value, sp.Number) or \
-               (isinstance(value, sp.Basic) and \
-                any(isinstance(atom, sp.Symbol)\
-                    for atom in value.atoms())):
+               (isinstance(value, sp.Basic) and symbols_from_expr(value)):
 
             # Get source which triggers the insertion to the global namespace
             frame = inspect.currentframe().f_back
@@ -91,12 +104,12 @@ class IntermediateDispatcher(dict):
                 dict.__setitem__(self, name, value)
                 
             else:
+
+                del timer
                 
-                # Add intermediate
-                sym = self._ode.add_intermediate(name, value)
+                # Add obj to the present component
+                sym = setattr(self.ode.present_component, name, value)
         
-                # Populate the name space with symbol attribute
-                dict.__setitem__(self, name, sym)
         else:
             debug("Not registering '{0}' as an intermediate.".format(name))
 
@@ -118,36 +131,44 @@ def _init_namespace(ode, load_arguments, namespace):
 
     # Add Sympy matrix related stuff
     namespace.update(dict(eye=sp.eye, diag=sp.diag, Matrix=sp.Matrix, zeros=sp.zeros))
-                     
-    namespace.update(dict(time=ode.time, dt=ode.dt,
+
+    namespace.update(dict(t=ode.t,
                           ScalarParam=ScalarParam,
                           ArrayParam=ArrayParam,
                           ConstParam=ConstParam,
-                          diff=ode.diff,
-                          comment=ode.add_comment,
-                          component=ode.set_component,
-                          monitor=ode.add_monitored,
                           sp=sp,
                           ))
 
     # Add ode and model_arguments
-    _namespace_binder(namespace, ode, load_arguments)
+    _namespace_binder(namespace, weakref.ref(ode), load_arguments)
+
     return namespace
 
-def exec_ode(ode_str, name):
+def exec_ode(ode_str, name, **arguments):
     """
     Execute an ode given by a str
+
+    Arguments
+    ---------
+    ode_str : str
+        The ode as a str
+    name : str 
+        The name of ODE
+    arguments : dict (optional)
+        Optional arguments which can control loading of model
     """
+    # Dict to collect declared intermediates
+    intermediate_dispatcher = IntermediateDispatcher()
+
     # Create an ODE which will be populated with data when ode file is loaded
-    ode = ODE(name, return_namespace=True)
+    ode = ODE(name, intermediate_dispatcher)
+
+    intermediate_dispatcher.ode = ode
 
     debug("Loading {}".format(ode.name))
 
-    # Dict to collect declared intermediates
-    intermediate_dispatcher = IntermediateDispatcher(ode)
-
     # Create namespace which the ode file will be executed in
-    namespace = _init_namespace(ode, {}, intermediate_dispatcher)
+    _init_namespace(ode, arguments, intermediate_dispatcher)
 
     # Write str to file
     open("_tmp_gotrand.ode", "w").write(ode_str)
@@ -164,11 +185,10 @@ def exec_ode(ode_str, name):
         warning("ODE mode '{0}' is not complete.".format(ode.name))
     
     info("Loaded ODE model '{0}' with:".format(ode.name))
-    for what in ["states", "parameters", "variables"]:
+    for what in ["full_states", "parameters"]:
         num = getattr(ode, "num_{0}".format(what))
-        if num:
-            info("{0}: {1}".format(("Num "+what).rjust(22), num))
-
+        info("{0}: {1}".format(("Num "+what.replace("_", \
+                                                    " ")).rjust(20), num))
     return ode
 
 def load_ode(filename, name=None, **arguments):
@@ -201,24 +221,24 @@ def load_ode(filename, name=None, **arguments):
     elif name is None:
         name = filename[:-4]
 
+    # Dict to collect namespace
+    intermediate_dispatcher = IntermediateDispatcher()
+
     # Create an ODE which will be populated with data when ode file is loaded
-    ode = ODE(name, return_namespace=True)
+    ode = ODE(name, intermediate_dispatcher)
+    
+    intermediate_dispatcher.ode = ode
 
     debug("Loading {}".format(ode.name))
 
-    # Dict to collect declared intermediates
-    intermediate_dispatcher = IntermediateDispatcher(ode)
-
     # Create namespace which the ode file will be executed in
-    namespace = _init_namespace(ode, arguments, intermediate_dispatcher)
+    _init_namespace(ode, arguments, intermediate_dispatcher)
 
     # Execute the file
     if (not os.path.isfile(filename)):
         error("Could not find '{0}'".format(filename))
 
-    #intermediate_dispatcher.update(namespace)
-
-    # Execute file and collect 
+    # Execute file and collect
     execfile(filename, intermediate_dispatcher)
     
     # Finalize ODE
@@ -229,12 +249,10 @@ def load_ode(filename, name=None, **arguments):
         warning("ODE mode '{0}' is not complete.".format(ode.name))
     
     info("Loaded ODE model '{0}' with:".format(ode.name))
-    for what in ["states", "field_states", "parameters", "field_parameters",
-                 "variables", "monitored_intermediates"]:
+    for what in ["full_states", "parameters"]:
         num = getattr(ode, "num_{0}".format(what))
-        if num:
-            info("{0}: {1}".format(("Num "+what.replace("_", \
-                                                        " ")).rjust(22), num))
+        info("{0}: {1}".format(("Num "+what.replace("_", \
+                                                    " ")).rjust(20), num))
     return ode
 
 def _namespace_binder(namespace, ode, load_arguments):
@@ -242,7 +260,22 @@ def _namespace_binder(namespace, ode, load_arguments):
     Add functions all bound to current ode, namespace and arguments
     """
 
-    def subode(subode, prefix=None, components=None):
+    def comment(comment):
+        """
+        Add a comment to the present ODE component
+
+        Arguments
+        ---------
+        comment : str
+            The comment
+        """
+        
+        comp = ode().present_component
+            
+        # Add the comment
+        comp.add_comment(comment)
+        
+    def subode(subode, prefix="", components=None):
         """
         Load an ODE and add it to the present ODE
 
@@ -251,75 +284,55 @@ def _namespace_binder(namespace, ode, load_arguments):
         subode : str
             The subode which should be added.
         prefix : str (optional)
-            A prefix which all state and parameters are prefixed with. If not
-            given the name of the subode will be used as prefix. If set to
-            empty string, no prefix will be used.
+            A prefix which all state and parameters are prefixed with.
         components : list, tuple of str (optional)
             A list of components which will be extracted and added to the present
             ODE. If not given the whole ODE will be added.
         """
-        from gotran.model.expressions import Expression
         
         check_arg(subode, str, 0)
 
         # Add the subode and update namespace
-        namespace.update(ode.add_subode(subode, prefix=prefix, \
-                                        components=components))
+        ode().add_subode(subode, prefix=prefix, \
+                         components=components)
     
-    def states(component="", **kwargs):
+    def states(*args, **kwargs):
         """
-        Add a number of states to the current ODE
-    
-        Example
-        -------
-    
-        >>> ODE("MyOde")
-        >>> states(e=0.0, g=1.0)
-        """
-    
-        if not kwargs:
-            error("expected at least one state")
-        
-        # Add the states and update namespace
-        namespace.update(ode.add_states(component, **kwargs))
-    
-    def parameters(component="", **kwargs):
-        """
-        Add a number of parameters to the current ODE
-    
-        Example
-        -------
-    
-        >>> ODE("MyOde")
-        >>> parameters(v_rest=-85.0,
-                       v_peak=35.0,
-                       time_constant=1.0)
+        Add a number of states to the current component or to the
+        chosed component
         """
         
-        if not kwargs:
-            error("expected at least one state")
+        # If comp string is passed we get the component
+        if args and isinstance(args[0], str):
+            comp = ode()
+            args = deque(args)
+            
+            while args and isinstance(args[0], str):
+                comp = comp(args.popleft())
+        else:
+            comp = ode().present_component
+            
+        # Add the states
+        comp.add_states(*args, **kwargs)
+    
+    def parameters(*args, **kwargs):
+        """
+        Add a number of parameters to the current ODE or to the chosed component
+        """
         
+        # If comp string is passed we get the component
+        if args and isinstance(args[0], str):
+            comp = ode()
+            args = deque(args)
+            
+            while args and isinstance(args[0], str):
+                comp = comp(args.popleft())
+        else:
+            comp = ode().present_component
+            
         # Add the parameters and update namespace
-        namespace.update(ode.add_parameters(component, **kwargs))
+        comp.add_parameters(*args, **kwargs)
         
-    def variables(component="", **kwargs):
-        """
-        Add a number of variables to the current ODE
-    
-        Example
-        -------
-    
-        >>> ODE("MyOde")
-        >>> variables(c_out=0.0, c_in=1.0)
-        
-        """
-    
-        if not kwargs:
-            error("expected at least one variable")
-        
-        # Add the variables and update namespace
-        namespace.update(ode.add_variables(component, **kwargs))
-    
     def model_arguments(**kwargs):
         """
         Defines arguments that can be altered while the ODE is loaded
@@ -358,55 +371,36 @@ def _namespace_binder(namespace, ode, load_arguments):
         
         namespace.update(ns)
 
-    def markov_model(name, component="", algebraic_sum=None, **states):
-        """        
-        Initalize a Markov model
-
-        Arguments
-        ---------
-        name : str
-            Name of Markov model
-        component : str (optional)
-            Add state to a particular component
-        algebraic_sum : scalar (optional)
-            If the algebraic sum of all states should be constant,
-            give the value here.
-        states : dict
-            A dict with all states defined in this Markov model
+    def component(*args):
         """
-
-        # Create Markov model
-        mm = ode.add_markov_model(name, component=component, \
-                                  algebraic_sum=algebraic_sum, \
-                                  **states)
+        Set the present component
+        """
         
-        # Add Markov model to namespace
-        namespace[mm.name] = mm
+        check_arg(args, tuple, 0, itemtypes=str)
+        
+        comp = ode()
 
-        # Add symbols to namespace
-        namespace.update(dict((state.name, state.sym) for state in mm._states))
+        args = deque(args)
+            
+        while args:
+            comp = comp(args.popleft())
 
-    def expand(intermediate):
-        """
-        Expand an intermediate to the core expression using only States
-        and Parameters
+        assert ode().present_component == comp
 
-        Arguments:
-        ----------
-        intermediate : Intermediate
-            The intermediate which should be expanded
-        """
-        return ode.expand_intermediate(intermediate)
+        # Update the rates name so it points to the present components
+        # rates dictionary
+        namespace["rates"] = comp.rates
+
+        return comp
 
     # Update provided namespace
     namespace.update(dict(
         states=states,
         parameters=parameters,
-        variables=variables,
         model_arguments=model_arguments,
+        component=component,
         subode=subode,
-        markov_model=markov_model,
-        expand=expand,
+        comment=comment
         )
                      )
                     

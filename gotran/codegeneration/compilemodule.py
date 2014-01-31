@@ -28,36 +28,18 @@ from gotran.common import check_arg, check_kwarg, push_log_level, \
      pop_log_level, info, INFO, value_error
 from gotran.model.ode import ODE
 from gotran.model.loadmodel import load_ode
-from oderepresentation import ODERepresentation, _default_params
-from codegenerator import CodeGenerator, CCodeGenerator
-
-# Create doc string to jit
-_compile_module_doc_str = "\n".join("    {0} : bool\n       {1}".format(\
-    param.name, param.description) for param in _default_params().values())
-
-_compile_module_doc_str = """
-    JIT compile an ode
-
-    Arguments:
-    ----------
-    ode : ODE, ODERepresentation
-       The gotran ode
-    rhs_args : str (optional)
-       Argument order of the generated rhs function. 
-       s=states, p=parameters, t=time.
-       Defaults : 'stp'
-    language : str (optional)
-       The language of the generated code
-       Defaults : 'C' \xe2\x88\x88 ['C', 'Python'] 
-{0}
-    """.format(_compile_module_doc_str)
+from gotran.common.options import parameters
+from gotran.codegeneration.codegenerator import PythonCodeGenerator, \
+     CCodeGenerator, class_name
+from gotran.codegeneration.algorithmcomponents import rhs_expressions, \
+     monitored_expressions, jacobian_expressions
 
 # Set log level of instant
 instant.set_log_level("WARNING")
 
 __all__ = ["compile_module"]
 
-_additional_declarations = r"""
+additional_declarations = r"""
 %init%{{
 import_array();
 %}}
@@ -66,7 +48,7 @@ import_array();
 %feature("autodoc", "1");
 
 // Typemaps
-%typemap(in) (double* dy)
+%typemap(in) (double* {rhs_name})
 {{
   // Check type
   if (!PyArray_Check($input))
@@ -84,36 +66,12 @@ import_array();
   // Check size of passed array
   if ( PyArray_SIZE(xa) != {num_states} )
     SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
-                                  "{num_states}, for the dy argument.");
+                                  "{num_states}, for the {rhs_name} argument.");
   
   $1 = (double *)PyArray_DATA(xa);
 }}
 
-// Typemaps
-%typemap(in) (double* jac)
-{{
-  // Check type
-  if (!PyArray_Check($input))
-    SWIG_exception(SWIG_TypeError, "Numpy array expected");
-
-  // Get PyArrayObject
-  PyArrayObject *xa = (PyArrayObject *)$input;
-
-  // Check data type
-  if (!(PyArray_ISCONTIGUOUS(xa) && PyArray_TYPE(xa) == NPY_DOUBLE))
-    SWIG_exception(SWIG_TypeError, "Contigous numpy array of doubles "
-                  "expected. Make sure the numpy array is contiguous, "
-                  "and uses dtype=float_.");
-
-  // Check size of passed array
-  if ( PyArray_SIZE(xa) != {num_states}*{num_states} )
-    SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
-                                  "{num_states}*{num_states}, for the jacobian argument.");
-  
-  $1 = (double *)PyArray_DATA(xa);
-}}
-
-%typemap(in) (const double* states)
+%typemap(in) (const double* {states_name})
 {{
   // Check type
   if (!PyArray_Check($input))
@@ -130,12 +88,12 @@ import_array();
   // Check size of passed array
   if ( PyArray_SIZE(xa) != {num_states} )
     SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
-                              "{num_states}, for the states argument.");
+                              "{num_states}, for the {states_name} argument.");
   
   $1 = (double *)PyArray_DATA(xa);
 }}
 
-%typemap(in) (double* parameters)
+%typemap(in) (double* {parameters_name})
 {{
   // Check type
   if (!PyArray_Check($input))
@@ -152,30 +110,7 @@ import_array();
   // Check size of passed array
   if ( PyArray_SIZE(xa) != {num_parameters} )
     SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
-             "{num_parameters}, for the parameters argument.");
-  
-  $1 = (double *)PyArray_DATA(xa);
-  
-}}
-
-%typemap(in) (double* monitored)
-{{
-  // Check type
-  if (!PyArray_Check($input))
-    SWIG_exception(SWIG_TypeError, "Numpy array expected");
-
-  // Get PyArrayObject
-  PyArrayObject *xa = (PyArrayObject *)$input;
-
-  // Check data type
-  if (!(PyArray_ISCONTIGUOUS(xa) && PyArray_TYPE(xa) == NPY_DOUBLE))
-    SWIG_exception(SWIG_TypeError, "Contigous numpy array of doubles expected."
-           " Make sure the numpy array is contiguous, and uses dtype=float_.");
-
-  // Check size of passed array
-  if ( PyArray_SIZE(xa) != {num_monitored} )
-    SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
-             "{num_monitored}, for the monitored argument.");
+             "{num_parameters}, for the {parameters_name} argument.");
   
   $1 = (double *)PyArray_DATA(xa);
   
@@ -193,111 +128,165 @@ import_array();
 }}
 
 %pythoncode%{{
-def rhs({args}, dy=None):
+def {rhs_function_name}({args}, {rhs_name}=None):
     '''
     Evaluates the right hand side of the model
 
     Arguments:
     ----------
 {args_doc}    
-    dy : np.ndarray (optional)
+    {rhs_name} : np.ndarray (optional)
         The computed result 
     '''
     import numpy as np
-    if dy is None:
-        dy = np.zeros_like(states)
+    if {rhs_name} is None:
+        {rhs_name} = np.zeros_like({states_name})
     
-    _rhs({args}, dy)
-    return dy
+    _{rhs_function_name}({args}, {rhs_name})
+    return {rhs_name}
 
 {python_code}
 %}}
 
-// Rename rhs to _rhs
-%rename (_rhs) rhs;
+%rename (_{rhs_function_name}) {rhs_function_name};
 
 {jacobian_declaration}
 
 {monitor_declaration}
 """
 
-_jacobian_declaration = """
+jacobian_declaration_template = """
+// Typemaps
+%typemap(in) (double* {jac_name})
+{{
+  // Check type
+  if (!PyArray_Check($input))
+    SWIG_exception(SWIG_TypeError, "Numpy array expected");
+
+  // Get PyArrayObject
+  PyArrayObject *xa = (PyArrayObject *)$input;
+
+  // Check data type
+  if (!(PyArray_ISCONTIGUOUS(xa) && PyArray_TYPE(xa) == NPY_DOUBLE))
+    SWIG_exception(SWIG_TypeError, "Contigous numpy array of doubles "
+                  "expected. Make sure the numpy array is contiguous, "
+                  "and uses dtype=float_.");
+
+  // Check size of passed array
+  if ( PyArray_SIZE(xa) != {num_states}*{num_states} )
+    SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
+                                  "{num_states}*{num_states}, for the {jac_name} argument.");
+  
+  $1 = (double *)PyArray_DATA(xa);
+}}
+
 %pythoncode%{{
-def jacobian({args}, jac=None):
+def {jacobian_function_name}({args}, {jac_name}=None):
     '''
     Evaluates the jacobian of the model
 
     Arguments:
     ----------
 {args_doc}    
-    jac : np.ndarray (optional)
+    {jac_name} : np.ndarray (optional)
         The computed result 
     '''
     import numpy as np
-    if jac is None:
-        jac = np.zeros({num_states}*{num_states}, dtype=np.float_)
-    elif not isinstance(jac, np.ndarray):
+    if {jac_name} is None:
+        {jac_name} = np.zeros({num_states}*{num_states}, dtype=np.float_)
+    elif not isinstance({jac_name}, np.ndarray):
         raise TypeError(\"expected a NumPy array.\")
-    elif len(jac.shape) != 2 or jac.shape[0] != jac.shape[1] or jac.shape[0] != {num_states}:
+    elif len({jac_name}.shape) != 2 or {jac_name}.shape[0] != {jac_name}.shape[1] or {jac_name}.shape[0] != {num_states}:
         raise ValueError(\"expected a square shaped matrix with size ({num_states}, {num_states})\")
     else:
         # Flatten Matrix
-        jac.shape = ({num_states}*{num_states},)
+        {jac_name}.shape = ({num_states}*{num_states},)
     
-    _jacobian({args}, jac)
-    jac.shape = ({num_states},{num_states})
-    return jac
+    _{jacobian_function_name}({args}, {jac_name})
+    {jac_name}.shape = ({num_states},{num_states})
+    return {jac_name}
 %}}
 
-// Rename jacobian to _jacobian
-%rename (_jacobian) jacobian;
+%rename (_{jacobian_function_name}) {jacobian_function_name};
 """
 
+monitor_declaration_template = """
+%typemap(in) (double* {monitored_name})
+{{
+  // Check type
+  if (!PyArray_Check($input))
+    SWIG_exception(SWIG_TypeError, "Numpy array expected");
 
-_monitor_declaration = """
+  // Get PyArrayObject
+  PyArrayObject *xa = (PyArrayObject *)$input;
+
+  // Check data type
+  if (!(PyArray_ISCONTIGUOUS(xa) && PyArray_TYPE(xa) == NPY_DOUBLE))
+    SWIG_exception(SWIG_TypeError, "Contigous numpy array of doubles expected."
+           " Make sure the numpy array is contiguous, and uses dtype=float_.");
+
+  // Check size of passed array
+  if ( PyArray_SIZE(xa) != {num_monitored} )
+    SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
+             "{num_monitored}, for the {monitored_name} argument.");
+  
+  $1 = (double *)PyArray_DATA(xa);
+  
+}}
+
 %pythoncode%{{
-def monitor({args}, monitored=None):
+def {monitored_function_name}({args}, {monitored_name}=None):
     '''
     Evaluates any monitored intermediates of the model
 
     Arguments:
     ----------
 {args_doc}    
-    monitored : np.ndarray (optional)
+    {monitored_name} : np.ndarray (optional)
         The computed result 
     '''
     import numpy as np
-    if monitored is None:
-        monitored = np.zeros({num_monitored}, dtype=np.float_)
-    elif not isinstance(monitored, np.ndarray):
+    if {monitored_name} is None:
+        {monitored_name} = np.zeros({num_monitored}, dtype=np.float_)
+    elif not isinstance({monitored_name}, np.ndarray):
         raise TypeError(\"expected a NumPy array.\")
-    elif len(monitored) != {num_monitored}:
+    elif len({monitored_name}) != {num_monitored}:
         raise ValueError(\"expected a numpy array of size: {num_monitored}\")
     
-    _monitor({args}, monitored)
-    return monitored
+    _{monitored_function_name}({args}, {monitored_name})
+    return {monitored_name}
 %}}
 
-// Rename monitor to _monitor
-%rename (_monitor) monitor;
+%rename (_{monitored_function_name}) {monitored_function_name};
 """
 
-def compile_module(ode, rhs_args="stp", language="C", **options):
+def compile_module(ode, language="C", monitored=None, generation_params=None):
+    """
+    JIT compile an ode
+    
+    Arguments:
+    ----------
+    ode : ODE, str
+        The gotran ode
+    language : str (optional)
+        The language of the generated code
+        Defaults : 'C' \xe2\x88\x88 ['C', 'Python'] 
+    monitored : list
+        A list of names of intermediates of the ODE. Code for monitoring
+        the intermediates will be generated.
+    generation_params : dict
+        Parameters controling the code generation
+    """
+    
+    monitored = monitored or []
+    generation_params = generation_params or {}
 
-    check_arg(ode, (ODERepresentation, ODE, str))
-
+    check_arg(ode, (ODE, str))
+    
     if isinstance(ode, str):
         ode = load_ode(ode)
-
-    if isinstance(ode, ODE):
-        params = _default_params()
-        params.update(options)
-        oderepr = ODERepresentation(ode, **params.copy(True))
-    else:
-        oderepr = ode
-
-    check_kwarg(rhs_args, "rhs_args" ,str)
-    check_kwarg(language, "language" ,str)
+    
+    check_kwarg(language, "language", str)
 
     language = language.capitalize()
     valid_languages = ["C", "Python"]
@@ -305,31 +294,33 @@ def compile_module(ode, rhs_args="stp", language="C", **options):
         value_error("Expected one of {0} for the language kwarg.".format(\
             ", ".join("'{0}'".format(lang) for lang in valid_languages)))
         
+    params = parameters.generation.copy()
+    params.update(generation_params)
+
     if language == "C":
-        return compile_extension_module(oderepr, rhs_args)
+        return compile_extension_module(ode, monitored, params)
 
     # Create unique module name for this application run
     modulename = "gotran_python_module_{0}_{1}".format(\
-        oderepr.class_name, hashlib.sha1(repr(oderepr.signature()) + \
-                                         rhs_args + \
-                                         gotran.__version__ + \
-                                         instant.__version__).hexdigest())
+        class_name(ode.name), hashlib.sha1(\
+            ode.signature() + str(monitored) + repr(params) + \
+            gotran.__version__ + instant.__version__).hexdigest())
     
     # Check cache
     python_module = instant.import_module(modulename)
     if python_module:
-        return getattr(python_module, oderepr.class_name)()
+        return getattr(python_module, class_name(ode.name))()
 
     # No module in cache generate python version
-    pgen = CodeGenerator(oderepr, dict(rhs_args=rhs_args))
+    pgen = PythonCodeGenerator(params)
 
     # Generate class code, execute it and collect namespace
-    code = "from __future__ import division\n" + pgen.class_code()
+    code = "from __future__ import division\nimport numpy as np\nimport math" + pgen.class_code(ode, monitored=monitored)
 
     # Make a temporary module path for compilation
     module_path = os.path.join(instant.get_temp_dir(), modulename)
     instant.instant_assert(not os.path.exists(module_path),
-                           "Not expecting module_path to exist: '{}'".format( module_path))
+                           "Not expecting module_path to exist: '{}'".format(module_path))
     instant.makedirs(module_path)
     original_path = os.getcwd()
     try:
@@ -344,12 +335,9 @@ def compile_module(ode, rhs_args="stp", language="C", **options):
         os.chdir(original_path)
 
     python_module = instant.import_module(modulename)
-    return getattr(python_module, oderepr.class_name)()
+    return getattr(python_module, class_name(ode.name))()
 
-# Assign docstring
-compile_module.func_doc = _compile_module_doc_str
-
-def compile_extension_module(oderepr, rhs_args):
+def compile_extension_module(ode, monitored, params):
     """
     Compile an extension module, based on the C code from the ode
     """
@@ -357,28 +345,31 @@ def compile_extension_module(oderepr, rhs_args):
     # Add function prototype
     args=[]
     args_doc=[]
-    for arg in rhs_args:
+    for arg in params.code.default_arguments:
         if arg == "s":
             args.append("states")
-            args_doc.append("""    states : np.ndarray
-        The state values""")
+            args_doc.append("""    {0} : np.ndarray
+        The state values""".format(params.code.states.array_name))
         elif arg == "t":
             args.append("time")
             args_doc.append("""    time : scalar
         The present time""")
         elif arg == "p" and \
-                 not oderepr.optimization.parameter_numerals:
+                 params.code.parameters.representation != "numerals":
             args.append("parameters")
-            args_doc.append("""    parameters : np.ndarray
-        The parameter values""")
+            args_doc.append("""    {0} : np.ndarray
+        The parameter values""".format(params.code.parameters.array_name))
+        elif arg == "b" and \
+                 params.code.body.representation != "named":
+            args.append("body")
+            args_doc.append("""    {0} : np.ndarray
+        The body values""".format(params.code.body.array_name))
 
     # Create unique module name for this application run
-    modulename = "gotran_compile_module_{0}_{1}".format(\
-        oderepr.class_name, hashlib.sha1(repr(oderepr.signature()) + \
-                                         instant.get_swig_version() + \
-                                         rhs_args + \
-                                         gotran.__version__ + \
-                                         instant.__version__).hexdigest())
+    modulename = "gotran_compiled_module_{0}_{1}".format(\
+        class_name(ode.name), hashlib.sha1(\
+            ode.signature() + str(monitored) + repr(params) + \
+            gotran.__version__ + instant.__version__).hexdigest())
     
     # Check cache
     compiled_module = instant.import_module(modulename)
@@ -389,31 +380,51 @@ def compile_extension_module(oderepr, rhs_args):
     args = ", ".join(args)
     args_doc = "\n".join(args_doc)
 
-    pgen = CodeGenerator(oderepr, dict(rhs_args=rhs_args))
+    # Do not generate any Python functions
+    python_params = params.copy()
+    for name in python_params.functions:
+        if name == "monitored":
+            continue
+        python_params.functions[name].generate = False
 
-    cparam = dict(rhs_args=rhs_args, \
-                  parameters_in_signature=True)
+    jacobian_declaration = ""
+    monitor_declaration = ""
+    if params.functions.jacobian.generate:
 
-    cgen = CCodeGenerator(oderepr, cparam)
-    code = cgen.dy_code()
-    code += "\n\n" + cgen.monitored_code()
-    
-    if oderepr.optimization.generate_jacobian:
-        code += "\n\n" + cgen.jacobian_code()
-
-        jacobian_declaration = _jacobian_declaration.format(\
-            num_states = oderepr.ode.num_states,
+        # Flatten jacobian params
+        if not params.code.array.flatten:
+            debug("Generating jacobian C-code, forcing jacobian array "\
+                  "to be flattened.")
+            params.code.array.flatten = True
+        
+        jacobian_declaration = jacobian_declaration_template.format(\
+            num_states = ode.num_full_states,
             args=args,
             args_doc=args_doc,
+            jac_name=params.functions.jacobian.result_name,
+            jacobian_function_name=params.functions.jacobian.function_name,
             )
-    else:
-        jacobian_declaration = ""
-    
-    pcode = "\n\n" + pgen.init_states_code() + "\n\n" + \
-            pgen.init_param_code() + "\n\n" + \
-            pgen.state_name_to_index_code() + "\n\n" + \
-            pgen.param_name_to_index_code()
 
+    if monitored and params.functions.monitored.generate:
+        monitor_declaration = monitor_declaration_template.format(\
+            num_states = ode.num_full_states,
+            num_monitored = len(monitored),
+            args=args,
+            args_doc=args_doc,
+            monitored_name=params.functions.monitored.result_name,
+            monitored_function_name=params.functions.monitored.function_name,
+            )
+    
+    pgen = PythonCodeGenerator(python_params)
+    cgen = CCodeGenerator(params)
+    
+    pcode = "\n\n".join(\
+        pgen.code_list(ode, monitored=monitored))
+    ccode = "\n\n".join(cgen.code_list(ode,
+                        monitored=monitored,
+                        include_init=False,
+                        include_index_map=False))
+    
     push_log_level(INFO)
     info("Calling GOTRAN just-in-time (JIT) compiler, this may take some "\
          "time...")
@@ -423,27 +434,26 @@ def compile_extension_module(oderepr, rhs_args):
     instant_kwargs = configure_instant()
 
     declaration_form = dict(\
-        num_states = oderepr.ode.num_states,
-        num_parameters = oderepr.ode.num_parameters,
-        num_monitored = oderepr.ode.num_monitored_intermediates,
+        num_states = ode.num_full_states,
+        num_parameters = ode.num_parameters,
+        num_monitored = len(monitored),
         python_code = pcode,
         args=args,
         args_doc=args_doc,
         jacobian_declaration=jacobian_declaration,
-        monitor_declaration=_monitor_declaration.format(\
-            num_states = oderepr.ode.num_states,
-            num_monitored = oderepr.ode.num_monitored_intermediates,
-            args=args,
-            args_doc=args_doc,
-            )
+        rhs_name=params.functions.rhs.result_name,
+        rhs_function_name=params.functions.rhs.function_name,
+        states_name=params.code.states.array_name,
+        parameters_name=params.code.parameters.array_name,
+        monitor_declaration=monitor_declaration,
         )
     
     # Compile extension module with instant
     compiled_module = instant.build_module(\
-        code              = code,
-        additional_declarations = _additional_declarations.format(\
+        code  = ccode,
+        additional_declarations = additional_declarations.format(\
             **declaration_form),
-        signature         = modulename,
+        signature = modulename,
         **instant_kwargs)
 
     info(" done")
@@ -462,7 +472,7 @@ def configure_instant():
 
     instant_kwargs['swig_include_dirs'] = swig_include_dirs
     instant_kwargs['include_dirs'] = [numpy.get_include()]
-    instant_kwargs['system_headers'] = ["numpy/arrayobject.h", "math.h", "complex.h"]
+    instant_kwargs['system_headers'] = ["numpy/arrayobject.h", "math.h"]#, "complex.h"]
     instant_kwargs['swigargs'] =['-O -c++']
     instant_kwargs['cppargs'] = ['-O2']
 

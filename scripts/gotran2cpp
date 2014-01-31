@@ -2,8 +2,8 @@
 
 import os
 
-from gotran.model.loadmodel2 import load_ode
-from gotran.codegeneration.codegenerator2 import CppCodeGenerator
+from gotran.model.loadmodel import load_ode
+from gotran.codegeneration.codegenerator import CppCodeGenerator
 from gotran.common.options import parameters
 from gotran.common import error
 

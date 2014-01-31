@@ -37,9 +37,9 @@ from modelparameters.sympytools import sp
 from gotran.common import error, info, debug, check_arg, check_kwarg, \
      scalars, Timer, warning, tuplewrap, parameters, warning
 from gotran.model.utils import ode_primitives
-from gotran.model.odeobjects2 import State, Parameter, IndexedObject, Comment
-from gotran.model.expressions2 import *
-from gotran.model.ode2 import ODE
+from gotran.model.odeobjects import State, Parameter, IndexedObject, Comment
+from gotran.model.expressions import *
+from gotran.model.ode import ODE
 from gotran.codegeneration.codecomponent import CodeComponent
 
 #FIXME: Remove our own cse, or move to this module?

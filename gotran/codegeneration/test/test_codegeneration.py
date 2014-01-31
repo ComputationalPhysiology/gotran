@@ -19,13 +19,13 @@ globals().update(sp_namespace)
 
 from gotran.common import GotranException, parameters
 
-from gotran.model.odeobjects2 import *
-from gotran.model.ode2 import *
-from gotran.model.loadmodel2 import *
-from gotran.model.expressions2 import *
+from gotran.model.odeobjects import *
+from gotran.model.ode import *
+from gotran.model.loadmodel import *
+from gotran.model.expressions import *
 from gotran.codegeneration.algorithmcomponents import *
 from gotran.codegeneration.codecomponent import *
-from gotran.codegeneration.codegenerator2 import *
+from gotran.codegeneration.codegenerator import *
 
 
 suppress_logging()
@@ -42,12 +42,16 @@ ode = load_ode("tentusscher_2004_mcell_updated.ode")
 codegen = PythonCodeGenerator()
 
 # Options for code generation
-default_params = parameters["generation"]["code"].copy()
+default_params = parameters["generation"].copy()
 
-state_repr_opts = sorted(dict.__getitem__(default_params.states, "representation")._options)
-param_repr_opts = dict.__getitem__(default_params.parameters, "representation")._options
-body_repr_opts = dict.__getitem__(default_params.body, "representation")._options
-body_optimize_opts = dict.__getitem__(default_params.body, "optimize_exprs")._options
+state_repr_opts = sorted(dict.__getitem__(default_params.code.states, \
+                                          "representation")._options)
+param_repr_opts = dict.__getitem__(default_params.code.parameters, \
+                                   "representation")._options
+body_repr_opts = dict.__getitem__(default_params.code.body, \
+                                  "representation")._options
+body_optimize_opts = dict.__getitem__(default_params.code.body, \
+                                      "optimize_exprs")._options
 
 module_code = codegen.module_code(ode)
 exec(module_code)
@@ -62,8 +66,6 @@ debug = 0
 if debug:
     print "REF RHS:", rhs_ref_values
     print "REF JAC:", jac_ref_values
-
-code_params = parameters["generation"]["code"].copy()
 
 test_map = {}
 
@@ -90,7 +92,10 @@ def function_closure(body_repr, body_optimize, param_repr, \
             float_precision, states_name, parameters_name, body_array_name, body_in_arg)
         print "\nTesting code generation with parameters: " + test_name
 
+        gen_params = parameters["generation"].copy()
+
         # Update code_params
+        code_params = gen_params["code"]
         code_params["body"]["optimize_exprs"] = body_optimize
         code_params["body"]["representation"] = body_repr
         code_params["body"]["array_name"] =  body_array_name
@@ -104,10 +109,19 @@ def function_closure(body_repr, body_optimize, param_repr, \
 
         # Reload ODE for each test
         ode = load_ode("tentusscher_2004_mcell_updated.ode")
-        codegen = PythonCodeGenerator(code_params)
+        codegen = PythonCodeGenerator(gen_params)
         rhs_comp = rhs_expressions(ode, params=code_params)
         rhs_code = codegen.function_code(rhs_comp)
         exec rhs_code in globals(), locals()
+
+        # DEBUG
+        if debug:
+            test_name = "_".join([body_repr, body_optimize, state_repr, param_repr, \
+                                  float_precision, states_name, parameters_name, \
+                                  body_array_name, str(body_in_arg)])
+            test_name += "_use_cse_" + str(use_cse)
+
+            open("rhs_code_{0}.py".format(test_name), "w").write(rhs_code)
 
         args = [states_values, 0.0]
         if param_repr != "numerals":
@@ -123,12 +137,6 @@ def function_closure(body_repr, body_optimize, param_repr, \
 
         # DEBUG
         if debug:
-            test_name = "_".join([body_repr, body_optimize, state_repr, param_repr, \
-                                  float_precision, states_name, parameters_name, \
-                                  body_array_name, str(body_in_arg)])
-            test_name += "_use_cse_" + str(use_cse)
-
-            open("rhs_code_{0}.py".format(test_name), "w").write(rhs_code)
             print "rhs norm:", rhs_norm
 
         eps = 1e-8 if float_precision == "double" else 1e-6
@@ -141,6 +149,15 @@ def function_closure(body_repr, body_optimize, param_repr, \
 
         jac_comp = jacobian_expressions(ode, params=code_params)
         jac_code = codegen.function_code(jac_comp)
+
+        if debug:
+            test_name = "_".join([body_repr, body_optimize, state_repr, param_repr, \
+                                  float_precision, states_name, parameters_name, \
+                                  body_array_name, str(body_in_arg)])
+            test_name += "_use_cse_" + str(use_cse)
+
+            open("jac_code_{0}.py".format(test_name), "w").write(jac_code)
+
         exec jac_code in globals(), locals()
 
         args = [states_values, 0.0]
@@ -152,15 +169,9 @@ def function_closure(body_repr, body_optimize, param_repr, \
             args.append(body)
 
         jac_values = compute_jacobian(*args)
-        
         jac_norm = np.sqrt(np.sum(jac_ref_values-jac_values)**2)
-        if debug:
-            test_name = "_".join([body_repr, body_optimize, state_repr, param_repr, \
-                                  float_precision, states_name, parameters_name, \
-                                  body_array_name, str(body_in_arg)])
-            test_name += "_use_cse_" + str(use_cse)
 
-            open("jac_code_{0}.py".format(test_name), "w").write(jac_code)
+        if debug:
             print "jac norm:", jac_norm
             #print "JAC", jac_values
 
@@ -197,9 +208,10 @@ class TestCodeComponent(unittest.TestCase):
         "Test that different ways of setting parameters generates the same code"
 
         # Generate basic code
-        def generate_code(code_params=None):
+        def generate_code(gen_params=None):
             ode = load_ode("tentusscher_2004_mcell_updated.ode")
-            codegen = PythonCodeGenerator(code_params)
+            code_params = None if gen_params is None else gen_params.code
+            codegen = PythonCodeGenerator(gen_params)
             jac = jacobian_expressions(ode, params=code_params)
 
             comps = [rhs_expressions(ode, params=code_params),
@@ -214,10 +226,15 @@ class TestCodeComponent(unittest.TestCase):
             return [codegen.function_code(comp) for comp in comps]
 
         # Reset main parameters
-        parameters["generation"]["code"].update(default_params)
+        parameters["generation"].update(default_params)
 
         # Generate code based on default parameters
         default_codes = generate_code()
+
+        gen_params = default_params.copy()
+
+        # Update code_params
+        code_params = gen_params["code"]
 
         # Update code parameters
         code_params["body"]["optimize_exprs"] = "none"
@@ -230,7 +247,7 @@ class TestCodeComponent(unittest.TestCase):
         code_params["float_precision"] = "double"
 
         # Code from updated parameters
-        updated_codes = generate_code(code_params)
+        updated_codes = generate_code(gen_params)
         for updated_code, default_code in zip(updated_codes, default_codes):
             self.assertNotEqual(updated_code, default_code)
 
@@ -240,7 +257,8 @@ class TestCodeComponent(unittest.TestCase):
         
 for param_name, state_name, body_name in [["PARAMETERS", "STATES", "ALGEBRAIC"], \
                                           ["params", "states", "algebraic"]]:
-    for use_cse in [False, True]:
+    #for use_cse in [False, True]:
+    for use_cse in [False]:
         for body_repr in ["array", "reused_array"]:
             for body_in_arg in [False, True]:
 

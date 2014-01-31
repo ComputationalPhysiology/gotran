@@ -1,4 +1,4 @@
-# Copyright (C) 2012 Johan Hake
+# Copyright (C) 2012-2014 Johan Hake
 #
 # This file is part of Gotran.
 #
@@ -18,399 +18,123 @@
 __all__ = ["ODE"]
 
 # System imports
-import inspect
-import re
-from collections import OrderedDict, deque
+from collections import defaultdict
+import weakref
 
-# ModelParameter imports
-from modelparameters.sympytools import sp, sp_namespace
-from modelparameters.codegeneration import sympycode, _all_keywords
-from modelparameters.parameters import ScalarParam
-from modelparameters.sympytools import iter_symbol_params_from_expr
+from sympy.core.function import AppliedUndef
 
-# Gotran imports
-from gotran.common import type_error, value_error, error, check_arg, \
-     check_kwarg, scalars, listwrap, info, debug, Timer
+# ModelParameters imports
+from modelparameters.sympytools import sp, symbols_from_expr
+from modelparameters.codegeneration import sympycode, pythoncode
+from modelparameters.utils import Timer
+
+# Local imports
+from gotran.common import error, debug, check_arg, check_kwarg, scalars
 from gotran.model.odeobjects import *
-from gotran.model.odecomponents import *
 from gotran.model.expressions import *
+from gotran.model.odecomponent import *
 
-_derivative_name_template = re.compile("\Ad([a-zA-Z]\w*)_dt\Z")
-
-class ODE(object):
+class ODE(ODEComponent):
     """
-    Basic class for storying information of an ODE
+    Root ODEComponent
+
+    Arguments:
+    ----------
+    name : str
+        The name of the ODE
+    ns : dict (optional)
+        A namespace which will be filled with declared ODE symbols
     """
+    def __new__(cls, *args, **kwargs):
+        self = object.__new__(cls, *args, **kwargs)
         
-    def __init__(self, name, return_namespace=False):
+        return self
+
+    def __init__(self, name, ns=None):
+
+        # Call super class with itself as parent component
+        super(ODE, self).__init__(name, self)
+
+        # Turn off magic attributes (see __setattr__ method) during
+        # construction
+        self._allow_magic_attributes = False
+
+        # If namespace provided just keep a weak ref
+        if ns is None:
+            self._ns = {}
+        else:
+            self._ns = weakref.ref(ns) 
+
+        # Add Time object
+        # FIXME: Add information about time unit dimensions and make
+        # FIXME: it possible to have different time names
+        time = Time("t", "ms")
+        self._time = time
+        self.ode_objects.append(time)
+
+        # Add to object to component map
+        self.object_component = weakref.WeakValueDictionary()
+        self.object_component[self._time] = self
+
+        # Namespace, which can be used to eval an expression
+        self.ns.update({"t":time.sym, "time":time.sym})
+        
+        # An list with all component names with expression added to them
+        # The components are always sorted wrt last expression added
+        self.all_expr_components_ordered = []
+
+        # A dict with all components objects
+        self.all_components = weakref.WeakValueDictionary()
+        self.all_components[name] = self
+
+        # An attribute keeping track of the present ODE component
+        self._present_component = self.name
+
+        # A dict with the present ode objects
+        # NOTE: hashed by name so duplicated expressions are not stored
+        self.present_ode_objects = dict(t=self._time, time=self._time)
+
+        # Keep track of duplicated expressions
+        self.duplicated_expressions = defaultdict(list)
+
+        # Keep track of expression dependencies and in what expression
+        # an object has been used in
+        self.expression_dependencies = defaultdict(set)
+        self.object_used_in = defaultdict(set)
+
+        # All expanded expressions
+        self._expanded_expressions = dict()
+
+        # Attributes which will be populated later
+        self._mass_matrix = None
+        
+        # Global finalized flag
+        self._is_finalized_ode = False
+        
+        # Turn on magic attributes (see __setattr__ method) 
+        self._allow_magic_attributes = True
+
+    @property
+    def ns(self):
+        if isinstance(self._ns, dict):
+            return self._ns
+
+        # Check if ref in weakref is alive
+        ns = self._ns()
+        if isinstance(ns, dict):
+            return ns
+
+        # If not just return an empty dict
+        return {}
+
+    @property
+    def present_component(self):
         """
-        Initialize an ODE
-        
-        Arguments
-        ---------
-        name : str
-            The name of the ODE
-        return_namespace : bool (optional)
-            Several methods will return a namespace dict populated with symbols
-            added to the ODE if return_namespace is set to True.
+        Return the present component
         """
-        check_arg(name, str, 0)
+        return self.all_components[self._present_component]
 
-        self._return_namespace = return_namespace
-
-        # Initialize attributes
-        self._name = name.strip().replace(" ", "_")
-
-        # Initialize all variables
-        self._all_single_ode_objects = OrderedDict()
-        self._states = ODEObjectList()
-        self._field_states = ODEObjectList()
-        self._parameters = ODEObjectList()
-        self._field_parameters = ODEObjectList()
-        self._variables = ODEObjectList()
-
-        # FIXME: Move to list when we have a dedicated Intermediate class
-        # FIXME: Change name to body?
-        self._intermediates = ODEObjectList()
-        self._intermediate_duplicates = set()
-        self._monitored_intermediates = OrderedDict()
-        self._comments = ODEObjectList()
-        self._markov_models = ODEObjectList()
-
-        # Add components
-        self._default_component = ODEComponent(name, self)
-        self._present_component = self._default_component
-        self._components = OrderedDict()
-        self._components[name] = self._default_component
-        self._components_set = []
-
-        self.clear()
-
-    def add_state(self, name, init, der_init=0.0, component="", slaved=False, \
-                  replace_level="none"):
-        """
-        Add a state to the ODE
-
-        Arguments
-        ---------
-        name : str
-            The name of the state variable
-        init : scalar, ScalarParam
-            The initial value of the state
-        der_init : scalar, ScalarParam
-            The initial value of the state derivative
-        component : str (optional)
-            Add state to a particular component
-        slaved : bool
-            If True the creation and differentiation is controlled by
-            other entity, like a Markov model.
-        replace_level : str (optional)
-            If not "none", replace can be either "global_params" or "any",
-            meaning that either global or any object can be replaced by
-            the added intermediate
-            
-        Example:
-        ========
-
-        >>> ode = ODE("MyOde")
-        >>> ode.add_state("e", 1)
-        """
-
-        timer = Timer("Add state")
-
-        # Create the state and derivative
-        component = component or self.name
-        state = State(name, init, component, slaved)
-        state_der = StateDerivative(state, der_init, component)
-        
-        state.derivative = state_der
-        
-        self._register_object(state, replace_level)
-
-        # FIXME: Remove register object when registering the state
-        self._register_object(state_der)
-        
-        # Append state specific information
-        self._states.append(state)
-        if state.is_field:
-            self._field_states.append(state)
-
-        # Return the sympy version of the state
-        return state.sym
-        
-    def add_parameter(self, name, init, component="", slaved=False, \
-                      replace_level="none"):
-        """
-        Add a parameter to the ODE
-
-        Arguments
-        ---------
-        name : str
-            The name of the parameter
-        init : scalar, ScalarParam
-            The initial value of this parameter
-        component : str (optional)
-            Add state to a particular component
-        slaved : bool
-            If True the creation and differentiation is controlled by
-            other entity, like a Markov model.
-        replace_level : str (optional)
-            If not "none", replace can be either "global_params" or "any",
-            meaning that either global or any object can be replaced by
-            the added intermediate
-            
-        Example:
-        ========
-
-        >>> ode = ODE("MyOde")
-        >>> ode.add_parameter("c0", 5.0)
-        """
-        
-        timer = Timer("Add parameter")
-        
-        # Create the parameter
-        component = component or self.name
-        parameter = Parameter(name, init, component)
-        
-        # Register the parameter
-        self._register_object(parameter, replace_level)
-        self._parameters.append(parameter)
-        if parameter.is_field:
-            self._field_parameters.append(parameter)
-
-        # Return the sympy version of the parameter
-        return parameter.sym
-
-    def add_variable(self, name, init, component="", slaved=False, \
-                     replace_level="none"):
-        """
-        Add a variable to the ODE
-
-        Arguments
-        ---------
-        name : str
-            The name of the variables
-        init : scalar, ScalarParam
-            The initial value of this parameter
-        component : str (optional)
-            Add state to a particular component
-        slaved : bool
-            If True the creation and differentiation is controlled by
-            other entity, like a Markov model.
-        replace_level : str (optional)
-            If not "none", replace can be either "global_params" or "any",
-            meaning that either global or any object can be replaced by
-            the added intermediate
-            
-        Example:
-        ========
-
-        >>> ode = ODE("MyOde")
-        >>> ode.add_variable("c0", 5.0)
-        """
-        
-        timer = Timer("Add variable")
-
-        # Create the variable
-        component = component or self.name
-        variable = Variable(name, init, component)
-        
-        # Register the variable
-        self._register_object(variable, replace_level)
-        self._variables.append(variable)
-
-        # Return the sympy version of the variable
-        return variable.sym
-
-    def add_states(self, component="", **kwargs):
-        """
-        Add a number of states to the current ODE
-    
-        Example
-        -------
-    
-        >>> ode = ODE("MyOde")
-        >>> ode.states(e=0.0, g=1.0)
-        """
-    
-        if not kwargs:
-            error("expected at least one state")
-        
-        # Check values and create sympy Symbols
-        return self._add_entities(component, sorted(kwargs.items()), "state")
-    
-    def add_parameters(self, component="", **kwargs):
-        """
-        Add a number of parameters to the current ODE
-    
-        Example
-        -------
-    
-        >>> ode = ODE("MyOde")
-        >>> ode.add_parameters(v_rest=-85.0,
-                               v_peak=35.0,
-                               time_constant=1.0)
-        """
-        
-        if not kwargs:
-            error("expected at least one state")
-        
-        # Check values and create sympy Symbols
-        return self._add_entities(component, sorted(kwargs.items()), "parameter")
-        
-    def add_variables(self, component="", **kwargs):
-        """
-        Add a number of variables to the current ODE
-    
-        Example
-        -------
-    
-        >>> ode = ODE("MyOde")
-        >>> ode.add_variables(c_out=0.0, c_in=1.0)
-        
-        """
-    
-        if not kwargs:
-            error("expected at least one variable")
-        
-        # Check values and create sympy Symbols
-        return self._add_entities(component, sorted(kwargs.items()), "variable")
-
-    def add_monitored(self, *args):
-        """
-        Add intermediate variables to be monitored
-
-        Arguments
-        ---------
-        args : any number of intermediates
-            Intermediates which will be monitored
-        """
-
-        for i, arg in enumerate(args):
-            check_arg(arg, (str, sp.Symbol), i)
-            obj = self.get_object(arg) or self._intermediates.get(arg)
-
-            if not isinstance(obj, Intermediate):
-                error("Can only monitor indermediates. '{0}' is not an "\
-                      "Intermediate.".format(obj.name))
-            
-            # Register the expanded monitored intermediate
-            self._monitored_intermediates[obj.name] = obj
-
-    def add_markov_model(self, name, component="", *args, **kwargs):
-        """        
-        Initialize a Markov model
-
-        Arguments
-        ---------
-        name : str
-            Name of Markov model
-        component : str (optional)
-            Add state to a particular component
-        algebraic_sum : scalar (optional)
-            If the algebraic sum of all states should be constant,
-            give the value here.
-        args : list of tuples
-            A list of tuples with states and init values. Use this to set states
-            if you need them ordered.
-        kwargs : dict
-            A dict with all states defined in this Markov model
-        """
-
-        # Create and store the markov model
-        mm = MarkovModel(name, self, component=component, *args, **kwargs)
-        
-        self._markov_models.append(mm)
-
-        # Register Markov model
-        self._register_object(mm)
-
-        # Return the markov model
-        return mm
-        
-    def add_intermediate(self, name, expr, component=None, slaved=False, \
-                         replace_level="global_params"):
-        """
-        Register an intermediate
-
-        Arguments
-        ---------
-        name : str
-            The name of the Intermediate
-        expr : sympy.Basic
-            The expression
-        component : str (optional)
-            A component name. If not given the present component will be used.
-        slaved : bool
-            If True the creation and differentiation is controlled by
-            other entity, like a Markov model.
-        replace_level : str (optional)
-            If not "none", replace can be either "global_params" or "any",
-            meaning that either global or any object can be replaced by
-            the added intermediate
-        """
-
-        if name in _all_keywords:
-            error("cannot register an intermediate with a computer language "\
-                  "keyword name: {0}".format(name))
-        
-        timer = Timer("Add intermediate")
-
-        component_name = component if component else \
-                         self._present_component.name
-        
-        # Create an intermediate in the present component
-        intermediate = Intermediate(name, expr, self, component_name, slaved)
-
-        check_kwarg(replace_level, "replace_level", str)
-
-        # Check for existing object
-        dup_obj = self._all_single_ode_objects.get(name)
-
-        # If the object already exists and is a StateDerivative
-        if dup_obj is not None and isinstance(dup_obj, StateDerivative):
-            self.diff(dup_obj.sym, expr)
-            return
-
-        # If object already exists
-        if dup_obj and not self._remove_duplicate(dup_obj, replace_level):
-            error("Cannot register a {0}. A {1} with name '{2}' is "\
-                  "already registered in this ODE.".format(\
-                      type(intermediate).__name__, type(dup_obj).__name__, dup_obj.name))
-        
-        # Check for reserved wording of StateDerivatives
-        if re.search(_derivative_name_template, intermediate.name):
-            error("The pattern d{{name}}_dt is reserved for derivatives. "
-                  "However {0} is not a state derivative.".format(\
-                      intermediate.name))
-        
-        # Check for duplicates
-        if intermediate.name in self._intermediates:
-            self._intermediate_duplicates.add(intermediate.name)
-
-        # Store the intermediate
-        self._intermediates.append(intermediate)
-
-        # Add to component
-        self._present_component.append(intermediate)
-
-        # Register symbol, overwrite any already excisting symbol
-        self.__dict__[name] = intermediate.sym
-
-        # Return symbol
-        return intermediate.sym
-
-    def add_comment(self, comment_str):
-        """
-        Add comment to ODE
-        """
-        check_arg(comment_str, str, context=ODE.add_comment)
-        comment = Comment(comment_str, self._present_component.name)
-        self._intermediates.append(comment)
-        self._comments.append(comment)
-
-    def add_subode(self, subode, prefix=None, components=None,
-                   skip_duplicated_global_parameters=True):
+    def add_subode(self, subode, prefix="", components=None):
         """
         Load an ODE and add it to the present ODE
 
@@ -421,528 +145,642 @@ class ODE(object):
             ODE stored in that file will be loaded. If it is an ODE it will be
             added directly to the present ODE.
         prefix : str (optional)
-            A prefix which all state and parameters are prefixed with. If not
-            given the name of the subode will be used as prefix. If set to
-            empty string, no prefix will be used.
+            A prefix which all state, parameters and intermediates are
+            prefixed with. 
         components : list, tuple of str (optional)
             A list of components which will be extracted and added to the present
             ODE. If not given the whole ODE will be added.
-        skip_duplicated_global_parameters : bool (optional)
-            If true global parameters and variables will be skipped if they exists
-            in the present model.
         """
-
+        
+        timer = Timer("Load sub ode")
+        
+        components = components or []
+        check_arg(subode, (str, ODE), 0, context=ODE.add_subode)
+        check_arg(prefix, str, 1, context=ODE.add_subode)
+        check_arg(components, list, 2, context=ODE.add_subode, itemtypes=str)
+        
         # If ode is given directly 
         if isinstance(subode, ODE):
             ode = subode
             
         else:
             # If not load external ODE
-            from loadmodel import load_ode
+            from gotran.model.loadmodel import load_ode
             ode = load_ode(subode)
-        
-        components = components or []
-        prefix = ode.name if prefix is None else prefix
 
         # Postfix prefix with "_" if prefix is not ""
-        if prefix:
+        if prefix and prefix[-1] != "_":
             prefix += "_"
         
         # If extracting only a certain components
         if components:
             ode = ode.extract_components(ode.name, *components)
 
-        # Namespace for returning new symbols
-        ns = {}
+        # Subs for expressions
+        subs = {}
+        old_new_map = {ode:self}
 
-        # Collect prefixed states and parameters to be used to substitute
-        # the intermediate and derivative expressions
-        prefix_subs = {}
-
-        # Add Markov models
-        markov_model_actions = []
-        for mm in ode.markov_models:
+        def add_comp_and_children(added, comp):
+            "Help function to recursively add components to ode"
             
-            # FIXME: Allow propagating of Parameter information
-            mm_states = {}
-            for state in mm.states:
-                prefix_subs[state.sym] = sp.Symbol(prefix+state.name)
-                param_repr = repr(state.param).replace("Slave", "Scalar")
-                param_repr = param_repr.split(", name=")[0] + ")"
-                mm_states[prefix+state.name] = eval(param_repr)
-            
-            obj = self.add_markov_model(prefix+mm.name, component=mm.component,
-                                        algebraic_sum=mm._algebraic_sum, **mm_states)
-
-            # Add rates (to be added later)
-            for mm_states, expr in mm._rates.items():
-                mm_states = tuple(prefix_subs[state] for state in mm_states)
-                markov_model_actions.append((obj, mm_states, expr.expr))
-
-            # Update namespace
-            ns.update((state.name, state.sym) for state in obj.states)
-        
-        # Add prefixed states
-        for state in ode.states:
-            if state.slaved:
-                continue
+            # Add states and parameters
+            for obj in comp.ode_objects:
                 
-            prefix_subs[state.sym] = sp.Symbol(prefix+state.name)
-            prefix_subs[state.derivative.sym] = sp.Symbol(\
-                "d"+prefix+state.name+"_dt")
-            
-            if prefix+state.name in self._states:
-                error("State with name {0} already exist in ODE".format(\
-                    prefix+state.name))
+                # Check if obj already excists as a ODE parameter
+                old_obj = self.present_ode_objects.get(str(obj))
 
-            # Add the state
-            sym = self.add_state(prefix+state.name, state.param, \
-                                 state.derivative.param, state.component,
-                                 replace_level="global_params")
-            ns[prefix+state.name] = sym
-
-        # Add prefixed parameters
-        for parameter in ode.parameters:
-            if parameter.slaved:
-                continue
+                if old_obj and self.object_component[old_obj] == self:
+                    new_name = obj.name
+                else:
+                    new_name = prefix+obj.name
                 
-            prefix_subs[parameter.sym] = sp.Symbol(prefix+parameter.name)
+                if isinstance(obj, State):
+                    subs[obj.sym] = added.add_state(new_name, obj.param)
+                    
+                elif isinstance(obj, Parameter):
+
+                    # If adding an ODE parameter
+                    if comp == ode:
+
+                        # And parameter name already excists in the present ODE
+                        if str(obj) in self.present_ode_objects:
+
+                            # Skip it and add the registered symbol for
+                            # substitution
+                            subs[obj.sym] = self.present_ode_objects[\
+                                str(obj)].sym
+
+                        else:
+
+                            # If not already present just add unprefixed name
+                            subs[obj.sym] = added.add_parameter(\
+                                obj.name, obj.param)
+
+                    else:
+
+                        subs[obj.sym] = added.add_parameter(new_name, obj.param)
+
+            # Add child components 
+            for child in comp.children.values():
+                added_child = added.add_component(child.name)
+
+                # Get corresponding component in present ODE
+                old_new_map[child] = added_child
+
+                add_comp_and_children(added_child, child)
+
+        # Recursively add states and parameters
+        add_comp_and_children(self, ode)
         
-            # If variable name already excist in this ODE do not add it
-            # This will implicitly exchange all variables with corresponding
-            # states and parameters from this ODE
-            obj = self.get_object(parameter.name) or self._intermediates.get(\
-                parameter.name)
+        # Iterate over all components to add expressions
+        for comp_name in ode.all_expr_components_ordered:
 
-            # If duplicated version already excists
-            if obj and parameter.component == ode.name and \
-                   skip_duplicated_global_parameters:
-                debug("Skipping global {0} {1} as a {2} with same name already "\
-                      "excists.".format(type(parameter).__name__, parameter.name, \
-                                                    type(obj).__name__))
-                continue
+            comp = ode.all_components[comp_name]
 
-            # If component name is the same as the ode name, change
-            # component name to this ODE name
-            component = self.name if parameter.component == ode.name \
-                        else parameter.component
-            prefix_ = prefix if parameter.component == ode.name else ""
-            
-            # Add the parameter
-            sym = self.add_parameter(prefix_+parameter.name, parameter.param, \
-                                     component=component, \
-                                     replace_level="global_params")
-            ns[prefix+parameter.name] = sym
+            comp_comment = "Expressions for the {0} "\
+                           "component".format(comp.name)
 
-        # Add variables if not name already excisting in this ODE
-        for variable in ode.variables:
-            if variable.slaved:
-                continue
+            # Get corresponding component in new ODE
+            added = old_new_map[comp]
 
-            # If variable name already excist in this ODE do not add it
-            # This will implicitly exchange all variables with corresponding
-            # states and parameters from this ODE
-            obj = self.get_object(variable.name) or self._intermediates.get(\
-                variable.name)
+            # Iterate over all objects of the component and save only expressions
+            # and comments
+            for obj in comp.ode_objects:
 
-            # If duplicated version already excists
-            if obj and variable.component == ode.name and \
-                   skip_duplicated_global_parameters:
-                debug("Skipping global {0} {1} as a {2} with same name already "\
-                      "excists.".format(type(variable).__name__, variable.name, \
-                                            type(obj).__name__))
-                continue
+                # If saving an expression
+                if isinstance(obj, Expression):
 
-            # If component name is the same as the ode name, change
-            # component name to this ODE name
-            component = self.name if variable.component == ode.name \
-                        else variable.component
-            prefix_ = prefix if parameters.component == ode.name else ""
-            
-            # Add the un-prefixed variable
-            sym = self.add_variable(prefix_+variable.name, variable.param,
-                                    component=component,
-                                    replace_level="global_params")
-            ns[variable.name] = sym
+                    # The new sympy expression
+                    new_expr = obj.expr.xreplace(subs)
 
-        # Add intermediates
-        for intermediate in ode.intermediates:
-            if isinstance(intermediate, ODEComponent):
-                self.set_component(intermediate.name)
-            elif isinstance(intermediate, Comment):
-                self.add_comment(intermediate.name)
+                    # If the component is a Markov model
+                    if comp.rates:
 
-            # Do not add slaved intermediates
-            elif intermediate.slaved:
-                    continue
-            else:
-                # Iterate over dependencies and check if we need to subs name
-                # with prefixed name
-                subs_list = []
-                if prefix != "":
-                    for obj_dep in intermediate.object_dependencies:
-                        if obj_dep.sym in prefix_subs:
-                            subs_list.append((obj_dep.sym, \
-                                              prefix_subs[obj_dep.sym]))
+                        # Do not save State derivatives
+                        if isinstance(obj, StateDerivative):
+                            continue
 
-                sym = self.add_intermediate(intermediate.name, \
-                                            intermediate.expr.subs(subs_list), \
-                                            replace_level="global_params")
-                ns[intermediate.name] = sym
+                        # Save rate expressions slightly different
+                        elif isinstance(obj, RateExpression):
+
+                            states = obj.states
+                            added._add_single_rate(subs[states[0].sym], \
+                                                   subs[states[1].sym], \
+                                                   new_expr)
+                            continue
+
+                    # If no prefix we just add the expression by using setattr
+                    # magic
+                    if prefix == "":
+                        setattr(added, str(obj), new_expr)
+                        new_sym = added.ode_objects.get(obj.name).sym
+
+                    elif isinstance(obj, (StateExpression, StateSolution)):
+
+                        # Get new state sym
+                        state = subs[obj.state.sym]
+
+                        if isinstance(obj, AlgebraicExpression):
+                            subs[obj.sym] = added.add_algebraic(state, new_expr)
+
+                        elif isinstance(obj, StateDerivative):
+                            subs[obj.sym] = added.add_derivative(\
+                                state, added.t, new_expr)
+                            
+                        elif isinstance(obj, StateSolution):
+                            subs[obj.sym] = added.add_state_solution(\
+                                state, new_expr)
+                        else:
+                            error("Should not reach here...")
+                            
+                    # Derivatives are tricky. Here the der expr and dep var
+                    # need to be registered in the ODE already. But they can
+                    # be registered with and without prefix, so we need to
+                    # check that.
+                    elif isinstance(obj, Derivatives):
+
+                        # Get der_expr
+                        der_expr = self.root.present_ode_objects.get(obj.der_expr.name)
+
+                        if der_expr is None:
+
+                            # If not found try prefixed version
+                            der_expr = self.root.present_ode_objects.get(\
+                                prefix+obj.der_expr.name)
+
+                            if der_expr is None:
+                                if prefix:
+                                    error("Could not find expression: "\
+                                          "({0}){1} while adding "\
+                                          "derivative".format(\
+                                              prefix, obj.der_expr))
+                                else:
+                                    error("Could not find expression: "\
+                                          "{1} while adding derivative".format(\
+                                              obj.der_expr))
+                            
+                        dep_var = self.root.present_ode_objects.get(obj.dep_var.name)
+
+                        if isinstance(dep_var, Time):
+                            dep_var = self._time
+
+                        elif dep_var is None:
+
+                            # If not found try prefixed version
+                            dep_var = self.root.present_ode_objects.get(\
+                                prefix+obj.dep_var.name)
+
+                            if dep_var is None:
+                                if prefix:
+                                    error("Could not find expression: "\
+                                          "({0}){1} while adding "\
+                                          "derivative".format(\
+                                              prefix, obj.dep_var))
+                                else:
+                                    error("Could not find expression: "\
+                                          "{1} while adding derivative".format(\
+                                              obj.dep_var))
+                        
+                        subs[obj.sym] = added.add_derivative(\
+                            der_expr, dep_var, new_expr)
+
+                    elif isinstance(obj, Intermediate):
+
+                        subs[obj.sym] = added.add_intermediate(\
+                            prefix+obj.name, new_expr)
+
+                    else:
+                        error("Should not reach here!")
+
+                # If saving a comment
+                elif isinstance(obj, Comment) and str(obj) != comp_comment:
+                    added.add_comment(str(obj))
         
-        # Add all rates for the markov models
-        for mm, states, expr in markov_model_actions:
-            if prefix != "":
-                subs_list = []
-                for sym in iter_symbol_params_from_expr(expr):
-                    if sym in prefix_subs:
-                        subs_list.append((sym, prefix_subs[sym]))
-                expr = expr.subs(subs_list)
-
-            mm[states] = expr
-
-        # Add derivatives
-        for derivative in ode._derivative_expressions:
-
-            if derivative.slaved:
-                continue
-            
-            # Iterate over dependencies and check if we need to subs name
-            # with prefixed name
-            subs_list = []
-            der_subs_list = []
-            if prefix != "":
-                for obj_dep in derivative.object_dependencies:
-                    if obj_dep.sym in prefix_subs:
-                        subs_list.append((obj_dep.sym, \
-                                          prefix_subs[obj_dep.sym]))
-                for der in derivative.stripped_derivatives:
-                    der_subs_list.apped((der, prefix_subs[der]))
-
-            self.diff(derivative.derivatives.subs(der_subs_list), \
-                      derivative.expr.subs(subs_list))
-            
-        # If set to return namespace
-        if self._return_namespace:
-            return ns
-
-    def present_component(self, component=None):
-        """
-        Return the present component
-
-        Arguments
-        ---------
-        component : str (optional)
-            A component name. If not given the present component will be used.
-        """
-        if not component:
-            return self._present_component
-
-        # Check if component is already registered
-        comp = self._components.get(component)
-        if comp is None:
-            comp = ODEComponent(component, self)
-            self._components[component] = comp
-
-        # Update present component
-        self._present_component = comp
-
-        return self._present_component
-        
-    def set_component(self, component):
-        """
-        Set present component
-        """
-        check_arg(component, str, 0, ODE.set_component)
-
-        if component in self._components_set:
-            error("Component can only be set once per ODE")
-
-        # Get present component
-        comp = self.present_component(component)
-
-        # Register that this component has been set
-        self._components_set.append(comp.name)
-
-        # Update list of intermediates
-        self._intermediates.append(comp)
-
-    def get_object(self, name):
-        """
-        Return a registered object
-        """
-
-        check_arg(name, (str, sp.Symbol))
-        if isinstance(name, sp.Symbol):
-            name = name.name
-        
-        return self._all_single_ode_objects.get(name)
-
-    def get_intermediate(self, name):
-        """
-        Return a registered intermediate
-        """
-        return self._intermediates.get(name)
-
-    def algebraic(self, state, expr, component=""):
-        """
-        Register an expression for a state given by an algebraic expression
-
-        Arguments
-        ---------
-        state : sympy.Basic
-            A linear expression of StateDerivative symbols
-        expr : Sympy expression of sympy.Symbols
-            The derivative expression
-        component : str (optional)
-            The component will be determined automatically if the
-            DerivativeExpression is an Algebraic expression
-        """
-        pass
-
-    def diff(self, derivatives, expr, component=""):
-        """
-        Register an expression for state derivatives
-
-        Arguments
-        ---------
-        derivatives : sympy.Basic
-            A linear expression of StateDerivative symbols
-        expr : Sympy expression of sympy.Symbols
-            The derivative expression
-        component : str (optional)
-            The component will be determined automatically if the
-            DerivativeExpression is an Algebraic expression
-        """
-
-        timer = Timer("diff")
-        derivative_expression = DerivativeExpression(\
-            derivatives, expr, self, component)
-        
-        # Store expressions
-        self._derivative_expr.append((derivative_expression.states, \
-                                      derivative_expression.expr))
-        self._derivative_expr_expanded.append(\
-            (derivative_expression.states, \
-             derivative_expression.expanded_expr))
-
-        # Store derivative expression
-        self._derivative_expressions.append(derivative_expression)
-
-        # Store derivative states
-        self._derivative_states.update(derivative_expression.states)
-
-        # Register obj in component
-        comp_name = derivative_expression.component
-        
-        comp = self._components.get(comp_name)
-        if comp is None:
-            error("Should never come here")
-            comp = ODEComponent(comp_name, self)
-            self._components[comp_name] = comp
-
-        # Add object to component
-        comp.append(derivative_expression)
-
-    def expand_intermediate(self, intermediate):
-        """
-        Expand an intermediate to the core expression using only States
-        and Parameters
-
-        Arguments:
-        ----------
-        intermediate : Intermediate
-            The intermediate which should be expanded
-        """
-
-        check_arg(intermediate, sp.Symbol)
-        obj = self._intermediates.get(intermediate)
-        if obj is None:
-            error("{0} is not an Intermediate in this ODE".format(intermediate))
-
-        return obj.expanded_expr
-
-    def get_derivative_expr(self, expanded=False):
-        """
-        Return the derivative expression
-        """
-
-        if expanded:
-            return self._derivative_expr_expanded
-        else:
-            return self._derivative_expr
-
-    def get_algebraic_expr(self, expanded=False):
-        """
-        Return the algebraic expression
-        """
-        if expanded:
-            return self._algebraic_expr_expanded
-        else:
-            return self._algebraic_expr
-
-    def save(self, basename):
+    def save(self, basename=None):
         """
         Save ODE to file
 
         Arguments
         ---------
-        basename : str
-            The basename of the file which the ode will be saved to
+        basename : str (optional)
+            The basename of the file which the ode will be saved to, if not
+            given the basename will be the same as the name of the ode.
         """
-        from modelparameters.codegeneration import sympycode
-        from gotran.codegeneration.codegenerator import CodeGenerator
 
-        if not self.is_complete:
-            error("ODE need to be complete to be saved to file.")
+        timer = Timer("Save "+ self.name)
 
-        lines = []
+        if not self._is_finalized_ode:
+            error("ODE need to be finalized to be saved to file.")
+            
+        lines = ["# Saved Gotran model"]
 
-        # Add Markov models
-        markov_model_actions = dict()
+        comp_names = dict()
+        
+        basename = basename or self.name
+        
+        for comp in self.components:
+            if comp == self:
+                comp_name = ""
+            else:
+                present_comp = comp
+                comps = [present_comp.name]
+                while present_comp.parent != self:
+                    present_comp = present_comp.parent
+                    comps.append(present_comp.name)
+                comp_name = ", ".join("\"{0}\"".format(name) for name in reversed(comps))
 
-        # Write all States, Parameters and Variables
-        for comp in self.components.values():
-
-            # Markov models
-            if comp.markov_models:
-                for mm in comp.markov_models:
-                    lines.append("markov_model(\"{0}\", \"{1}\",{2}".format(\
-                        mm.name, mm.component, \
-                        "" if mm._algebraic_sum is None else \
-                        " algebraic_sum={0},".format(mm._algebraic_sum)))
-
-                    # Add states
-                    for state in sorted(mm.states, \
-                                        lambda x,y:cmp(x.name, y.name)):
-                        
-                        # Get param repr and replace possible Slave with Scalar
-                        param_repr = repr(state.param).replace("Slave", \
-                                                               "Scalar")
-                        param_repr = param_repr.split(", name=")[0] + ")"
-                        lines.append("             {0}={1},".format(\
-                            state.name, param_repr))
-
-                    lines[-1] += ")"
-                    lines.append("")
-
-                    # Add the actions, to be added later
-                    markov_model_actions[mm.component] = []
-                    for states, expr in mm._rates.items():
-                        markov_model_actions[mm.component].append((\
-                            mm.name, states, expr.expr))
-
-            # States
-            if comp.states:
-
-                lines.append("states(\"{0}\", ".format(comp.name))
-                for state in comp.states.values():
-
-                    if state.slaved:
-                        continue
-
-                    # Param repr and strip name and symname
-                    param_repr = repr(state.param)
-                    param_repr = param_repr.split(", name=")[0] + ")"
-                
-                    lines.append("       {0}={1},".format(state.name, param_repr))
-                lines[-1] += ")"
-                lines.append("")
-
-            # Parameters
-            if comp.parameters:
-                lines.append("parameters(\"{0}\", ".format(comp.name))
-                for param in comp.parameters.values():
-
-                    if param.slaved:
-                        continue
-
-                    # Param repr and strip name and symname
-                    param_repr = repr(param.param)
-                    param_repr = param_repr.split(", name=")[0] + ")"
-                
-                    lines.append("       {0}={1},".format(param.name, param_repr))
-                lines[-1] += ")"
-                lines.append("")
-
-            # Check for component containing time and dt
-            # These should not be extracted
-            if comp.name == self.name and len(comp.variables) == 2:
-                continue
-
-            # Variables
-            if comp.variables:
-                lines.append("variables(\"{0}\", ".format(comp.name))
-                for variable in comp.variables.values():
-
-                    # Do not include time or dt variables
-                    if comp.name == self.name and variable.name in \
-                           ["time", "dt"]:
-                        continue
+            comp_names[comp] = comp_name
                     
-                    if variable.slaved:
-                        continue
-
-                    # Param repr and strip name and symname
-                    param_repr = repr(variable.param)
-                    param_repr = param_repr.split(", name=")[0] + ")"
-                
-                    lines.append("       {0}={1},".format(variable.name, param_repr))
-                lines[-1] += ")"
+            states = ["{0}={1},".format(obj.name, obj.param.repr(\
+                include_name=False)) for obj in comp.ode_objects \
+                      if isinstance(obj, State)]
+            parameters = ["{0}={1},".format(obj.name, obj.param.repr(\
+                include_name=False)) for obj in comp.ode_objects \
+                          if isinstance(obj, Parameter)]
+            if states:
                 lines.append("")
+                if comp_name:
+                    lines.append("states({0},".format(comp_name))
+                else:
+                    lines.append("states({0}".format(states.pop(0)))
+                for state_code in states:
+                    lines.append("       " + state_code)
+                lines[-1] = lines[-1][:-1] + ")"
 
-        # Write all Intermediates
-        present_component = None
-        for intermediate in self.intermediates:
-
-            if isinstance(intermediate, ODEComponent):
-
-                # Add Markov model rates at end of component
-                if present_component in markov_model_actions:
-                    lines.append("")
-                    mm_actions = markov_model_actions.pop(present_component)
-                    for mm, states, expr in mm_actions:
-                        lines.append("{0}[{1}, {2}] = {3}".format(\
-                            mm, states[0], states[1], sympycode(expr)))
-
-                # Add next component
+            if parameters:
                 lines.append("")
-                lines.append("component(\"{0}\")".format(intermediate.name))
-                present_component = intermediate.name
-                
-            elif isinstance(intermediate, Comment):
-                lines.append("comment(\"{0}\")".format(intermediate.name))
+                if comp_name:
+                    lines.append("parameters({0},".format(comp_name))
+                else:
+                    lines.append("parameters({0}".format(parameters.pop(0)))
+                for param_code in parameters:
+                    lines.append("           " + param_code)
+                lines[-1] = lines[-1][:-1] + ")"
 
-            elif isinstance(intermediate, Intermediate):
-                if not intermediate.slaved:
-                    lines.append(sympycode(intermediate.expr, \
-                                           intermediate.name))
-                
-        # Add any Markov models that is left
-        for mm_actions in markov_model_actions.values():
-            lines.append("")
-            for mm, states, expr in mm_actions:
-                lines.append("{0}[{1}, {2}] = {3}".format(\
-                    mm, states[0], states[1], sympycode(expr)))
+        # Iterate over all components
+        for comp_name in self.all_expr_components_ordered:
+
+            comp = self.all_components[comp_name]
+
+            comp_comment = "Expressions for the {0} "\
+                           "component".format(comp.name)
+
+            # Iterate over all objects of the component and save only expressions
+            # and comments
+            for obj in comp.ode_objects:
+
+                # If saving an expression
+                if isinstance(obj, Expression):
+
+                    # If the component is a Markov model
+                    if comp.rates:
+
+                        # Do not save State derivatives
+                        if isinstance(obj, StateDerivative):
+                            continue
+
+                        # Save rate expressions slightly different
+                        elif isinstance(obj, RateExpression):
+                            lines.append("rates[{0}, {1}] = {2}".format(\
+                                sympycode(obj.states[0]), \
+                                sympycode(obj.states[1]), \
+                                sympycode(obj.expr)))
+                            continue
+
+                    # All other Expressions
+                    lines.append("{0} = {1}".format(obj.name, \
+                                                    sympycode(obj.expr)))
+
+                # If saving a comment
+                elif isinstance(obj, Comment):
+
+                    # If comment is component comment
+                    if str(obj) == comp_comment:
+                        lines.append("")
+                        comp_name = comp_names[comp] if comp_names[comp] \
+                                    else "\"{0}\"".format(basename)
+                        lines.append("component({0})".format(comp_name))
+
+                    # Just add the comment
+                    else:
+                        lines.append("")
+                        lines.append("comment(\"{0}\")".format(obj))
 
         lines.append("")
-
-        # Write all Derivatives
-        for der in self._derivative_expressions:
-
-            # Do not write slaved derivatives
-            if der.slaved:
-                continue
-            
-            if der.num_derivatives == 1:
-                lines.append(sympycode(der.expr, der.name))
-            else:
-                lines.append("diff({0}, {1})".format(der.name, der.expr))
-
         # Use Python code generator to indent outputted code
         # Write to file
+        from gotran.codegeneration.codegenerator import PythonCodeGenerator
         open(basename+".ode", "w").write("\n".join(\
-            CodeGenerator.indent_and_split_lines(lines)))
+            PythonCodeGenerator.indent_and_split_lines(lines)))
+                    
+    def register_ode_object(self, obj, comp):
+        """
+        Register an ODE object in the root ODEComponent
+        """
+
+        if self._is_finalized_ode and isinstance(obj, StateExpression):
+            error("Cannot register a StateExpression, the ODE is finalized")
+
+        # Check for existing object in the ODE
+        dup_obj = self.present_ode_objects.get(obj.name)
+
+        # If object with same name is already registered in the ode we
+        # need to figure out what to do
+        if dup_obj:
+
+            dup_comp = self.object_component[dup_obj]
+
+            # If a state is substituted by a state solution 
+            if isinstance(dup_obj, State) and isinstance(obj, StateSolution):
+                debug("Reduce state '{0}' to {1}".format(dup_obj, obj.expr))
+
+            # If duplicated object is an ODE Parameter and the added object is
+            # either a State or a Parameter we replace the Parameter. 
+            elif isinstance(dup_obj, Parameter) and dup_comp == self and \
+                     comp != self and isinstance(obj, (State, Parameter)):
+
+                timer = Timer("Replace objects")
+
+                # Remove the object
+                self.ode_objects.remove(dup_obj)
+
+                # FIXME: Do we need to recreate all expression the objects is used in?
+                # Replace the object from the object_used_in dict and update
+                # the correponding expressions
+                subs = {dup_obj.sym : obj.sym}
+                subs = {}
+
+                # Recursively replace object dependencies
+                self._replace_object(dup_obj, obj, subs)
+                
+                #for expr in self.object_used_in[dup_obj]:
+                #    updated_expr = recreate_expression(expr, subs)
+                #    self.object_used_in[obj].add(updated_expr)
+                #
+                #    # Exchange and update the dependencies
+                #    self.expression_dependencies[expr].remove(dup_obj)
+                #    self.expression_dependencies[expr].add(obj)
+                #
+                #    # FIXME: Do not remove the dependencies
+                #    #self.expression_dependencies[updated_expr] = \
+                #    #            self.expression_dependencies.pop(expr)
+                #    self.expression_dependencies[updated_expr] = \
+                #                self.expression_dependencies[expr]
+                #
+                #    # Find the index of old expression and exchange it with updated
+                #    old_comp = self.object_component[expr]
+                #    ind = old_comp.ode_objects.index(expr)
+                #    old_comp.ode_objects[ind] = updated_expr
+                #
+                ## Remove information about the replaced objects
+                #self.object_used_in.pop(dup_obj)
+
+            # If duplicated object is an ODE Parameter and the added
+            # object is an Intermediate we raise an error.
+            elif isinstance(dup_obj, Parameter) and dup_comp == self and \
+                     isinstance(obj, Expression):
+                error("Cannot replace an ODE parameter with an Expression, "\
+                      "only with Parameters and States.")
+            
+            # If State, Parameter or DerivativeExpression we always raise an error
+            elif any(isinstance(oo, (State, Parameter, Time, DerivativeExpression,
+                                     AlgebraicExpression, StateSolution)) \
+                     for oo in [dup_obj, obj]):
+                error("Cannot register {0}. A {1} with name '{2}' is "\
+                      "already registered in this ODE.".format(\
+                          type(obj).__name__, type(\
+                              dup_obj).__name__, dup_obj.name))
+            else:
+
+                # Sanity check that both obj and dup_obj are Expressions
+                assert all(isinstance(oo, (Expression)) for oo in [dup_obj, obj])
+
+                # Get list of duplicated objects or an empy list
+                dup_objects = self.duplicated_expressions[obj.name]
+                if len(dup_objects) == 0:
+                    dup_objects.append(dup_obj)
+                dup_objects.append(obj)
+
+        # Update global information about ode object
+        self.present_ode_objects[obj.name] = obj
+        self.object_component[obj] = comp
+        self.ns.update({obj.name : obj.sym})
+
+        # If Expression
+        if isinstance(obj, Expression):
+
+            # Append the name to the list of all ordered components with
+            # expressions. If the ODE is finalized we do not update components
+            if not self._is_finalized_ode:
+                self._handle_expr_component(comp, obj)
+
+            # Add dependencies between registered comments and expressions so
+            # they are carried over in Code components
+            for comment in comp._local_comments:
+                self.object_used_in[comment].add(obj)
+                self.expression_dependencies[obj].add(comment)
+
+            # Expand and add any derivatives in the expressions
+            expression_added = False
+            for der_expr in obj.expr.atoms(sp.Derivative):
+                expression_added |= self._expand_single_derivative(comp, obj, der_expr)
+
+            # If any expression was added we need to bump the count of the ODEObject
+            if expression_added:
+                obj._recount()
+
+            # Get expression dependencies
+            for sym in symbols_from_expr(obj.expr, include_derivatives=True):
+
+                dep_obj = self.present_ode_objects[sympycode(sym)]
+
+                if dep_obj is None:
+                    error("The symbol '{0}' is not declared within the '{1}' "\
+                          "ODE.".format(sym, self.name))
+
+                # Store object dependencies
+                self.expression_dependencies[obj].add(dep_obj)
+                self.object_used_in[dep_obj].add(obj)
+
+            # If the expression is a StateSolution the state cannot have
+            # been used previously
+            if isinstance(obj, StateSolution) and \
+                   self.object_used_in.get(obj.state):
+                used_in = self.object_used_in.get(obj.state)
+                error("A state solution cannot have been used in "\
+                      "any previous expressions. {0} is used in: {1}".format(\
+                          obj.state, used_in))
+
+    def _replace_object(self, old_obj, replaced_obj, replace_dicts):
+        """
+        Recursivley replace an expression by recreating the expression
+        using passed replace dicts
+        """
+
+        # Iterate over expressions obj is used in and replace these
+        self.present_ode_objects[old_obj.name] = replaced_obj
+        replace_dicts[old_obj.sym] = replaced_obj.sym
+        self.object_component[replaced_obj] = self.object_component.pop(old_obj)
+        
+        for old_expr in self.object_used_in[old_obj]:
+
+            # Recreate expression
+            replaced_expr = recreate_expression(old_expr, replace_dicts)
+
+            # Update used_in dict
+            self.object_used_in[replaced_obj].add(replaced_expr)
+
+            # Update all object used in
+            for dep in self.expression_dependencies[old_expr]:
+                if isinstance(dep, Comment):
+                    continue
+                if old_expr in self.object_used_in[dep]:
+                    self.object_used_in[dep].remove(old_expr)
+                    self.object_used_in[dep].add(replaced_expr)
+
+            # Exchange and update the dependencies
+            if old_obj in self.expression_dependencies[old_expr]:
+                self.expression_dependencies[old_expr].remove(old_obj)
+            self.expression_dependencies[old_expr].add(replaced_obj)
+            
+            # FIXME: Do not remove the dependencies
+            #self.expression_dependencies[updated_expr] = \
+            #            self.expression_dependencies.pop(expr)
+            self.expression_dependencies[replaced_expr] = \
+                        self.expression_dependencies[old_expr]
+
+            # Find the index of old expression and exchange it with updated
+            old_comp = self.object_component[old_expr]
+
+            # Get indexed of old expr and overwrite it with new expr
+            ind = old_comp.ode_objects.index(old_expr)
+            old_comp.ode_objects[ind] = replaced_expr
+
+            # Update the expressions this expression is used in
+            self._replace_object(old_expr, replaced_expr, replace_dicts)
+
+        # Remove information about the replaced objects
+        self.object_used_in.pop(old_obj)
+
+    def _handle_expr_component(self, comp, expr):
+        """
+        A help function to sort and add components in the ordered
+        the intermediate expressions are added to the ODE
+        """
+        
+        if len(self.all_expr_components_ordered) == 0:
+            self.all_expr_components_ordered.append(comp.name)
+
+            # Add a comment to the component
+            comp.add_comment("Expressions for the {0} "\
+                             "component".format(comp.name))
+
+            # Recount the last added expression so the comment comes
+            # infront of the expression
+            expr._recount()
+
+        # We are shifting expression components
+        elif self.all_expr_components_ordered[-1] != comp.name:
+
+            # Finalize the last component we visited
+            self.all_components[\
+                self.all_expr_components_ordered[-1]].finalize_component()
+                
+            # Append this component
+            self.all_expr_components_ordered.append(comp.name)
+
+            # Add a comment to the component
+            comp.add_comment("Expressions for the {0} "\
+                             "component".format(comp.name))
+
+            # Recount the last added expression so the comment comes
+            # infront of the expression
+            expr._recount()
+        
+    def _expand_single_derivative(self, comp, obj, der_expr):
+        """
+        Expand a single derivative and register it as new derivative expression
+        
+        Returns True if an expression was actually added
+        """
+
+        # Try accessing already registered derivative expressions
+        der_expr_obj = self.present_ode_objects.get(sympycode(der_expr))
+
+        # If excist continue
+        if der_expr_obj:
+            return False
+
+        if not isinstance(der_expr.args[0], AppliedUndef):
+            error("Can only register Derivatives of allready registered "\
+            "Expressions. Got: {0}".format(sympycode(der_expr.args[0])))
+
+        if not isinstance(der_expr.args[1], (AppliedUndef, sp.Symbol)):
+            error("Can only register Derivatives with a single dependent "\
+                  "variabe. Got: {0}".format(sympycode(der_expr.args[1])))
+
+        # Get the expr and dependent variable objects
+        expr_obj = self.present_ode_objects[sympycode(der_expr.args[0])]
+        var_obj = self.present_ode_objects[sympycode(der_expr.args[1])]
+
+        # If the dependent variable is time and the expression is a state
+        # variable we raise an error as the user should already have created
+        # the expression.
+        if isinstance(expr_obj, State) and var_obj == self._time:
+            error("The expression {0} is dependent on the state "\
+                  "derivative of {1} which is not registered in this ODE."\
+                  .format(obj, expr_obj))
+
+        if not isinstance(expr_obj, Expression):
+            error("Can only differentiate expressions or states. Got {0} as "\
+                  "the derivative expression.".format(expr_obj))
+
+        # If we get a Derivative(expr, t) we issue an error
+        if isinstance(expr_obj, Expression) and var_obj == self._time:
+            error("All derivative expressions of registered expressions "\
+                  "need to be expanded with respect to time. Use "\
+                  "expr.diff(t) instead of Derivative(expr, t) ")
+
+        # Store expression
+        comp.add_derivative(expr_obj, var_obj, expr_obj.expr.diff(var_obj.sym))
+
+        return True
+
+    def expanded_expression(self, expr):
+        """
+        Return the expanded expression.
+
+        The returned expanded expression consists of the original
+        expression given by it basics objects (States, Parameters and
+        IndexedObjects)
+        """
+
+        timer = Timer("Expand expression")
+
+        check_arg(expr, Expression)
+
+        # First check cache
+        exp_expr = self._expanded_expressions.get(expr)
+
+        if exp_expr is not None:
+            return exp_expr
+
+        # If not recursively expand the expression
+        der_subs = {}
+        subs = {}
+        for obj in self.expression_dependencies[expr]:
+
+            if isinstance(obj, Derivatives):
+                der_subs[obj.sym] = self.expanded_expression(obj)
+
+            elif isinstance(obj, Expression):
+                subs[obj.sym] = self.expanded_expression(obj)
+
+        # Do the substitution
+        exp_expr = expr.expr.xreplace(der_subs).xreplace(subs)
+        self._expanded_expressions[expr] = exp_expr
+        
+        return exp_expr
 
     def extract_components(self, name, *components):
         """
@@ -962,14 +800,19 @@ class ODE(object):
 
         components = list(components)
 
-        collected_components = ODEObjectList()
+        collected_components = set()
+
+        if self.name in components:
+            error("Can only extract sub component of this ODE.")
         
         # Collect components and check that the ODE has the components
-        for original_component in self._components.values():
+        for original_component in self.components:
 
+            # Collect components together with its children
             if original_component.name in components:
-                components.pop(components.index(original_component.name))
-                collected_components.append(original_component)
+
+                components.remove(original_component.name)
+                collected_components.update(original_component.components)
 
         # Check that there are no components left
         if components:
@@ -979,716 +822,172 @@ class ODE(object):
             else:
                 error("'{0}' is not a component of this ODE.".format(\
                     components[0]))
-                
-        # Collect intermediates
-        intermediates = ODEObjectList()
-        for intermediate in self.intermediates:
-            
-            # If Component 
-            if isinstance(intermediate, ODEComponent):
-                
-                # Check if component is in components
-                if intermediate.name in collected_components:
-                    intermediates.append(intermediate)
-            
-            # Check of intermediate is in components
-            elif intermediate.component in collected_components:
-                intermediates.append(intermediate)
+        
+        # Collect dependencies
+        included_objects = []
+        dependencies = set()
+        for comp in self.components:
+            if comp in collected_components:
+                included_objects.extend(comp.ode_objects)
+                for expr in comp.ode_objects:
+                    if isinstance(expr, Expression):
+                        dependencies.update(self.expression_dependencies[expr])
 
-        # Collect states, parameters and derivatives
-        states, parameters, derivatives, variables, markov_models = \
-                ODEObjectList(), ODEObjectList(), ODEObjectList(), \
-                ODEObjectList(), ODEObjectList()
-        external_object_dep = set()
-        for comp in collected_components:
-            markov_models.extend(comp.markov_models)
-            states.extend(comp.states.values())
-            parameters.extend(comp.parameters.values())
-            variables.extend(comp.variables.values())
-            derivatives.extend(comp.derivatives)
-            external_object_dep.update(comp.external_object_dep)
-
-        # Check for dependencies
-        for obj in external_object_dep:
-            if (obj not in states) and (obj not in parameters) and \
-                   (obj not in intermediates):
-
-                # Create a Variable to replace an external object dependency
-                # Put the Variable in the main ODE component
-                variables.append(Variable(obj.name, obj.value, \
-                                          name))
+        # Remove included objects from dependencies
+        dependencies.difference_update(included_objects)
 
         # Create return ODE
         ode = ODE(name)
 
-        # Add Markov models
-        markov_model_actions = []
-        for mm in markov_models:
-
-            # FIXME: Allow propagating of Parameter information
-            mm_states = dict((state.name, state.value) \
-                             for state in mm.states)
-            ode.add_markov_model(mm.name, component=mm.component, \
-                                 algebraic_sum=mm._algebraic_sum, \
-                                 **mm_states)
-
-            obj = ode.get_object(mm.name)
-
-            # Add rates
-            for mm_states, expr in mm._rates.items():
-                markov_model_actions.append((obj, mm_states, expr.expr))
-
-        # Add states
-        for state in states:
-
-            # Do not add slaved states
-            if state.slaved:
-                continue
+        # Add dependencies as parameters to return ODE
+        subs = dict()
+        for dep in dependencies:
             
-            ode.add_state(state.name, state.init, state.derivative.init, \
-                          state.component)
+            # Skip time
+            if str(dep) in ["t", "time"]:
+                continue
+            subs[dep.sym] = ode.add_parameter(dep.name, dep.param.value)
+
+        # Add components together with states and parameters to the ODE
+        components = sorted(collected_components, reverse=True)
+        old_new_map = dict()
         
-        # Add parameters
-        for param in parameters:
+        def add_comp_and_children(comp, components, parent):
+            "Help function to add recursively components to ode"
 
-            # Do not add slaved parameters
-            if param.slaved:
+            # Add component 
+            added = parent.add_component(comp.name)
+            old_new_map[comp] = added
+
+            # Add states and parameters
+            for obj in comp.ode_objects:
+                if isinstance(obj, State):
+                    added.add_state(obj.name, obj.param)
+                elif isinstance(obj, Parameter):
+                    added.add_parameter(obj.name, obj.param)
+
+            # Remove the added component
+            components.remove(comp)
+
+            for child in comp.children.values():
+                add_comp_and_children(child, components, added)
+        
+        # Add component recursivly
+        while components:
+            add_comp_and_children(components[-1], components, ode)
+
+        # Iterate over all components to add expressions
+        for comp_name in self.all_expr_components_ordered:
+
+            comp = self.all_components[comp_name]
+
+            # If we should add component
+            if comp not in collected_components:
                 continue
-            
-            ode.add_parameter(param.name, param.init, param.component)
+                
+            comp_comment = "Expressions for the {0} "\
+                           "component".format(comp.name)
 
-        # Add variables
-        for variable in variables:
+            # Get corresponding component in new ODE
+            added = old_new_map[comp]
 
-            # Do not add slaved variables
-            if variable.slaved:
-                continue
-            
-            if variable.name in ["time", "dt"]:
-                continue
-            
-            ode.add_variable(variable.name, variable.init, variable.component)
+            # Iterate over all objects of the component and save only expressions
+            # and comments
+            for obj in comp.ode_objects:
 
-        # Add intermediates
-        for intermediate in intermediates:
+                # If saving an expression
+                if isinstance(obj, Expression):
 
-            if isinstance(intermediate, ODEComponent):
-                ode.set_component(intermediate.name)
-            elif isinstance(intermediate, Comment):
-                ode.add_comment(intermediate.name)
+                    # The new sympy expression
+                    new_expr = obj.expr.xreplace(subs)
 
-            # Do not add slaved intermediates
-            elif intermediate.slaved:
-                    continue
-            else:
-                ode.add_intermediate(intermediate.name,\
-                                     intermediate.expr)
+                    # If the component is a Markov model
+                    if comp.rates:
 
-        # Add all rates for the markov models
-        for mm, states, expr in markov_model_actions:
-            mm[states] = expr
+                        # Do not save State derivatives
+                        if isinstance(obj, StateDerivative):
+                            continue
 
-        # Add derviatives
-        for derivative in derivatives:
+                        # Save rate expressions slightly different
+                        elif isinstance(obj, RateExpression):
 
-            if derivative.slaved:
-                continue
-            
-            ode.diff(derivative.derivatives, derivative.expr)
+                            states = obj.states
+                            added._add_single_rate(states[0].sym, \
+                                                   states[1].sym, new_expr)
+                            continue
 
-        # Finalize the ode before returning it
+                    # All other Expressions
+                    setattr(added, str(obj), new_expr)
+                        
+                # If saving a comment
+                elif isinstance(obj, Comment) and str(obj) != comp_comment:
+                    added.add_comment(str(obj))
+
+        # Finalize ode and return it
         ode.finalize()
-        
-        # Return the ode
         return ode
-        
-    def clear(self):
-        """
-        Clear any registered objects
-        """
-
-        # Delete stored attributes
-        for name in self._all_single_ode_objects.keys():
-            if name[0] == "_":
-                continue
-            delattr(self, name)
-
-        for intermediate in self._intermediates:
-            try:
-                delattr(self, intermediate.name)
-            except:
-                pass
-            
-        self._all_single_ode_objects = OrderedDict()
-        self._derivative_expressions = ODEObjectList()
-        self._derivative_states = set() # FIXME: No need for a set here...
-        self._algebraic_states = set()
-
-        # Collection of intermediate stuff
-        self._intermediates = ODEObjectList()
-        self._comment_num = 0
-        self._duplicate_num = 0
-
-        # Collect expressions (Expanded and intermediate kept)
-        self._derivative_expr = []
-        self._derivative_expr_expanded = []
-        self._algebraic_expr = []
-        self._algebraic_expr_expanded = []
-
-        # Analytics (not sure we need these...)
-        self._dependencies = {}
-        self._linear_dependencies = {}
-
-        # Add time as a variable
-        self.add_variable("time", 0.0, self._default_component.name)
-        self.add_variable("dt", 0.1, self._default_component.name)
-        
-    def _add_entities(self, component, items, entity):
-        """
-        Help function for determine if each entity in the kwargs is unique
-        and to check the type of the given default value
-        """
-        assert(entity in ["state", "parameter", "variable"])
     
-        # Get caller frame
-        # namespace = _get_load_namespace()
-    
-        # Get add method
-        add = getattr(self, "add_{0}".format(entity))
-        
-        ns = {}
-
-        # Symbol and value dicts
-        for name, value in items:
-    
-            # Add the symbol
-            sym = add(name, value, component=component)
-            ns[name] = sym
-
-        # If set to return namespace
-        if self._return_namespace:
-            return ns
-
-    def _remove_duplicate(self, dup_obj, remove_level):
+    @property
+    def mass_matrix(self):
         """
-        Remove an already registered object 
+        Return the mass matrix as a sympy.Matrix
         """
-        if not isinstance(dup_obj, (State, Parameter, Variable)):
-            error("Trying to remove '{0}' which is a '{1}' is not allowed. "\
-                  "Can only remove States, Parameters and Variables.".format(\
-                      dup_obj, type(dup_obj).__name__))
 
-        allowed_levels = ["none", "global_params", "any"]
-        if remove_level not in allowed_levels:
-            value_error("expected 'remove_level' argument to be one of: {0}".format(\
-                ", ".join("'{0}'" for what in allowed_levels)))
+        if not self.is_finalized:
+            error("The ODE must be finalized")
             
-        if remove_level == "none":
-            return False
+        if not self._mass_matrix:
+        
+            state_exprs = self.state_expressions
+            N = len(state_exprs)
+            self._mass_matrix = sp.Matrix(N, N, lambda i, j : 1 if i==j and \
+                        isinstance(state_exprs[i], StateDerivative) else 0)
             
-        # If the name of the registered object is the same as a Variable or
-        # Parameter in the component with the same name as the ODE (global),
-        # we overwrite that Variable/Parameter with the new object
-        if remove_level == "global_params" and not \
-               (self.is_global(dup_obj) and isinstance(\
-            dup_obj, (Variable, Parameter))):
-            return False
-            
-        debug("Removing {0}: '{1}' with a {2} with same name".format(\
-            type(dup_obj).__name__, dup_obj.name, type(dup_obj).__name__))
-
-        # Remove all traces of old object
-        self._all_single_ode_objects.pop(dup_obj.name)
-        if isinstance(dup_obj, Variable):
-            self._variables.remove(dup_obj)
-        elif isinstance(dup_obj, State):
-            self._states.remove(dup_obj)
-            if dup_obj.is_field:
-                self._field_states.remove(dup_obj)
-            self._all_single_ode_objects.pop(dup_obj.derivative)
-
-            # Remove any derivative expressions that depends on the state
-            for der_expr in self._derivative_expr[:]:
-                if dup_obj in der_expr.states:
-                    self._derivative_expr.pop(der_expr)
-
-            # FIXME: Add logic for removing algebraic expression for state
-            # FIXME: Add logic for removing slaved entities
-            
-        elif isinstance(dup_obj, Parameter):
-            self._parameters.remove(dup_obj)
-            if dup_obj.is_field:
-                self._field_parameters.remove(dup_obj)
-
-        # Clean up components and component dependencies
-        self._components[dup_obj.component].remove(dup_obj)
-
-        return True
-        
-    def _register_object(self, obj, replace_level="none"):
-        """
-        Register an ODEObject (only used for states, parameters, variables,
-        and state_derivatives)
-
-        Arguments
-        ---------
-        obj : ODEObject
-            The object to be registered
-        replace_level : str (optional)
-            If not "none", replace can be either "global_params" or "any", meaning that
-            either global or any object can be replaced by the added intermediate
-        """
-        
-        if obj.name in _all_keywords:
-            error("cannot register an object with a computer language "\
-                  "keyword name: {0}".format(obj.name))
-        
-        timer = Timer("Register obj")
-        assert(isinstance(obj, (State, Parameter, Variable, StateDerivative, \
-                                MarkovModel)))
-
-        check_kwarg(replace_level, "replace_level", str)
-
-        # Check for existing object
-        dup_obj = self._all_single_ode_objects.get(obj.name) or \
-                  self._intermediates.get(obj.name)
-
-        # If object already exists
-        if dup_obj and not self._remove_duplicate(dup_obj, replace_level):
-            error("Cannot register a {0}. A {1} with name '{2}' is "\
-                  "already registered in this ODE.".format(\
-                      type(obj).__name__, type(dup_obj).__name__, obj.name))
-        
-        # Get present component
-        comp = self.present_component(obj.component)
-
-        # Add object to component if not StateDerivative
-        if not isinstance(obj, StateDerivative):
-            comp.append(obj)
-
-        # Register the object
-        self._all_single_ode_objects[obj.name] = obj
-
-        # Register the symbol of the Object or just the object as an attribute
-        if isinstance(obj, ValueODEObject):
-            self.__dict__[obj.name] = obj.sym
-        else:
-            self.__dict__[obj.name] = obj
-
-    def __setattr__(self, name, value):
-        """
-        A magic function which will register intermediates and simpler
-        derivative expressions
-        """
-
-        # If we are registering a protected attribute, just add it to
-        # the dict
-        if name[0] == "_":
-            self.__dict__[name] = value
-            return
-        
-        # Assume that we are registering an intermediate
-        if isinstance(value, scalars) or (isinstance(value, sp.Basic) \
-                                and any(isinstance(atom, sp.Symbol)\
-                                        for atom in value.atoms())):
-            self.add_intermediate(name, value)
-        else:
-            debug("Not registering: {0} as attribut. It does not contain "\
-                  "any symbols or scalars.".format(name))
-
-        # If not registering Intermediate or doing a shorthand
-        # diff expression we silently leave.
-
-    def __eq__(self, other):
-        """
-        x.__eq__(y) <==> x==y
-        """
-        if not isinstance(other, ODE):
-            return False
-
-        if id(self) == id(other):
-            return True
-        
-        # Compare all registered attributes
-        for mine, obj in self._all_single_ode_objects.items():
-
-            # Check that all mine obj excist in other
-            if mine not in other._all_single_ode_objects:
-                info("{0} {1} not in {1}".format(type(obj).__name__, \
-                                                 mine, other.name))
-                return False
-
-            # Check same Type
-            other_obj = other._all_single_ode_objects[mine]
-            if not isinstance(other_obj, type(obj)):
-                info("{0} in {1} is a {2} and in {3} it is a {4}".format(\
-                    mine, self.name, type(obj).__name__), other.name, \
-                     type(other_obj).__name__)
-                return False
-
-        # Check that all other obj excist in mine
-        for other_name, obj in other._all_single_ode_objects.items():
-            if other_name not in self._all_single_ode_objects:
-                info("{0} {1} not in {2}".format(type(obj).__name__, \
-                                                 other_name, self.name))
-                return False
-
-        for mine in self.intermediates:
-            if mine not in other.intermediates:
-                info("{0} not an intermediate in  {1}".format(\
-                         mine.name, other.name))
-                return False
-
-        for other_inter in other.intermediates:
-            if other_inter not in self.intermediates:
-                info("{0} not an intermediate in  {1}".format(\
-                         other_inter.name, self.name))
-                return False
-
-            if not isinstance(other_inter, Expression):
-                continue
-
-            # Compare the last intermediate
-            mine_inter = self.intermediates.get(other_inter.name)
-            other_inter = other.intermediates.get(other_inter.name)
-            if abs(other_inter.param.value - mine_inter.param.value) > 1e-6:
-                info("{0} : {1} != {2}".format(\
-                    other_inter.name, other_inter.expr, mine_inter.expr))
-                return False
-
-        for mine in self._derivative_expressions:
-            if mine not in other._derivative_expressions:
-                info("{0} not a derivative in  {1}".format(\
-                         mine.name, other.name))
-                return False
-
-        for other_der in other._derivative_expressions:
-            if other_der not in self._derivative_expressions:
-                info("{0} not a derivative in  {1}".format(\
-                         other_der.name, self.name))
-                return False
-
-            mine_der = self._derivative_expressions.get(other_der.name)
-            if abs(mine_der.param.value - other_der.param.value) > 1e-6:
-                info("{0} : {1} != {2}".format(\
-                         mine_der.name, mine_der.expr, other_der.expr))
-                return False
-
-        return True
-
-    def __str__(self):
-        """
-        x.__str__() <==> str(x)
-        """
-        return self.name
-        
-    def __repr__(self):
-        """
-        x.__repr__() <==> repr(x)
-        """
-        return "{}('{}')".format(self.__class__.__name__, self.name)
-
-
-    @property
-    def states(self):
-        """
-        Return a list of all states 
-        """
-        return self._states
-
-    @property
-    def field_states(self):
-        """
-        Return a list of all field states 
-        """
-        return self._field_states
-
-    @property
-    def parameters(self):
-        """
-        Return a list of all parameters 
-        """
-        return self._parameters
-
-    @property
-    def field_parameters(self):
-        """
-        Return a list of all field parameters
-        """
-        return self._field_parameters
-
-    @property
-    def variables(self):
-        """
-        Return a list of all variables 
-        """
-        return self._variables
-
-    @property
-    def components(self):
-        """
-        Return a all components
-        """
-        return self._components
-
-    @property
-    def comments(self):
-        """
-        Return a all comments
-        """
-        return self._comments
-
-    @property
-    def intermediates(self):
-        """
-        Return a all components
-        """
-        return self._intermediates
-
-    @property
-    def markov_models(self):
-        """
-        Return a all Markov models
-        """
-        return self._markov_models
-
-    @property
-    def monitored_intermediates(self):
-        """
-        Return an dict over registered monitored intermediates
-        """
-        return self._monitored_intermediates
-
-    def has_state(self, state):
-        """
-        Return True if state is a registered state or field state
-        """
-        check_arg(state, (str, sp.Symbol, ODEObject))
-
-        # Grab ODEObject if str or Symbol is passed
-        if isinstance(state, (str, sp.Symbol)):
-            state = self.get_object(state)
-            if state is None:
-                return False
-            
-        return state in self._states
-        
-    def has_field_state(self, state):
-        """
-        Return True if state is a registered field state
-        """
-        check_arg(state, (str, sp.Symbol, ODEObject))
-
-        # Grab ODEObject if str or sp.Symbol is passed
-        if isinstance(state, (str, sp.Symbol)):
-            state = self.get_object(state)
-            if state is None:
-                return False
-            
-        return state in self._field_states
-        
-    def has_parameter(self, parameter):
-        """
-        Return True if parameter is a registered parameter or field parameter
-        """
-        check_arg(parameter, (str, sp.Symbol, ODEObject))
-
-        # Grab ODEObject if str or sp.Symbol is passed
-        if isinstance(parameter, (str, sp.Symbol)):
-            parameter = self.get_object(parameter)
-            if parameter is None:
-                return False
-
-        return parameter in self._parameters
-        
-    def has_field_parameter(self, parameter):
-        """
-        Return True if parameter is a registered field parameter
-        """
-        check_arg(parameter, (str, sp.Symbol, ODEObject))
-
-        # Grab ODEObject if str or sp.Symbol is passed
-        if isinstance(parameter, (str, sp.Symbol)):
-            parameter = self.get_object(parameter)
-            if parameter is None:
-                return False
-
-        return parameter in self._field_parameters
-        
-    def has_variable(self, variable):
-        """
-        Return True if variable is a registered Variable
-        """
-        check_arg(variable, (str, sp.Symbol, ODEObject))
-
-        # Grab ODEObject if str or sp.Symbol is passed
-        if isinstance(variable, (str, sp.Symbol)):
-            variable = self.get_object(variable)
-            if variable is None:
-                return False
-
-        return variable in self._variables
-    
-    def has_component(self, component):
-        """
-        Return True if component is a registered ODEComponent
-        """
-        check_arg(component, str)
-
-        return component in self._components
-        
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def num_states(self):
-        return len(self._states)
-        
-    @property
-    def num_field_states(self):
-        return len(self._field_states)
-        
-    @property
-    def num_parameters(self):
-        return len(self._parameters)
-        
-    @property
-    def num_field_parameters(self):
-        return len(self._field_parameters)
-        
-    @property
-    def num_variables(self):
-        return len(self._variables)
-
-    @property
-    def num_derivative_expr(self):
-        return len(self._derivative_expr)
-        
-    @property
-    def num_algebraic_expr(self):
-        return len(self._algebraic_expr)
-
-    @property
-    def num_monitored_intermediates(self):
-        """
-        Return the number of monitored intermediates
-        """
-        return len(self._monitored_intermediates)
-
-    def is_global(self, obj):
-        """
-        Return True if obj is part of the "global" component.
-
-        The global component is the one with the same name as the ode.
-        
-        """
-        if not isinstance(obj, ValueODEObject):
-            return False
-        return obj.component == self.name
-
-    @property
-    def is_complete(self):
-        """
-        Check that the ODE is complete
-        """
-
-        # Finalize before checking for completness
-        self.finalize()
-        
-        states = self._states
-
-        timer = Timer("Is complete")
-
-        if not states:
-            return False
-
-        if len(states) > self.num_derivative_expr + self.num_algebraic_expr:
-            # FIXME: Need a better name instead of xpressions...
-            
-            
-            info("The ODE is under determined. The number of States are more "\
-                 "than the number of derivative expressions.")
-            
-            return False
-
-        if len(states) < self.num_derivative_expr + self.num_algebraic_expr:
-            # FIXME: Need a better name instead of xpressions...
-            info("The ODE is over determined. The number of States are less "\
-                 "than the number of derivative expressions.")
-            return False
-        
-        # Grab algebraic states
-        self._algebraic_states.update(states)
-        self._algebraic_states.difference_update(self._derivative_states)
-
-        # Concistancy check
-        if len(self._algebraic_states) + len(self._derivative_states) \
-               != len(states):
-            info("The sum of the algebraic and derivative states need equal "\
-                 "the total number of states.")
-            return False
-
-        # If we have the same number of derivative expressions as number of
-        # states we need to check that we have one derivative of each state.
-        # and sort the derivatives
-
-        if self.num_derivative_expr == len(states):
-
-            for derivative, expr in self._derivative_expr:
-                if len(derivative) != 1:
-                    # FIXME: Better error message
-                    info("When no DAE expression is used only 1 differential "\
-                         "state is allowed per diff call: {0}".format(\
-                             derivative))
-                    return False
-
-            # Get a copy of the lists and prepare sorting
-            derivative_expr = self._derivative_expr[:]
-            derivative_expr_expanded = self._derivative_expr_expanded[:]
-            derivative_expr_sorted = []
-            derivative_expr_expanded_sorted = []
-
-            for state in states:
-                for ind, (derivative, expr) in enumerate(derivative_expr):
-                    if derivative[0].sym == state.sym:
-                        derivative_expr_sorted.append(derivative_expr.pop(ind))
-                        derivative_expr_expanded_sorted.append(\
-                            derivative_expr_expanded.pop(ind))
-                        break
-
-            # Store the sorted derivatives
-            self._derivative_expr = derivative_expr_sorted
-            self._derivative_expr_expanded = derivative_expr_expanded_sorted
-
-        # Nothing more to check?
-        return True
+        return self._mass_matrix
 
     @property
     def is_dae(self):
-        return self.is_complete and len(self._algebraic_states) > 0
+        """
+        Return True if ODE is a DAE
+        """
+        if not self.is_complete:
+            error("The ODE is not complete")
+
+        return any(isinstance(expr, AlgebraicExpression) for expr in \
+                   self.state_expressions)
 
     def finalize(self):
         """
-        Finalize all finalizable objects
+        Finalize the ODE
         """
-        for mm in self._markov_models:
-            mm.finalize()
-        
+        for comp in self.components:
+            comp.finalize_component()
+            
+        self._is_finalized_ode = True
+        self._present_component = self.name
+
     def signature(self):
         """
         Return a signature uniquely defining the ODE
         """
         import hashlib
-        def_list = [repr(state.param) for state in self.states] 
-        def_list += [repr(param.param) for param in self.parameters] 
-        def_list += [repr(variable.param) for variable in self.variables] 
-        def_list += [str(intermediate.expr) if isinstance(intermediate, Expression) \
-                     else str(intermediate) for intermediate in self.intermediates]
-        def_list += [repr(monitor) for monitor in self.monitored_intermediates.values()]
-        def_list += [str(expr) for expr in self.get_derivative_expr()]
+
+        def_list = []
+        for comp in self.components:
+            if self != comp:
+                def_list.append(str(comp))
+            
+            # Sort wrt stringified states and parameters avoiding trouble with
+            # random ordering of **kwargs
+            def_list += sorted([repr(state.param) for state in comp.full_states])
+            def_list += sorted([repr(param.param) for param in comp.parameters])
+            def_list += [sympycode(expr.expr) for expr in comp.intermediates]
+
+            # Sort state expressions wrt stringified state names
+            def_list += [sympycode(expr.expr) for expr in sorted(\
+                self.state_expressions, cmp=lambda o0, o1: cmp(\
+                    str(o0.state), str(o1.state)))]
 
         h = hashlib.sha1()
         h.update(";".join(def_list))
         return h.hexdigest()
-        

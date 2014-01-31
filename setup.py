@@ -67,8 +67,7 @@ class run_tests(Command):
 
     def run(self):
         import os
-        os.chdir("test")
-        os.system("python test.py")
+        os.system("python utils/run_tests.py")
 
 setup(name = "Gotran",
       version = "{0}.{1}".format(major, minor),

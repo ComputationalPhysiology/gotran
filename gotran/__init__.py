@@ -15,12 +15,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-__version__ = "2.1"
+__version__ = "3.0"
 
 # Import gotran modules
 import common
 import model
-import algorithms
+#import algorithms
 import codegeneration
 import input
 
@@ -29,7 +29,7 @@ from common import DEBUG, INFO, WARNING, ERROR, CRITICAL, \
      info, debug, warning, error, set_log_level, list_timings, \
      GotranException, parameters
 from model import *
-from algorithms import *
+#from algorithms import *
 from codegeneration import *
 from input import *
 

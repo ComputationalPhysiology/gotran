@@ -18,6 +18,7 @@
 # System imports
 from collections import deque
 import re
+import types
 import numpy as np
 
 # Model parameters imports
@@ -26,28 +27,29 @@ from modelparameters.codegeneration import ccode, cppcode, pythoncode, \
      sympycode, matlabcode
 
 # Gotran imports
-from gotran.common import check_arg, check_kwarg
-from oderepresentation import ODERepresentation
+from gotran.common import check_arg, check_kwarg, error
+from gotran.common.options import parameters
+from gotran.model.ode import ODE
+from gotran.model.odeobjects import Comment, ODEObject
+from gotran.model.expressions import Expression, Intermediate
+from gotran.codegeneration.codecomponent import CodeComponent
+from gotran.codegeneration.algorithmcomponents import *
 
-__all__ = ["CodeGenerator", "CCodeGenerator", "CppCodeGenerator", \
-           "MatlabCodeGenerator"]
+__all__ = ["PythonCodeGenerator", "CCodeGenerator", "CppCodeGenerator", \
+           "MatlabCodeGenerator", "class_name"]
 
-_re_str = re.compile(".*\"([\w\s]+)\".*")
+def class_name(name):
+    check_arg(name, str)
+    return name if name[0].isupper() else name[0].upper() + \
+           (name[1:] if len(name) > 1 else "")    
 
-def _is_number(num_str):
+class BaseCodeGenerator(object):
     """
-    A hack to check wether a str is a number
+    Base class for all code generators
     """
-    try:
-        float(num_str)
-        return True
-    except:
-        return False
 
-class CodeGenerator(object):
-    
     # Class attributes
-    language = "python"
+    language = "None"
     line_ending = ""
     closure_start = ""
     closure_end = ""
@@ -57,505 +59,118 @@ class CodeGenerator(object):
     indent = 4
     indent_str = " "
     max_line_length = 79
-    to_code = lambda a,b,c,d="math" : pythoncode(b,c,d)
+    to_code = lambda self,b,c,d : None
+    float_types = dict(single="float32", double="float64")
 
-    def args(self, result_name):
-        ret_args=[]
-        if self.params.self_arg:
-            ret_args.append("self")
-
-        for arg in self.params.rhs_args:
-            if arg == "s":
-                ret_args.append("states")
-            elif arg == "t":
-                ret_args.append("time")
-            elif arg == "p" and \
-                 not self.oderepr.optimization.parameter_numerals:
-                ret_args.append("parameters")
-
-        ret_args.append("{0}=None".format(result_name))
-        
-        return ", ".join(ret_args)
-
-    @staticmethod
-    def default_params():
-        
-        return ParameterDict(rhs_args=OptionParam(\
-            "stp", ["tsp", "stp", "spt"]),
-                             self_arg = False)
-
-    def __init__(self, oderepr, params=None):
-        check_arg(oderepr, ODERepresentation, 0)
+    def __init__(self, params=None):
 
         params = params or {}
 
-        self.params = self.default_params()
+        self.params = self.default_parameters()
         self.params.update(params)
 
-        self.oderepr = oderepr
-        self.oderepr.update_index(self.index)
-
-    def wrap_body_with_function_prototype(self, body_lines, name, args, \
-                                          return_arg="", comment=""):
-        """
-        Wrap a passed body of lines with a function prototype
-        """
-        check_arg(body_lines, list)
-        check_arg(name, str)
-        check_arg(args, str)
-        check_arg(return_arg, str)
-        check_arg(comment, (str, list))
-        
-        prototype = ["def {0}({1}):".format(name, args)]
-        body = []
-
-        # Wrap comment if any
-        if comment:
-            body.append("\"\"\"")
-            if isinstance(comment, list):
-                body.extend(comment)
-            else:
-                body.append(comment)
-            body.append("\"\"\"")
-
-        # Extend the body with body lines
-        body.extend(body_lines)
-
-        if return_arg:
-            body.append("return " + return_arg)
-
-        # Append body to prototyp
-        prototype.append(body)
-        return prototype
-
-    def _states_and_parameters_code(self):
-        ode = self.oderepr.ode
-
-        # Start building body
-        body_lines = ["# Imports", "import numpy as np", "import math", \
-                      "from math import pow, sqrt, log"]
-        body_lines.append("")
-        body_lines.append("# Assign states")
-        body_lines.append("assert(len(states) == {0})".format(ode.num_states))
-        if self.oderepr.optimization.use_state_names:
-            body_lines.append(", ".join(state.name for i, state in \
-                            enumerate(ode.states)) + " = states")
-        
-        # Add parameters code if not numerals
-        if not self.oderepr.optimization.parameter_numerals:
-            body_lines.append("")
-            body_lines.append("# Assign parameters")
-            body_lines.append("assert(len(parameters) == {0})".format(\
-                ode.num_parameters))
-
-            if self.oderepr.optimization.use_parameter_names:
-                body_lines.append(", ".join(param.name for i, param in \
-                        enumerate(ode.parameters)) + " = parameters")
-
-        return body_lines
-
-    def dy_body(self, result_name="dy"):
-        """
-        Generate body lines of code for evaluating state derivatives
-        """
-
-        from modelparameters.codegeneration import pythoncode
-
-        ode = self.oderepr.ode
-
-        body_lines = self._states_and_parameters_code()
-
-        # Iterate over any body needed to define the dy
-        for expr, name in self.oderepr.iter_dy_body():
-            if name == "COMMENT":
-                body_lines.append("")
-                body_lines.append("# " + expr)
-            else:
-                body_lines.append(pythoncode(expr, name))
-
-        # Init dy
-        body_lines.append("")
-        body_lines.append("# Init {0}".format(result_name))
-        body_lines.append("if {0} is None:".format(result_name))
-        body_lines.append(["{0} = np.zeros_like(states)".format(result_name)])
-        
-        # Add dy[i] lines
-        for ind, (state, (derivative, expr)) in enumerate(\
-            zip(ode.states, self.oderepr.iter_derivative_expr())):
-            assert(state.sym == derivative[0].sym)
-            body_lines.append(pythoncode(expr, "{0}[{1}]".format(result_name, ind)))
-
-        # Return body lines 
-        return body_lines
-        
-    def dy_code(self, indent=0, result_name="dy"):
-        """
-        Generate code for evaluating state derivatives
-        """
-
-        body_lines = self.dy_body(result_name)
-        
-        body_lines.append("")
-        body_lines.append("# Return result")
-
-        # Add function prototype
-        dy_function = self.wrap_body_with_function_prototype(\
-            body_lines, "rhs", self.args(result_name), \
-            result_name, "Compute right hand side")
-        
-        return "\n".join(self.indent_and_split_lines(dy_function, indent=indent))
-
-    def jacobian_body(self, result_name="jac"):
-        """
-        Generate body lines of code for evaluating state derivatives
-        """
-
-        from modelparameters.codegeneration import pythoncode
-
-        ode = self.oderepr.ode
-
-        body_lines = self._states_and_parameters_code()
-        
-        # Iterate over any body needed to define the jacobian
-        for expr, name in self.oderepr.iter_jacobian_body():
-            if name == "COMMENT":
-                body_lines.append("")
-                body_lines.append("# " + expr)
-            else:
-                body_lines.append(pythoncode(expr, name))
-
-        # Init jacobian
-        body_lines.append("")
-        body_lines.append("# Init jacobian")
-        body_lines.append("if {0} is None:".format(result_name))
-        body_lines.append(["{0} = np.zeros((len(states), len(states)), "\
-                           "dtype=np.float_)".format(result_name)])
-        
-        # Add jac[i,j] lines
-        for (indi, indj), expr in self.oderepr.iter_jacobian_expr():
-            body_lines.append(pythoncode(\
-                expr, "{0}[{1}, {2}]".format(result_name, indi, indj)))
-
-        # Return body lines 
-        return body_lines
-
-    def jacobian_code(self, indent=0, result_name="jac"):
-        """
-        Generate code for evaluating jacobian
-        """
-
-        body_lines = self.jacobian_body(result_name)
-        
-        body_lines.append("")
-        body_lines.append("# Return jacobian")
-
-        # Add function prototype
-        jacobian_function = self.wrap_body_with_function_prototype(\
-            body_lines, "jacobian", self.args(result_name), \
-            return_arg=result_name, comment="Compute jacobian")
-        
-        return "\n".join(self.indent_and_split_lines(jacobian_function, indent=indent))
-        
-    def monitored_body(self, result_name="monitored"):
-        """
-        Generate body lines of code for evaluating state derivatives
-        """
-
-        from modelparameters.codegeneration import pythoncode
-
-        ode = self.oderepr.ode
-
-        # Start building body
-        body_lines = ["# Imports", "import numpy as np", "import math", \
-                      "from math import pow, sqrt, log"]
-        body_lines.append("")
-        body_lines.append("# Assign states")
-        body_lines.append("assert(len(states) == {0})".format(ode.num_states))
-        if self.oderepr.optimization.use_state_names:
-
-            state_indices, state_names = [], []
-            for ind, state in enumerate(ode.states):
-                if state.name in self.oderepr.used_in_monitoring["states"]:
-                    state_names.append(state.name)
-                    state_indices.append("states[{0}]".format(ind))
-
-            if state_names:
-                body_lines.append(", ".join(state_names) + " = " +\
-                                  ", ".join(state_indices))
-        
-        # Add parameters code if not numerals
-        if not self.oderepr.optimization.parameter_numerals:
-            body_lines.append("")
-            body_lines.append("# Assign parameters")
-            body_lines.append("assert(len(parameters) == {0})".format(\
-                ode.num_parameters))
-
-            if self.oderepr.optimization.use_parameter_names:
-            
-                parameter_indices, parameter_names = [], []
-                for ind, param in enumerate(ode.parameters):
-                    if param.name in self.oderepr.used_in_monitoring["parameters"]:
-                        parameter_names.append(param.name)
-                        parameter_indices.append("parameters[{0}]".format(ind))
-
-                if parameter_names:
-                    body_lines.append(", ".join(parameter_names) + " = " +\
-                                      ", ".join(parameter_indices))
-
-        # Iterate over any body needed to define the dy
-        for expr, name in self.oderepr.iter_monitored_body():
-            if name == "COMMENT":
-                body_lines.append("")
-                body_lines.append("# " + expr)
-            else:
-                body_lines.append(pythoncode(expr, name))
-
-        # Init dy
-        body_lines.append("")
-        body_lines.append("# Init monitored")
-        body_lines.append("if monitored is None:")
-        body_lines.append(["monitored = np.zeros({0}, dtype=np.float_)".format(\
-            ode.num_monitored_intermediates)])
-        
-        # Add monitored[i] lines
-        ind = 0
-        for monitored, expr in self.oderepr.iter_monitored_expr():
-            if monitored == "COMMENT":
-                body_lines.append("")
-                body_lines.append("# " + expr)
-            else:
-                body_lines.append(pythoncode(expr, "monitored[{0}]".format(ind)))
-                ind += 1
-
-        # Return body lines 
-        return body_lines
-
-    def monitored_code(self, indent=0, result_name="monitored"):
-        """
-        Generate code for evaluating monitored variables
-        """
-
-        body_lines = self.monitored_body(result_name)
-        
-        body_lines.append("")
-        body_lines.append("# Return monitored")
-
-        # Add function prototype
-        monitor_function = self.wrap_body_with_function_prototype(\
-            body_lines, "monitor", self.args(result_name), \
-            result_name, "Compute monitored intermediates")
-        
-        return "\n".join(self.indent_and_split_lines(monitor_function, \
-                                                     indent=indent))
-
-    def init_states_code(self, indent=0):
-        """
-        Generate code for setting initial condition
-        """
-
-        self_arg = self.params.self_arg
-
-        # Start building body
-        body_lines = ["# Imports", "import numpy as np",\
-                      "from modelparameters.utils import Range", \
-                      "", "# Init values"]
-        body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
-            state.name, state.init) for state in \
-                      self.oderepr.ode.states)))
-        body_lines.append("init_values = np.array([{0}], dtype=np.float_)"\
-                          .format(", ".join("{0}".format(\
-                state.init if np.isscalar(state.init) else state.init[0])\
-                            for state in self.oderepr.ode.states)))
-        body_lines.append("")
-        
-        range_check = "lambda value : value {minop} {minvalue} and "\
-                      "value {maxop} {maxvalue}"
-        body_lines.append("# State indices and limit checker")
-
-        body_lines.append("state_ind = dict({0})".format(\
-            ", ".join("{0}=({1}, {2})".format(\
-                state.param.name, i, repr(state.param._range))\
-                for i, state in enumerate(self.oderepr.ode.states))))
-        body_lines.append("")
-
-        body_lines.append("for state_name, value in values.items():")
-        body_lines.append(\
-            ["if state_name not in state_ind:",
-             ["raise ValueError(\"{{0}} is not a state.\".format(state_name))"],
-             # FIXME: Outcommented because of bug in indent_and_split_lines
-             # ["raise ValueError(\"{{0}} is not a state in the {0} ODE\"."\
-             #"format(state_name))".format(self.oderepr.name)],
-             "ind, range = state_ind[state_name]",
-             "if value not in range:",
-             ["raise ValueError(\"While setting \'{0}\' {1}\".format("\
-              "state_name, range.format_not_in(value)))"],
-             "", "# Assign value",
-             "init_values[ind] = value"])
-            
-        body_lines.append("")
-
-        args = "self, **values" if self_arg else "**values"
-        
-        # Add function prototype
-        init_function = self.wrap_body_with_function_prototype(\
-            body_lines, "init_values", args, "init_values", \
-            "Init values")
-        
-        return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
-
-    def init_param_code(self, indent=0):
-        """
-        Generate code for setting parameters
-        """
-
-        self_arg = self.params.self_arg
-
-        # Start building body
-        body_lines = ["# Imports", "import numpy as np",\
-                      "from modelparameters.utils import Range", \
-                      "", "# Param values"]
-        body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
-            param.name, param.init) for param in \
-                      self.oderepr.ode.parameters)))
-        body_lines.append("param_values = np.array([{0}], dtype=np.float_)"\
-                          .format(", ".join("{0}".format(\
-                param.init if np.isscalar(param.init) else param.init[0]) \
-                    for param in self.oderepr.ode.parameters)))
-        body_lines.append("")
-        
-        range_check = "lambda value : value {minop} {minvalue} and "\
-                      "value {maxop} {maxvalue}"
-        body_lines.append("# Parameter indices and limit checker")
-
-        body_lines.append("param_ind = dict({0})".format(\
-            ", ".join("{0}=({1}, {2})".format(\
-                state.param.name, i, repr(state.param._range))\
-                for i, state in enumerate(\
-                          self.oderepr.ode.parameters))))
-        body_lines.append("")
-
-        body_lines.append("for param_name, value in values.items():")
-        body_lines.append(\
-            ["if param_name not in param_ind:",
-             ["raise ValueError(\"{{0}} is not a param\".format(param_name))"],
-             # ["raise ValueError(\"{{0}} is not a param in the {0} ODE\"."\
-             #  "format(param_name))".format(self.oderepr.name)],
-             "ind, range = param_ind[param_name]",
-             "if value not in range:",
-             ["raise ValueError(\"While setting \'{0}\' {1}\".format("\
-              "param_name, range.format_not_in(value)))"],
-             "", "# Assign value",
-             "param_values[ind] = value"])
-            
-        body_lines.append("")
-        
-        args = "self, **values" if self_arg else "**values"
-        
-        # Add function prototype
-        function = self.wrap_body_with_function_prototype(\
-            body_lines, "default_parameters", \
-            args, "param_values", "Parameter values")
-        
-        return "\n".join(self.indent_and_split_lines(function, indent=indent))
-
-    def state_name_to_index_code(self, indent=0):
-        """
-        Return code for index handling for states
-        """
-        self_arg = self.params.self_arg
-
-        body_lines = []
-        body_lines.append("state_inds = dict({0})".format(\
-            ", ".join("{0}={1}".format(state.param.name, i) for i, state \
-                      in enumerate(self.oderepr.ode.states))))
-        body_lines.append("")
-        body_lines.append("indices = []")
-        body_lines.append("for state in states:")
-        body_lines.append(\
-            ["if state not in state_inds:",
-             ["raise ValueError(\"Unknown state: '{0}'\".format(state))"],
-             "indices.append(state_inds[state])"])
-        body_lines.append("return indices if len(indices)>1 else indices[0]")
-
-        args = "self, *states" if self_arg else "*states"
-        
-        # Add function prototype
-        function = self.wrap_body_with_function_prototype(\
-            body_lines, "state_indices", \
-            args, "", "State indices")
-        
-        return "\n".join(self.indent_and_split_lines(function, indent=indent))
-
-    def param_name_to_index_code(self, indent=0):
-        """
-        Return code for index handling for parameters
-        """
-
-        self_arg = self.params.self_arg
-
-        body_lines = []
-        body_lines.append("param_inds = dict({0})".format(\
-            ", ".join("{0}={1}".format(param.param.name, i) for i, param \
-                                        in enumerate(self.oderepr.ode.parameters))))
-        body_lines.append("")
-        body_lines.append("indices = []")
-        body_lines.append("for param in params:")
-        body_lines.append(\
-            ["if param not in param_inds:",
-             ["raise ValueError(\"Unknown param: '{0}'\".format(param))"],
-             "indices.append(param_inds[param])"])
-        body_lines.append("return indices if len(indices)>1 else indices[0]")
-
-        args = "self, *params" if self_arg else "*params"
-        
-        # Add function prototype
-        function = self.wrap_body_with_function_prototype(\
-            body_lines, "param_indices", \
-            args, "", "Param indices")
-        
-        return "\n".join(self.indent_and_split_lines(function, indent=indent))
-
-    def code_list(self, indent=0):
-        
-        code = [self.init_param_code(indent),
-                self.init_states_code(indent),
-                self.dy_code(indent),
-                self.state_name_to_index_code(indent), 
-                self.param_name_to_index_code(indent),
-                self.monitored_code(indent)
-                ]
-
-        if self.oderepr.optimization.generate_jacobian:
-            code += [self.jacobian_code(indent)]
-
-        return code
-
-    def class_code(self):
-        """
-        Generate class code
-        """
-
-        name = self.oderepr.class_name
-
-        code_list = self.code_list(indent=1)
-
-        return  """
-class {0}:
+    @property
+    def float_type(self):
+        "Return the float type"
+        return type(self).float_types[self.params.code.float_precision]
 
     @staticmethod
-{1}
-""".format(name, "\n\n    @staticmethod\n".join(code_list))
+    def default_parameters():
+        # Start out with a copy of the global parameters
+        return parameters.generation.copy()
 
-    def module_code(self):
+    def code_list(self, ode,
+                  monitored=None, 
+                  include_init=True,
+                  include_index_map=True,
+                  indent=0):
+        """
+        Generate a list of code snippets
+
+        Arguments
+        ---------
+        ode : ODE
+            The ODE for which code will be generated
+        monitored : list
+            A list of name of monitored intermediates for which evaluation
+            code will be generated.
+        include_init : bool
+            If True, code for initializing the states and parameters will
+            be generated.
+        include_index_map : bool
+            If True, code for mapping a str to a index for the corresponding,
+            state, parameters or monitored will be generated.
+        indent : int
+            The indentation level for the generated code
+        """
+
+        monitored = monitored or []
+        check_arg(ode, ODE)
+        check_kwarg(monitored, "monitored", list, itemtypes=str)
+        functions = self.params.functions
+
+        code = []
+
+        # If generate init code
+        if include_init:
+            code.append(self.init_states_code(ode, indent))
+            code.append(self.init_parameters_code(ode, indent))
+
+        # If generate index map code
+        if include_index_map:
+            code.append(self.state_name_to_index_code(ode, indent)) 
+            code.append(self.param_name_to_index_code(ode, indent))
         
-        code_list = self.code_list()
+        comps = []
 
-        return  """# Gotran generated code for the  "{0}" model
-from __future__ import division
+        # Code for the right hand side evaluation?
+        if functions.rhs.generate:
+            comps.append(rhs_expressions(\
+                ode, function_name=functions.rhs.function_name,
+                result_name=functions.rhs.result_name,
+                params=self.params.code))
 
-{1}
-""".format(self.oderepr.ode.name, "\n\n".join(code_list))
-    
+        # Code for any monitored intermediates
+        if monitored and functions.monitored.generate:
+            if include_index_map:
+                code.append(self.monitor_name_to_index_code(ode, monitored, indent))
+                
+            comps.append(monitored_expressions(\
+                ode, monitored,
+                function_name=functions.monitored.function_name,
+                result_name=functions.monitored.result_name,
+                params=self.params.code))
+
+        # Code for generation of the jacobian of the right hand side
+        if functions.jacobian.generate:
+            jac = jacobian_expressions(\
+                ode, function_name=functions.jacobian.function_name,
+                result_name=functions.jacobian.result_name,
+                params=self.params.code)
+            
+            comps.append(jac)
+
+            # Code for the symbolic factorization of the jacobian
+            if functions.lu_factorization.generate:
+
+                lu_fact = factorized_jacobian_expressions(\
+                    jac, function_name=functions.lu_factorization.function_name,
+                    params=self.params.code)
+                
+                comps.append(lu_fact)
+
+                # Code for the forward backward substituion for a factorized jacobian 
+                if functions.forward_backward_subst.generate:
+                    fb_subst = factorized_jacobian_expressions(\
+                        lu_fact, function_name=functions.forward_backward_subst.\
+                        function_name, params=self.params.code)
+                
+                    comps.append(fb_subst)
+
+        # Create code snippest of all 
+        code.extend(self.function_code(comp, indent=indent) for comp in comps)
+
+        return code
 
     @classmethod
     def indent_and_split_lines(cls, code_lines, indent=0, ret_lines=None, \
@@ -564,9 +179,20 @@ from __future__ import division
         Combine a set of lines into a single string
         """
 
+        _re_str = re.compile(".*\"([\w\s]+)\".*")
+
+        def _is_number(num_str):
+            """
+            A hack to check wether a str is a number
+            """
+            try:
+                float(num_str)
+                return True
+            except:
+                return False
+
         check_kwarg(indent, "indent", int, ge=0)
         ret_lines = ret_lines or []
-
 
         # Walk through the code_lines
         for line_ind, line in enumerate(code_lines):
@@ -680,7 +306,473 @@ from __future__ import division
 
         return ret_lines
 
-class CCodeGenerator(CodeGenerator):
+class PythonCodeGenerator(BaseCodeGenerator):
+
+    # Class attributes
+    language = "python"
+    to_code = lambda self, expr, name, ns="math" : pythoncode(expr, name, ns)
+    float_types = dict(single="float32", double="float_")
+    
+    def args(self, default_arguments=None, result_names=None):
+        ret_args=[]
+        result_names = result_names or []
+
+        params = self.params.code
+
+        default_arguments = default_arguments or params.default_arguments
+
+        for arg in default_arguments:
+            if arg == "s":
+                ret_args.append(params.states.array_name)
+            elif arg == "t":
+                ret_args.append(params.time.name)
+            elif arg == "p" and params.parameters.representation != \
+                     "numerals":
+                ret_args.append(params.parameters.array_name)
+            elif arg == "b" and params.body.representation != "named":
+                ret_args.append("{0}=None".format(params.body.array_name))
+
+        for result_name in result_names:
+            ret_args.append("{0}=None".format(result_name))
+        
+        return ", ".join(ret_args)
+
+    def decorators(self):
+        # FIXME: Make this extendable with mode decorators or make it possible
+        # FIXME: to use other standard decorators like classmethod
+        return "@staticmethod" if self.params.class_code else ""
+
+    @staticmethod
+    def wrap_body_with_function_prototype(body_lines, name, args, \
+                                          comment="", decorators=""):
+        """
+        Wrap a passed body of lines with a function prototype
+        """
+        check_arg(body_lines, list)
+        check_arg(name, str)
+        check_arg(args, str)
+        check_arg(comment, (str, list))
+        check_arg(decorators, (str, list))
+
+        prototype = []
+        if decorators:
+            if isinstance(decorators, list):
+                prototype.extend(decorators)
+            else:
+                prototype.append(decorators)
+            
+        prototype.append("def {0}({1}):".format(name, args))
+        body = []
+
+        # Wrap comment if any
+        if comment:
+            body.append("\"\"\"")
+            if isinstance(comment, list):
+                body.extend(comment)
+            else:
+                body.append(comment)
+            body.append("\"\"\"")
+
+        # Extend the body with body lines
+        body.extend(body_lines)
+
+        # Append body to prototyp
+        prototype.append(body)
+        return prototype
+
+    def _init_arguments(self, comp, default_arguments=None):
+
+        check_arg(comp, CodeComponent)
+        params = self.params.code
+        default_arguments = default_arguments or params.default_arguments
+
+        # Check if comp defines used_states if not use the root components
+        # full_states attribute
+        # FIXME: No need for full_states here...
+        used_states = comp.used_states if hasattr(comp, "used_states") else \
+                      comp.root.full_states
+        
+        used_parameters = comp.used_parameters if hasattr(comp, "used_parameters") else \
+                          comp.root.parameters
+
+        num_states = comp.root.num_full_states
+        num_parameters = comp.root.num_parameters
+
+        # Start building body
+        body_lines = []
+        if "s" in default_arguments and used_states:
+            
+            states_name = params.states.array_name
+            body_lines.append("")
+            body_lines.append("# Assign states")
+            body_lines.append("assert(len({0}) == {1})".format(states_name, \
+                                                               num_states))
+            # Generate state assign code
+            if params.states.representation == "named":
+                
+                # If all states are used
+                if len(used_states) == len(comp.root.full_states):
+                    body_lines.append(", ".join(\
+                        state.name for i, state in enumerate(comp.root.full_states)) + \
+                                      " = " + states_name)
+                    
+                # If only a limited number of states are used
+                else:
+                    body_lines.append("; ".join(\
+                        "{0}={1}[{2}]".format(state.name, states_name, ind) \
+                        for ind, state in enumerate(comp.root.full_states) \
+                        if state in used_states))
+        
+        # Add parameters code if not numerals
+        if "p" in default_arguments and \
+               params.parameters.representation in ["named", "array"] and \
+               used_parameters:
+
+            parameters_name = params.parameters.array_name
+            body_lines.append("")
+            body_lines.append("# Assign parameters")
+            body_lines.append("assert(len({0}) == {1})".format(\
+                        parameters_name, num_parameters))
+            
+            # Generate parameters assign code
+            if params.parameters.representation == "named":
+                
+                # If all parameters are used
+                if len(used_parameters) == len(comp.root.parameters):
+                    body_lines.append(", ".join(\
+                        param.name for i, param in enumerate(used_parameters)) + \
+                                      " = " + parameters_name)
+                    
+                # If only a limited number of states are used
+                else:
+                    body_lines.append("; ".join(\
+                        "{0}={1}[{2}]".format(param.name, parameters_name, ind) \
+                        for ind, param in enumerate(comp.root.parameters) \
+                        if param in used_parameters))
+
+        # If using an array for the body variables
+        if params.body.representation != "named":
+            
+            body_name = params.body.array_name
+            body_lines.append("")
+            body_lines.append("# Body array {0}".format(body_name))
+
+            # If passing the body argument to the method
+            if  "b" in default_arguments:
+                body_lines.append("if {0} is None:".format(body_name))
+                body_lines.append(["{0} = np.zeros({1}, dtype=np.{2})".format(\
+                    body_name, comp.shapes[body_name], self.float_type)])
+                body_lines.append("else:".format(body_name))
+                body_lines.append(["assert isinstance({0}, np.ndarray) and "\
+                                   "{1}.shape=={2}".format(\
+                            body_name, body_name, comp.shapes[body_name])])
+            else:
+                body_lines.append("{0} = np.zeros({1}, dtype=np.{2})".format(\
+                    body_name, comp.shapes[body_name], self.float_type))
+
+        # If initilizing results
+        if comp.results:
+            body_lines.append("")
+            body_lines.append("# Init return args")
+            
+        for result_name in comp.results:
+            shape = comp.shapes[result_name]
+            if len(shape) > 1:
+                if params.array.flatten:
+                    shape = (reduce(lambda a,b:a*b, shape, 1),)
+
+            body_lines.append("if {0} is None:".format(result_name))
+            body_lines.append(["{0} = np.zeros({1}, dtype=np.{2})".format(\
+                result_name, shape, self.float_type)])
+            body_lines.append("else:".format(result_name))
+            body_lines.append(["assert isinstance({0}, np.ndarray) and "\
+            "{1}.shape == {2}".format(result_name, result_name, shape)])
+            
+        return body_lines
+
+    def function_code(self, comp, indent=0, default_arguments=None, \
+                      include_signature=True):
+
+        default_arguments = default_arguments or \
+                            self.params.code.default_arguments
+
+        check_arg(comp, CodeComponent)
+        check_kwarg(default_arguments, "default_arguments", str)
+        check_kwarg(indent, "indent", int)
+        
+        body_lines = self._init_arguments(comp, default_arguments)
+        
+        # Iterate over any body needed to define the dy
+        for expr in comp.body_expressions:
+            if isinstance(expr, Comment):
+                body_lines.append("")
+                body_lines.append("# " + str(expr))
+            else:
+                body_lines.append(pythoncode(expr.expr, expr.name))
+
+        if comp.results:
+            body_lines.append("")
+            body_lines.append("# Return results")
+            body_lines.append("return {0}".format(", ".join(\
+                result_name if len(comp.shapes[result_name])>=1 and \
+                comp.shapes[result_name][0]>1 else result_name+"[0]" \
+                for result_name in comp.results)))
+
+        if include_signature:
+            
+            # Add function prototype
+            body_lines = self.wrap_body_with_function_prototype(\
+                body_lines, comp.function_name, \
+                self.args(default_arguments, comp.results), \
+                comp.description, self.decorators())
+        
+        return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
+        
+    def init_states_code(self, ode, indent=0):
+        """
+        Generate code for setting initial condition
+        """
+
+        check_arg(ode, ODE)
+
+        # Get all full states
+        states = ode.full_states
+
+        # Start building body
+        body_lines = ["# Imports", "import numpy as np",\
+                      "from modelparameters.utils import Range", \
+                      "", "# Init values"]
+        body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
+            state.name, state.init) for state in states)))
+        body_lines.append("init_values = np.array([{0}], dtype=np.{1})"\
+                          .format(", ".join("{0}".format(\
+                state.init if np.isscalar(state.init) else state.init[0])\
+                            for state in states), self.float_type))
+        body_lines.append("")
+        
+        range_check = "lambda value : value {minop} {minvalue} and "\
+                      "value {maxop} {maxvalue}"
+        body_lines.append("# State indices and limit checker")
+
+        body_lines.append("state_ind = dict({0})".format(\
+            ", ".join("{0}=({1}, {2})".format(\
+                state.param.name, i, repr(state.param._range))\
+                      for i, state in enumerate(states))))
+        body_lines.append("")
+
+        body_lines.append("for state_name, value in values.items():")
+        body_lines.append(\
+            ["if state_name not in state_ind:",
+             ["raise ValueError(\"{{0}} is not a state.\".format(state_name))"],
+             # FIXME: Outcommented because of bug in indent_and_split_lines
+             # ["raise ValueError(\"{{0}} is not a state in the {0} ODE\"."\
+             #"format(state_name))".format(self.oderepr.name)],
+             "ind, range = state_ind[state_name]",
+             "if value not in range:",
+             ["raise ValueError(\"While setting \'{0}\' {1}\".format("\
+              "state_name, range.format_not_in(value)))"],
+             "", "# Assign value",
+             "init_values[ind] = value"])
+            
+        body_lines.append("")
+        body_lines.append("return init_values")
+
+        # Add function prototype
+        init_function = self.wrap_body_with_function_prototype(\
+            body_lines, "init_state_values", "**values", \
+            "Initialize state values", self.decorators())
+        
+        return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
+
+    def init_parameters_code(self, ode, indent=0):
+        """
+        Generate code for setting parameters
+        """
+
+        check_arg(ode, ODE)
+
+        # Get all parameters
+        parameters = ode.parameters
+
+        # Start building body
+        body_lines = ["# Imports", "import numpy as np",\
+                      "from modelparameters.utils import Range", \
+                      "", "# Param values"]
+        body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
+            param.name, param.init) for param in parameters)))
+        body_lines.append("init_values = np.array([{0}], dtype=np.{1})"\
+                          .format(", ".join("{0}".format(\
+                param.init if np.isscalar(param.init) else param.init[0]) \
+                    for param in parameters), self.float_type))
+        body_lines.append("")
+        
+        range_check = "lambda value : value {minop} {minvalue} and "\
+                      "value {maxop} {maxvalue}"
+        body_lines.append("# Parameter indices and limit checker")
+
+        body_lines.append("param_ind = dict({0})".format(\
+            ", ".join("{0}=({1}, {2})".format(\
+                state.param.name, i, repr(state.param._range))\
+                for i, state in enumerate(parameters))))
+        body_lines.append("")
+
+        body_lines.append("for param_name, value in values.items():")
+        body_lines.append(\
+            ["if param_name not in param_ind:",
+             ["raise ValueError(\"{{0}} is not a param\".format(param_name))"],
+             # ["raise ValueError(\"{{0}} is not a param in the {0} ODE\"."\
+             #  "format(param_name))".format(self.oderepr.name)],
+             "ind, range = param_ind[param_name]",
+             "if value not in range:",
+             ["raise ValueError(\"While setting \'{0}\' {1}\".format("\
+              "param_name, range.format_not_in(value)))"],
+             "", "# Assign value",
+             "init_values[ind] = value"])
+            
+        body_lines.append("")
+        body_lines.append("return init_values")
+        
+        # Add function prototype
+        function = self.wrap_body_with_function_prototype(\
+            body_lines, "init_parameter_values", \
+            "**values", "Initialize parameter values", self.decorators())
+        
+        return "\n".join(self.indent_and_split_lines(function, indent=indent))
+
+    def state_name_to_index_code(self, ode, indent=0):
+        """
+        Return code for index handling for states
+        """
+        check_arg(ode, ODE)
+        states = ode.full_states
+
+        body_lines = []
+        body_lines.append("state_inds = dict({0})".format(\
+            ", ".join("{0}={1}".format(state.param.name, i) for i, state \
+                      in enumerate(states))))
+        body_lines.append("")
+        body_lines.append("indices = []")
+        body_lines.append("for state in states:")
+        body_lines.append(\
+            ["if state not in state_inds:",
+             ["raise ValueError(\"Unknown state: '{0}'\".format(state))"],
+             "indices.append(state_inds[state])"])
+        body_lines.append("if len(indices)>1:")
+        body_lines.append(["return indices"])
+        body_lines.append("else:")
+        body_lines.append(["return indices[0]"])
+        
+        # Add function prototype
+        function = self.wrap_body_with_function_prototype(\
+            body_lines, "state_indices", \
+            "*states", "State indices", self.decorators())
+        
+        return "\n".join(self.indent_and_split_lines(function, indent=indent))
+
+    def param_name_to_index_code(self, ode, indent=0):
+        """
+        Return code for index handling for parameters
+        """
+
+        check_arg(ode, ODE)
+        
+        parameters = ode.parameters
+
+        body_lines = []
+        body_lines.append("param_inds = dict({0})".format(\
+            ", ".join("{0}={1}".format(param.param.name, i) for i, param \
+                                        in enumerate(parameters))))
+        body_lines.append("")
+        body_lines.append("indices = []")
+        body_lines.append("for param in params:")
+        body_lines.append(\
+            ["if param not in param_inds:",
+             ["raise ValueError(\"Unknown param: '{0}'\".format(param))"],
+             "indices.append(param_inds[param])"])
+        body_lines.append("if len(indices)>1:")
+        body_lines.append(["return indices"])
+        body_lines.append("else:")
+        body_lines.append(["return indices[0]"])
+
+        # Add function prototype
+        function = self.wrap_body_with_function_prototype(\
+            body_lines, "parameter_indices", \
+            "**params", "Parameter indices", self.decorators())
+        
+        return "\n".join(self.indent_and_split_lines(function, indent=indent))
+
+    def monitor_name_to_index_code(self, ode, monitored, indent=0):
+        """
+        Return code for index handling for monitored
+        """
+        check_arg(ode, ODE)
+
+        for expr_str in monitored:
+            obj = ode.present_ode_objects.get(expr_str)
+            if not isinstance(obj, Expression):
+                error("{0} is not an intermediate or state expression in "\
+                      "the {1} ODE".format(expr_str, ode))
+
+        body_lines = []
+        body_lines.append("monitor_inds = dict({0})".format(\
+            ", ".join("{0}={1}".format(monitor, i) for i, monitor \
+                      in enumerate(monitored))))
+        body_lines.append("")
+        body_lines.append("indices = []")
+        body_lines.append("for monitor in monitored:")
+        body_lines.append(\
+            ["if monitor not in monitor_inds:",
+             ["raise ValueError(\"Unknown monitored: '{0}'\".format(monitor))"],
+             "indices.append(monitor_inds[monitor])"])
+        body_lines.append("if len(indices)>1:")
+        body_lines.append(["return indices"])
+        body_lines.append("else:")
+        body_lines.append(["return indices[0]"])
+        
+        # Add function prototype
+        function = self.wrap_body_with_function_prototype(\
+            body_lines, "monitor_indices", \
+            "*monitored", "Monitor indices", self.decorators())
+        
+        return "\n".join(self.indent_and_split_lines(function, indent=indent))
+
+    def class_code(self, ode, monitored=None):
+        """
+        Generate class code
+        """
+
+        # Force class code param to be True
+        class_code_param = self.params.class_code
+        self.params.class_code = True
+
+        check_arg(ode, ODE)
+        name = class_name(ode.name)
+        code_list = self.code_list(ode, monitored=monitored, indent=1)
+
+        self.params.class_code = class_code_param
+        return  """
+class {0}:
+
+{1}
+""".format(name, "\n\n".join(code_list))
+
+    def module_code(self, ode, monitored=None):
+
+        # Force class code param to be False
+        class_code_param = self.params.class_code
+        self.params.class_code = False
+
+        check_arg(ode, ODE)
+        code_list = self.code_list(ode, monitored)
+        self.params.class_code = class_code_param
+
+        return  """# Gotran generated code for the  "{0}" model
+from __future__ import division
+
+{1}
+""".format(ode.name, "\n\n".join(code_list))
+
+class CCodeGenerator(BaseCodeGenerator):
 
     # Class attributes
     language = "C"
@@ -692,36 +784,44 @@ class CCodeGenerator(CodeGenerator):
     index = lambda x, i : "[{0}]".format(i)
     indent = 2
     indent_str = " "
-    to_code = lambda a,b,c : ccode(b,c)
+    to_code = lambda self, expr, name : ccode(expr, name, \
+                                              self.params.code.float_precision)
+    float_types = dict(single="float", double="double")
+
+    def obj_name(self, obj):
+        assert(isinstance(obj, ODEObject))
+        return obj.name
+        return obj.name if obj.name not in ["I"] else obj.name + "_"
     
-    def args(self, result_name=""):
+    def args(self, default_arguments=None, result_names=None):
 
         ret_args=[]
-        for arg in self.params.rhs_args:
+        result_names = result_names or []
+        params = self.params.code
+        default_arguments = default_arguments or params.default_arguments
+        
+        for arg in default_arguments:
             if arg == "s":
-                ret_args.append("const double* states")
+                ret_args.append("const {0}* {1}".format(self.float_type, \
+                                                        params.states.array_name))
             elif arg == "t":
-                ret_args.append("double time")
-            elif arg == "p" and \
-                not self.oderepr.optimization.parameter_numerals \
-                and self.params.parameters_in_signature:
-                ret_args.append("const double* parameters")
+                ret_args.append("{0} {1}".format(self.float_type, \
+                                                 params.time.name))
+            elif arg == "p" and params.parameters.representation != \
+                     "numerals":
+                ret_args.append("const {0}* {1}".format(\
+                    self.float_type, params.parameters.array_name))
+            elif arg == "b" and params.body.representation != "named":
+                ret_args.append("{0}* {1}".format(\
+                    self.float_type, params.body.array_name))
 
-        ret = ", ".join(ret_args)
+        for result_name in result_names:
+            ret_args.append("{0}* {1}".format(self.float_type, result_name))
         
-        if result_name:
-            ret += ", double* {0}".format(result_name)
+        return ", ".join(ret_args)
 
-        return  ret
-
-    @staticmethod
-    def default_params():
-        
-        return ParameterDict(rhs_args = OptionParam(\
-            "stp", ["tsp", "stp", "spt"]),
-                             parameters_in_signature = True)
-
-    def wrap_body_with_function_prototype(self, body_lines, name, args, \
+    @classmethod
+    def wrap_body_with_function_prototype(cls, body_lines, name, args, \
                                           return_type="", comment="", const=False):
         """
         Wrap a passed body of lines with a function prototype
@@ -736,7 +836,7 @@ class CCodeGenerator(CodeGenerator):
 
         prototype = []
         if comment:
-            prototype.append("{0} {1}".format(self.comment, comment))
+            prototype.append("// {0}".format(comment))
 
         const = " const" if const else ""
         prototype.append("{0} {1}({2}){3}".format(return_type, name, args, const))
@@ -745,491 +845,332 @@ class CCodeGenerator(CodeGenerator):
         prototype.append(body_lines)
         return prototype
     
-    def _states_and_parameters_code(self):
+    def _init_arguments(self, comp, default_arguments=None):
 
-        ode = self.oderepr.ode
+        check_arg(comp, CodeComponent)
+        params = self.params.code
+        default_arguments = default_arguments or params.default_arguments
+
+        # Check if comp defines used_states if not use the root components
+        # full_states attribute
+        # FIXME: No need for full_states here...
+        full_states = comp.root.full_states
+        used_states = comp.used_states if hasattr(comp, "used_states") else \
+                      full_states
+        
+        used_parameters = comp.used_parameters if hasattr(comp, "used_parameters") else \
+                          comp.root.parameters
+        all_parameters = comp.root.parameters
         
         # Start building body
-        body_lines = ["", "// Assign states"]
-        if self.oderepr.optimization.use_state_names:
-            for i, state in enumerate(ode.states):
-                state_name = state.name if state.name not in ["I"] \
-                             else state.name + "_"
-                body_lines.append("const double {0} = states[{1}]".format(\
-                    state_name, i))
-        
+        body_lines = []
+        def add_obj(obj, i, array_name):
+            body_lines.append("const {0} {1} = {2}[{3}]".format(\
+                self.float_type, self.obj_name(obj), array_name, i))
+            
+        if "s" in default_arguments and used_states:
+            
+            states_name = params.states.array_name
+            body_lines.append("")
+            body_lines.append("// Assign states")
+
+            # Generate state assign code
+            if params.states.representation == "named":
+
+                # If all states are used
+                if len(used_states) == len(full_states):
+                    for i, state in enumerate(used_states):
+                        add_obj(state, i, states_name)
+                else:
+                    for i, state in enumerate(full_states):
+                        if state not in used_states:
+                            continue
+                        add_obj(state, i, states_name)
+                    
         # Add parameters code if not numerals
-        if self.params.parameters_in_signature and \
-               not self.oderepr.optimization.parameter_numerals:
+        if "p" in default_arguments and \
+               params.parameters.representation in ["named", "array"] and \
+               used_parameters:
+
+            parameters_name = params.parameters.array_name
             body_lines.append("")
             body_lines.append("// Assign parameters")
-
-            if self.oderepr.optimization.use_parameter_names:
-                for i, param in enumerate(ode.parameters):
-                    param_name = param.name if param.name not in ["I"] \
-                                 else param.name + "_"
-                    body_lines.append("const double {0} = parameters[{1}]".\
-                                      format(param_name, i))
+            
+            # Generate parameters assign code
+            if params.parameters.representation == "named":
+                
+                # If all states are used
+                if len(used_parameters) == len(all_parameters):
+                    for i, param in enumerate(all_parameters):
+                        add_obj(param, i, parameters_name)
+                else:
+                    for i, param in enumerate(all_parameters):
+                        if param not in used_parameters:
+                            continue
+                        add_obj(param, i, parameters_name)
+                    
+        # If using an array for the body variables and b is not passed as argument
+        if params.body.representation != "named" and \
+               "b" not in default_arguments:
+            
+            body_name = params.body.array_name
+            body_lines.append("")
+            body_lines.append("// Body array {0}".format(body_name))
+            body_lines.append("{0} {1}[{2}]".format(self.float_type, body_name, \
+                                                    comp.shapes[body_name][0]))
 
         return body_lines
 
-    def init_states_code(self, indent=0):
+    def init_states_code(self, ode, indent=0):
         """
         Generate code for setting initial condition
         """
 
+        float_str = "" if self.params.code.float_precision == "double" else "f"
         body_lines = []
-        body_lines = ["values[{0}] = {1}; // {2}".format(\
-            i, state.init if np.isscalar(state.init) else state.init[0], state.name)\
-                      for i, state in enumerate(self.oderepr.ode.states)]
+        body_lines = ["values[{0}] = {1}{2}; // {3}".format(i, state.init, \
+                                                            float_str, state.name) \
+                      for i, state in enumerate(ode.full_states)]
 
         # Add function prototype
         init_function = self.wrap_body_with_function_prototype(\
-            body_lines, "init_values", "double* values", "", "Init values")
+            body_lines, "init_state_values", "{0}* values".format(self.float_type), \
+            "", "Init values")
         
         return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
 
-    def init_param_code(self, indent=0):
+    def init_parameters_code(self, ode, indent=0):
         """
         Generate code for setting  parameters
         """
 
+        float_str = "" if self.params.code.float_precision == "double" else "f"
         body_lines = []
-        body_lines = ["values[{0}] = {1}; // {2}".format(\
-            i, param.init if np.isscalar(param.init) else param.init[0], param.name)\
-                      for i, param in enumerate(self.oderepr.ode.parameters)]
+        body_lines = ["values[{0}] = {1}{2}; // {3}".format(\
+            i, param.init, float_str, param.name) for i, param in enumerate(ode.parameters)]
 
         # Add function prototype
         init_function = self.wrap_body_with_function_prototype(\
-            body_lines, "parameter_values", "double* values", "", \
-            "Default parameter values")
+            body_lines, "init_parameters_values", "{0}* values".format(\
+                self.float_type), "", "Default parameter values")
         
         return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
 
-    def dy_body(self, result_name="dy"):
+    def state_name_to_index_code(self, ode, indent=0):
         """
-        Generate body lines of code for evaluating state derivatives
+        Return code for index handling for states
         """
+        check_arg(ode, ODE)
+        states = ode.full_states
         
-        ode = self.oderepr.ode
+        max_length = max(len(state.name) for state in states)
+        
+        body_lines = ["// State names"]
+        body_lines.append("char names[][{0}] = {{{1}}}".format(\
+            max_length+1, ", ".join("\"{0}\"".format(state.name) for state \
+                                    in states)))
+        body_lines.append("")
+        body_lines.append("int i")
+        body_lines.append("for (i=0; i<{0}; i++)".format(len(states)))
+        body_lines.append(["if (strcmp(names[i], name)==0)",\
+                           ["return i"]])
+        body_lines.append("return -1")
+        
+        # Add function prototype
+        function = self.wrap_body_with_function_prototype(\
+            body_lines, "state_index", \
+            "const char name[]", "int", "State index")
+        
+        return "\n".join(self.indent_and_split_lines(function, indent=indent))
 
-        body_lines = self._states_and_parameters_code()
+    def param_name_to_index_code(self, ode, indent=0):
+        """
+        Return code for index handling for a parameter
+        """
+        check_arg(ode, ODE)
+        parameters = ode.parameters
+        
+        max_length = max(len(param.name) for param in parameters)
+        
+        body_lines = ["// Parameter names"]
+        body_lines.append("char names[][{0}] = {{{1}}}".format(\
+            max_length + 1, ", ".join("\"{0}\"".format(param.name) for param \
+                                      in parameters)))
+        body_lines.append("")
+        body_lines.append("int i")
+        body_lines.append("for (i=0; i<{0}; i++)".format(len(parameters)))
+        body_lines.append(["if (strcmp(names[i], name)==0)",\
+                           ["return i"]])
+        body_lines.append("return -1")
+        
+        # Add function prototype
+        function = self.wrap_body_with_function_prototype(\
+            body_lines, "parameter_index", \
+            "const char name[]", "int", "Parameter index")
+        
+        return "\n".join(self.indent_and_split_lines(function, indent=indent))
 
+    def monitor_name_to_index_code(self, ode, monitored, indent=0):
+        """
+        Return code for index handling for monitored
+        """
+        max_length = max(len(monitor) for monitor in monitored)
+        
+        body_lines = ["\\ Monitored names"]
+        body_lines.append("char names[][{0}] = {{{1}}}".format(\
+            max_length + 1, ", ".join("\"{0}\"".format(monitor) for monitor \
+                                    in monitored)))
+        body_lines.append("")
+        body_lines.append("for (int i=0; i<{0}; i++)".format(len(parameters)))
+        body_lines.append(["if (strcmp(names[i], name)==0)",\
+                           ["return i"]])
+        body_lines.append("return -1")
+        
+        # Add function prototype
+        function = self.wrap_body_with_function_prototype(\
+            body_lines, "monitored_index", \
+            "const char name[]", "Monitor index")
+        
+        return "\n".join(self.indent_and_split_lines(function, indent=indent))
+        
+    def function_code(self, comp, indent=0, default_arguments=None, \
+                      include_signature=True, return_body_lines=False):
+
+        params = self.params.code
+        default_arguments = default_arguments or params.default_arguments
+
+        check_arg(comp, CodeComponent)
+        check_kwarg(default_arguments, "default_arguments", str)
+        check_kwarg(indent, "indent", int)
+        
+        body_lines = self._init_arguments(comp, default_arguments)
+
+        # If named body representation we need to check for duplicates
+        duplicates = set()
+        declared_duplicates = set()
+        if params.body.representation == "named":
+            collected_names = set()
+            for expr in comp.body_expressions:
+                if isinstance(expr, Intermediate):
+                    if expr.name in collected_names:
+                        duplicates.add(expr.name)
+                    else:
+                        collected_names.add(expr.name)
+        
         # Iterate over any body needed to define the dy
-        declared_duplicates = []
-        for expr, name in self.oderepr.iter_dy_body():
-
-            name = str(name)
-            
-            if name == "COMMENT":
+        for expr in comp.body_expressions:
+            if isinstance(expr, Comment):
                 body_lines.append("")
-                body_lines.append("// " + expr)
+                body_lines.append("// " + str(expr))
             else:
-                if name in ode._intermediate_duplicates:
-                    if name not in declared_duplicates:
-                        declared_duplicates.append(name)
-                        if name in ["I"]:
-                            name += "_"
-                        name = "double " + name
-
+                if isinstance(expr, Intermediate):
+                    if expr.name in duplicates:
+                        if expr.name not in declared_duplicates:
+                            name = "{0} {1}".format(self.float_type, \
+                                                    self.obj_name(expr))
+                            declared_duplicates.add(expr.name)
+                        else:
+                            name = "{0}".format(self.obj_name(expr))
+                    else:
+                        name = "const {0} {1}".format(self.float_type, \
+                                                      self.obj_name(expr))
+                    
                 else:
-                    if name in ["I"]:
-                        name += "_"
-                    name = "const double " + name
-
-                body_lines.append(self.to_code(expr, name))
-
-        # Add dy[i] lines
-        for ind, (state, (derivative, expr)) in enumerate(\
-            zip(ode.states, self.oderepr.iter_derivative_expr())):
-            assert(state.sym == derivative[0].sym)
-            body_lines.append(self.to_code(expr, "{0}[{1}]".format(result_name, ind)))
-
-        body_lines.append("")
+                    name = "{0}".format(self.obj_name(expr))
+                    
+                body_lines.append(self.to_code(expr.expr, name))
+                    
+        if return_body_lines:
+            return body_lines
         
-        # Return the body lines
-        return body_lines
-        
-    def dy_code(self, indent=0, result_name="dy"):
-        """
-        Generate code for evaluating state derivatives
-        """
-
-        body_lines = self.dy_body(result_name)
-
-        # Add function prototype
-        dy_function = self.wrap_body_with_function_prototype(\
-            body_lines, "rhs", self.args(result_name), \
-            "", "Compute right hand side of {0}".format(self.oderepr.name))
-        
-        return "\n".join(self.indent_and_split_lines(\
-            dy_function, indent=indent))
-
-    def jacobian_body(self, result_name="jac"):
-
-        ode = self.oderepr.ode
-
-        body_lines = self._states_and_parameters_code()
-
-        # Iterate over any body needed to define the dy
-        declared_duplicates = []
-        for expr, name in self.oderepr.iter_jacobian_body():
-
-            name = str(name)
+        if include_signature:
             
-            if name == "COMMENT":
-                body_lines.append("")
-                body_lines.append("// " + expr)
-            else:
-                if name in ode._intermediate_duplicates:
-                    if name not in declared_duplicates:
-                        declared_duplicates.append(name)
-                        if name in ["I"]:
-                            name += "_"
-                        name = "double " + name
+            # Add function prototype
+            body_lines = self.wrap_body_with_function_prototype(\
+                body_lines, comp.function_name, \
+                self.args(default_arguments, comp.results), "", \
+                comp.description)
 
-                else:
-                    if name in ["I"]:
-                        name += "_"
-                    name = "const double " + name
+        return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
+        
+    def componentwise_code(self, ode, indent=0, default_arguments=None, \
+                      include_signature=True, return_body_lines=False):
 
-                body_lines.append(self.to_code(expr, name))
+        params = self.params.code
+        default_arguments = default_arguments or params.default_arguments
 
-        # Add jac[i,j] lines
-        num_states = ode.num_states
-        for (indi, indj), expr in self.oderepr.iter_jacobian_expr():
-            body_lines.append(self.to_code(expr, "{0}[{1}*{2}+{3}]".format(\
-                result_name, indi, num_states, indj)))
- 
+        float_str = "" if params.float_precision == "double" else "f"
+
+        # Create code for each individuate component
+        body_lines = []
+        body_lines.append("// Return value")
+        body_lines.append("{0} dy[1] = {{0.0{1}}}".format(self.float_type, float_str))
         body_lines.append("")
-        
-        # Return the body lines
-        return body_lines
+        body_lines.append("// What component?")
+        body_lines.append("switch (id)")
 
-    def jacobian_code(self, indent=0, result_name="jac"):
-        """
-        Generate code for evaluating state derivatives
-        """
+        switch_lines = []
+        for i, state in enumerate(ode.full_states):
 
-        body_lines = self.jacobian_body(result_name)
-
-        # Add function prototype
-        jacobian_function = self.wrap_body_with_function_prototype(\
-            body_lines, "jacobian", self.args(result_name), \
-            "", "Compute jacobian of {0}".format(self.oderepr.name))
-        
-        return "\n".join(self.indent_and_split_lines(\
-            jacobian_function, indent=indent))
-
-    def jacobian_action_body(self, result_name="jac_action"):
-
-        ode = self.oderepr.ode
-
-        body_lines = self._states_and_parameters_code()
-
-        # Iterate over any body needed to define the dy
-        declared_duplicates = []
-        for expr, name in self.oderepr.iter_jacobian_action_body():
-
-            name = str(name)
+            component_code = ["", "// Component {0} state {1}".format(\
+                i, state.name), "case {0}:".format(i)]
             
-            if name == "COMMENT":
-                body_lines.append("")
-                body_lines.append("// " + expr)
-            else:
-                if name in ode._intermediate_duplicates:
-                    if name not in declared_duplicates:
-                        declared_duplicates.append(name)
-                        if name in ["I"]:
-                            name += "_"
-                        name = "double " + name
+            comp = componentwise_derivative(ode, i, params=params)
+            component_code.append(self.function_code(comp, indent, \
+                                                     default_arguments, \
+                                                     include_signature=False, \
+                                                     return_body_lines=True))
+            component_code[-1].append("break")
 
-                else:
-                    if name in ["I"]:
-                        name += "_"
-                    name = "const double " + name
-
-                body_lines.append(self.to_code(expr, name))
-
-        # Add jac[i,j] lines
-        num_states = ode.num_states
-        for ind, expr in enumerate(self.oderepr.iter_jacobian_action_expr()):
-            body_lines.append(self.to_code(expr, "{0}[{1}]".format(\
-                result_name, ind)))
- 
-        body_lines.append("")
-        
-        # Return the body lines
-        return body_lines
-
-    def jacobian_action_code(self, indent=0, result_name="jac_action"):
-        """
-        Generate code for evaluating state derivatives
-        """
-
-        body_lines = self.jacobian_action_body(result_name)
-
-        # Add function prototype
-        jacobian_action_function = self.wrap_body_with_function_prototype(\
-            body_lines, "jacobian_action", self.args(result_name), \
-            "", "Compute jacobian action of {0}".format(self.oderepr.name))
-        
-        return "\n".join(self.indent_and_split_lines(\
-            jacobian_action_function, indent=indent))
-
-    def monitored_body(self, result_name="monitored"):
-        """
-        Generate body lines of code for evaluating monitored intermediates
-        """
-
-        ode = self.oderepr.ode
-
-        # Start building body
-        body_lines = ["", "// Assign states"]
-        if self.oderepr.optimization.use_state_names:
-            for ind, state in enumerate(ode.states):
-                if state.name in self.oderepr.used_in_monitoring["states"]:
-                    body_lines.append("const double {0} = states[{1}]".format(\
-                        state.name, ind))
-        
-        # Add parameters code if not numerals
-        if self.params.parameters_in_signature and \
-               not self.oderepr.optimization.parameter_numerals:
-            body_lines.append("")
-            body_lines.append("// Assign parameters")
-
-            if self.oderepr.optimization.use_parameter_names:
-                for ind, param in enumerate(ode.parameters):
-                    if param.name in self.oderepr.used_in_monitoring["parameters"]:
-                        body_lines.append("const double {0} = parameters[{1}]".\
-                                          format(param.name, ind))
-
-        # Iterate over any body needed to define the monitored
-        declared_duplicates = []
-        for expr, name in self.oderepr.iter_monitored_body():
-
-            name = str(name)
+            switch_lines.extend(component_code)
             
-            if name == "COMMENT":
-                body_lines.append("")
-                body_lines.append("// " + expr)
-            else:
-                if name in ["I"]:
-                    name += "_"
-                name = "const double " + name
-                body_lines.append(self.to_code(expr, name))
-
-        # Add monitored[i] lines
-        ind = 0 
-        for monitored, expr in self.oderepr.iter_monitored_expr():
-            if monitored == "COMMENT":
-                body_lines.append("")
-                body_lines.append("// " + expr)
-            else:
-                body_lines.append(self.to_code(expr, "{0}[{1}]".format(\
-                    result_name, ind)))
-                ind += 1
-
-        body_lines.append("")
-        
-        # Return the body lines
-        return body_lines
-        
-    def monitored_code(self, indent=0, result_name="monitored"):
-        """
-        Generate code for evaluating monitored intermediates
-        """
-
-        body_lines = self.monitored_body(result_name)
-
-        # Add function prototype
-        monitored_function = self.wrap_body_with_function_prototype(\
-            body_lines, "monitor", self.args(result_name), \
-            "", "Compute monitored intermediates {0}".format(self.oderepr.name))
-        
-        return "\n".join(self.indent_and_split_lines(\
-            monitored_function, indent=indent))
-
-    def dy_componentwise_body(self):
-        oderepr = self.oderepr
-        ode = oderepr.ode
-        componentwise_dy_body = []
-        for id, ((subs, expr), used) in enumerate(zip(\
-            oderepr.iter_componentwise_dy(), oderepr.used_in_single_dy)):
-            body_lines = []
-            if oderepr.optimization.use_state_names:
-                body_lines.append("// Assign states")
-                for ind, state in enumerate(ode.states):
-                    if state.name in used["states"]:
-                        state_name = state.name if state.name not in ["I"] \
-                                     else state.name + "_"
-                        body_lines.append("const double {0} = states[{1}]".format(\
-                            state_name, ind))
-
-        
-            # Add parameters code if not numerals
-            if self.params.parameters_in_signature and \
-                   not self.oderepr.optimization.parameter_numerals:
-
-                if self.oderepr.optimization.use_parameter_names:
-                    body_lines.append("")
-                    body_lines.append("// Assign parameters")
-                    for ind, param in enumerate(ode.parameters):
-                        if param.name in used["parameters"]:
-                            param_name = param.name if param.name not in ["I"] \
-                                         else param.name + "_"
-                            body_lines.append("const double {0} = parameters[{1}]".\
-                                              format(param_name, ind))
-
-            if subs:
-                body_lines.append("")
-                body_lines.append("// Common sub expressions for derivative {0}".format(id))
-                
-            for name, sub_expr in subs:
-                if name in ["I"]:
-                    name += "_"
-                name = "const double " + str(name)
-                body_lines.append(self.to_code(sub_expr, name))
-
-            body_lines.append("")
-            body_lines.append("// The expression")
-            body_lines.append("return " + self.to_code(expr, None))
-            body_lines.append("break")
-
-            componentwise_dy_body.append("")
-            componentwise_dy_body.append("// Component {0}".format(id))
-            componentwise_dy_body.append("case {0}:".format(id))
-            componentwise_dy_body.append(body_lines)
-
-        body = ["// What component?"]
-        body.append("switch (id)")
-        componentwise_dy_body.append("")
-        componentwise_dy_body.append("default:")
-        default_lines = []
+        default_lines = ["", "// Default", "default:"]
         if self.language == "C++":
-            default_lines.append("throw std::runtime_error(\"Index out of bounds\")")
+            default_lines.append(["throw std::runtime_error(\"Index out of bounds\")"])
         else:
-            default_lines.append("// Throw an exception...")
-        default_lines.append("return 0.0")
-        componentwise_dy_body.append(default_lines)
-        body.append(componentwise_dy_body)
-        
-        return body
+            default_lines.append(["// Throw an exception..."])
 
-
-    def dy_componentwise_code(self, indent=0):
-
-        body_lines = self.dy_componentwise_body()
-
-        # Add function prototype
-        args = "unsigned int id, " + self.args()
-        componentwise_function = self.wrap_body_with_function_prototype(\
-            body_lines, "componentwise", args, \
-            "double", "Compute componentwise rhs {0}".format(self.oderepr.name))
-        
-        return "\n".join(self.indent_and_split_lines(\
-            componentwise_function, indent=indent))
-
-    def linearized_dy_body(self, result_name="values"):
-        oderepr = self.oderepr
-        ode = oderepr.ode
-
-        # Start building body
-        body_lines = ["", "// Assign states"]
-        if self.oderepr.optimization.use_state_names:
-            for ind, state in enumerate(ode.states):
-                if state.name in self.oderepr.used_in_linear_dy["states"]:
-                    state_name = state.name if state.name not in ["I"] \
-                                 else state.name + "_"
-                    body_lines.append("const double {0} = states[{1}]".format(\
-                        state_name, ind))
-        
-        # Add parameters code if not numerals
-        if self.params.parameters_in_signature and \
-               not self.oderepr.optimization.parameter_numerals:
-            body_lines.append("")
-            body_lines.append("// Assign parameters")
-
-            if self.oderepr.optimization.use_parameter_names:
-                for ind, param in enumerate(ode.parameters):
-                    if param.name in self.oderepr.used_in_linear_dy["parameters"]:
-                        param_name = param.name if param.name not in ["I"] \
-                                     else param.name + "_"
-                        body_lines.append("const double {0} = parameters[{1}]".\
-                                          format(param_name, ind))
-
-        for expr, name in self.oderepr.iter_linerized_body():
-
-            name = str(name)
-            
-            if name == "COMMENT":
-                body_lines.append("")
-                body_lines.append("// " + expr)
-            else:
-                if name in ["I"]:
-                    name += "_"
-                name = "const double " + name
-                body_lines.append(self.to_code(expr, name))
-
+        switch_lines.extend(default_lines)
+        body_lines.append(switch_lines)
         body_lines.append("")
-        body_lines.append("// Linearized derivatives")
-
-        for id, expr in self.oderepr.iter_linerized_expr():
-            body_lines.append(self.to_code(expr, "{0}[{1}]".format(result_name, id)))
-
-        return body_lines
-
-    def linearized_dy_code(self, indent=0, result_name="values"):
-
-        body_lines = self.linearized_dy_body(result_name)
+        body_lines.append("// Return component")
+        body_lines.append("return dy[0]")
+        
+        if return_body_lines:
+            return body_lines
 
         # Add function prototype
-        linearized_function = self.wrap_body_with_function_prototype(\
-            body_lines, "linearized_derivatives", self.args(result_name), \
-            "", "Compute linearized derivatives {0}".format(self.oderepr.name))
+        if include_signature:
+            body_lines = self.wrap_body_with_function_prototype(\
+                body_lines, "rhs", self.args(default_arguments), \
+                self.float_type, "Evaluate componenttwise rhs of the ODE")
+
+        return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
         
-        return "\n".join(self.indent_and_split_lines(\
-            linearized_function, indent=indent))
 
-    def code_list(self, indent=0):
+    def module_code(self, ode):
         
-        code = [self.init_param_code(indent),
-                self.init_states_code(indent),
-                self.dy_code(indent),
-                self.monitored_code(indent),
-                self.dy_componentwise_code(indent),
-                self.linearized_dy_code(indent),
-                ]
-
-        if self.oderepr.optimization.generate_jacobian:
-            code += [self.jacobian_code(indent)]
-
-        return code
-
-    def module_code(self):
-        
-        code_list = self.code_list()
+        code_list = self.code_list(ode)
 
         return  """// Gotran generated code for the "{0}" model
 
 {1}
-""".format(self.oderepr.ode.name, "\n\n".join(code_list))
+""".format(ode.name, "\n\n".join(code_list))
 
 class CppCodeGenerator(CCodeGenerator):
     
     language = "C++"
 
     # Class attributes
-    to_code = lambda a,b,c : cppcode(b,c)
+    to_code = lambda self, expr, name : cppcode(\
+        expr, name, self.params.code.float_precision)
 
-    def class_code(self):
+    def class_code(self, ode):
         """
         Generate class code
         """
 
-        name = self.oderepr.class_name
-
-        code_list = self.code_list(indent=2)
+        code_list = self.code_list(ode, indent=2)
 
         return  """
 // Gotran generated class for the "{0}" model        
@@ -1241,9 +1182,9 @@ public:
 {2}
 
 }};
-""".format(name, self.oderepr.class_name, "\n\n".join(code_list))
+""".format(ode.name, class_name(ode.name), "\n\n".join(code_list))
 
-class MatlabCodeGenerator(CodeGenerator):
+class MatlabCodeGenerator(BaseCodeGenerator):
     """
     A Matlab Code generator
     """
@@ -1258,7 +1199,7 @@ class MatlabCodeGenerator(CodeGenerator):
     index = lambda x, i : "({0})".format(i)
     indent = 2
     indent_str = " "
-    to_code = lambda a,b,c : matlabcode(b,c)
+    to_code = lambda self, expr, name : matlabcode(expr, name)
 
     def wrap_body_with_function_prototype(self, body_lines, name, args, \
                                           return_args="", comment=""):

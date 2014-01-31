@@ -1,7 +1,7 @@
 from gotran.model.expressions2 import *
-from gotran.model.loadmodel2 import load_ode
+from gotran.model.loadmodel import load_ode
 from gotran.codegeneration.algorithmcomponents import *
-from gotran.codegeneration.codegenerator2 import *
+from gotran.codegeneration.codegenerator import *
 from gotran.common.options import parameters
 from gotran.common import set_log_level, DEBUG
 
@@ -44,7 +44,7 @@ code_params["body"]["use_cse"] = False
 code_params["float_precision"] = "double"
 
 from goss.codegeneration2 import GossCodeGenerator
-from goss.compilemodule2 import jit
+from goss.compilemodule import jit
 
 #gcg = GossCodeGenerator(ode, ["V"], ["g_Na", "g_Kr"], ["E_Na", "E_Ca"])
 #print gcg.class_code()

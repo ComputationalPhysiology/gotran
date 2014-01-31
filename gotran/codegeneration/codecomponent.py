@@ -29,10 +29,10 @@ from modelparameters.codegeneration import sympycode
 # Local imports
 from gotran.common import error, info, debug, check_arg, check_kwarg, \
      scalars, Timer, warning, tuplewrap, parameters
-from gotran.model.odeobjects2 import State, Parameter, IndexedObject, Comment
-from gotran.model.expressions2 import *
+from gotran.model.odeobjects import State, Parameter, IndexedObject, Comment
+from gotran.model.expressions import *
 from gotran.model.odecomponent import ODEComponent
-from gotran.model.ode2 import ODE
+from gotran.model.ode import ODE
 
 #FIXME: Remove our own cse, or move to this module?
 from gotran.codegeneration.sympy_cse import cse

@@ -34,8 +34,8 @@ from modelparameters.utils import tuplewrap
 
 # Local imports
 from gotran.common import error, debug, check_arg, check_kwarg, scalars
-from gotran.model.odeobjects2 import *
-from gotran.model.expressions2 import *
+from gotran.model.odeobjects import *
+from gotran.model.expressions import *
 
 def ode_primitives(expr, time):
     """

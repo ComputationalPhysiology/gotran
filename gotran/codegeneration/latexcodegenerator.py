@@ -20,10 +20,12 @@ import re
 
 # Gotran imports
 from gotran.common import warning
+from gotran.model.odeobjects import SingleODEObjects
+from gotran.model.expressions import Expression
 
 # Model parameters imports
 from modelparameters.codegeneration import latex as mp_latex
-from modelparameters.parameters import Param, ScalarParam
+from modelparameters.parameters import Param, ScalarParam, ArrayParam
 from modelparameters.parameterdict import ParameterDict
 
 # Other imports
@@ -235,10 +237,7 @@ class LatexCodeGenerator(object):
         parameters.
         """
         param_str = "\\\\\n".join(
-            self.format_param_table_row(par.name,
-                                        par.param.description,
-                                        par.value,
-                                        par.param.unit)
+            self.format_param_table_row(par)
             for par in self.ode.parameters)
         param_table_opts = self.format_options(exclude=["page_columns"])
         param_table_output = _param_table_template.format(
@@ -252,11 +251,8 @@ class LatexCodeGenerator(object):
         states.
         """
         state_str = "\\\\\n".join(
-            self.format_state_table_row(state.name,
-                                        state.param.description,
-                                        state.value,
-                                        state.param.unit)
-            for state in self.ode.states)
+            self.format_state_table_row(state)
+            for state in self.ode.full_states)
         state_table_opts = self.format_options(exclude=["page_columns"])
         state_table_output = _state_table_template.format(
             OPTS=state_table_opts["begin"], BODY=state_str,
@@ -273,38 +269,23 @@ class LatexCodeGenerator(object):
         eqn_template = \
             "  \\begin{{dmath}}\n    {0} = {1}\\\\\n  \\end{{dmath}}\n"
 
-        for name, comp in self.ode.components.items():
-            if not (comp.intermediates or comp.derivatives):
+        for comp in self.ode.components:
+            body = [obj for obj in comp.ode_objects \
+                    if isinstance(obj, Expression)]
+
+            if not body:
                 continue
-            format_label = self.format_component_label(name)
+            
+            format_label = self.format_component_label(comp.name)
             format_body = ""
-            for intermediate in comp.intermediates:
+
+            # Iterate over all objects of the component
+            for obj in body:
+
                 format_body += eqn_template.format(
-                    self.format_expr(intermediate.name),
-                    self.format_expr(intermediate.expr))
-            for derivative in comp.derivatives:
-                # # TODO: A better solution for when linear combinations are
-                # # implemented in Gotran:
-                # format_body += eqn_template.format(
-                #     ' + '.join('\\frac{{d{0}}}{{dt}}'.format(
-                #         self.format_expr(state))
-                #         for state in derivative.states),
-                #     self.format_expr(derivative.expr))
-                if len(derivative.states) == 1:
-                    format_body += eqn_template.format(
-                        "\\frac{{d{0}}}{{dt}}".format(
-                            self.format_expr(derivative.states[0].name)),
-                        self.format_expr(derivative.expr))
-                else:
-                    # TODO: Take a closer look at this...
-                    warning("linear combinations not yet implemented "
-                            "(states: {0})".format(
-                                ', '.join(derivative.states)))
-                    format_body += eqn_template.format(
-                        " + ".join("\\frac{{d{0}}}{{dt}}".format(
-                            self.format_expr(state))
-                            for state in derivative.states),
-                        self.format_expr(derivative.expr))
+                    obj._repr_latex_name(),
+                    obj._repr_latex_expr())
+
             components_str += comp_template.format(LABEL=format_label,
                                                    BODY=format_body)
 
@@ -315,7 +296,7 @@ class LatexCodeGenerator(object):
             ENDOPTS=components_opts["end"])
         return components_output
 
-    def format_param_table_row(self, param_name, description, value, unit="1"):
+    def format_param_table_row(self, param):
         """
         Return a LaTeX-formatted string for a longtable row describing a
         parameter.
@@ -325,13 +306,13 @@ class LatexCodeGenerator(object):
         '  $g_{earth}$\\hspace{0.5cm} & $9.81 \\mathrm{\\frac{m}{s^{2}}}$
         \\hspace{0.5cm} & Surface gravity'
         """
-        return "  ${NAME}$\\hspace{{0.5cm}} & ${VAL}{UNIT}$" \
-               "\\hspace{{0.5cm}} & {DESC}".format(
-                   NAME=self.format_expr(param_name), VAL=mp_latex(sympy.sympify(value)),
-                   DESC=description,
-                   UNIT=" " + self.format_unit(unit) if unit != "1" else "")
+        return "  ${NAME}$\\hspace{{0.5cm}} & {VAL}" \
+               "\\hspace{{0.5cm}} & {DESC}".format(\
+                            NAME=self.format_expr(param.name),
+                            VAL=param._repr_latex_(),
+                            DESC=param.param.description)
 
-    def format_state_table_row(self, state_name, description, value, unit="1"):
+    def format_state_table_row(self, state):
         """
         Return a LaTeX-formatted string for a longtable row describing a
         state's initial value.
@@ -341,11 +322,10 @@ class LatexCodeGenerator(object):
         '  $amu$\\hspace{0.5cm} & $931.46 \\mathrm{\\frac{MeV}{c^{2}}}$
         \\hspace{0.5cm} & Atomic mass unit'
         """
-        return "  ${NAME}$\\hspace{{0.5cm}} & ${VAL}{UNIT}$" \
+        return "  ${NAME}$\\hspace{{0.5cm}} & {VAL}" \
                "\\hspace{{0.5cm}} & {DESC}".format(
-                   NAME=self.format_expr(state_name), VAL=mp_latex(sympy.sympify(value)),
-                   DESC=description,
-                   UNIT=" " + self.format_unit(unit) if unit != "1" else "")
+                   NAME=self.format_expr(state.name), VAL=state._repr_latex_(),
+                   DESC=state.param.description)
 
     def format_component_label(self, label):
         """

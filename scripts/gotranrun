@@ -3,7 +3,7 @@
 
 from __future__ import division
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-03-13 -- 2014-01-29"
+__date__ = "2013-03-13 -- 2014-01-31"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -12,9 +12,9 @@ from scipy.integrate import odeint
 import pylab
 import numpy as np
 import instant
-from gotran.model.loadmodel2 import load_ode
+from gotran.model.loadmodel import load_ode
 from gotran.model.utils import DERIVATIVE_EXPRESSION, special_expression
-from gotran.codegeneration.compilemodule2 import compile_module
+from gotran.codegeneration.compilemodule import compile_module
 from gotran.common.options import parameters
 from gotran.common import error
 
@@ -155,7 +155,7 @@ if __name__ == "__main__":
     body_params=parameters.generation.code.body.copy()
     
     code_params = ParameterDict(
-        language = OptionParam("Python", ["Python", "C"]),
+        language = OptionParam("C", ["Python", "C"]),
         body_repr = dict.__getitem__(body_params, "representation"),
         use_cse = dict.__getitem__(body_params, "use_cse"),
         optimize_exprs = dict.__getitem__(body_params, "optimize_exprs"),
