@@ -965,12 +965,13 @@ class CCodeGenerator(BaseCodeGenerator):
         
         max_length = max(len(state.name) for state in states)
         
-        body_lines = ["\\ State names"]
+        body_lines = ["// State names"]
         body_lines.append("char names[][{0}] = {{{1}}}".format(\
             max_length+1, ", ".join("\"{0}\"".format(state.name) for state \
                                     in states)))
         body_lines.append("")
-        body_lines.append("for (int i=0; i<{0}; i++)".format(len(states)))
+        body_lines.append("int i")
+        body_lines.append("for (i=0; i<{0}; i++)".format(len(states)))
         body_lines.append(["if (strcmp(names[i], name)==0)",\
                            ["return i"]])
         body_lines.append("return -1")
@@ -978,7 +979,7 @@ class CCodeGenerator(BaseCodeGenerator):
         # Add function prototype
         function = self.wrap_body_with_function_prototype(\
             body_lines, "state_index", \
-            "const char name[]", "State index")
+            "const char name[]", "int", "State index")
         
         return "\n".join(self.indent_and_split_lines(function, indent=indent))
 
@@ -991,12 +992,13 @@ class CCodeGenerator(BaseCodeGenerator):
         
         max_length = max(len(param.name) for param in parameters)
         
-        body_lines = ["\\ Parameter names"]
+        body_lines = ["// Parameter names"]
         body_lines.append("char names[][{0}] = {{{1}}}".format(\
             max_length + 1, ", ".join("\"{0}\"".format(param.name) for param \
                                       in parameters)))
         body_lines.append("")
-        body_lines.append("for (int i=0; i<{0}; i++)".format(len(parameters)))
+        body_lines.append("int i")
+        body_lines.append("for (i=0; i<{0}; i++)".format(len(parameters)))
         body_lines.append(["if (strcmp(names[i], name)==0)",\
                            ["return i"]])
         body_lines.append("return -1")
@@ -1004,7 +1006,7 @@ class CCodeGenerator(BaseCodeGenerator):
         # Add function prototype
         function = self.wrap_body_with_function_prototype(\
             body_lines, "parameter_index", \
-            "const char name[]", "Parameter index")
+            "const char name[]", "int", "Parameter index")
         
         return "\n".join(self.indent_and_split_lines(function, indent=indent))
 
@@ -1150,10 +1152,7 @@ class CCodeGenerator(BaseCodeGenerator):
         
         code_list = self.code_list(ode)
 
-        return  """
-#include <math.h>
-#include <string.h>
-// Gotran generated code for the "{0}" model
+        return  """// Gotran generated code for the "{0}" model
 
 {1}
 """.format(ode.name, "\n\n".join(code_list))
