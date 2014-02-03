@@ -93,7 +93,8 @@ def special_expression(name, root):
 
 class iter_objects(object):
     """
-    A recursive iterator over all objects of a component including its childrens
+    A recursive iterator over all objects of a component including its
+    childrens
 
     Arguments
     ---------
@@ -265,7 +266,8 @@ class ODEObjectList(list):
             for ind, obj in enumerate(self):
                 if item == obj:
                     return ind
-        raise ValueError("Item '{0}' not part of this ODEObjectList.".format(str(item)))
+        raise ValueError("Item '{0}' not part of this ODEObjectList.".format(\
+            str(item)))
 
     def sort(self):
         error("Cannot sort ODEObjectList.")
@@ -324,8 +326,8 @@ class RateDict(OrderedDict):
         else:
             check_arg(states, tuple, itemtypes=AppliedUndef)
             if len(states)!=2:
-                error("Expected a tuple of size 2 with states when registering "\
-                      "a single rate.")
+                error("Expected a tuple of size 2 with states when "\
+                      "registering a single rate.")
 
             # NOTE: the actuall item is set by the component while calling this
             # function, using _register_single_rate. See below.

@@ -123,10 +123,10 @@ class TestODE(unittest.TestCase):
         self.assertEqual(bada.num_states, 4)
         nada.p = 1 - nada.r - nada.s - nada.q
         
-        self.assertEqual("".join(p.name for p in ode.parameters), "iijjkkllmmnnooppqq")
+        self.assertEqual("".join(p.name for p in ode.parameters), \
+                         "iijjkkllmmnnooppqq")
         self.assertEqual("".join(s.name for s in ode.states), "jiklmnorsqp")
         self.assertFalse(ode.is_complete)
-
 
         # Add rates to component making it a Markov model component
         nada.rates[nada.r, nada.s] = 3*exp(-i)
@@ -178,12 +178,12 @@ class TestODE(unittest.TestCase):
         ode = load_ode("tentusscher_2004_mcell_updated.ode")
 
         potassium = ode.extract_components("Potassium", \
-                                           "Rapid time dependent potassium current", \
-                                           "Inward rectifier potassium current",\
-                                           "Slow time dependent potassium current",\
-                                           "Potassium pump current",\
-                                           "Potassium dynamics",\
-                                           "Transient outward current")
+                                    "Rapid time dependent potassium current", \
+                                    "Inward rectifier potassium current",\
+                                    "Slow time dependent potassium current",\
+                                    "Potassium pump current",\
+                                    "Potassium dynamics",\
+                                    "Transient outward current")
 
         for name, obj in potassium.present_ode_objects.items():
             orig_obj = ode.present_ode_objects[name]
@@ -244,8 +244,9 @@ class TestODE(unittest.TestCase):
         rev_pot.add_parameter("P_kna", ScalarParam(0.03))
 
         # Add intermediates
-        ode.i_Stim = -mem.stim_amplitude*(1 - 1/(1 + exp(5.0*ode.t - 5.0*mem.stim_start)))/\
-                     (1 + exp(5.0*ode.t - 5.0*mem.stim_start - 5.0*mem.stim_duration))
+        ode.i_Stim = -mem.stim_amplitude*(1 - 1/(1 + exp(\
+            5.0*ode.t - 5.0*mem.stim_start)))/(1 + exp(\
+            5.0*ode.t - 5.0*mem.stim_start - 5.0*mem.stim_duration))
         
         rev_pot.E_Na = mem.R*mem.T*log(ode.Na_o/ode.Na_i)/mem.F
         rev_pot.E_K = mem.R*mem.T*log(ode.K_o/ode.K_i)/mem.F
@@ -304,8 +305,8 @@ class TestODE(unittest.TestCase):
         i_p_Ca = ode("Calcium pump current").i_p_Ca
         
         # Membrane potential derivative
-        mem.dV_dt = -i_Ks - i_p_K - i_Na - i_K1 - i_p_Ca - i_b_Ca - i_NaK - i_CaL - i_Kr\
-                    - ode.i_Stim - i_NaCa - i_b_Na - i_to
+        mem.dV_dt = -i_Ks - i_p_K - i_Na - i_K1 - i_p_Ca - i_b_Ca - \
+                    i_NaK - i_CaL - i_Kr- ode.i_Stim - i_NaCa - i_b_Na - i_to
 
         # Finalize ODE
         ode.finalize()

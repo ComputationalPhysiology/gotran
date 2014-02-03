@@ -23,8 +23,8 @@ class TestODEObject(unittest.TestCase):
         with self.assertRaises(TypeError) as cm:
             ODEObject(45)
         self.assertEqual(str(cm.exception), "expected 'str' (got '45' which "\
-                         "is 'int') as the first argument while instantiating "\
-                         "'ODEObject'")
+                         "is 'int') as the first argument while instantiating"\
+                         " 'ODEObject'")
 
         with self.assertRaises(GotranException) as cm:
             ODEObject("_jada")
@@ -86,7 +86,8 @@ class TestODEObject(unittest.TestCase):
                          set([sa_s, a_s, b_s, t_s]))
 
         # Test derivative
-        self.assertEqual(StateDerivative(s, 1.0).sym, Symbol("s")(t_s).diff(t_s))
+        self.assertEqual(StateDerivative(s, 1.0).sym, \
+                         Symbol("s")(t_s).diff(t_s))
         #print sympycode(sa_s*a_s + t_s*b_s*a_s)
         #
         #print sympycode(Derivative(sa_s, s_s))

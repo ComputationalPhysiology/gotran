@@ -891,8 +891,8 @@ class ODE(ODEComponent):
             # Get corresponding component in new ODE
             added = old_new_map[comp]
 
-            # Iterate over all objects of the component and save only expressions
-            # and comments
+            # Iterate over all objects of the component and save only
+            # expressions and comments
             for obj in comp.ode_objects:
 
                 # If saving an expression
@@ -979,8 +979,10 @@ class ODE(ODEComponent):
             
             # Sort wrt stringified states and parameters avoiding trouble with
             # random ordering of **kwargs
-            def_list += sorted([repr(state.param) for state in comp.full_states])
-            def_list += sorted([repr(param.param) for param in comp.parameters])
+            def_list += sorted([repr(state.param) \
+                                for state in comp.full_states])
+            def_list += sorted([repr(param.param) \
+                                for param in comp.parameters])
             def_list += [sympycode(expr.expr) for expr in comp.intermediates]
 
             # Sort state expressions wrt stringified state names

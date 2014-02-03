@@ -21,7 +21,7 @@ for dirpath, dirnames, filenames in os.walk("gotran"):
         
         print ""
         print "Running tests in: %s" % dirpath
-        print "----------------------------------------------------------------------"
+        print "-"*79
         for test in filenames:
             if not re.findall("test_(\w+).py", test):
                 continue
@@ -34,7 +34,7 @@ for dirpath, dirnames, filenames in os.walk("gotran"):
 
             os.chdir(root_dir)
 print
-print "----------------------------------------------------------------------"
+print "-"*79
 print "Ran %d tests in %.3fs" % (num_tests, timing)
 if failed:
     for output in failed:

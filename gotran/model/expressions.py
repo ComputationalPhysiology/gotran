@@ -100,7 +100,7 @@ class Expression(ODEValueObject):
 
         # Collect dependent symbols
         dependent = tuple(sorted(symbols_from_expr(expr), \
-                                 cmp=lambda a,b:cmp(sympycode(a), sympycode(b))))
+                            cmp=lambda a,b:cmp(sympycode(a), sympycode(b))))
 
         if dependent:
             self._sym = self.param.sym(*dependent)
@@ -217,7 +217,6 @@ class DerivativeExpression(Intermediate):
         check_arg(dep_var, (State, Expression, Time), 1, DerivativeExpression)
 
         # Check that the der_expr is dependent on var
-        #print "DERIVATIVES:", der_expr.sym, "DEPENDENT:", dep_var.sym, "EXPRESSION:", expr
         if dep_var.sym not in der_expr.sym:
             error("Cannot create a DerivativeExpression as {0} is not "\
                   "dependent on {1}".format(der_expr, dep_var))
@@ -241,7 +240,8 @@ class DerivativeExpression(Intermediate):
         """
         Return a formatted str of __init__ arguments
         """
-        return "{0}, {1}, {2}".format(repr(self._der_expr), repr(self._dep_var),\
+        return "{0}, {1}, {2}".format(repr(self._der_expr), \
+                                      repr(self._dep_var), \
                                       sympycode(self.expr))
     def _repr_latex_name(self):
         return "\\frac{{d{0}}}{{d{1}}}".format(latex(self._der_expr.name),
@@ -308,7 +308,8 @@ class StateExpression(Expression):
         """
         Return a formatted str of __init__ arguments
         """
-        return "'{0}', {1}, {2}".format(self.name, repr(state), sympycode(self.expr))
+        return "'{0}', {1}, {2}".format(self.name, repr(state), \
+                                        sympycode(self.expr))
 
 class StateDerivative(StateExpression):
     """
