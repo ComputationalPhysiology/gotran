@@ -63,7 +63,7 @@ def define_parser(change_state_names):
                       "the child component it contains the name of the "\
                       "parent component.",
                       action="store_true",
-                      default=False, 
+                      default=True, 
                       dest="strip_parent_name")
     return parser
 
