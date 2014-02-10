@@ -547,6 +547,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
 
         # Start building body
         body_lines = ["# Imports", "import numpy as np",\
+                      "from modelparameters.utils import Range",\
                       "", "# Init values"]
         body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
             state.name, state.init) for state in states)))
@@ -602,6 +603,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
 
         # Start building body
         body_lines = ["# Imports", "import numpy as np",\
+                      "from modelparameters.utils import Range",\
                       "", "# Param values"]
         body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
             param.name, param.init) for param in parameters)))
