@@ -24,7 +24,7 @@ from collections import OrderedDict
 from sympy.core.function import AppliedUndef
 
 # ModelParameters imports
-from modelparameters.sympytools import sp, symbols_from_expr
+from modelparameters.sympytools import sp
 from modelparameters.codegeneration import sympycode, latex, latex_unit
 from modelparameters.parameters import *
 
