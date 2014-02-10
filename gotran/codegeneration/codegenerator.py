@@ -570,7 +570,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
         body_lines.append("for state_name, value in values.items():")
         body_lines.append(\
             ["if state_name not in state_ind:",
-             ["raise ValueError(\"{{0}} is not a state.\".format(state_name))"],
+             ["raise ValueError(\"{0} is not a state.\".format(state_name))"],
              # FIXME: Outcommented because of bug in indent_and_split_lines
              # ["raise ValueError(\"{{0}} is not a state in the {0} ODE\"."\
              #"format(state_name))".format(self.oderepr.name)],
@@ -626,7 +626,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
         body_lines.append("for param_name, value in values.items():")
         body_lines.append(\
             ["if param_name not in param_ind:",
-             ["raise ValueError(\"{{0}} is not a param\".format(param_name))"],
+             ["raise ValueError(\"{0} is not a parameter.\".format(param_name))"],
              # ["raise ValueError(\"{{0}} is not a param in the {0} ODE\"."\
              #  "format(param_name))".format(self.oderepr.name)],
              "ind, range = param_ind[param_name]",
