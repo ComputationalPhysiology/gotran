@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-05-07 -- 2014-01-28"
+__date__ = "2013-05-07 -- 2014-02-10"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
 from gotran import *
 from gotran.model.loadmodel import load_ode
-from gotran.model.odeobjects2 import Comment
+from gotran.model.odeobjects import Comment
 
 def main(filename, params):
 
