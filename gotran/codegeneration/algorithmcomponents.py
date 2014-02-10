@@ -36,6 +36,7 @@ from modelparameters.sympytools import sp
 # Local imports
 from gotran.common import error, info, debug, check_arg, check_kwarg, \
      scalars, Timer, warning, tuplewrap, parameters, warning
+from gotran.common import listwrap
 from gotran.model.utils import ode_primitives
 from gotran.model.odeobjects import State, Parameter, IndexedObject, Comment
 from gotran.model.expressions import *
@@ -108,7 +109,7 @@ def monitored_expressions(ode, monitored, function_name="monitored_expressions",
     return CodeComponent("MonitoredExpressions", ode, function_name, descr, \
                          params=params, **{result_name:monitored_exprs})
     
-def componentwise_derivative(ode, index, params=None):
+def componentwise_derivative(ode, indices, params=None, result_name="dy"):
     """
     Return an ODEComponent holding the expressions for the ith
     state derivative
@@ -117,26 +118,43 @@ def componentwise_derivative(ode, index, params=None):
     ---------
     ode : ODE
         The finalized ODE for which the ith derivative should be computed
-    index : int
+    indices : int, list of ints
         The index
     params : dict
         Parameters determining how the code should be generated
+    result_name : str
+        The name of the result variable
     """
     check_arg(ode, ODE)
     if not ode.is_finalized:
         error("Cannot compute component wise derivatives if ODE is "\
               "not finalized")
+    indices = listwrap(indices)
 
-    check_arg(index, int, ge=0, le=ode.num_full_states)
+    check_arg(indices, list, itemtypes=int)
+    check_arg(result_name, str)
+
+    if len(indices)==0:
+        error("expected at least on index")
+
+    registered = []
+    for index in indices:
+        if index < 0 or  index>=ode.num_full_states:
+            error("Expected the passed indices to be between 0 and the "\
+                  "number of states in the ode, got {0}.".format(index))
+        if index in registered:
+            error("Index {0} appeared twice.".format(index))
+
+        registered.append(index)
 
     # Get state expression
-    expr = ode.state_expressions[index]
-    state = expr.state
-    if not isinstance(expr, StateDerivative):
-        warning("The ith index is not a StateDerivative: {0}".format(expr))
+    exprs = [ode.state_expressions[index] for index in indices]
+
+    results = {result_name:exprs}
         
-    return CodeComponent("d{0}_dt_component".format(\
-        state), ode, "", "", params=params, dy=[expr])
+    return CodeComponent("componentwise_derivatives_{0}".format(\
+        "_".join(expr.state.name for expr in exprs)), ode, "", "",
+                         params=params, **results)
 
 def linearized_derivatives(ode, function_name="linear_derivatives", \
                            result_name="linearized", params=None):
