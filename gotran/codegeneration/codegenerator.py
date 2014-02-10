@@ -310,8 +310,15 @@ class PythonCodeGenerator(BaseCodeGenerator):
 
     # Class attributes
     language = "python"
-    to_code = lambda self, expr, name, ns="math" : pythoncode(expr, name, ns)
+    to_code = lambda self, expr, name : pythoncode(expr, name, self.ns)
     float_types = dict(single="float32", double="float_")
+
+    def __init__(self, params=None, ns="math"):
+
+        check_arg(ns, str)
+        assert ns in ["math", "np", "numpy", "", "ufl"]
+        self.ns = ns
+        super(PythonCodeGenerator, self).__init__(params)
     
     def args(self, default_arguments=None, result_names=None):
         ret_args=[]
@@ -508,7 +515,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
                 body_lines.append("")
                 body_lines.append("# " + str(expr))
             else:
-                body_lines.append(pythoncode(expr.expr, expr.name))
+                body_lines.append(self.to_code(expr.expr, expr.name))
 
         if comp.results:
             body_lines.append("")
@@ -540,7 +547,6 @@ class PythonCodeGenerator(BaseCodeGenerator):
 
         # Start building body
         body_lines = ["# Imports", "import numpy as np",\
-                      "from modelparameters.utils import Range", \
                       "", "# Init values"]
         body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
             state.name, state.init) for state in states)))
@@ -596,7 +602,6 @@ class PythonCodeGenerator(BaseCodeGenerator):
 
         # Start building body
         body_lines = ["# Imports", "import numpy as np",\
-                      "from modelparameters.utils import Range", \
                       "", "# Param values"]
         body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
             param.name, param.init) for param in parameters)))
