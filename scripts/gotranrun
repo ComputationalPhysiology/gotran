@@ -3,7 +3,7 @@
 
 from __future__ import division
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-03-13 -- 2014-01-31"
+__date__ = "2013-03-13 -- 2014-02-13"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -38,8 +38,7 @@ def main(filename, params):
     for what in ["rhs", "monitored"]:
         generation.functions[what].generate = True
 
-    if params.use_jacobian:
-        generation.functions.jacobian.generate = params.use_jacobian
+    generation.functions.jacobian.generate = params.use_jacobian
     
     # Compile executeable code from gotran ode
     ode = load_ode(filename)
