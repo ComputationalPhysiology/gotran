@@ -561,8 +561,8 @@ class PythonCodeGenerator(BaseCodeGenerator):
                       "value {maxop} {maxvalue}"
         body_lines.append("# State indices and limit checker")
 
-        body_lines.append("state_ind = dict({0})".format(\
-            ", ".join("{0}=({1}, {2})".format(\
+        body_lines.append("state_ind = dict([{0}])".format(\
+            ", ".join("(\"{0}\",({1}, {2}))".format(\
                 state.param.name, i, repr(state.param._range))\
                       for i, state in enumerate(states))))
         body_lines.append("")
@@ -617,8 +617,8 @@ class PythonCodeGenerator(BaseCodeGenerator):
                       "value {maxop} {maxvalue}"
         body_lines.append("# Parameter indices and limit checker")
 
-        body_lines.append("param_ind = dict({0})".format(\
-            ", ".join("{0}=({1}, {2})".format(\
+        body_lines.append("param_ind = dict([{0}])".format(\
+            ", ".join("(\"{0}\", ({1}, {2}))".format(\
                 state.param.name, i, repr(state.param._range))\
                 for i, state in enumerate(parameters))))
         body_lines.append("")
@@ -654,8 +654,8 @@ class PythonCodeGenerator(BaseCodeGenerator):
         states = ode.full_states
 
         body_lines = []
-        body_lines.append("state_inds = dict({0})".format(\
-            ", ".join("{0}={1}".format(state.param.name, i) for i, state \
+        body_lines.append("state_inds = dict([{0}])".format(\
+            ", ".join("(\"{0}\", {1})".format(state.param.name, i) for i, state \
                       in enumerate(states))))
         body_lines.append("")
         body_lines.append("indices = []")
@@ -687,7 +687,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
 
         body_lines = []
         body_lines.append("param_inds = dict({0})".format(\
-            ", ".join("{0}={1}".format(param.param.name, i) for i, param \
+            ", ".join("(\"{0}\", {1})".format(param.param.name, i) for i, param \
                                         in enumerate(parameters))))
         body_lines.append("")
         body_lines.append("indices = []")
@@ -721,9 +721,9 @@ class PythonCodeGenerator(BaseCodeGenerator):
                       "the {1} ODE".format(expr_str, ode))
 
         body_lines = []
-        body_lines.append("monitor_inds = dict({0})".format(\
-            ", ".join("{0}={1}".format(monitor, i) for i, monitor \
-                      in enumerate(monitored))))
+        body_lines.append("monitor_inds = dict([{0}])".format(\
+            ", ".join("(\"{0}\", {1})".format(monitor, i) \
+                      for i, monitor in enumerate(monitored))))
         body_lines.append("")
         body_lines.append("indices = []")
         body_lines.append("for monitor in monitored:")
@@ -1111,7 +1111,7 @@ class CCodeGenerator(BaseCodeGenerator):
         # Create code for each individuate component
         body_lines = []
         body_lines.append("// Return value")
-        body_lines.append("{0} dy[1] = {{0.0{1}}}".format(self.float_type, float_str))
+        body_lines.append("{0} dy_comp[1] = {{0.0{1}}}".format(self.float_type, float_str))
         body_lines.append("")
         body_lines.append("// What component?")
         body_lines.append("switch (id)")
@@ -1122,7 +1122,7 @@ class CCodeGenerator(BaseCodeGenerator):
             component_code = ["", "// Component {0} state {1}".format(\
                 i, state.name), "case {0}:".format(i)]
             
-            comp = componentwise_derivative(ode, i, params=params)
+            comp = componentwise_derivative(ode, i, params=params, result_name="dy_comp")
             component_code.append(self.function_code(comp, indent, \
                                                      default_arguments, \
                                                      include_signature=False, \
@@ -1141,7 +1141,7 @@ class CCodeGenerator(BaseCodeGenerator):
         body_lines.append(switch_lines)
         body_lines.append("")
         body_lines.append("// Return component")
-        body_lines.append("return dy[0]")
+        body_lines.append("return dy_comp[0]")
         
         if return_body_lines:
             return body_lines
