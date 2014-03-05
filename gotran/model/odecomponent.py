@@ -480,6 +480,11 @@ class ODEComponent(ODEObject):
         return ode_components(self)
 
     @property
+    def comments(self):
+        return [com for comp in ode_components(self) \
+                for com in comp._local_comments]
+
+    @property
     def root(self):
         """
         Return the root ODE component (the ode)
