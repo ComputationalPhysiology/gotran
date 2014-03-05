@@ -258,25 +258,25 @@ class TestCodeComponent(unittest.TestCase):
         for default_code2, default_code in zip(default_codes2, default_codes):
             self.assertEqual(default_code2, default_code)
         
-#for param_name, state_name, body_name in [["PARAMETERS", "STATES", "ALGEBRAIC"], \
-#                                          ["params", "states", "algebraic"]]:
-#    #for use_cse in [False, True]:
-#    for use_cse in [False]:
-#        for body_repr in ["array", "reused_array"]:
-#            for body_in_arg in [False, True]:
-#
-#                test_name = "_".join([param_name, body_name, body_repr, \
-#                                      str(body_in_arg)])
-#                test_name += "_use_cse_" + str(use_cse)
-#                setattr(TestCodeComponent, "test_"+test_name, function_closure(\
-#                    body_repr, "none", "array", "array", use_cse, \
-#                        "double", param_name, state_name, body_name, body_in_arg))
-#                
-#    
-#
-## Populate the test class with methods
-#for test_name, test_function in test_map.items():
-#    setattr(TestCodeComponent, test_name, test_function)
+for param_name, state_name, body_name in [["PARAMETERS", "STATES", "ALGEBRAIC"], \
+                                          ["params", "states", "algebraic"]]:
+    #for use_cse in [False, True]:
+    for use_cse in [False]:
+        for body_repr in ["array", "reused_array"]:
+            for body_in_arg in [False, True]:
+
+                test_name = "_".join([param_name, body_name, body_repr, \
+                                      str(body_in_arg)])
+                test_name += "_use_cse_" + str(use_cse)
+                setattr(TestCodeComponent, "test_"+test_name, function_closure(\
+                    body_repr, "none", "array", "array", use_cse, \
+                        "double", param_name, state_name, body_name, body_in_arg))
+                
+    
+
+# Populate the test class with methods
+for test_name, test_function in test_map.items():
+    setattr(TestCodeComponent, test_name, test_function)
         
 if __name__ == "__main__":
     unittest.main()
