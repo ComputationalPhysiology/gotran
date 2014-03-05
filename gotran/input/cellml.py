@@ -1117,6 +1117,7 @@ class CellMLParser(object):
             old_comp = eq.component
             ode_comp.equations.append(eq)
             old_comp.equations.remove(eq)
+            ode_comp.variable_info[eq.name] = old_comp.variable_info.pop(eq.name)
 
             # Store changed 
             removed_equations[eq] = old_comp

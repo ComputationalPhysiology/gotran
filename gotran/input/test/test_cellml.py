@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2014-01-31"
+__date__ = "2012-05-07 -- 2014-03-05"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -98,12 +98,12 @@ for what_not in ["componentwise_rhs_evaluation",
                  "forward_backward_subst",
                  "linearized_rhs_evaluation",
                  "lu_factorization",
-                 "monitored",
-                 "jacobian"]:
+                 "monitored"]:
     generation.functions[what_not].generate = False
 
-# Only generate rhs
+# Only generate rhs and jacobian
 generation.functions.rhs.generate = True
+generation.functions.jacobian.generate = True
 
 class TestBase(object):
     def test_run(self):
@@ -122,6 +122,7 @@ class TestBase(object):
         # Compile ODE
         module = compile_module(self.ode, language="C", generation_params=generation)
         rhs = module.rhs
+        jac = module.compute_jacobian
         y0 = module.init_state_values()
         model_params = module.init_parameter_values()
         
@@ -130,7 +131,7 @@ class TestBase(object):
         t1 = ref_time[-1]
         dt = min(0.1, t1/1000000.)
         tsteps = np.linspace(t0, t1, int(t1/dt)+1)
-        results = odeint(rhs, y0, tsteps, args=(model_params,))
+        results = odeint(rhs, y0, tsteps, Dfun=jac, args=(model_params,))
         
         # Get data to compare with ref
         ind_state = module.state_indices(state_name)
