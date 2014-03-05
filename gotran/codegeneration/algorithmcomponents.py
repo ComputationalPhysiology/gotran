@@ -32,6 +32,7 @@ import sys
 
 # ModelParameters imports
 from modelparameters.sympytools import sp
+from modelparameters.codegeneration import sympycode
 
 # Local imports
 from gotran.common import error, info, debug, check_arg, check_kwarg, \
@@ -336,6 +337,8 @@ class JacobianComponent(CodeComponent):
         # Gather state expressions and states
         state_exprs = self.root.state_expressions
         states = self.root.full_states
+        all_exprs = sorted(self.root.intermediates + self.root.comments \
+                           + state_exprs)
 
         # Create Jacobian matrix
         N = len(states)
@@ -343,7 +346,6 @@ class JacobianComponent(CodeComponent):
         
         self.num_nonzero = 0
 
-        self.add_comment("Computing the sparse jacobian of {0}".format(ode.name))
         self.shapes[result_name] = (N,N)
         
         state_dict = dict((state.sym, ind) for ind, state in enumerate(states))
@@ -356,19 +358,29 @@ class JacobianComponent(CodeComponent):
                 ode.name))
             sys.stdout.flush()
 
-        for i, expr in enumerate(state_exprs):
-            states_syms = [sym for sym in ode_primitives(expr.expr, time_sym) \
-                           if sym in state_dict]
+        jac_expr_added = False
+        for expr in all_exprs:
+
+            if isinstance(expr, StateExpression):
+                i = state_dict[expr.state.sym]
+                jac_expr_added = True
+                states_syms = [sym for sym in ode_primitives(expr.expr, time_sym) \
+                               if sym in state_dict]
             
-            for sym in states_syms:
-                j = state_dict[sym]
-                time_diff = Timer("Differentiate state_expressions")
-                jac_ij = expr.expr.diff(sym)
-                del time_diff
-                self.num_nonzero += 1
-                jac_ij = self.add_indexed_expression(result_name, \
-                                                     (i, j), jac_ij)
-                self.jacobian[i, j] = jac_ij
+                self.add_comment("Expressions for the sparse jacobian of "\
+                                 "state {0}".format(expr.state.name))
+                for sym in states_syms:
+                    j = state_dict[sym]
+                    time_diff = Timer("Differentiate state_expressions")
+                    jac_ij = expr.expr.diff(sym)
+                    del time_diff
+                    self.num_nonzero += 1
+                    jac_ij = self.add_indexed_expression(result_name, \
+                                                         (i, j), jac_ij)
+                    self.jacobian[i, j] = jac_ij
+                    
+            elif jac_expr_added:
+                expr._recount()
 
         if might_take_time:
             info(" done")

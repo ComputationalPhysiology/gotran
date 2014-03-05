@@ -261,9 +261,7 @@ class CodeComponent(ODEComponent):
         else:
             return self._body_from_dependencies(**results)
 
-    def _body_from_cse(self, **results):
-        
-        timer = Timer("Compute common sub expressions for {0}".format(self.name))
+    def _expanded_result_expressions(self, **results):
 
         # Extract all result expressions
         orig_result_expressions = reduce(sum, (result_exprs for result_exprs in \
@@ -278,14 +276,49 @@ class CodeComponent(ODEComponent):
         expanded_result_exprs = [self.root.expanded_expression(obj) \
                                  for obj in orig_result_expressions]
 
+        # Set shape for result expressions
+        for result_name, result_expressions in results.items():
+            if result_name not in self.shapes:
+                self.shapes[result_name] = (len(result_expressions),)
+
+        return orig_result_expressions, result_names, expanded_result_exprs
+
+    def _only_result_expressions(self, **results):
+
+        orig_result_expressions, result_names, expanded_result_exprs = \
+                                 self._expanded_result_expressions(**results)
+        
+        body_expressions = []
+        new_results = defaultdict(list)
+
+    def _body_from_cse(self, **results):
+        
+        timer = Timer("Compute common sub expressions for {0}".format(self.name))
+
+        orig_result_expressions, result_names, expanded_result_exprs = \
+                                 self._expanded_result_expressions(**results)
+
+        # Extract all result expressions
+        #orig_result_expressions = reduce(sum, (result_exprs for result_exprs in \
+        #                                       results.values()), [])
+        #
+        ## A map between result expression and result name
+        #result_names = dict((result_expr, result_name) for \
+        #                    result_name, result_exprs in results.items() \
+        #                    for result_expr in result_exprs)
+        #
+        ## The expanded result expressions
+        #expanded_result_exprs = [self.root.expanded_expression(obj) \
+        #                         for obj in orig_result_expressions]
+
         # Collect results and body_expressions
         body_expressions = []
         new_results = defaultdict(list)
 
         # Set shape for result expressions
-        for result_name, result_expressions in results.items():
-            if result_name not in self.shapes:
-                self.shapes[result_name] = (len(result_expressions),)
+        #for result_name, result_expressions in results.items():
+        #    if result_name not in self.shapes:
+        #        self.shapes[result_name] = (len(result_expressions),)
 
         might_take_time = len(orig_result_expressions) >= 40
 
@@ -594,8 +627,9 @@ class CodeComponent(ODEComponent):
             # Update dependency information
             if expr in object_used_in:
                 for dep in object_used_in[expr]:
-                    expression_dependencies[dep].remove(expr)
-                    expression_dependencies[dep].add(new_expr)
+                    if dep in expression_dependencies:
+                        expression_dependencies[dep].remove(expr)
+                        expression_dependencies[dep].add(new_expr)
                     
                 object_used_in[new_expr] = object_used_in.pop(expr)
 

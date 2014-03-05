@@ -21,23 +21,33 @@ __all__ = ["Expression", "DerivativeExpression", "AlgebraicExpression", \
            "IndexedExpression", "recreate_expression"]
 
 # ModelParameters imports
+from modelparameters.parameters import SlaveParam
 from modelparameters.sympytools import sp, symbols_from_expr
 from modelparameters.codegeneration import sympycode, latex, latex_unit
+from sympy.core.function import AppliedUndef
 
 # Local imports
 from gotran.common import error, check_arg, scalars, debug, DEBUG, \
      get_log_level, Timer, tuplewrap, parameters
 from gotran.model.odeobjects import *
 
-def recreate_expression(expr, *replace_dicts):
+def recreate_expression(expr, *replace_dicts, **kwargs):
     """
     Recreate an Expression while applying replace dicts in given order
     """
+
+    replace_type = kwargs.get("replace_type", "xreplace")
+    if not replace_type in ["xreplace", "subs"]:
+        error("Valid alternatives for replace_type is: 'xreplace', "\
+              "'subs' got {0}".format(replace_type))
     
     # First do the replacements
     sympyexpr = expr.expr
     for replace_dict in replace_dicts:
-        sympyexpr = sympyexpr.xreplace(replace_dict)
+        if replace_type == "xreplace":
+            sympyexpr = sympyexpr.xreplace(replace_dict)
+        else:
+            sympyexpr = sympyexpr.subs(replace_dict)
 
     # FIXME: Should we distinguish between the different
     # FIXME: intermediates?
@@ -91,6 +101,17 @@ class Expression(ODEValueObject):
 
             expr =  expr.subs(sub_expr, sub_expr.expr.xreplace(subs))
 
+        # Deal with im and re
+        im_exprs = expr.atoms(sp.im)
+        re_exprs = expr.atoms(sp.re)
+        if im_exprs or re_exprs:
+            replace_dict = {}
+            for im_expr in im_exprs:
+                replace_dict[im_expr] = sp.S.Zero
+            for re_expr in re_exprs:
+                replace_dict[re_expr] = re_expr.args[0]
+            expr = expr.xreplace(replace_dict)
+
         if not symbols_from_expr(expr, include_numbers=True):
             error("expected the expression to contain at least one "\
                   "Symbol or Number.")
@@ -100,10 +121,14 @@ class Expression(ODEValueObject):
 
         # Collect dependent symbols
         dependent = tuple(sorted(symbols_from_expr(expr), \
-                            cmp=lambda a,b:cmp(sympycode(a), sympycode(b))))
+                        cmp=lambda a,b:cmp(sympycode(a), sympycode(b))))
 
         if dependent:
-            self._sym = self.param.sym(*dependent)
+            self._sym = self._param.sym(*dependent)
+            self._sym._assumptions["real"] = True
+            self._sym._assumptions["commutative"] = True
+            self._sym._assumptions["imaginary"] = False
+            self._sym._assumptions["hermitian"] = True
         else:
             self._sym = self.param.sym
 
@@ -119,6 +144,15 @@ class Expression(ODEValueObject):
         """
         """
         return self._sym
+
+    def replace_expr(self, *replace_dicts):
+        """
+        Replace registered expression using passed replace_dicts
+        """
+        expr = self.expr
+        for replace_dict in replace_dicts:
+            expr = expr.xreplace(replace_dict)
+        self._param = SlaveParam(expr, name=self.name)
 
     @property
     def is_state_expression(self):
@@ -227,6 +261,10 @@ class DerivativeExpression(Intermediate):
 
         super(DerivativeExpression, self).__init__(sympycode(der_sym), expr)
         self._sym = sp.Derivative(der_expr.sym, dep_var.sym)
+        self._sym._assumptions["real"] = True
+        self._sym._assumptions["commutative"] = True
+        self._sym._assumptions["imaginary"] = False
+        self._sym._assumptions["hermitian"] = True
 
     @property
     def der_expr(self):
@@ -329,7 +367,11 @@ class StateDerivative(StateExpression):
         
         check_arg(state, State, 0, StateDerivative)
         sym = sp.Derivative(state.sym, state.time.sym)
-
+        sym._assumptions["real"] = True
+        sym._assumptions["imaginary"] = False
+        sym._assumptions["commutative"] = True
+        sym._assumptions["hermitian"] = True
+        
         # Call base class constructor
         super(StateDerivative, self).__init__(sympycode(sym), state, expr)
         self._sym = sym

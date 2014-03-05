@@ -21,7 +21,6 @@ __all__ = ["ODEObject", "Comment", "ODEValueObject", "Parameter", "State", \
 # System imports
 import numpy as np
 from collections import OrderedDict
-from sympy.core.function import AppliedUndef
 
 # ModelParameters imports
 from modelparameters.sympytools import sp
@@ -271,6 +270,16 @@ class State(ODEValueObject):
 
         # Add previous value symbol
         self.sym_0 = sp.Symbol("{0}_0".format(name))(time.sym)
+        self.sym_0._assumptions["real"] = True
+        self.sym_0._assumptions["imaginary"] = False
+        self.sym_0._assumptions["commutative"] = True
+        self.sym_0._assumptions["hermitian"] = True
+
+        self._sym = self._param.sym(self.time.sym)
+        self._sym._assumptions["real"] = True
+        self._sym._assumptions["imaginary"] = False
+        self._sym._assumptions["commutative"] = True
+        self._sym._assumptions["hermitian"] = True
 
         # Flag to determine if State is solved or not
         self._is_solved = False
@@ -279,7 +288,7 @@ class State(ODEValueObject):
 
     @property
     def sym(self):
-        return self._param.sym(self.time.sym)
+        return self._sym
 
     def _args_str(self):
         """
@@ -385,7 +394,8 @@ class IndexedObject(ODEObject):
         ODEObject.__init__(self, name)
         self._basename = basename
         self._indices = orig_indices
-        self._sym = sp.Symbol(name)
+        self._sym = sp.Symbol(name, real=True, imaginary=False, commutative=True,
+                              hermitian=True)
         self._shape = shape
 
     @property
@@ -429,7 +439,8 @@ class Time(ODEValueObject):
         super(Time, self).__init__(name, ScalarParam(0.0, unit=unit))
 
         # Add previous value symbol
-        self.sym_0 = sp.Symbol("{0}_0".format(name))
+        self.sym_0 = sp.Symbol("{0}_0".format(name), real=True, imaginary=False,
+                               commutative=True, hermitian=True)
 
 class Dt(ODEValueObject):
     """

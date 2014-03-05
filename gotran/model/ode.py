@@ -574,20 +574,26 @@ class ODE(ODEComponent):
             if not self._is_finalized_ode:
                 self._handle_expr_component(comp, obj)
 
+            # Expand and add any derivatives in the expressions
+            expression_added = False
+            replace_dict = {}
+            for der_expr in obj.expr.atoms(sp.Derivative):
+                expression_added |= self._expand_single_derivative(\
+                    comp, obj, der_expr, replace_dict)
+
+            # If expressions need to be re-created
+            if replace_dict:
+                obj.replace_expr(replace_dict)
+                
+            # If any expression was added we need to bump the count of the ODEObject
+            if expression_added:
+                obj._recount()
+
             # Add dependencies between registered comments and expressions so
             # they are carried over in Code components
             for comment in comp._local_comments:
                 self.object_used_in[comment].add(obj)
                 self.expression_dependencies[obj].add(comment)
-
-            # Expand and add any derivatives in the expressions
-            expression_added = False
-            for der_expr in obj.expr.atoms(sp.Derivative):
-                expression_added |= self._expand_single_derivative(comp, obj, der_expr)
-
-            # If any expression was added we need to bump the count of the ODEObject
-            if expression_added:
-                obj._recount()
 
             # Get expression dependencies
             for sym in symbols_from_expr(obj.expr, include_derivatives=True):
@@ -697,11 +703,13 @@ class ODE(ODEComponent):
             # infront of the expression
             expr._recount()
         
-    def _expand_single_derivative(self, comp, obj, der_expr):
+    def _expand_single_derivative(self, comp, obj, der_expr, replace_dict):
         """
         Expand a single derivative and register it as new derivative expression
         
         Returns True if an expression was actually added
+
+        Populate replace dict with a replacement for the derivative if it is trivial 
         """
 
         # Try accessing already registered derivative expressions
@@ -710,6 +718,13 @@ class ODE(ODEComponent):
         # If excist continue
         if der_expr_obj:
             return False
+
+        # Try expand the given derivative if it is directly expandable just
+        # add a replacement for the derivative result
+        der_result = der_expr.args[0].diff(der_expr.args[1])
+        if not der_result.atoms(sp.Derivative):
+            replace_dict[der_expr] = der_result
+            return False 
 
         if not isinstance(der_expr.args[0], AppliedUndef):
             error("Can only register Derivatives of allready registered "\
@@ -731,19 +746,32 @@ class ODE(ODEComponent):
                   "derivative of {1} which is not registered in this ODE."\
                   .format(obj, expr_obj))
 
-        if not isinstance(expr_obj, Expression):
-            error("Can only differentiate expressions or states. Got {0} as "\
-                  "the derivative expression.".format(expr_obj))
-
         # If we get a Derivative(expr, t) we issue an error
         if isinstance(expr_obj, Expression) and var_obj == self._time:
             error("All derivative expressions of registered expressions "\
                   "need to be expanded with respect to time. Use "\
                   "expr.diff(t) instead of Derivative(expr, t) ")
 
-        # Store expression
-        comp.add_derivative(expr_obj, var_obj, expr_obj.expr.diff(var_obj.sym))
+        if not isinstance(expr_obj, Expression):
+            error("Can only differentiate expressions or states. Got {0} as "\
+                  "the derivative expression.".format(expr_obj))
 
+        # Expand derivative and see if it is trivial
+        der_result = expr_obj.expr.diff(var_obj.sym)
+        
+        # If derivative result are trival we substitute it
+        if der_result.is_number or \
+               isinstance(der_result, (sp.Symbol, AppliedUndef)) or \
+               (isinstance(der_result, (sp.Mul, sp.Pow, sp.Add)) and
+                len(der_result.args)==2 and \
+                all(isinstance(arg, (sp.Number, sp.Symbol, AppliedUndef)) \
+                    for arg in der_result.args)):
+            replace_dict[der_expr] = der_result
+            return False
+        
+        # Store expression
+        comp.add_derivative(expr_obj, var_obj, der_result)
+        
         return True
 
     def expanded_expression(self, expr):
