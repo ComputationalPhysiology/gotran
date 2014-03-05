@@ -327,10 +327,10 @@ class JacobianComponent(CodeComponent):
                                                 descr, params=params)
         check_arg(result_name, str)
 
-        if ode.duplicated_expressions:
-            error("Cannot compute the jacobian including duplicated "\
-                  "expressions (yet...): {0}".format(\
-                      ", ".join(dup for dup in ode.duplicated_expressions)))
+        #if ode.duplicated_expressions:
+        #    error("Cannot compute the jacobian including duplicated "\
+        #          "expressions (yet...): {0}".format(\
+        #              ", ".join(dup for dup in ode.duplicated_expressions)))
 
         timer = Timer("Computing jacobian")
         
