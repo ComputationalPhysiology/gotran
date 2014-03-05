@@ -507,7 +507,8 @@ class PythonCodeGenerator(BaseCodeGenerator):
         check_kwarg(default_arguments, "default_arguments", str)
         check_kwarg(indent, "indent", int)
         
-        body_lines = self._init_arguments(comp, default_arguments)
+        body_lines = ["# Imports", "import numpy as np", "import math"]
+        body_lines += self._init_arguments(comp, default_arguments)
         
         # Iterate over any body needed to define the dy
         for expr in comp.body_expressions:
