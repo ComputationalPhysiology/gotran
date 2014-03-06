@@ -428,8 +428,8 @@ class ODEComponent(ODEObject):
         Return a list of all states in the component and its children that are
         not solved and determined by a state expression
         """
-        return [obj for obj in iter_objects(self, False, False, False, \
-                                            State) if not obj.is_solved]
+        return sorted(obj for obj in iter_objects(self, False, False, False, \
+                                                  State) if not obj.is_solved)
 
     @property
     def full_state_vector(self):

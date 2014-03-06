@@ -127,7 +127,7 @@ parameters = ParameterDict(
                 ),
 
             jacobian = ParameterDict(
-                generate = Param(True, description="Generate code for the "\
+                generate = Param(False, description="Generate code for the "\
                                  "evaluation of the jacobian of the right hand "\
                                  "side."),
                 function_name = Param("compute_jacobian", description="The name "\
