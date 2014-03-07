@@ -15,6 +15,10 @@ def main(filename, params):
     # Load Gotran model
     ode = load_ode(filename)
 
+    # Collect monitored
+    if params.functions.monitored.generate:
+        monitored = [expr.name for expr in ode.intermediates + ode.state_expressions]
+
     # Create a C code generator
     gen = PythonCodeGenerator(params)
 
@@ -28,7 +32,10 @@ def main(filename, params):
 
     f = open(output, "w")
 
-    f.write(gen.module_code(ode))
+    if params.functions.monitored.generate:
+        f.write(gen.module_code(ode, monitored=monitored))
+    else:
+        f.write(gen.module_code(ode))
 
 if __name__ == "__main__":
     import sys, os
