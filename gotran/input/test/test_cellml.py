@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2014-03-05"
+__date__ = "2012-05-07 -- 2014-03-07"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -51,6 +51,8 @@ cellml_data = dict(\
         num_states=39),
     rice_wang_bers_detombe_2008 = dict(\
         num_states=11),
+    beeler_reuter_1977 = dict(
+        num_states=8),
     maltsev_2009_paper = dict(\
         num_states=29),
     severi_fantini_charawi_difrancesco_2012 = dict(\
@@ -66,12 +68,12 @@ cellml_data = dict(\
 not_supported = cellml_data.keys()
 supported_models = []
 
-skip = dict(shannon_wang_puglisi_weber_bers_2004_b = "the model exhibits unstable numerics",
+skip = dict(#shannon_wang_puglisi_weber_bers_2004_b = "the model exhibits unstable numerics",
             Pandit_Hinch_Niederer = "Some math trouble",
-            iyer_mazhari_winslow_2004 = "Some math trouble",
-            winslow_rice_jafri_marban_ororke_1999 = "Some math trouble",
-            severi_fantini_charawi_difrancesco_2012 = "Some translation trouble...",
-            terkildsen_niederer_crampin_hunter_smith_2008 = "Some translation trouble...",
+            #iyer_mazhari_winslow_2004 = "Some math trouble",
+            #winslow_rice_jafri_marban_ororke_1999 = "Some math trouble",
+            #severi_fantini_charawi_difrancesco_2012 = "Some translation trouble...",
+            #terkildsen_niederer_crampin_hunter_smith_2008 = "Some translation trouble...",
             )
 
 test_form = """
@@ -129,8 +131,10 @@ class TestBase(object):
         # Run simulation
         t0 = ref_time[0]
         t1 = ref_time[-1]
-        dt = min(0.1, t1/1000000.)
+        print t0, t1
+        dt = min(0.1, t1/100000.)
         tsteps = np.linspace(t0, t1, int(t1/dt)+1)
+        print "using", dt, "to integrate", self.ode.name
         results = odeint(rhs, y0, tsteps, Dfun=jac, args=(model_params,))
         
         # Get data to compare with ref
@@ -153,7 +157,7 @@ class TestBase(object):
             pylab.show()
     
         print "Rel diff:", rel_diff
-        self.assertTrue(rel_diff<1e-3)
+        self.assertTrue(rel_diff<6e-3)
         supported_models.append(not_supported.pop(not_supported.index(self.name)))
 
 test_code = []
@@ -164,7 +168,7 @@ for name, data in cellml_data.items():
     test_code.append(test_form.format(name=name, **data))
 
 exec("\n\n".join(test_code))
-do_plot = False
+do_plot = True
 
 if __name__ == "__main__":
 

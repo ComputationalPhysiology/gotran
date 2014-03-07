@@ -176,7 +176,7 @@ The complete original paper reference is cited below:
       <variable units="second" name="stim_end" initial_value="100000000"/>
       <variable units="second" name="stim_period" initial_value="1"/>
       <variable units="second" name="stim_duration" initial_value="0.002"/>
-      <variable units="microA_per_microF" name="stim_amplitude" initial_value="-21.1268"/>
+      <variable units="microA_per_microF" name="stim_amplitude" initial_value="-22.0"/>
       <math xmlns="http://www.w3.org/1998/Math/MathML">
          <apply>
             <eq/>
