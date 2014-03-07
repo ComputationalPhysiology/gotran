@@ -27,11 +27,11 @@ from modelparameters.codegeneration import ccode, cppcode, pythoncode, \
      sympycode, matlabcode
 
 # Gotran imports
-from gotran.common import check_arg, check_kwarg, error
+from gotran.common import check_arg, check_kwarg, error, warning
 from gotran.common.options import parameters
 from gotran.model.ode import ODE
 from gotran.model.odeobjects import Comment, ODEObject
-from gotran.model.expressions import Expression, Intermediate
+from gotran.model.expressions import Expression, Intermediate, IndexedExpression
 from gotran.codegeneration.codecomponent import CodeComponent
 from gotran.codegeneration.algorithmcomponents import *
 
@@ -167,8 +167,20 @@ class BaseCodeGenerator(object):
                 
                     comps.append(fb_subst)
 
+        # Code for generation of linearized derivatives
+        if functions.linearized_rhs_evaluation.generate:
+            comp.append(linearized_derivatives(\
+                self.ode, function_name=functions.linearized_rhs_evaluation.function_name,
+                result_name=functions.linearized_rhs_evaluation.result_name,
+                params=self.params.code))
+
         # Create code snippest of all 
         code.extend(self.function_code(comp, indent=indent) for comp in comps)
+
+        if functions.componentwise_rhs_evaluation.generate:
+            snippet = self.componentwise_code(ode, indent=indent)
+            if snippet:
+                code.append(snippet)
 
         return code
 
@@ -744,6 +756,11 @@ class PythonCodeGenerator(BaseCodeGenerator):
         
         return "\n".join(self.indent_and_split_lines(function, indent=indent))
 
+    def componentwise_code(self, ode, indent=0, default_arguments=None, \
+                      include_signature=True, return_body_lines=False):
+        warning("Generation of componentwise_rhs_evaluation code is not "
+                "yet implemented for Python backend.")
+
     def class_code(self, ode, monitored=None):
         """
         Generate class code
@@ -1059,34 +1076,32 @@ class CCodeGenerator(BaseCodeGenerator):
         if params.body.representation == "named":
             collected_names = set()
             for expr in comp.body_expressions:
-                if isinstance(expr, Intermediate):
+                if isinstance(expr, Expression) and \
+                       not isinstance(expr, IndexedExpression):
                     if expr.name in collected_names:
                         duplicates.add(expr.name)
                     else:
                         collected_names.add(expr.name)
-        
+
         # Iterate over any body needed to define the dy
         for expr in comp.body_expressions:
             if isinstance(expr, Comment):
                 body_lines.append("")
                 body_lines.append("// " + str(expr))
-            else:
-                if isinstance(expr, Intermediate):
-                    if expr.name in duplicates:
-                        if expr.name not in declared_duplicates:
-                            name = "{0} {1}".format(self.float_type, \
-                                                    self.obj_name(expr))
-                            declared_duplicates.add(expr.name)
-                        else:
-                            name = "{0}".format(self.obj_name(expr))
-                    else:
-                        name = "const {0} {1}".format(self.float_type, \
-                                                      self.obj_name(expr))
-                    
+                continue
+            elif isinstance(expr, IndexedExpression):
+                name = "{0}".format(self.obj_name(expr))
+            elif expr.name in duplicates:
+                if expr.name not in declared_duplicates:
+                    name = "{0} {1}".format(self.float_type, \
+                                            self.obj_name(expr))
+                    declared_duplicates.add(expr.name)
                 else:
                     name = "{0}".format(self.obj_name(expr))
-                    
-                body_lines.append(self.to_code(expr.expr, name))
+            else:
+                name = "const {0} {1}".format(self.float_type, \
+                                              self.obj_name(expr))
+            body_lines.append(self.to_code(expr.expr, name))
                     
         if return_body_lines:
             return body_lines
@@ -1150,7 +1165,7 @@ class CCodeGenerator(BaseCodeGenerator):
         # Add function prototype
         if include_signature:
             body_lines = self.wrap_body_with_function_prototype(\
-                body_lines, "rhs", self.args(default_arguments), \
+                body_lines, "rhs", "unsigned int id, "+self.args(default_arguments), \
                 self.float_type, "Evaluate componenttwise rhs of the ODE")
 
         return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
