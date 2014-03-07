@@ -4,6 +4,7 @@ __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
 import unittest
+import glob
 from gotran.input.cellml import *
 from gotran.codegeneration.compilemodule import compile_module
 from gotran.common.options import parameters
@@ -29,67 +30,18 @@ supported_models_form = """
 \end{{itemize}}
 \end{{document}}
 """
-
-cellml_data = dict(\
-    terkildsen_niederer_crampin_hunter_smith_2008 = dict(\
-        num_states=22),
-    Pandit_Hinch_Niederer = dict(\
-        num_states=22),
-    Pandit_et_al_2001_endo = dict(\
-        num_states=26),
-    niederer_hunter_smith_2006 = dict(\
-        num_states=5),
-    iyer_mazhari_winslow_2004 = dict(\
-        num_states=67),
-    shannon_wang_puglisi_weber_bers_2004_b = dict(\
-        num_states=45),
-    maleckar_greenstein_trayanova_giles_2009 = dict(\
-        num_states=30),
-    irvine_jafri_winslow_1999 = dict(\
-        num_states=13),
-    grandi_pasqualini_bers_2010 = dict(\
-        num_states=39),
-    rice_wang_bers_detombe_2008 = dict(\
-        num_states=11),
-    beeler_reuter_1977 = dict(
-        num_states=8),
-    maltsev_2009_paper = dict(\
-        num_states=29),
-    severi_fantini_charawi_difrancesco_2012 = dict(\
-        num_states=33, change_state_names=[]),
-    tentusscher_noble_noble_panfilov_2004_a = dict(\
-        num_states=17),
-    ten_tusscher_model_2006_IK1Ko_M_units = dict(\
-        num_states=19),
-    winslow_rice_jafri_marban_ororke_1999 = dict(\
-        num_states=33),
-)
-
-not_supported = cellml_data.keys()
+cellml_models = [model.replace(".cellml", "") for model in glob.glob("*.cellml")]
+not_supported = cellml_models[:]
 supported_models = []
 
-skip = dict(#shannon_wang_puglisi_weber_bers_2004_b = "the model exhibits unstable numerics",
-            Pandit_Hinch_Niederer = "Some math trouble",
-            #iyer_mazhari_winslow_2004 = "Some math trouble",
-            #winslow_rice_jafri_marban_ororke_1999 = "Some math trouble",
-            #severi_fantini_charawi_difrancesco_2012 = "Some translation trouble...",
-            #terkildsen_niederer_crampin_hunter_smith_2008 = "Some translation trouble...",
+skip = dict(Pandit_Hinch_Niederer = "Some units trouble",
             )
 
 test_form = """
 class {name}Tester(unittest.TestCase, TestBase):
     def setUp(self):
-        if "change_state_names" in cellml_data["{name}"]:
-            params = dict(change_state_names=cellml_data["{name}"]["change_state_names"])
-            self.ode = cellml2ode("{name}.cellml", **params)
-        else:
-            self.ode = cellml2ode("{name}.cellml")
-            
+        self.ode = cellml2ode("{name}.cellml")
         self.name = "{name}"
-
-#    def test_num_statenames(self):
-#        self.assertEqual(self.ode.num_states, {num_states})
-
 """
 
 # Copy of default parameters
@@ -113,10 +65,13 @@ class TestBase(object):
         import numpy as np
         from cPickle import load
 
-        self.assertEqual(self.ode.num_states, cellml_data[self.name]["num_states"])
+        #self.assertEqual(self.ode.num_states, cellml_data[self.name]["num_states"])
 
         # Load reference data
-        data = load(open(self.ode.name+".cpickle"))
+        try:
+            data = load(open(self.ode.name+".cpickle"))
+        except:
+            return 
         ref_time = data.pop("time")
         state_name = data.keys()[0]
         ref_data = data[state_name]
@@ -161,14 +116,14 @@ class TestBase(object):
         supported_models.append(not_supported.pop(not_supported.index(self.name)))
 
 test_code = []
-for name, data in cellml_data.items():
+for name in cellml_models:
     if name in skip:
         print "Skipping:", name, "because", skip[name]
         continue
-    test_code.append(test_form.format(name=name, **data))
-
+    test_code.append(test_form.format(name=name))
+    
 exec("\n\n".join(test_code))
-do_plot = True
+do_plot = False
 
 if __name__ == "__main__":
 
