@@ -283,20 +283,30 @@ def factorized_jacobian_expressions(jacobian, \
     check_arg(jacobian, JacobianComponent)
     return FactorizedJacobianComponent(jacobian, function_name, params=params)
 
-def forward_backward_subst_expressions(factorized, params=None):
+def forward_backward_subst_expressions(\
+    factorized, function_name="forward_backward_subst",
+    result_name="dx", residual_name="F", params=None):
     """
     Return an ODEComponent holding expressions for the forward backward
     substitions for a factorized jacobian
 
     Arguments
     ---------
-    factoriced : FactorizedJacobianComponent
+    factorized : FactorizedJacobianComponent
         The ODEComponent holding expressions for the factorized jacobian
+    function_name : str
+        The name of the function which should be generated
+    result_name : str
+        The name of the result (increment)
+    residual_name : str
+        The name of the residual
     params : dict
         Parameters determining how the code should be generated
     """
-    check_arg(factoriced, FactorizedJacobianComponent)
-    return ForwardBackwardSubstitutionComponent(jacobian, params=params)
+    check_arg(factorized, FactorizedJacobianComponent)
+    return ForwardBackwardSubstitutionComponent(\
+        factorized, function_name="forward_backward_subst",
+        result_name="dx", residual_name="F", params=None)
 
 class JacobianComponent(CodeComponent):
     """
@@ -327,11 +337,6 @@ class JacobianComponent(CodeComponent):
                                                 descr, params=params)
         check_arg(result_name, str)
 
-        #if ode.duplicated_expressions:
-        #    error("Cannot compute the jacobian including duplicated "\
-        #          "expressions (yet...): {0}".format(\
-        #              ", ".join(dup for dup in ode.duplicated_expressions)))
-
         timer = Timer("Computing jacobian")
         
         # Gather state expressions and states
@@ -359,9 +364,17 @@ class JacobianComponent(CodeComponent):
             sys.stdout.flush()
 
         jac_expr_added = False
+        total_num_state_expressions = sum(isinstance(expr, StateExpression) \
+                                          for expr in all_exprs)
+        num_state_expressions = 0
         for expr in all_exprs:
 
+            # Check if we are finished
+            if num_state_expressions == total_num_state_expressions:
+                break
+            
             if isinstance(expr, StateExpression):
+                num_state_expressions += 1
                 i = state_dict[expr.state.sym]
                 jac_expr_added = True
                 states_syms = [sym for sym in ode_primitives(expr.expr, time_sym) \
@@ -572,8 +585,6 @@ class FactorizedJacobianComponent(CodeComponent):
         ---------
         jacobian : JacobianComponent
             The Jacobian of the ODE
-        with_body : bool
-            If true, the body for computing the jacobian will be included 
         function_name : str
             The name of the function which should be generated
         params : dict
@@ -582,13 +593,14 @@ class FactorizedJacobianComponent(CodeComponent):
         
         timer = Timer("Computing factorization of jacobian")
         check_arg(jacobian, JacobianComponent)
-        descr = "Symbolicly factorize the jacobian of the {0} ODE".format(\
+        descr = "Symbolically factorize the jacobian of the {0} ODE".format(\
             jacobian.root)
         super(FactorizedJacobianComponent, self).__init__(\
             "FactorizedJacobian", jacobian.root, function_name, descr, \
-            params=params)
+            params=params, use_default_arguments=False,
+            additional_arguments=jacobian.results)
 
-        self.add_comment("Factorizing jacobian of {0}".format(jacobian.root.name))
+        self.add_comment("Factorizing jacobian of {0}".format(self.root.name))
         
         jacobian_name = jacobian.results[0]
 
@@ -667,21 +679,86 @@ class FactorizedJacobianComponent(CodeComponent):
 
         # No need to call recreate body expressions
         self.body_expressions = self.ode_objects
+
+        self.used_states = set()
+        self.used_parameters = set()
      
 class ForwardBackwardSubstitutionComponent(CodeComponent):
     """
     Class to generate a forward backward substiution algorithm for
     symbolically factorized jacobian
     """
-    def __init__(self, factorized, jacobian_name="jac", residual_name="dx", \
-                 params=None):
+    def __init__(self, factorized, function_name="forward_backward_subst",
+                 result_name="dx", residual_name="F", params=None):
         """
         Create a JacobianForwardBackwardSubstComponent
+
+        Arguments
+        ---------
+        factorized : FactorizedJacobianComponent
+            The factorized jacobian of the ODE
+        function_name : str
+            The name of the function which should be generated
+        result_name : str
+            The name of the result (increment)
+        residual_name : str
+            The name of the residual
+        params : dict
+            Parameters determining how the code should be generated
         """
         check_arg(factorized, FactorizedJacobianComponent)
+        jacobian_name = factorized.shapes.keys()[0]
+        additional_arguments = factorized.additional_arguments + \
+                               [residual_name]
+        descr = "Symbolically forward backward substitute linear system "\
+                "of {0} ODE".format(factorized.root)
         super(ForwardBackwardSubstitutionComponent, self).__init__(\
-            "ForwardBackwardSubst", factorized.root, params=params)
-        check_arg(parent, ODE)
+            "ForwardBackwardSubst", factorized.root, function_name,
+            descr, params=params, use_default_arguments=False, \
+            additional_arguments=additional_arguments)
+
+        self.add_comment("Forward backward substituting factorized "\
+                         "linear system {0}".format(self.root.name))
+        
+        # Get copy of jacobian
+        jac = factorized.factorized_jacobian[:,:]
+
+        # Size of system
+        n = jac.rows
+
+        self.shapes[jacobian_name] = (n,n)
+        self.shapes[residual_name] = (n,)
+        self.shapes[result_name] = (n,)
+
+        F = []
+        dx = []
+        # forward substitution, all diag entries are scaled to 1
+        for i in range(n):
+            
+            F.append(self.add_indexed_object(residual_name, i))
+            dx.append(self.add_indexed_expression(result_name, i, F[i]))
+            
+            for j in range(i):
+                if jac[i,j].is_zero:
+                    continue
+                dx[i] = self.add_indexed_expression(result_name, i, dx[i]-dx[j]*jac[i,j])
+
+        # backward substitution
+        for i in range(n-1,-1,-1):
+            for j in range(i+1, n):
+                if jac[i,j].is_zero:
+                    continue
+                dx[i] = self.add_indexed_expression(result_name, i, dx[i]-dx[j]*jac[i,j])
+
+            dx[i] = self.add_indexed_expression(result_name, i, dx[i]/jac[i,i])
+        
+        # No need to call recreate body expressions
+        self.body_expressions = [obj for obj in self.ode_objects \
+                                 if isinstance(obj, (IndexedExpression, Comment))]
+
+        self.results = [result_name]
+        self.used_states = set()
+        self.used_parameters = set()
 
 class LinearizedDerivativeComponent(CodeComponent):
     """

@@ -38,10 +38,9 @@ parameters = ParameterDict(
                                           "code."),
             
             # Parameter for default argument order
-            default_arguments = OptionParam("stp", ["tsp", "stp", "spt", "ts", "st",
-                                                    "tspb", "stpb", "sptb", "tsb", "stb",],
+            default_arguments = OptionParam("stp", ["tsp", "stp", "spt", "ts", "st"],
                                             description="Default input argument order: "\
-                                            "s=states, p=parameters, t=time, b=body"),
+                                            "s=states, p=parameters, t=time"),
             
             # Parameter for the time parameter name
             time = ParameterDict(
@@ -86,6 +85,9 @@ parameters = ParameterDict(
                 use_cse = Param(False, description="If true will the body be "\
                                 "optimized using SymPy common sub expression "\
                                 "extraction."),
+
+                in_signature = Param(False, description="If true the body argument "\
+                                     "will be included in the signature."),
             
                 representation = OptionParam("named", ["named", "array", "reused_array"],
                                              description="Controls how body variables are "\
@@ -150,6 +152,10 @@ parameters = ParameterDict(
                 function_name = Param("forward_backward_subst", \
                                       description="The name of the generated "\
                                       "function."),
+                residual_name = Param("F", description="The name of "\
+                                      "the residual argument."),
+                result_name = Param("dx", description="The name of "\
+                                      "the incriment argument."),
                 ),
             
             componentwise_rhs_evaluation = ParameterDict(

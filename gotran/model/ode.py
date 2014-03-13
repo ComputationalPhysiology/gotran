@@ -747,10 +747,10 @@ class ODE(ODEComponent):
                   .format(obj, expr_obj))
 
         # If we get a Derivative(expr, t) we issue an error
-        if isinstance(expr_obj, Expression) and var_obj == self._time:
-            error("All derivative expressions of registered expressions "\
-                  "need to be expanded with respect to time. Use "\
-                  "expr.diff(t) instead of Derivative(expr, t) ")
+        #if isinstance(expr_obj, Expression) and var_obj == self._time:
+        #    error("All derivative expressions of registered expressions "\
+        #          "need to be expanded with respect to time. Use "\
+        #          "expr.diff(t) instead of Derivative(expr, t) ")
 
         if not isinstance(expr_obj, Expression):
             error("Can only differentiate expressions or states. Got {0} as "\

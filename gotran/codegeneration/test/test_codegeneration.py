@@ -27,7 +27,6 @@ from gotran.codegeneration.algorithmcomponents import *
 from gotran.codegeneration.codecomponent import *
 from gotran.codegeneration.codegenerator import *
 
-
 suppress_logging()
 
 def get_indexed(comp, name):
@@ -38,11 +37,10 @@ def get_indexed(comp, name):
 # Load reference CodeComponents
 ode = load_ode("tentusscher_2004_mcell_updated.ode")
 
-# Python code generator with default code generation paramters
-codegen = PythonCodeGenerator()
-
 # Options for code generation
 default_params = parameters["generation"].copy()
+default_params.functions.jacobian.generate = True
+default_params.functions.monitored.generate = False
 
 state_repr_opts = sorted(dict.__getitem__(default_params.code.states, \
                                           "representation")._options)
@@ -52,6 +50,9 @@ body_repr_opts = dict.__getitem__(default_params.code.body, \
                                   "representation")._options
 body_optimize_opts = dict.__getitem__(default_params.code.body, \
                                       "optimize_exprs")._options
+
+# Python code generator with default code generation paramters
+codegen = PythonCodeGenerator(default_params)
 
 module_code = codegen.module_code(ode)
 exec(module_code)
@@ -101,6 +102,7 @@ def function_closure(body_repr, body_optimize, param_repr, \
         code_params = gen_params["code"]
         code_params["body"]["optimize_exprs"] = body_optimize
         code_params["body"]["representation"] = body_repr
+        code_params["body"]["in_signature"] = body_in_arg
         code_params["body"]["array_name"] =  body_array_name
         code_params["parameters"]["representation"] = param_repr
         code_params["parameters"]["array_name"] = parameters_name
@@ -108,7 +110,7 @@ def function_closure(body_repr, body_optimize, param_repr, \
         code_params["states"]["array_name"] = states_name
         code_params["body"]["use_cse"] = use_cse
         code_params["float_precision"] = float_precision
-        code_params["default_arguments"] = "stp" + ("b" if body_in_arg else "")
+        code_params["default_arguments"] = "stp" 
 
         # Reload ODE for each test
         ode = load_ode("tentusscher_2004_mcell_updated.ode")

@@ -419,11 +419,11 @@ def compile_extension_module(ode, monitored, params):
     cgen = CCodeGenerator(params)
     
     pcode = "\n\n".join(\
-        pgen.code_list(ode, monitored=monitored))
-    ccode = "\n\n".join(cgen.code_list(ode,
+        pgen.code_dict(ode, monitored=monitored).values())
+    ccode = "\n\n".join(cgen.code_dict(ode,
                         monitored=monitored,
                         include_init=False,
-                        include_index_map=False))
+                        include_index_map=False).values())
     
     push_log_level(INFO)
     info("Calling GOTRAN just-in-time (JIT) compiler, this may take some "\

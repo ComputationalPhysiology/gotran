@@ -5,7 +5,7 @@ import os
 from gotran.model.loadmodel import load_ode
 from gotran.codegeneration.codegenerator import PythonCodeGenerator
 from gotran.common.options import parameters
-from gotran.common import error
+from gotran.common import error, info
 
 def main(filename, params):
     """
@@ -32,10 +32,13 @@ def main(filename, params):
 
     f = open(output, "w")
 
+    info("")
+    info("Generating Python files for the {0} ode...".format(ode.name))
     if params.functions.monitored.generate:
         f.write(gen.module_code(ode, monitored=monitored))
     else:
         f.write(gen.module_code(ode))
+    info("  done.")
 
 if __name__ == "__main__":
     import sys, os

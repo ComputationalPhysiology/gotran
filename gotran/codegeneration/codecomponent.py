@@ -52,7 +52,9 @@ class CodeComponent(ODEComponent):
         """
         return parameters.generation.code.copy()
     
-    def __init__(self, name, ode, function_name, description, params=None, **results):
+    def __init__(self, name, ode, function_name, description, params=None,
+                 use_default_arguments=True, additional_arguments=None,
+                 **results):
         """
         Creates a CodeComponent
 
@@ -69,16 +71,24 @@ class CodeComponent(ODEComponent):
             A short description of what the code component are computing
         params : dict
             Parameters determining how the code should be generated
+        use_default_arguments : bool
+            If true state, time and parameters are expected to be used in the
+            code component
+        additional_arguments : list
+            A list of str for additional arguments included in the signature.
         results : kwargs
             A dict of result expressions. The result expressions will
             be used to extract the body expressions for the code component.
         """
         params = params or {}
+        additional_arguments = additional_arguments or []
         check_arg(ode, ODE)
         check_arg(name, str)
         check_arg(description, str)
         check_arg(function_name, str)
         check_kwarg(params, "params", dict)
+        check_kwarg(use_default_arguments, "use_default_arguments", bool)
+        check_kwarg(additional_arguments, "additional_arguments", list)
 
         super(CodeComponent, self).__init__(name, ode)
 
@@ -98,15 +108,19 @@ class CodeComponent(ODEComponent):
         self.description = description
         
         # Shapes for any indexed expressions or objects
-        self.shapes = {}
+        self.shapes = OrderedDict()
 
         # A map between expressions and recreated IndexedExpressions
-        self.indexed_map = defaultdict(OrderedDict)
+        self.indexed_map = OrderedDict()
 
         # Init parameter or state replace dict
-        self._init_param_state_replace_dict()
-        self.results = results.keys()
+        if use_default_arguments:
+            self.param_state_replace_dict = self._init_param_state_replace_dict()
+        else:
+            self.param_state_replace_dict = {}
 
+        self.results = results.keys()
+        
         # Recreate body expressions based on the given result_expressions
         if results:
             results, body_expressions = self._body_from_results(**results)
@@ -115,6 +129,9 @@ class CodeComponent(ODEComponent):
         else:
             self.body_expressions = []
 
+        # Store for later usage
+        self.use_default_arguments = use_default_arguments
+        self.additional_arguments = additional_arguments
             
     def add_indexed_expression(self, basename, indices, expr):
         """
@@ -212,7 +229,7 @@ class CodeComponent(ODEComponent):
         time_name = self._params["time"]["name"]
 
         # Create a map between states, parameters 
-        state_param_map = dict(states=OrderedDict(\
+        param_state_map = OrderedDict(states=OrderedDict(\
             (state, IndexedObject(state_name, ind, \
                                   (self.root.num_full_states,), array_params)) \
             for ind, state in enumerate(self.root.full_states)),
@@ -230,19 +247,21 @@ class CodeComponent(ODEComponent):
             self.shapes[param_name] = (self.root.num_parameters,)
             param_state_replace_dict.update((param.sym, indexed.sym) \
                                             for param, indexed in \
-                                            state_param_map["parameters"].items())
+                                            param_state_map["parameters"].items())
 
         if state_repr == "array":
             self.shapes[state_name] = (self.root.num_full_states,)
             param_state_replace_dict.update((state.sym, indexed.sym) \
                                             for state, indexed in \
-                                            state_param_map["states"].items())
+                                            param_state_map["states"].items())
 
         param_state_replace_dict[self.root._time.sym] = sp.Symbol(time_name)
 
-        # Store dicts
-        self.param_state_replace_dict = param_state_replace_dict
-        self.indexed_map.update(state_param_map)
+        self.indexed_map.update(param_state_map)
+        self.shapes
+
+        # return  dicts
+        return param_state_replace_dict
 
     def _body_from_results(self, **results):
         """
@@ -401,6 +420,10 @@ class CodeComponent(ODEComponent):
         atoms = [state.sym for state in self.root.full_states]
         atoms.extend(param.sym for param in self.root.parameters)
 
+        # Collecte what states and parameters has been used
+        used_states = set()
+        used_parameters = set()
+
         self.add_comment("Common sub expressions for the body and the "\
                          "result expressions")
         body_expressions.append(self.ode_objects[-1])
@@ -419,9 +442,15 @@ class CodeComponent(ODEComponent):
                 # Add body expression as an intermediate expression
                 sym = self.add_intermediate("cse_{0}".format(\
                     cse_cnt), expr.xreplace(cse_subs))
+                obj = self.ode_objects.get(sympycode(sym))
+                for dep in self.root.expression_dependencies[obj]:
+                    if isinstance(dep, State):
+                        used_states.add(dep)
+                    elif isinstance(dep, Parameter):
+                        used_parameters.add(dep)
                 cse_subs[cse_sym] = sym
                 cse_cnt += 1
-                body_expressions.append(self.ode_objects.get(sympycode(sym)))
+                body_expressions.append(obj)
 
             # Check if we should add a result expressions
             if last_cse_expr_used_in_result_expr[cse_sym]:
@@ -437,6 +466,12 @@ class CodeComponent(ODEComponent):
                         sym = self.add_indexed_expression(result_name, indices, exp_expr)
 
                         expr = self.ode_objects.get(sympycode(sym))
+
+                        for dep in self.root.expression_dependencies[expr]:
+                            if isinstance(dep, State):
+                                used_states.add(dep)
+                            elif isinstance(dep, Parameter):
+                                used_parameters.add(dep)
 
                         # Register the new result expression
                         new_results[result_name].append(expr)
@@ -472,6 +507,10 @@ class CodeComponent(ODEComponent):
 
         if might_take_time:
             info(" done")
+
+        # Sort used state, parameters and expr
+        self.used_states = sorted(used_states)
+        self.used_parameters = sorted(used_parameters)
 
         return new_results, body_expressions
         
@@ -769,6 +808,8 @@ class CodeComponent(ODEComponent):
                                                  (len(results[result_name]), ),
                                                  array_params=self._params.array)
 
+                    if new_expr.basename not in self.indexed_map:
+                        self.indexed_map[new_expr.basename] = OrderedDict()
                     self.indexed_map[new_expr.basename][expr] = new_expr
 
                     # Copy counter from old expression so it sort properly
@@ -823,6 +864,8 @@ class CodeComponent(ODEComponent):
                                              xreplace(replace_dict),
                                              array_params=self._params.array)
 
+                if body_name not in self.indexed_map:
+                    self.indexed_map[body_name] = OrderedDict()
                 self.indexed_map[body_name][expr] = new_expr
 
                 # Copy counter from old expression so they sort properly
@@ -843,11 +886,17 @@ class CodeComponent(ODEComponent):
         # Store indices for any added arrays
         if "reused_array" == body_repr:
 
-            self.shapes[body_name] = (max_index+1,)
+            if max_index > -1:
+                self.shapes[body_name] = (max_index+1,)
+            else:
+                self.shapes.pop(body_name)
 
         elif "array" == body_repr:
 
-            self.shapes[body_name] = (body_ind,)
+            if body_ind > 0:
+                self.shapes[body_name] = (body_ind,)
+            else:
+                self.shapes.pop(body_name)
 
         # Store the shape of the added result expressions
         for result_name, result_expressions in results.items():
