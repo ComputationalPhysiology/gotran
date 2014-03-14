@@ -190,6 +190,11 @@ class BaseCodeGenerator(object):
                 code[functions.componentwise_rhs_evaluation.function_name] = \
                                                                 snippet
 
+        if ode.is_dae:
+            mass = self.mass_matrix(ode, indent=indent)
+            if mass is not None:
+                code["mass_matrix"] = mass
+
         return code
 
     @classmethod
@@ -770,6 +775,24 @@ class PythonCodeGenerator(BaseCodeGenerator):
         warning("Generation of componentwise_rhs_evaluation code is not "
                 "yet implemented for Python backend.")
 
+    def mass_matrix(self, ode, indent=0):
+        check_arg(ode, ODE)
+        body_lines = ["", "import numpy as np",
+                      "M = np.eye({0})".format(ode.num_full_states)]
+
+        for ind, expr in enumerate(ode.state_expressions):
+            if isinstance(expr, AlgebraicExpression):
+                body_lines.append("M[{0},{0}] = 0".format(ind))
+
+        body_lines.append("")
+        body_lines.append("return M")
+        
+        body_lines = self.wrap_body_with_function_prototype(\
+            body_lines, "mass_matrix", "", \
+            "The mass matrix of the {0} ODE".format(ode.name))
+
+        return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
+
     def class_code(self, ode, monitored=None):
         """
         Generate class code
@@ -1184,6 +1207,9 @@ class CCodeGenerator(BaseCodeGenerator):
 
         return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
         
+    def mass_matrix(self, ode, indent=0):
+        warning("Generation of componentwise_rhs_evaluation code is not "
+                "yet implemented for Python backend.")
 
     def module_code(self, ode):
         
@@ -1311,9 +1337,6 @@ class MatlabCodeGenerator(BaseCodeGenerator):
 
         if monitored:
             code_dict["monitored_names"] = self.monitored_names_code(ode, monitored)
-
-        if ode.is_dae:
-            code_dict["mass_matrix"] = self.mass_matrix(ode)
 
         return code_dict
         
@@ -1565,7 +1588,7 @@ class MatlabCodeGenerator(BaseCodeGenerator):
         
         return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
         
-    def mass_matrix(self, ode):
+    def mass_matrix(self, ode, indent=0):
         check_arg(ode, ODE)
         body_lines = ["", "M = eye({0})".format(ode.num_full_states)]
 

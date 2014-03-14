@@ -18,6 +18,8 @@ def main(filename, params):
     # Collect monitored
     if params.functions.monitored.generate:
         monitored = [expr.name for expr in ode.intermediates + ode.state_expressions]
+    else:
+        monitored = None
 
     # Create a C code generator
     gen = PythonCodeGenerator(params)
@@ -34,10 +36,7 @@ def main(filename, params):
 
     info("")
     info("Generating Python files for the {0} ode...".format(ode.name))
-    if params.functions.monitored.generate:
-        f.write(gen.module_code(ode, monitored=monitored))
-    else:
-        f.write(gen.module_code(ode))
+    f.write(gen.module_code(ode, monitored=monitored))
     info("  done.")
 
 if __name__ == "__main__":
