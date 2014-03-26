@@ -3,12 +3,13 @@
 
 from __future__ import division
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-03-13 -- 2014-03-07"
+__date__ = "2013-03-13 -- 2014-03-25"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
 from modelparameters.codegeneration import latex
 from scipy.integrate import odeint
+from scipy.optimize import root
 import pylab
 import numpy as np
 import instant
@@ -16,7 +17,7 @@ from gotran.model.loadmodel import load_ode
 from gotran.model.utils import DERIVATIVE_EXPRESSION, special_expression
 from gotran.codegeneration.compilemodule import compile_module
 from gotran.common.options import parameters
-from gotran.common import error
+from gotran.common import error, warning
 
 def main(filename, params):
 
@@ -94,15 +95,25 @@ def main(filename, params):
     dt = params.dt
 
     rhs = module.rhs
+    jac = module.compute_jacobian if params.use_jacobian else None
     y0 = module.init_state_values(**user_ic)
     model_params = module.init_parameter_values(**user_params)
 
+    # Check for steady state solve
+    if params.steady_state.solve:
+        result = root(rhs, y0, args=(0., model_params,), jac=jac, \
+                      method=params.steady_state.method, \
+                      tol=params.steady_state.tol)
+
+        if result.success:
+            y0 = result.x
+            print "Found stead state:", ", ".join("{0}: {1:e}".format(\
+                state.name, value) for value, state in zip(y0, ode.full_states))
+        else:
+            warning(result.message)
+
     tsteps = np.linspace(t0, t1, t1/dt+1)
-    if params.use_jacobian:
-        results = odeint(rhs, y0, tsteps, Dfun=module.compute_jacobian, \
-                         args=(model_params,))
-    else:
-        results = odeint(rhs, y0, tsteps, args=(model_params,))
+    results = odeint(rhs, y0, tsteps, Dfun=jac, args=(model_params,))
 
     # Plot results
     if not (plot_states or monitored):
@@ -163,7 +174,17 @@ if __name__ == "__main__":
         optimize_exprs = dict.__getitem__(body_params, "optimize_exprs"),
         )
     
+    steady_state = ParameterDict(
+        solve = Param(False, description="If true scipy.optimize.root is used "\
+                      "to find a steady state for a given parameters."),
+        method = OptionParam("hybr", ["hybr", "lm", "broyden1", "broyden2", \
+                                      "anderson", "linearmixing", "diagbroyden", \
+                                      "excitingmixing", "krylov"]),
+        tol = ScalarParam(1e-5, description="Tolerance for root finding algorithm."),
+        )
+    
     params = ParameterDict(\
+        steady_state = steady_state,
         parameters = Param([""], description="Set parameter of model"),
         init_conditions = Param([""], description="Set initial condition of model"),
         tstop = ScalarParam(100., gt=0, description="Time for stopping simulation"),\
