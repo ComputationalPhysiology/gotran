@@ -469,7 +469,7 @@ class ODE(ODEComponent):
         lines.append("")
         # Use Python code generator to indent outputted code
         # Write to file
-        from gotran.codegeneration.codegenerator import PythonCodeGenerator
+        from gotran.codegeneration.codegenerators import PythonCodeGenerator
         open(basename+".ode", "w").write("\n".join(\
             PythonCodeGenerator.indent_and_split_lines(lines)))
                     

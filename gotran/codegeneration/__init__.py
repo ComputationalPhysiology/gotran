@@ -16,7 +16,7 @@
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
 # Import gotran modules
-import codegenerator
+import codegenerators
 import compilemodule
 import latexcodegenerator
 import codecomponent
@@ -25,7 +25,7 @@ import algorithmcomponents
 # Import classes and routines from gotran modules
 from codecomponent import *
 from algorithmcomponents import *
-from codegenerator import *
+from codegenerators import *
 from latexcodegenerator import *
 from latexcodegenerator import _default_latex_params
 from compilemodule import compile_module

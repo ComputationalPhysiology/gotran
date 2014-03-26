@@ -29,7 +29,7 @@ from gotran.common import check_arg, check_kwarg, push_log_level, \
 from gotran.model.ode import ODE
 from gotran.model.loadmodel import load_ode
 from gotran.common.options import parameters
-from gotran.codegeneration.codegenerator import PythonCodeGenerator, \
+from gotran.codegeneration.codegenerators import PythonCodeGenerator, \
      CCodeGenerator, class_name
 from gotran.codegeneration.algorithmcomponents import rhs_expressions, \
      monitored_expressions, jacobian_expressions
