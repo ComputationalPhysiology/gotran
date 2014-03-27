@@ -708,8 +708,8 @@ class ForwardBackwardSubstitutionComponent(CodeComponent):
         """
         check_arg(factorized, FactorizedJacobianComponent)
         jacobian_name = factorized.shapes.keys()[0]
-        additional_arguments = factorized.additional_arguments + \
-                               [residual_name]
+        additional_indexed_arguments = factorized.additional_arguments + \
+                                       [residual_name]
         descr = "Symbolically forward backward substitute linear system "\
                 "of {0} ODE".format(factorized.root)
         super(ForwardBackwardSubstitutionComponent, self).__init__(\

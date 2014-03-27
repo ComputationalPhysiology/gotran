@@ -133,7 +133,7 @@ class CodeComponent(ODEComponent):
         self.use_default_arguments = use_default_arguments
         self.additional_arguments = additional_arguments
             
-    def add_indexed_expression(self, basename, indices, expr):
+    def add_indexed_expression(self, basename, indices, expr, add_offset=False):
         """
         Add an indexed expression using a basename and the indices
 
@@ -145,6 +145,8 @@ class CodeComponent(ODEComponent):
             The fixed indices identifying the expression
         expr : sympy.Basic, scalar
             The expression.
+        add_offset : bool
+            Add offset to indices
         """
         # Create an IndexedExpression in the present component
         timer = Timer("Add indexed expression")
@@ -163,12 +165,12 @@ class CodeComponent(ODEComponent):
 
         # Create the indexed expression
         expr = IndexedExpression(basename, indices, expr, self.shapes[basename], \
-                                 self._params.array)
+                                 self._params.array, add_offset)
         self._register_component_object(expr)
 
         return expr.sym
 
-    def add_indexed_object(self, basename, indices):
+    def add_indexed_object(self, basename, indices, add_offset=False):
         """
         Add an indexed object using a basename and the indices
 
@@ -178,6 +180,8 @@ class CodeComponent(ODEComponent):
             The basename of the indexed expression
         indices : int, tuple of int
             The fixed indices identifying the expression
+        add_offset : bool
+            Add offset to indices
         """
         timer = Timer("Add indexed object")
 
@@ -195,7 +199,7 @@ class CodeComponent(ODEComponent):
 
         # Create IndexedObject
         obj = IndexedObject(basename, indices, self.shapes[basename], \
-                            self._params.array)
+                            self._params.array, add_offset)
         self._register_component_object(obj)
 
         # Return the sympy version of the object
@@ -241,6 +245,7 @@ class CodeComponent(ODEComponent):
         state_name = self._params["states"]["array_name"]
         state_offset = self._params["states"]["add_offset"]
         time_name = self._params["time"]["name"]
+        dt_name = self._params["dt"]["name"]
 
         # Create a map between states, parameters and the corresponding
         # IndexedObjects
@@ -290,6 +295,7 @@ class CodeComponent(ODEComponent):
                                             param_state_map["states"].items())
 
         param_state_replace_dict[self.root._time.sym] = sp.Symbol(time_name)
+        param_state_replace_dict[self.root._dt.sym] = sp.Symbol(dt_name)
 
         self.indexed_map.update(param_state_map)
 

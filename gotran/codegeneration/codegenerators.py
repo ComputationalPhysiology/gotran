@@ -35,6 +35,7 @@ from gotran.model.expressions import Expression, Intermediate, \
      IndexedExpression, AlgebraicExpression
 from gotran.codegeneration.codecomponent import CodeComponent
 from gotran.codegeneration.algorithmcomponents import *
+from gotran.codegeneration.solvercomponents import *
 
 __all__ = ["PythonCodeGenerator", "CCodeGenerator", "CppCodeGenerator", \
            "MatlabCodeGenerator", "class_name", "CUDACodeGenerator"]
@@ -175,10 +176,17 @@ class BaseCodeGenerator(object):
 
         # Code for generation of linearized derivatives
         if functions.linearized_rhs_evaluation.generate:
-            comp.append(linearized_derivatives(\
-                self.ode, function_name=functions.linearized_rhs_evaluation.function_name,
+            comps.append(linearized_derivatives(\
+                ode, function_name=functions.linearized_rhs_evaluation.function_name,
                 result_name=functions.linearized_rhs_evaluation.result_name,
                 params=self.params.code))
+
+        # Add code for solvers
+        for solver, solver_params in self.params.solvers.items():
+            if solver_params.generate:
+                comps.append(eval(solver+"_solver")(\
+                    ode, function_name=solver_params.function_name,
+                    params=self.params.code))
 
         # Create code snippest of all 
         code.update((comp.function_name, \
@@ -354,24 +362,39 @@ class PythonCodeGenerator(BaseCodeGenerator):
         default_arguments = params.default_arguments \
                             if comp.use_default_arguments else ""
 
+        additional_arguments = comp.additional_arguments[:]
+
+        skip_result = []
         ret_args = []
         for arg in default_arguments:
             if arg == "s":
+                if params.states.array_name in comp.results:
+                    skip_result.append(params.states.array_name)
                 ret_args.append(params.states.array_name)
+                
             elif arg == "t":
+                if params.time.name in comp.results:
+                    skip_result.append(params.time.name)
                 ret_args.append(params.time.name)
+                if "dt" in additional_arguments:
+                    additional_arguments.remove("dt")
+                    ret_args.append(params.dt.name)
+                    
             elif arg == "p" and params.parameters.representation != \
                      "numerals":
+                if params.parameters.array_name in comp.results:
+                    skip_result.append(params.parameters.array_name)
                 ret_args.append(params.parameters.array_name)
 
-        ret_args.extend(comp.additional_arguments)
+        ret_args.extend(additional_arguments)
         
         # Arguments with default (None) values
         if params.body.in_signature and params.body.representation != "named":
             ret_args.append("{0}=None".format(params.body.array_name))
 
         for result_name in comp.results:
-            ret_args.append("{0}=None".format(result_name))
+            if result_name not in skip_result:
+                ret_args.append("{0}=None".format(result_name))
         
         return ", ".join(ret_args)
 
@@ -513,21 +536,32 @@ class PythonCodeGenerator(BaseCodeGenerator):
 
         # If initelizing results
         if comp.results:
-            body_lines.append("")
-            body_lines.append("# Init return args")
-            
-        for result_name in comp.results:
-            shape = comp.shapes[result_name]
-            if len(shape) > 1:
-                if params.array.flatten:
-                    shape = (reduce(lambda a,b:a*b, shape, 1),)
 
-            body_lines.append("if {0} is None:".format(result_name))
-            body_lines.append(["{0} = np.zeros({1}, dtype=np.{2})".format(\
-                result_name, shape, self.float_type)])
-            body_lines.append("else:".format(result_name))
-            body_lines.append(["assert isinstance({0}, np.ndarray) and "\
-            "{1}.shape == {2}".format(result_name, result_name, shape)])
+            results = comp.results[:]
+
+            if params.states.array_name in results:
+                results.remove(params.states.array_name)
+            if params.time.name in results:
+                results.remove(params.time.name)
+            if params.parameters.array_name in results:
+                results.remove(params.parameters.array_name)
+
+            if results:
+                body_lines.append("")
+                body_lines.append("# Init return args")
+            
+            for result_name in results:
+                shape = comp.shapes[result_name]
+                if len(shape) > 1:
+                    if params.array.flatten:
+                        shape = (reduce(lambda a,b:a*b, shape, 1),)
+                
+                body_lines.append("if {0} is None:".format(result_name))
+                body_lines.append(["{0} = np.zeros({1}, dtype=np.{2})".format(\
+                    result_name, shape, self.float_type)])
+                body_lines.append("else:".format(result_name))
+                body_lines.append(["assert isinstance({0}, np.ndarray) and "\
+                "{1}.shape == {2}".format(result_name, result_name, shape)])
             
         return body_lines
 
@@ -855,19 +889,40 @@ class CCodeGenerator(BaseCodeGenerator):
         params = self.params.code
         default_arguments = params.default_arguments \
                             if comp.use_default_arguments else ""
+        
+        additional_arguments = comp.additional_arguments[:]
 
+        skip_result = []
         ret_args = []
         for arg in default_arguments:
             if arg == "s":
-                ret_args.append("const {0}* {1}".format(self.float_type, \
-                                                        params.states.array_name))
+                if params.states.array_name in comp.results:
+                    skip_result.append(params.states.array_name)
+                    ret_args.append("{0}* {1}".format(self.float_type, \
+                                                      params.states.array_name))
+                else:
+                    ret_args.append("const {0}* {1}".format(self.float_type, \
+                                                            params.states.array_name))
             elif arg == "t":
-                ret_args.append("{0} {1}".format(self.float_type, \
-                                                 params.time.name))
+                if params.time.name in comp.results:
+                    error("Cannot have the same name for the time argument as "\
+                          "for a result argument.")
+                ret_args.append("const {0} {1}".format(self.float_type, \
+                                                       params.time.name))
+                if "dt" in additional_arguments:
+                    additional_arguments.remove("dt")
+                    ret_args.append("const {0} {1}".format(self.float_type, \
+                                                           params.dt.name))
+
             elif arg == "p" and params.parameters.representation != \
                      "numerals":
-                ret_args.append("const {0}* {1}".format(\
-                    self.float_type, params.parameters.array_name))
+                if params.parameters.array_name in comp.results:
+                    skip_result.append(params.parameters.array_name)
+                    ret_args.append("{0}* {1}".format(\
+                        self.float_type, params.parameters.array_name))
+                else:
+                    ret_args.append("const {0}* {1}".format(\
+                        self.float_type, params.parameters.array_name))
 
                 field_parameters = params["parameters"]["field_parameters"]
 
@@ -875,8 +930,13 @@ class CCodeGenerator(BaseCodeGenerator):
                 # FIXME: Get rid of this by introducing a ListParam type in modelparameters
                 if len(field_parameters) > 1 or \
                        (len(field_parameters)==1 and field_parameters[0] != ""):
-                    ret_args.append("const {0}* {1}".format(\
-                        self.float_type, params.parameters.field_array_name))
+                    if params.parameters.field_array_name in comp.results:
+                        skip_result.append(params.parameters.field_array_name)
+                        ret_args.append("{0}* {1}".format(\
+                            self.float_type, params.parameters.field_array_name))
+                    else:
+                        ret_args.append("const {0}* {1}".format(\
+                            self.float_type, params.parameters.field_array_name))
                     
 
         ret_args.extend("{0}* {1}".format(self.float_type, arg) \
@@ -887,7 +947,8 @@ class CCodeGenerator(BaseCodeGenerator):
                                               params.body.array_name))
 
         for result_name in comp.results:
-            ret_args.append("{0}* {1}".format(self.float_type, result_name))
+            if result_name not in skip_result:
+                ret_args.append("{0}* {1}".format(self.float_type, result_name))
         
         return ", ".join(ret_args)
 

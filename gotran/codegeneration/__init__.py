@@ -21,14 +21,17 @@ import compilemodule
 import latexcodegenerator
 import codecomponent
 import algorithmcomponents
+import solvercomponents
 
 # Import classes and routines from gotran modules
 from codecomponent import *
 from algorithmcomponents import *
+from solvercomponents import *
 from codegenerators import *
 from latexcodegenerator import *
 from latexcodegenerator import _default_latex_params
 from compilemodule import compile_module
+
 
 # Assign the __all__ attribute
 __all__ = [name for name in globals().keys() if name[:1] != "_"]

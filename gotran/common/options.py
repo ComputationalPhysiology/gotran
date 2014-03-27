@@ -47,6 +47,11 @@ parameters = ParameterDict(
                 name = Param("t", description="Name of time argument")
                 ),
             
+            # Parameter for the time step parameter name
+            dt = ParameterDict(
+                name = Param("dt", description="Name of time step argument")
+                ),
+            
             # Parameters for code generation of arrays
             array = ParameterDict(
                 index_format=OptionParam("[]", ["[]", "{}", "()"],
@@ -190,6 +195,36 @@ parameters = ParameterDict(
                                       "function."),
                 result_name = Param("values", description="The name of "\
                                       "the result argument."),
+                ),
+            ),
+
+        # Parameters for automatic generation of specific solver functions
+        solvers = ParameterDict(
+
+            explicit_euler = ParameterDict(
+                generate = Param(False, description="If true, generate code for "\
+                                 "solving an ODE using explicit Euler method."),
+                function_name = Param("forward_explicit_euler",\
+                                      description="The name of the generated "\
+                                      "function."),
+                ),
+            
+            rush_larsen = ParameterDict(
+                generate = Param(False, description="If true, generate code for "\
+                                 "solving an ODE using Rush Larsen method."),
+                function_name = Param("forward_rush_larsen",\
+                                      description="The name of the generated "\
+                                      "function."),
+                ),
+
+            simplified_implicit_euler = ParameterDict(
+                generate = Param(False, description="If true, generate code for "\
+                                 "solving an ODE using Rush Larsen method."),
+                function_name = Param("forward_simplified_implicit_euler",\
+                                      description="The name of the generated "\
+                                      "function."),
+                numeric_jacobian = Param(False, description="Use numeric "\
+                                         "calculated diagonal jacobian."),
                 ),
             ),
         ),

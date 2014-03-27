@@ -62,7 +62,8 @@ def recreate_expression(expr, *replace_dicts, **kwargs):
 
     elif isinstance(expr, IndexedExpression):
         new_expr = IndexedExpression(expr.basename, expr.indices, \
-                                     sympyexpr, expr.shape, expr._array_params)
+                                     sympyexpr, expr.shape, expr._array_params,
+                                     expr._offset_str)
     else:
         error("Should not reach here")
 
@@ -431,7 +432,8 @@ class IndexedExpression(IndexedObject, Expression):
     An expression which represents an expression with a fixed index
     associated with it
     """
-    def __init__(self, basename, indices, expr, shape=None, array_params=None):
+    def __init__(self, basename, indices, expr, shape=None, \
+                 array_params=None, add_offset=""):
         """
         Create an IndexedExpression with an associated basename used in code
         generation.
@@ -448,9 +450,11 @@ class IndexedExpression(IndexedObject, Expression):
             A tuple with the shape of the indexed expression
         array_params : dict
             Parameters to create the array name for the indexed object
+        add_offset : bool, str
+            If True a fixed offset is added to the indices
         """
         
-        IndexedObject.__init__(self, basename, indices, shape, array_params)
+        IndexedObject.__init__(self, basename, indices, shape, array_params, add_offset)
         Expression.__init__(self, self.name, expr)
         
 

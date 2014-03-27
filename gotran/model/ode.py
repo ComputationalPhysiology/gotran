@@ -72,12 +72,16 @@ class ODE(ODEComponent):
         self._time = time
         self.ode_objects.append(time)
 
+        dt = Dt("dt", "ms")
+        self._dt = dt
+        self.ode_objects.append(dt)
+
         # Add to object to component map
         self.object_component = weakref.WeakValueDictionary()
         self.object_component[self._time] = self
 
         # Namespace, which can be used to eval an expression
-        self.ns.update({"t":time.sym, "time":time.sym})
+        self.ns.update({"t":time.sym, "time":time.sym, "dt":dt.sym})
         
         # An list with all component names with expression added to them
         # The components are always sorted wrt last expression added
@@ -92,7 +96,8 @@ class ODE(ODEComponent):
 
         # A dict with the present ode objects
         # NOTE: hashed by name so duplicated expressions are not stored
-        self.present_ode_objects = dict(t=self._time, time=self._time)
+        self.present_ode_objects = dict(t=self._time, time=self._time, \
+                                        dt=self._dt)
 
         # Keep track of duplicated expressions
         self.duplicated_expressions = defaultdict(list)
@@ -543,7 +548,8 @@ class ODE(ODEComponent):
                       "only with Parameters and States.")
             
             # If State, Parameter or DerivativeExpression we always raise an error
-            elif any(isinstance(oo, (State, Parameter, Time, DerivativeExpression,
+            elif any(isinstance(oo, (State, Parameter, Time, Dt, \
+                                     DerivativeExpression,
                                      AlgebraicExpression, StateSolution)) \
                      for oo in [dup_obj, obj]):
                 error("Cannot register {0}. A {1} with name '{2}' is "\
@@ -872,7 +878,7 @@ class ODE(ODEComponent):
         for dep in dependencies:
             
             # Skip time
-            if str(dep) in ["t", "time"]:
+            if str(dep) in ["t", "time", "dt"]:
                 continue
             subs[dep.sym] = ode.add_parameter(dep.name, dep.param.value)
 

@@ -337,7 +337,7 @@ class IndexedObject(ODEObject):
         return parameters.generation.code.array.copy()
     
     def __init__(self, basename, indices, shape=None, array_params=None, \
-                 add_offset=False):
+                 add_offset=""):
         """
         Create an IndexedExpression with an associated basename
 
@@ -351,7 +351,7 @@ class IndexedObject(ODEObject):
             A tuple with the shape of the indexed object
         array_params : dict
             Parameters to create the array name for the indexed object
-        add_offset : bool
+        add_offset : bool, str
             If True a fixed offset is added to the indices
         """
 
@@ -369,7 +369,15 @@ class IndexedObject(ODEObject):
         index_format = self._array_params.index_format
         index_offset = self._array_params.index_offset
         flatten = self._array_params.flatten
-        offset_str = "{0}_offset+".format(basename) if add_offset else ""
+        if add_offset and isinstance(add_offset, str):
+            offset_str = add_offset
+        else:
+            offset_str = "{0}_offset".format(basename) if add_offset else ""
+        self._offset_str = offset_str
+
+        if offset_str:
+            offset_str +="+"
+
         # If trying to flatten indices, with a rank larger than 1 a shape needs
         # to be provided
         if len(indices)>1 and flatten and shape is None:
@@ -400,6 +408,10 @@ class IndexedObject(ODEObject):
         self._sym = sp.Symbol(name, real=True, imaginary=False, commutative=True,
                               hermitian=True)
         self._shape = shape
+
+    @property
+    def offset_str(self):
+        return self._offset_str
 
     @property
     def basename(self):
@@ -449,8 +461,8 @@ class Dt(ODEValueObject):
     """
     Specialization for a time step class
     """
-    def __init__(self, name):
-        super(Dt, self).__init__(name, 0.1)
+    def __init__(self, name, unit="ms"):
+        super(Dt, self).__init__(name, ScalarParam(0.1, unit=unit))
 
 
 # Tuple with single ODE Objects, for type checking
