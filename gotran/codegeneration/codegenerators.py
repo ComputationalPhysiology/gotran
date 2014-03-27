@@ -1536,7 +1536,7 @@ class CUDACodeGenerator(CCodeGenerator):
             # Add function prototype
             body_lines = self.wrap_body_with_function_prototype(\
                 body_lines, comp.function_name, self.args(comp), "", \
-                comp.description, device=True)
+                comp.description, kernel=True)
 
         return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
         
