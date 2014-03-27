@@ -61,6 +61,9 @@ parameters = ParameterDict(
             
             # Parameters for code generation of parameters
             parameters = ParameterDict(
+                field_parameters = Param([""], description="A list of parameter names "\
+                                         "which should be treated as field parameters. "\
+                                         "Not available for all backends..."),
                 representation = OptionParam("named", ["named", "array", "numerals"],
                                              description="Controls how parameters are "\
                                              "represented in the code. As named variables,"\
@@ -68,16 +71,28 @@ parameters = ParameterDict(
                                              "numeral values given in the gotran model."),
                 array_name = Param("parameters", description="The name of the array "\
                                    "representing the parameters."),
+                field_array_name = Param("field_parameters",
+                                         description="The name of the array "\
+                                         "representing the field parameters."),
+                add_offset = Param(False, description="If true an offset will be "\
+                                   "added to the index of each parameter"),
+                add_field_offset = Param(False, description="If true an offset will be "\
+                                         "added to the index of each field parameter"),
                 ),
             
             # Parameters for code generation of states
             states = ParameterDict(
+                field_states = Param([""], description="A list of state names "\
+                                     "which should be treated as field states. "\
+                                     "Not available for all backends..."),
                 representation = OptionParam("named", ["named", "array"],
                                              description="Controls how states are "\
                                              "represented in the code. As named variables,"\
                                              " or as an indexed array."),
                 array_name = Param("states", description="The name of the array "\
                                    "representing the states."),
+                add_offset = Param(False, description="If true an offset will be "\
+                                   "added to the index of each state"),
                 ),
             
             # Parameters for code generation of body expressions
@@ -107,7 +122,7 @@ parameters = ParameterDict(
                 ),
             ),
         
-        # Parameters for automaic generation of specific functions
+        # Parameters for automatic generation of specific functions
         functions = ParameterDict(
 
             rhs = ParameterDict(

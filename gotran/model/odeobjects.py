@@ -336,7 +336,8 @@ class IndexedObject(ODEObject):
         """
         return parameters.generation.code.array.copy()
     
-    def __init__(self, basename, indices, shape=None, array_params=None):
+    def __init__(self, basename, indices, shape=None, array_params=None, \
+                 add_offset=False):
         """
         Create an IndexedExpression with an associated basename
 
@@ -350,6 +351,8 @@ class IndexedObject(ODEObject):
             A tuple with the shape of the indexed object
         array_params : dict
             Parameters to create the array name for the indexed object
+        add_offset : bool
+            If True a fixed offset is added to the indices
         """
 
         array_params = array_params or {}
@@ -366,7 +369,7 @@ class IndexedObject(ODEObject):
         index_format = self._array_params.index_format
         index_offset = self._array_params.index_offset
         flatten = self._array_params.flatten
-        
+        offset_str = "{0}_offset+".format(basename) if add_offset else ""
         # If trying to flatten indices, with a rank larger than 1 a shape needs
         # to be provided
         if len(indices)>1 and flatten and shape is None:
@@ -388,7 +391,7 @@ class IndexedObject(ODEObject):
         else:
             indices = tuple(index+index_offset for index in indices)
 
-        index_str = ",".join(str(index) for index in indices)
+        index_str = ",".join(offset_str+str(index) for index in indices)
         name = basename + index_format.format(index_str)
 
         ODEObject.__init__(self, name)

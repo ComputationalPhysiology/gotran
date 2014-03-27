@@ -3,7 +3,7 @@
 import os
 
 from gotran.model.loadmodel import load_ode
-from gotran.codegeneration.codegenerators import CCodeGenerator
+from gotran.codegeneration.codegenerators import CUDACodeGenerator
 from gotran.common.options import parameters
 from gotran.common import error
 
@@ -16,15 +16,15 @@ def main(filename, params):
     ode = load_ode(filename)
 
     # Create a C code generator
-    gen = CCodeGenerator(params)
+    gen = CUDACodeGenerator(params)
 
     output = params.output
 
     if output:
-        if not(len(output)>2 and output[-2:] == ".h"):
+        if not(len(output)>2 and output[-2:] == ".cu"):
             output += ".h"
     else:
-        output = filename.replace(".ode", "")+".h"
+        output = filename.replace(".ode", "")+".cu"
 
     f = open(output, "w")
     if params.system_headers:
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     import sys, os
     from modelparameters.parameterdict import *
 
-    generation_params=CCodeGenerator.default_parameters()
+    generation_params=CUDACodeGenerator.default_parameters()
     
     params = ParameterDict(\
         system_headers = Param(True, description="If true system "\

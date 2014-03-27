@@ -25,7 +25,7 @@ from gotran.model.loadmodel import *
 from gotran.model.expressions import *
 from gotran.codegeneration.algorithmcomponents import *
 from gotran.codegeneration.codecomponent import *
-from gotran.codegeneration.codegenerator import *
+from gotran.codegeneration.codegenerators import *
 
 suppress_logging()
 

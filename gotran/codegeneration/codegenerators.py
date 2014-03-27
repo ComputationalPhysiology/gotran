@@ -37,7 +37,7 @@ from gotran.codegeneration.codecomponent import CodeComponent
 from gotran.codegeneration.algorithmcomponents import *
 
 __all__ = ["PythonCodeGenerator", "CCodeGenerator", "CppCodeGenerator", \
-           "MatlabCodeGenerator", "class_name"]
+           "MatlabCodeGenerator", "class_name", "CUDACodeGenerator"]
 
 def class_name(name):
     check_arg(name, str)
@@ -869,6 +869,16 @@ class CCodeGenerator(BaseCodeGenerator):
                 ret_args.append("const {0}* {1}".format(\
                     self.float_type, params.parameters.array_name))
 
+                field_parameters = params["parameters"]["field_parameters"]
+
+                # If empty
+                # FIXME: Get rid of this by introducing a ListParam type in modelparameters
+                if len(field_parameters) > 1 or \
+                       (len(field_parameters)==1 and field_parameters[0] != ""):
+                    ret_args.append("const {0}* {1}".format(\
+                        self.float_type, params.parameters.field_array_name))
+                    
+
         ret_args.extend("{0}* {1}".format(self.float_type, arg) \
                         for arg in comp.additional_arguments)
 
@@ -906,12 +916,24 @@ class CCodeGenerator(BaseCodeGenerator):
         prototype.append(body_lines)
         return prototype
     
+
     def _init_arguments(self, comp):
 
         check_arg(comp, CodeComponent)
         params = self.params.code
         default_arguments = params.default_arguments \
                             if comp.use_default_arguments else ""
+
+        field_parameters = params["parameters"]["field_parameters"]
+
+        # If empty
+        # FIXME: Get rid of this by introducing a ListParam type in modelparameters
+        if len(field_parameters) == 1 and field_parameters[0] == "":
+            field_parameters = []
+            
+        state_offset = params["states"]["add_offset"]
+        parameter_offset = params["parameters"]["add_offset"]
+        field_parameter_offset = params["parameters"]["add_field_offset"]
 
         # Check if comp defines used_states if not use the root components
         # full_states attribute
@@ -924,52 +946,56 @@ class CCodeGenerator(BaseCodeGenerator):
                           comp.root.parameters
         all_parameters = comp.root.parameters
         
+        field_parameters = [param for param in all_parameters \
+                            if param.name in field_parameters]
+        
         # Start building body
         body_lines = []
-        def add_obj(obj, i, array_name):
-            body_lines.append("const {0} {1} = {2}[{3}]".format(\
-                self.float_type, self.obj_name(obj), array_name, i))
+        def add_obj(obj, i, array_name, add_offset=False):
+            offset = "{0}_offset + ".format(array_name) if add_offset else ""
+            body_lines.append("const {0} {1} = {2}[{3}{4}]".format(\
+                self.float_type, self.obj_name(obj), array_name, offset, i))
             
         if "s" in default_arguments and used_states:
             
-            states_name = params.states.array_name
-            body_lines.append("")
-            body_lines.append("// Assign states")
-
             # Generate state assign code
             if params.states.representation == "named":
 
+                states_name = params.states.array_name
+                body_lines.append("")
+                body_lines.append("// Assign states")
+
                 # If all states are used
-                if len(used_states) == len(full_states):
-                    for i, state in enumerate(used_states):
-                        add_obj(state, i, states_name)
-                else:
-                    for i, state in enumerate(full_states):
-                        if state not in used_states:
-                            continue
-                        add_obj(state, i, states_name)
+                for i, state in enumerate(full_states):
+                    if state not in used_states:
+                        continue
+                    add_obj(state, i, states_name, state_offset)
                     
         # Add parameters code if not numerals
         if "p" in default_arguments and \
                params.parameters.representation in ["named", "array"] and \
                used_parameters:
 
-            parameters_name = params.parameters.array_name
-            body_lines.append("")
-            body_lines.append("// Assign parameters")
-            
             # Generate parameters assign code
             if params.parameters.representation == "named":
                 
+                parameters_name = params.parameters.array_name
+                body_lines.append("")
+                body_lines.append("// Assign parameters")
+            
                 # If all states are used
-                if len(used_parameters) == len(all_parameters):
-                    for i, param in enumerate(all_parameters):
-                        add_obj(param, i, parameters_name)
-                else:
-                    for i, param in enumerate(all_parameters):
-                        if param not in used_parameters:
-                            continue
-                        add_obj(param, i, parameters_name)
+                for i, param in enumerate(all_parameters):
+                    if param not in used_parameters or \
+                           param in field_parameters:
+                        continue
+                    add_obj(param, i, parameters_name, parameter_offset)
+
+                field_parameters_name = params.parameters.field_array_name
+                for i, param in enumerate(field_parameters):
+                    if param not in used_parameters:
+                        continue
+                    add_obj(param, i, field_parameters_name,
+                            field_parameter_offset)
                     
         # If using an array for the body variables and b is not passed as argument
         if params.body.representation != "named" and \
@@ -989,16 +1015,18 @@ class CCodeGenerator(BaseCodeGenerator):
         Generate code for setting initial condition
         """
 
+        states_name = self.params.code.states.array_name
+        offset = "{0}_offset + ".format(states_name) \
+                 if self.params.code.states.add_offset else ""
         float_str = "" if self.params.code.float_precision == "double" else "f"
-        body_lines = []
-        body_lines = ["values[{0}] = {1}{2}; // {3}".format(i, state.init, \
-                                                            float_str, state.name) \
+        body_lines = ["{0}[{1}{2}] = {3}{4}; // {5}".format(\
+            states_name, offset, i, state.init, float_str, state.name) \
                       for i, state in enumerate(ode.full_states)]
 
         # Add function prototype
         init_function = self.wrap_body_with_function_prototype(\
-            body_lines, "init_state_values", "{0}* values".format(self.float_type), \
-            "", "Init values")
+            body_lines, "init_state_values", "{0}* {1}".format(\
+                self.float_type, states_name), "", "Init state values")
         
         return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
 
@@ -1007,15 +1035,19 @@ class CCodeGenerator(BaseCodeGenerator):
         Generate code for setting  parameters
         """
 
+        parameter_name = self.params.code.parameters.array_name
+        offset = "{0}_offset + ".format(parameter_name) \
+                 if self.params.code.parameters.add_offset else ""
         float_str = "" if self.params.code.float_precision == "double" else "f"
         body_lines = []
-        body_lines = ["values[{0}] = {1}{2}; // {3}".format(\
-            i, param.init, float_str, param.name) for i, param in enumerate(ode.parameters)]
+        body_lines = ["{0}[{1}{2}] = {3}{4}; // {5}".format(\
+            parameter_name, offset, i, param.init, float_str, param.name) \
+                      for i, param in enumerate(ode.parameters)]
 
         # Add function prototype
         init_function = self.wrap_body_with_function_prototype(\
-            body_lines, "init_parameters_values", "{0}* values".format(\
-                self.float_type), "", "Default parameter values")
+            body_lines, "init_parameters_values", "{0}* {1}".format(\
+                self.float_type, parameter_name), "", "Default parameter values")
         
         return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
 
@@ -1202,21 +1234,20 @@ class CCodeGenerator(BaseCodeGenerator):
         # Add function prototype
         if include_signature:
             body_lines = self.wrap_body_with_function_prototype(\
-                body_lines, "rhs", "unsigned int id, "+self.args(default_arguments), \
+                body_lines, "rhs", "unsigned int id, " + self.args(comp), \
                 self.float_type, "Evaluate componenttwise rhs of the ODE")
 
         return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
         
     def mass_matrix(self, ode, indent=0):
         warning("Generation of componentwise_rhs_evaluation code is not "
-                "yet implemented for Python backend.")
+                "yet implemented for the C backend.")
 
-    def module_code(self, ode):
-        
-        return  """// Gotran generated code for the "{0}" model
+    def module_code(self, ode, monitored=None):
+        return  """// Gotran generated C/C++ code for the "{0}" model
 
 {1}
-""".format(ode.name, "\n\n".join(self.code_dict(ode).values()))
+""".format(ode.name, "\n\n".join(self.code_dict(ode, monitored=monitored).values()))
 
 class CppCodeGenerator(CCodeGenerator):
     
@@ -1226,13 +1257,13 @@ class CppCodeGenerator(CCodeGenerator):
     to_code = lambda self, expr, name : cppcode(\
         expr, name, self.params.code.float_precision)
 
-    def class_code(self, ode):
+    def class_code(self, ode, monitored=None):
         """
         Generate class code
         """
 
         return  """
-// Gotran generated class for the "{0}" model        
+// Gotran generated C++ class for the "{0}" model        
 class {1}
 {{
 
@@ -1241,8 +1272,285 @@ public:
 {2}
 
 }};
-""".format(ode.name, class_name(ode.name), "\n\n".join(\
+""".format(ode.name, class_name(ode.name, monitored), "\n\n".join(\
                          self.code_dict(ode, indent=2).values()))
+
+class CUDACodeGenerator(CCodeGenerator):
+    # Class attributes
+    language = "CUDA"
+
+    @staticmethod
+    def default_parameters():
+        # Start out with a copy of the global parameters
+        params = parameters.generation.copy()
+        params.code.states.add_offset = True
+        params.code.states.array_name = "d_states"
+        params.code.parameters.add_field_offset = True
+        params.code.parameters.array_name = "d_parameters"
+        params.code.parameters.field_array_name = "d_field_parameters"
+        return params
+    
+    @classmethod
+    def wrap_body_with_function_prototype(cls, body_lines, name, args,
+                                          return_type="", comment="",
+                                          const=False, kernel=False, device=False):
+        """
+        Wrap a passed body of lines with a function prototype
+        """
+        check_arg(return_type, str)
+        
+        return_type = (return_type or "void")
+
+        if kernel:
+            return_type = '__global__ ' + return_type
+        elif device:
+            return_type = '__device__ ' + return_type
+
+        # Call super class function wrapper
+        return CCodeGenerator.wrap_body_with_function_prototype(\
+            body_lines, name, args, return_type, comment, const)
+
+    def init_states_code(self, ode, indent=0):
+        """
+        Generate code for setting initial condition
+        """
+
+        array_name = self.params.code.states.array_name
+        float_str = "" if self.params.code.float_precision == "double" else "f"
+        body_lines = ["const int thread_ind = blockIdx.x*blockDim.x + threadIdx.x"]
+        body_lines.append("const int {0}_offset = thread_ind*{1}".format(\
+            array_name, ode.num_full_states))
+
+        # Main body
+        body_lines.extend("{0}[{0}_offset+{1}] = {2}{3}; // {4}".format(
+                              array_name, i, float_str, state.init, state.name)
+                          for i, state in enumerate(ode.full_states))
+
+        # Add function prototype
+        init_function = self.wrap_body_with_function_prototype(
+            body_lines, "init_state_values", "{0} *{1}".format(\
+                self.float_type, array_name),
+            comment="Init state values", kernel=True)
+
+        return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
+
+    def init_parameters_code(self, ode, indent=0):
+        """
+        Generate code for setting parameters
+        """
+
+        body_lines = []
+
+        array_name = self.params.code.parameters.array_name
+
+        # Main body
+        float_str = "" if self.params.code.float_precision == "double" else "f"
+        body_lines.extend(["{0}[{1}] = {2}{3}; // {4}".format(
+            array_name, i, float_str, param.init, param.name)
+                           for i, param in enumerate(ode.parameters)])
+
+        # Add function prototype
+        init_function = self.wrap_body_with_function_prototype(
+            body_lines, "init_parameters_values", "{0} *{1}".format(\
+                self.float_type, array_name),
+            comment="Default parameter values", kernel=False)
+
+        return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
+
+    def field_parameters_setter_code(self, ode, indent=0):
+        # FIXME: Implement!
+        return ""
+
+    def field_states_getter_code(self, ode, indent=0):
+        """
+        Generate code for field state getter
+        """
+
+        field_states = self.params.code.states.field_states
+
+        # If empty
+        # FIXME: Get rid of this by introducing a ListParam type in modelparameters
+        if len(field_states) == 1 and field_states[0] == "":
+            field_states = []
+
+        array_name = self.params.code.states.array_name
+        base_array_name = array_name[2:] if array_name[:2] == "d_" else array_name
+        field_array_name = "h_field_" + base_array_name
+
+        states = ode.full_states
+        # FIXME: Check that the state is really a state
+        field_states = [state for state in states if state.name in field_states]
+
+        num_field_states = len(field_states)
+        array_name = self.params.code.states.array_name
+
+        body_lines = []
+        if num_field_states > 0:
+            body_lines.append(
+                "const int thread_ind = blockIdx.x*blockDim.x + threadIdx.x")
+            body_lines.append(
+                "const int {0}_offset = thread_ind*{1}".format(
+                    base_array_name, len(states)))
+            body_lines.append(
+                "const int field_{0}_offset = thread_ind*{1}".format(\
+                    base_array_name, num_field_states))
+
+        # Main body
+        body_lines.extend(
+            "{0}[field_{2}_offset + {3}] = "\
+            "{1}[{2}_offset + {4}]; // {5}".format(\
+                field_array_name, array_name,
+                base_array_name, i, states.index(state), state.name)
+            for i, state in enumerate(field_states))
+
+        # Add function prototype
+        getter_func = self.wrap_body_with_function_prototype(
+            body_lines, "get_field_states",
+            "const {0} *{1}, {0} *{2}".format(self.float_type, \
+                                              array_name, field_array_name),
+            comment="Get field states", kernel=True)
+
+        return "\n".join(self.indent_and_split_lines(getter_func, indent=indent))
+
+    def field_states_setter_code(self, ode, indent=0):
+        """
+        Generate code for field state setter
+        """
+
+        field_states = self.params.code.states.field_states
+
+        # If empty
+        # FIXME: Get rid of this by introducing a ListParam type in modelparameters
+        if len(field_states) == 1 and field_states[0] == "":
+            field_states = []
+
+        array_name = self.params.code.states.array_name
+        base_array_name = array_name[2:] if array_name[:2] == "d_" else array_name
+        field_array_name = "h_field_" + base_array_name
+
+        states = ode.full_states
+        # FIXME: Check that the state is really a state
+        field_states = [state for state in states if state.name in field_states]
+
+        num_field_states = len(field_states)
+
+        body_lines = []
+        if num_field_states > 0:
+            body_lines.append(
+                "const int thread_ind = blockIdx.x*blockDim.x + threadIdx.x")
+            body_lines.append(
+                "const int {0}_offset = thread_ind*{1}".format(
+                    base_array_name, len(states)))
+            body_lines.append(
+                "const int field_{0}_offset = thread_ind*{1}".format(\
+                    base_array_name, num_field_states))
+
+        # Main body
+        body_lines.extend(
+            "{0}[{2}_offset + {3}] = "\
+            "{1}[field_{2}_offset + {4}]; // {5}".format(\
+                array_name, field_array_name, 
+                base_array_name, states.index(state), i, state.name)
+            for i, state in enumerate(field_states))
+
+        # Add function prototype
+        setter_func = self.wrap_body_with_function_prototype(
+            body_lines, "set_field_states",
+            "const {0} *{1}, {0} *{2}".format(self.float_type, \
+                                              field_array_name, array_name),
+            comment="Set field states", kernel=True)
+
+        return "\n".join(self.indent_and_split_lines(setter_func, indent=indent))
+
+    def function_code(self, comp, indent=0, default_arguments=None, \
+                      include_signature=True, return_body_lines=False):
+
+        params = self.params.code
+        field_parameters = params.parameters.field_parameters
+
+        # If empty
+        # FIXME: Get rid of this by introducing a ListParam type in modelparameters
+        if len(field_parameters) == 1 and field_parameters[0] == "":
+            field_parameters = []
+            
+        default_arguments = default_arguments or params.default_arguments
+
+        check_arg(comp, CodeComponent)
+        check_kwarg(default_arguments, "default_arguments", str)
+        check_kwarg(indent, "indent", int)
+        
+        states_name = self.params.code.states.array_name
+        field_parameter_name = self.params.code.parameters.field_array_name
+
+        # Initialization
+        body_lines = [
+            "const int thread_ind = blockIdx.x*blockDim.x + threadIdx.x"]
+        body_lines.append(
+            "const int {0}_offset = thread_ind*{1}".format(\
+                states_name, comp.root.num_full_states))
+        
+        if len(field_parameters) > 0:
+            body_lines.append("const int {0}_offset = thread_ind*{1}".format(
+                    field_parameter_name, len(field_parameters)))
+
+        body_lines.extend(self._init_arguments(comp))
+
+        # If named body representation we need to check for duplicates
+        duplicates = set()
+        declared_duplicates = set()
+        if params.body.representation == "named":
+            collected_names = set()
+            for expr in comp.body_expressions:
+                if isinstance(expr, Expression) and \
+                       not isinstance(expr, IndexedExpression):
+                    if expr.name in collected_names:
+                        duplicates.add(expr.name)
+                    else:
+                        collected_names.add(expr.name)
+
+        # Iterate over any body needed to define the dy
+        for expr in comp.body_expressions:
+            if isinstance(expr, Comment):
+                body_lines.append("")
+                body_lines.append("// " + str(expr))
+                continue
+            elif isinstance(expr, IndexedExpression):
+                name = "{0}".format(self.obj_name(expr))
+            elif expr.name in duplicates:
+                if expr.name not in declared_duplicates:
+                    name = "{0} {1}".format(self.float_type, \
+                                            self.obj_name(expr))
+                    declared_duplicates.add(expr.name)
+                else:
+                    name = "{0}".format(self.obj_name(expr))
+            else:
+                name = "const {0} {1}".format(self.float_type, \
+                                              self.obj_name(expr))
+            body_lines.append(self.to_code(expr.expr, name))
+                    
+        if return_body_lines:
+            return body_lines
+        
+        if include_signature:
+            
+            # Add function prototype
+            body_lines = self.wrap_body_with_function_prototype(\
+                body_lines, comp.function_name, self.args(comp), "", \
+                comp.description, device=True)
+
+        return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
+        
+    def module_code(self, ode, monitored=None):
+
+        code_list = self.code_dict(ode, monitored=monitored, \
+                                   include_index_map=False).values()
+        code_list.append(self.field_states_getter_code(ode))
+        code_list.append(self.field_states_setter_code(ode))
+        code_list.append(self.field_parameters_setter_code(ode))
+        return  """// Gotran generated CUDA code for the "{0}" model
+
+{1}
+""".format(ode.name, "\n\n".join(code_list))
 
 class MatlabCodeGenerator(BaseCodeGenerator):
     """
@@ -1601,3 +1909,4 @@ class MatlabCodeGenerator(BaseCodeGenerator):
             "", "M", "The mass matrix of the {0} ODE".format(ode.name))
 
         return "\n".join(self.indent_and_split_lines(body_lines))
+

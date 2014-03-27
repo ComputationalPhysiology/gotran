@@ -3,7 +3,7 @@
 import os
 
 from gotran.model.loadmodel import load_ode
-from gotran.codegeneration.codegenerator import CppCodeGenerator
+from gotran.codegeneration.codegenerators import CppCodeGenerator
 from gotran.common.options import parameters
 from gotran.common import error
 

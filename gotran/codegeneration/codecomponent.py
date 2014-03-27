@@ -200,7 +200,6 @@ class CodeComponent(ODEComponent):
 
         # Return the sympy version of the object
         return obj.sym
-
         
     def indexed_objects(self, *basenames):
         """
@@ -223,28 +222,63 @@ class CodeComponent(ODEComponent):
         array_params = self._params["array"]
         param_repr = self._params["parameters"]["representation"]
         param_name = self._params["parameters"]["array_name"]
+        param_offset = self._params["parameters"]["add_offset"]
+        field_param_name = self._params["parameters"]["field_array_name"]
+        field_param_offset = self._params["parameters"]["add_field_offset"]
+        field_parameters = self._params["parameters"]["field_parameters"]
+
+        # If empty
+        # FIXME: Get rid of this by introducing a ListParam type in modelparameters
+        if len(field_parameters) == 1 and field_parameters[0] == "":
+            field_parameters = []
+
+        for param in field_parameters:
+            if not isinstance(self.root.present_ode_objects[param], Parameter):
+                error("Field parameter '{0}' is not a parameter in the "\
+                      "'{1}'".format(param, oself.root))
         
         state_repr = self._params["states"]["representation"]
         state_name = self._params["states"]["array_name"]
+        state_offset = self._params["states"]["add_offset"]
         time_name = self._params["time"]["name"]
 
-        # Create a map between states, parameters 
-        param_state_map = OrderedDict(states=OrderedDict(\
-            (state, IndexedObject(state_name, ind, \
-                                  (self.root.num_full_states,), array_params)) \
-            for ind, state in enumerate(self.root.full_states)),
-                               parameters=OrderedDict(\
-            (param, IndexedObject(param_name, ind, \
-                                  (self.root.num_parameters, ), array_params)) \
-                                   for ind, param in enumerate(\
-                                       self.root.parameters)))
-        
+        # Create a map between states, parameters and the corresponding
+        # IndexedObjects
+        param_state_map = OrderedDict([("states", OrderedDict()),
+                                       ("parameters", OrderedDict())])
+
+        # Add states
+        states = param_state_map["states"]
+        for ind, state in enumerate(self.root.full_states):
+            states[state] = IndexedObject(state_name, ind, \
+                            (self.root.num_full_states,), array_params, state_offset)
+
+        # Add parameters
+        parameters = param_state_map["parameters"]
+        for ind, param in enumerate(self.root.parameters):
+
+            if param.name in field_parameters:
+                basename = field_param_name
+                index = field_parameters.index(param.name)
+                shape = (len(field_parameters),)
+                offset = field_param_offset
+            else:
+                basename = param_name
+                index = ind
+                shape = (self.num_parameters,)
+                offset = param_offset
+                
+            parameters[param] = IndexedObject(basename, index, \
+                                              shape, array_params, offset)
+                
         # If not having named parameters
         if param_repr == "numerals":
             param_state_replace_dict.update((param.sym, param.init) for \
                                             param in self.root.parameters)
         elif param_repr == "array":
             self.shapes[param_name] = (self.root.num_parameters,)
+            if field_parameters:
+                self.shapes["field_"+param_name] = (len(field_parameters),)
             param_state_replace_dict.update((param.sym, indexed.sym) \
                                             for param, indexed in \
                                             param_state_map["parameters"].items())
@@ -258,7 +292,6 @@ class CodeComponent(ODEComponent):
         param_state_replace_dict[self.root._time.sym] = sp.Symbol(time_name)
 
         self.indexed_map.update(param_state_map)
-        self.shapes
 
         # return  dicts
         return param_state_replace_dict
