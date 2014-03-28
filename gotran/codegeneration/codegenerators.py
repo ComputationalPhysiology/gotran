@@ -1741,7 +1741,8 @@ class MatlabCodeGenerator(BaseCodeGenerator):
                 parameter_names.append("")
                 parameter_names.append("% --- {0} ---".format(present_param_component))
             
-            body_lines.append("parameters({0}) = {1}".format(ind+1, param.init))
+            body_lines.append("parameters({0}) = {1}; % {2}".format(\
+                ind+1, param.init, param.name))
             parameter_names.append("parameter_names{{{0}}} = \'{1}\'".format(\
                 ind + 1, param.name))
 
@@ -1786,7 +1787,8 @@ class MatlabCodeGenerator(BaseCodeGenerator):
                 state_names.append("")
                 state_names.append("% --- {0} ---".format(present_state_component))
 
-            body_lines.append("states({0}) = {1}".format(ind + 1, state.init))
+            body_lines.append("states({0}) = {1}; % {2}".format(\
+                ind + 1, state.init, state.name))
             state_names.append("state_names{{{0}}} = \'{1}\'".format(ind + 1, state.name))
 
         state_names.append("varargout(1) = {state_names}")
