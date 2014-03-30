@@ -940,7 +940,7 @@ class CCodeGenerator(BaseCodeGenerator):
                     
 
         ret_args.extend("{0}* {1}".format(self.float_type, arg) \
-                        for arg in comp.additional_arguments)
+                        for arg in additional_arguments)
 
         if params.body.in_signature and params.body.representation != "named":
             ret_args.append("{0}* {1}".format(self.float_type,
