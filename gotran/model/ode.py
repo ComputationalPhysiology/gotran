@@ -79,6 +79,7 @@ class ODE(ODEComponent):
         # Add to object to component map
         self.object_component = weakref.WeakValueDictionary()
         self.object_component[self._time] = self
+        self.object_component[self._dt] = self
 
         # Namespace, which can be used to eval an expression
         self.ns.update({"t":time.sym, "time":time.sym, "dt":dt.sym})
@@ -623,163 +624,6 @@ class ODE(ODEComponent):
                       "any previous expressions. {0} is used in: {1}".format(\
                           obj.state, used_in))
 
-    def _replace_object(self, old_obj, replaced_obj, replace_dicts):
-        """
-        Recursivley replace an expression by recreating the expression
-        using passed replace dicts
-        """
-
-        # Iterate over expressions obj is used in and replace these
-        self.present_ode_objects[old_obj.name] = replaced_obj
-        replace_dicts[old_obj.sym] = replaced_obj.sym
-        self.object_component[replaced_obj] = self.object_component.pop(old_obj)
-        
-        for old_expr in self.object_used_in[old_obj]:
-
-            # Recreate expression
-            replaced_expr = recreate_expression(old_expr, replace_dicts)
-
-            # Update used_in dict
-            self.object_used_in[replaced_obj].add(replaced_expr)
-
-            # Update all object used in
-            for dep in self.expression_dependencies[old_expr]:
-                if isinstance(dep, Comment):
-                    continue
-                if old_expr in self.object_used_in[dep]:
-                    self.object_used_in[dep].remove(old_expr)
-                    self.object_used_in[dep].add(replaced_expr)
-
-            # Exchange and update the dependencies
-            if old_obj in self.expression_dependencies[old_expr]:
-                self.expression_dependencies[old_expr].remove(old_obj)
-            self.expression_dependencies[old_expr].add(replaced_obj)
-            
-            # FIXME: Do not remove the dependencies
-            #self.expression_dependencies[updated_expr] = \
-            #            self.expression_dependencies.pop(expr)
-            self.expression_dependencies[replaced_expr] = \
-                        self.expression_dependencies[old_expr]
-
-            # Find the index of old expression and exchange it with updated
-            old_comp = self.object_component[old_expr]
-
-            # Get indexed of old expr and overwrite it with new expr
-            ind = old_comp.ode_objects.index(old_expr)
-            old_comp.ode_objects[ind] = replaced_expr
-
-            # Update the expressions this expression is used in
-            self._replace_object(old_expr, replaced_expr, replace_dicts)
-
-        # Remove information about the replaced objects
-        self.object_used_in.pop(old_obj)
-
-    def _handle_expr_component(self, comp, expr):
-        """
-        A help function to sort and add components in the ordered
-        the intermediate expressions are added to the ODE
-        """
-        
-        if len(self.all_expr_components_ordered) == 0:
-            self.all_expr_components_ordered.append(comp.name)
-
-            # Add a comment to the component
-            comp.add_comment("Expressions for the {0} "\
-                             "component".format(comp.name))
-
-            # Recount the last added expression so the comment comes
-            # infront of the expression
-            expr._recount()
-
-        # We are shifting expression components
-        elif self.all_expr_components_ordered[-1] != comp.name:
-
-            # Finalize the last component we visited
-            self.all_components[\
-                self.all_expr_components_ordered[-1]].finalize_component()
-                
-            # Append this component
-            self.all_expr_components_ordered.append(comp.name)
-
-            # Add a comment to the component
-            comp.add_comment("Expressions for the {0} "\
-                             "component".format(comp.name))
-
-            # Recount the last added expression so the comment comes
-            # infront of the expression
-            expr._recount()
-        
-    def _expand_single_derivative(self, comp, obj, der_expr, replace_dict):
-        """
-        Expand a single derivative and register it as new derivative expression
-        
-        Returns True if an expression was actually added
-
-        Populate replace dict with a replacement for the derivative if it is trivial 
-        """
-
-        # Try accessing already registered derivative expressions
-        der_expr_obj = self.present_ode_objects.get(sympycode(der_expr))
-
-        # If excist continue
-        if der_expr_obj:
-            return False
-
-        # Try expand the given derivative if it is directly expandable just
-        # add a replacement for the derivative result
-        der_result = der_expr.args[0].diff(der_expr.args[1])
-        if not der_result.atoms(sp.Derivative):
-            replace_dict[der_expr] = der_result
-            return False 
-
-        if not isinstance(der_expr.args[0], AppliedUndef):
-            error("Can only register Derivatives of allready registered "\
-            "Expressions. Got: {0}".format(sympycode(der_expr.args[0])))
-
-        if not isinstance(der_expr.args[1], (AppliedUndef, sp.Symbol)):
-            error("Can only register Derivatives with a single dependent "\
-                  "variabe. Got: {0}".format(sympycode(der_expr.args[1])))
-
-        # Get the expr and dependent variable objects
-        expr_obj = self.present_ode_objects[sympycode(der_expr.args[0])]
-        var_obj = self.present_ode_objects[sympycode(der_expr.args[1])]
-
-        # If the dependent variable is time and the expression is a state
-        # variable we raise an error as the user should already have created
-        # the expression.
-        if isinstance(expr_obj, State) and var_obj == self._time:
-            error("The expression {0} is dependent on the state "\
-                  "derivative of {1} which is not registered in this ODE."\
-                  .format(obj, expr_obj))
-
-        # If we get a Derivative(expr, t) we issue an error
-        #if isinstance(expr_obj, Expression) and var_obj == self._time:
-        #    error("All derivative expressions of registered expressions "\
-        #          "need to be expanded with respect to time. Use "\
-        #          "expr.diff(t) instead of Derivative(expr, t) ")
-
-        if not isinstance(expr_obj, Expression):
-            error("Can only differentiate expressions or states. Got {0} as "\
-                  "the derivative expression.".format(expr_obj))
-
-        # Expand derivative and see if it is trivial
-        der_result = expr_obj.expr.diff(var_obj.sym)
-        
-        # If derivative result are trival we substitute it
-        if der_result.is_number or \
-               isinstance(der_result, (sp.Symbol, AppliedUndef)) or \
-               (isinstance(der_result, (sp.Mul, sp.Pow, sp.Add)) and
-                len(der_result.args)==2 and \
-                all(isinstance(arg, (sp.Number, sp.Symbol, AppliedUndef)) \
-                    for arg in der_result.args)):
-            replace_dict[der_expr] = der_result
-            return False
-        
-        # Store expression
-        comp.add_derivative(expr_obj, var_obj, der_result)
-        
-        return True
-
     def expanded_expression(self, expr):
         """
         Return the expanded expression.
@@ -1027,3 +871,160 @@ class ODE(ODEComponent):
         h = hashlib.sha1()
         h.update(";".join(def_list))
         return h.hexdigest()
+
+    def _replace_object(self, old_obj, replaced_obj, replace_dicts):
+        """
+        Recursivley replace an expression by recreating the expression
+        using passed replace dicts
+        """
+
+        # Iterate over expressions obj is used in and replace these
+        self.present_ode_objects[old_obj.name] = replaced_obj
+        replace_dicts[old_obj.sym] = replaced_obj.sym
+        self.object_component[replaced_obj] = self.object_component.pop(old_obj)
+        
+        for old_expr in self.object_used_in[old_obj]:
+
+            # Recreate expression
+            replaced_expr = recreate_expression(old_expr, replace_dicts)
+
+            # Update used_in dict
+            self.object_used_in[replaced_obj].add(replaced_expr)
+
+            # Update all object used in
+            for dep in self.expression_dependencies[old_expr]:
+                if isinstance(dep, Comment):
+                    continue
+                if old_expr in self.object_used_in[dep]:
+                    self.object_used_in[dep].remove(old_expr)
+                    self.object_used_in[dep].add(replaced_expr)
+
+            # Exchange and update the dependencies
+            if old_obj in self.expression_dependencies[old_expr]:
+                self.expression_dependencies[old_expr].remove(old_obj)
+            self.expression_dependencies[old_expr].add(replaced_obj)
+            
+            # FIXME: Do not remove the dependencies
+            #self.expression_dependencies[updated_expr] = \
+            #            self.expression_dependencies.pop(expr)
+            self.expression_dependencies[replaced_expr] = \
+                        self.expression_dependencies[old_expr]
+
+            # Find the index of old expression and exchange it with updated
+            old_comp = self.object_component[old_expr]
+
+            # Get indexed of old expr and overwrite it with new expr
+            ind = old_comp.ode_objects.index(old_expr)
+            old_comp.ode_objects[ind] = replaced_expr
+
+            # Update the expressions this expression is used in
+            self._replace_object(old_expr, replaced_expr, replace_dicts)
+
+        # Remove information about the replaced objects
+        self.object_used_in.pop(old_obj)
+
+    def _handle_expr_component(self, comp, expr):
+        """
+        A help function to sort and add components in the ordered
+        the intermediate expressions are added to the ODE
+        """
+        
+        if len(self.all_expr_components_ordered) == 0:
+            self.all_expr_components_ordered.append(comp.name)
+
+            # Add a comment to the component
+            comp.add_comment("Expressions for the {0} "\
+                             "component".format(comp.name))
+
+            # Recount the last added expression so the comment comes
+            # infront of the expression
+            expr._recount()
+
+        # We are shifting expression components
+        elif self.all_expr_components_ordered[-1] != comp.name:
+
+            # Finalize the last component we visited
+            self.all_components[\
+                self.all_expr_components_ordered[-1]].finalize_component()
+                
+            # Append this component
+            self.all_expr_components_ordered.append(comp.name)
+
+            # Add a comment to the component
+            comp.add_comment("Expressions for the {0} "\
+                             "component".format(comp.name))
+
+            # Recount the last added expression so the comment comes
+            # infront of the expression
+            expr._recount()
+        
+    def _expand_single_derivative(self, comp, obj, der_expr, replace_dict):
+        """
+        Expand a single derivative and register it as new derivative expression
+        
+        Returns True if an expression was actually added
+
+        Populate replace dict with a replacement for the derivative if it is trivial 
+        """
+
+        # Try accessing already registered derivative expressions
+        der_expr_obj = self.present_ode_objects.get(sympycode(der_expr))
+
+        # If excist continue
+        if der_expr_obj:
+            return False
+
+        # Try expand the given derivative if it is directly expandable just
+        # add a replacement for the derivative result
+        der_result = der_expr.args[0].diff(der_expr.args[1])
+        if not der_result.atoms(sp.Derivative):
+            replace_dict[der_expr] = der_result
+            return False 
+
+        if not isinstance(der_expr.args[0], AppliedUndef):
+            error("Can only register Derivatives of allready registered "\
+            "Expressions. Got: {0}".format(sympycode(der_expr.args[0])))
+
+        if not isinstance(der_expr.args[1], (AppliedUndef, sp.Symbol)):
+            error("Can only register Derivatives with a single dependent "\
+                  "variabe. Got: {0}".format(sympycode(der_expr.args[1])))
+
+        # Get the expr and dependent variable objects
+        expr_obj = self.present_ode_objects[sympycode(der_expr.args[0])]
+        var_obj = self.present_ode_objects[sympycode(der_expr.args[1])]
+
+        # If the dependent variable is time and the expression is a state
+        # variable we raise an error as the user should already have created
+        # the expression.
+        if isinstance(expr_obj, State) and var_obj == self._time:
+            error("The expression {0} is dependent on the state "\
+                  "derivative of {1} which is not registered in this ODE."\
+                  .format(obj, expr_obj))
+
+        # If we get a Derivative(expr, t) we issue an error
+        #if isinstance(expr_obj, Expression) and var_obj == self._time:
+        #    error("All derivative expressions of registered expressions "\
+        #          "need to be expanded with respect to time. Use "\
+        #          "expr.diff(t) instead of Derivative(expr, t) ")
+
+        if not isinstance(expr_obj, Expression):
+            error("Can only differentiate expressions or states. Got {0} as "\
+                  "the derivative expression.".format(expr_obj))
+
+        # Expand derivative and see if it is trivial
+        der_result = expr_obj.expr.diff(var_obj.sym)
+        
+        # If derivative result are trival we substitute it
+        if der_result.is_number or \
+               isinstance(der_result, (sp.Symbol, AppliedUndef)) or \
+               (isinstance(der_result, (sp.Mul, sp.Pow, sp.Add)) and
+                len(der_result.args)==2 and \
+                all(isinstance(arg, (sp.Number, sp.Symbol, AppliedUndef)) \
+                    for arg in der_result.args)):
+            replace_dict[der_expr] = der_result
+            return False
+        
+        # Store expression
+        comp.add_derivative(expr_obj, var_obj, der_result)
+        
+        return True
