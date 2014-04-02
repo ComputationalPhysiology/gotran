@@ -305,8 +305,9 @@ def forward_backward_subst_expressions(\
     """
     check_arg(factorized, FactorizedJacobianComponent)
     return ForwardBackwardSubstitutionComponent(\
-        factorized, function_name="forward_backward_subst",
-        result_name="dx", residual_name="F", params=None)
+        factorized, function_name=function_name,
+        result_name=result_name, residual_name=residual_name, \
+        params=params)
 
 class JacobianComponent(CodeComponent):
     """
