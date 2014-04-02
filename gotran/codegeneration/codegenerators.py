@@ -145,6 +145,8 @@ class BaseCodeGenerator(object):
                 params=self.params.code))
 
         # Code for generation of the jacobian of the right hand side
+        jac = None
+        lu_fact = None
         if functions.jacobian.generate:
             jac = jacobian_expressions(\
                 ode, function_name=functions.jacobian.function_name,
@@ -153,26 +155,44 @@ class BaseCodeGenerator(object):
             
             comps.append(jac)
 
-            # Code for the symbolic factorization of the jacobian
-            if functions.lu_factorization.generate:
+        # Code for the symbolic factorization of the jacobian
+        if functions.lu_factorization.generate:
 
+            if jac is None:
+                jac = jacobian_expressions(\
+                    ode, function_name=functions.jacobian.function_name,
+                    result_name=functions.jacobian.result_name,
+                    params=self.params.code)
+                
+            lu_fact = factorized_jacobian_expressions(\
+                jac, function_name=functions.lu_factorization.function_name,
+                params=self.params.code)
+                
+            comps.append(lu_fact)
+
+        # Code for the forward backward substituion for a factorized jacobian 
+        if functions.forward_backward_subst.generate:
+
+            if jac is None:
+                jac = jacobian_expressions(\
+                    ode, function_name=functions.jacobian.function_name,
+                    result_name=functions.jacobian.result_name,
+                    params=self.params.code)
+                
+            if lu_fact is None:
+            
                 lu_fact = factorized_jacobian_expressions(\
                     jac, function_name=functions.lu_factorization.function_name,
                     params=self.params.code)
                 
-                comps.append(lu_fact)
-
-                # Code for the forward backward substituion for a factorized jacobian 
-                if functions.forward_backward_subst.generate:
-
-                    fb_subs_param = functions.forward_backward_subst
-                    fb_subst = forward_backward_subst_expressions(\
-                        lu_fact, function_name=fb_subs_param.function_name,
-                        result_name=fb_subs_param.result_name,
-                        residual_name=fb_subs_param.residual_name,
-                        params=self.params.code)
+            fb_subs_param = functions.forward_backward_subst
+            fb_subst = forward_backward_subst_expressions(\
+                lu_fact, function_name=fb_subs_param.function_name,
+                result_name=fb_subs_param.result_name,
+                residual_name=fb_subs_param.residual_name,
+                params=self.params.code)
                 
-                    comps.append(fb_subst)
+            comps.append(fb_subst)
 
         # Code for generation of linearized derivatives
         if functions.linearized_rhs_evaluation.generate:

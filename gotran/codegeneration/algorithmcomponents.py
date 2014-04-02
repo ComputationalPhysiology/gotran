@@ -715,7 +715,7 @@ class ForwardBackwardSubstitutionComponent(CodeComponent):
         super(ForwardBackwardSubstitutionComponent, self).__init__(\
             "ForwardBackwardSubst", factorized.root, function_name,
             descr, params=params, use_default_arguments=False, \
-            additional_arguments=additional_arguments)
+            additional_arguments=[residual_name])
 
         self.add_comment("Forward backward substituting factorized "\
                          "linear system {0}".format(self.root.name))
