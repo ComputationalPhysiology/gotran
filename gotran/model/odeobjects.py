@@ -24,7 +24,7 @@ from collections import OrderedDict
 
 # ModelParameters imports
 from modelparameters.sympytools import sp
-from modelparameters.codegeneration import sympycode, latex, latex_unit
+from modelparameters.codegeneration import sympycode, latex
 from modelparameters.parameters import *
 
 from gotran.common import error, check_arg, scalars, debug, DEBUG, \
@@ -237,6 +237,7 @@ class ODEValueObject(ODEObject):
         """
         Return a pretty latex representation of the ODEValue object
         """
+        from modelparameters.codegeneration import latex_unit
         value = self.value
         unit_str = latex_unit(self.param.unit)
         return "${0}{1}$".format(latex(value), "\\;{0}".format(unit_str) \
