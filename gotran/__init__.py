@@ -17,8 +17,10 @@
 
 __version__ = "3.0"
 
+import modelparameters.utils
 import modelparameters.parameterdict
 import modelparameters.codegeneration
+import modelparameters.sympytools
 
 # Import gotran modules
 import common
