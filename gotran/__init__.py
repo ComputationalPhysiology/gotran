@@ -17,6 +17,9 @@
 
 __version__ = "3.0"
 
+import modelparameters.parameterdict
+import modelparameters.codegeneration
+
 # Import gotran modules
 import common
 import model
