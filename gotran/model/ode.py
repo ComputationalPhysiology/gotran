@@ -24,7 +24,7 @@ import weakref
 from sympy.core.function import AppliedUndef
 
 # ModelParameters imports
-from modelparameters.sympytools import sp, symbols_from_expr
+from modelparameters.sympytools import sp
 from modelparameters.codegeneration import sympycode, pythoncode
 from modelparameters.utils import Timer
 
@@ -483,6 +483,8 @@ class ODE(ODEComponent):
         """
         Register an ODE object in the root ODEComponent
         """
+
+        from modelparameters.sympytools import symbols_from_expr
 
         if self._is_finalized_ode and isinstance(obj, StateExpression):
             error("Cannot register a StateExpression, the ODE is finalized")

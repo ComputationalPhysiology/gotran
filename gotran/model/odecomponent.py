@@ -24,7 +24,7 @@ import weakref
 from sympy.core.function import AppliedUndef
 
 # ModelParameters imports
-from modelparameters.sympytools import sp, symbols_from_expr
+from modelparameters.sympytools import sp
 from modelparameters.utils import Timer
 from modelparameters.codegeneration import sympycode, _all_keywords
 
@@ -274,6 +274,7 @@ class ODEComponent(ODEObject):
             Flags that are passed directly to sympy.solve
         """
 
+        from modelparameters.sympytools import symbols_from_expr
         state = self._expect_state(state)
 
         # Check the sympy flags
@@ -573,6 +574,7 @@ class ODEComponent(ODEObject):
         state expressions
         """
 
+        from modelparameters.sympytools import symbols_from_expr
         # If we are registering a protected attribute or an attribute
         # during construction, just add it to the dict
         if name[0] == "_" or not self._allow_magic_attributes:

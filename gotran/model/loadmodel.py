@@ -28,7 +28,7 @@ from collections import OrderedDict, deque
 # modelparameters import
 from modelparameters.parameters import Param, ScalarParam, ArrayParam, \
      ConstParam, scalars
-from modelparameters.sympytools import sp_namespace, sp, symbols_from_expr
+from modelparameters.sympytools import sp_namespace, sp
 
 # gotran imports
 from gotran.common import *
@@ -65,6 +65,7 @@ class IntermediateDispatcher(dict):
 
     def __setitem__(self, name, value):
 
+        from modelparameters.sympytools import symbols_from_expr
         timer = Timer("Namespace dispatcher")
         # Set the attr of the ODE
         # If a scalar or a sympy number or it is a sympy.Basic consisting of

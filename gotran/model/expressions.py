@@ -22,8 +22,8 @@ __all__ = ["Expression", "DerivativeExpression", "AlgebraicExpression", \
 
 # ModelParameters imports
 from modelparameters.parameters import SlaveParam
-from modelparameters.sympytools import sp, symbols_from_expr
-from modelparameters.codegeneration import sympycode, latex, latex_unit
+from modelparameters.sympytools import sp
+from modelparameters.codegeneration import sympycode, latex
 from sympy.core.function import AppliedUndef
 
 # Local imports
@@ -87,6 +87,8 @@ class Expression(ODEValueObject):
         expr : sympy.Basic
             The expression
         """
+
+        from modelparameters.sympytools import symbols_from_expr
 
         # Check arguments
         check_arg(expr, scalars + (sp.Basic,), 1, Expression)
@@ -178,6 +180,7 @@ class Expression(ODEValueObject):
 
     def _repr_latex_expr(self):
         return latex(self.expr)
+    
     def _repr_latex_name(self):
         return "{0}".format(latex(self.name))
 
