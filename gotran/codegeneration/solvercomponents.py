@@ -17,7 +17,8 @@
 
 __all__ = ["ExplicitEuler", "explicit_euler_solver",
            "RushLarsen", "rush_larsen_solver",
-           "SimplifiedImplicitEuler", "simplified_implicit_euler_solver"]
+           "SimplifiedImplicitEuler", "simplified_implicit_euler_solver",
+           "get_solver_fn"]
 
 # System imports
 import sys
@@ -93,6 +94,13 @@ def simplified_implicit_euler_solver(\
         error("The ODE is not finalized")
 
     return SimplifiedImplicitEuler(ode, function_name=function_name, params=params)
+
+def get_solver_fn(solver_type):
+    return {
+        'explicit_euler': explicit_euler_solver,
+        'rush_larsen': rush_larsen_solver,
+        'simplified_implicit_euler': simplified_implicit_euler_solver
+    }[solver_type]
 
 class ExplicitEuler(CodeComponent):
     """

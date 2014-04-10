@@ -47,7 +47,7 @@ class ODE(ODEComponent):
     """
     def __new__(cls, *args, **kwargs):
         self = object.__new__(cls, *args, **kwargs)
-        
+
         return self
 
     def __init__(self, name, ns=None):
@@ -63,7 +63,7 @@ class ODE(ODEComponent):
         if ns is None:
             self._ns = {}
         else:
-            self._ns = weakref.ref(ns) 
+            self._ns = weakref.ref(ns)
 
         # Add Time object
         # FIXME: Add information about time unit dimensions and make
@@ -82,7 +82,7 @@ class ODE(ODEComponent):
 
         # Namespace, which can be used to eval an expression
         self.ns.update({"t":time.sym, "time":time.sym, "dt":dt.sym})
-        
+
         # An list with all component names with expression added to them
         # The components are always sorted wrt last expression added
         self.all_expr_components_ordered = []
@@ -112,11 +112,11 @@ class ODE(ODEComponent):
 
         # Attributes which will be populated later
         self._mass_matrix = None
-        
+
         # Global finalized flag
         self._is_finalized_ode = False
-        
-        # Turn on magic attributes (see __setattr__ method) 
+
+        # Turn on magic attributes (see __setattr__ method)
         self._allow_magic_attributes = True
 
     @property
@@ -151,23 +151,23 @@ class ODE(ODEComponent):
             added directly to the present ODE.
         prefix : str (optional)
             A prefix which all state, parameters and intermediates are
-            prefixed with. 
+            prefixed with.
         components : list, tuple of str (optional)
             A list of components which will be extracted and added to the present
             ODE. If not given the whole ODE will be added.
         """
-        
+
         timer = Timer("Load sub ode")
-        
+
         components = components or []
         check_arg(subode, (str, ODE), 0, context=ODE.add_subode)
         check_arg(prefix, str, 1, context=ODE.add_subode)
         check_arg(components, list, 2, context=ODE.add_subode, itemtypes=str)
-        
-        # If ode is given directly 
+
+        # If ode is given directly
         if isinstance(subode, ODE):
             ode = subode
-            
+
         else:
             # If not load external ODE
             from gotran.model.loadmodel import load_ode
@@ -176,7 +176,7 @@ class ODE(ODEComponent):
         # Postfix prefix with "_" if prefix is not ""
         if prefix and prefix[-1] != "_":
             prefix += "_"
-        
+
         # If extracting only a certain components
         if components:
             ode = ode.extract_components(ode.name, *components)
@@ -187,10 +187,10 @@ class ODE(ODEComponent):
 
         def add_comp_and_children(added, comp):
             "Help function to recursively add components to ode"
-            
+
             # Add states and parameters
             for obj in comp.ode_objects:
-                
+
                 # Check if obj already excists as a ODE parameter
                 old_obj = self.present_ode_objects.get(str(obj))
 
@@ -198,10 +198,10 @@ class ODE(ODEComponent):
                     new_name = obj.name
                 else:
                     new_name = prefix+obj.name
-                
+
                 if isinstance(obj, State):
                     subs[obj.sym] = added.add_state(new_name, obj.param)
-                    
+
                 elif isinstance(obj, Parameter):
 
                     # If adding an ODE parameter
@@ -225,7 +225,7 @@ class ODE(ODEComponent):
 
                         subs[obj.sym] = added.add_parameter(new_name, obj.param)
 
-            # Add child components 
+            # Add child components
             for child in comp.children.values():
                 added_child = added.add_component(child.name)
 
@@ -236,7 +236,7 @@ class ODE(ODEComponent):
 
         # Recursively add states and parameters
         add_comp_and_children(self, ode)
-        
+
         # Iterate over all components to add expressions
         for comp_name in ode.all_expr_components_ordered:
 
@@ -291,13 +291,13 @@ class ODE(ODEComponent):
                         elif isinstance(obj, StateDerivative):
                             subs[obj.sym] = added.add_derivative(\
                                 state, added.t, new_expr)
-                            
+
                         elif isinstance(obj, StateSolution):
                             subs[obj.sym] = added.add_state_solution(\
                                 state, new_expr)
                         else:
                             error("Should not reach here...")
-                            
+
                     # Derivatives are tricky. Here the der expr and dep var
                     # need to be registered in the ODE already. But they can
                     # be registered with and without prefix, so we need to
@@ -323,7 +323,7 @@ class ODE(ODEComponent):
                                     error("Could not find expression: "\
                                           "{1} while adding derivative".format(\
                                               obj.der_expr))
-                            
+
                         dep_var = self.root.present_ode_objects.get(obj.dep_var.name)
 
                         if isinstance(dep_var, Time):
@@ -345,7 +345,7 @@ class ODE(ODEComponent):
                                     error("Could not find expression: "\
                                           "{1} while adding derivative".format(\
                                               obj.dep_var))
-                        
+
                         subs[obj.sym] = added.add_derivative(\
                             der_expr, dep_var, new_expr)
 
@@ -360,7 +360,7 @@ class ODE(ODEComponent):
                 # If saving a comment
                 elif isinstance(obj, Comment) and str(obj) != comp_comment:
                     added.add_comment(str(obj))
-        
+
     def save(self, basename=None):
         """
         Save ODE to file
@@ -376,13 +376,13 @@ class ODE(ODEComponent):
 
         if not self._is_finalized_ode:
             error("ODE need to be finalized to be saved to file.")
-            
+
         lines = ["# Saved Gotran model"]
 
         comp_names = dict()
-        
+
         basename = basename or self.name
-        
+
         for comp in self.components:
             if comp == self:
                 comp_name = ""
@@ -395,7 +395,7 @@ class ODE(ODEComponent):
                 comp_name = ", ".join("\"{0}\"".format(name) for name in reversed(comps))
 
             comp_names[comp] = comp_name
-                    
+
             states = ["{0}={1},".format(obj.name, obj.param.repr(\
                 include_name=False)) for obj in comp.ode_objects \
                       if isinstance(obj, State)]
@@ -477,7 +477,7 @@ class ODE(ODEComponent):
         from gotran.codegeneration.codegenerators import PythonCodeGenerator
         open(basename+".ode", "w").write("\n".join(\
             PythonCodeGenerator.indent_and_split_lines(lines)))
-                    
+
     def register_ode_object(self, obj, comp):
         """
         Register an ODE object in the root ODEComponent
@@ -493,14 +493,17 @@ class ODE(ODEComponent):
         # need to figure out what to do
         if dup_obj:
 
-            dup_comp = self.object_component[dup_obj]
+            try:
+                dup_comp = self.object_component[dup_obj]
+            except KeyError:
+                dup_comp = None
 
-            # If a state is substituted by a state solution 
+            # If a state is substituted by a state solution
             if isinstance(dup_obj, State) and isinstance(obj, StateSolution):
                 debug("Reduce state '{0}' to {1}".format(dup_obj, obj.expr))
 
             # If duplicated object is an ODE Parameter and the added object is
-            # either a State or a Parameter we replace the Parameter. 
+            # either a State or a Parameter we replace the Parameter.
             elif isinstance(dup_obj, Parameter) and dup_comp == self and \
                      comp != self and isinstance(obj, (State, Parameter)):
 
@@ -517,7 +520,7 @@ class ODE(ODEComponent):
 
                 # Recursively replace object dependencies
                 self._replace_object(dup_obj, obj, subs)
-                
+
                 #for expr in self.object_used_in[dup_obj]:
                 #    updated_expr = recreate_expression(expr, subs)
                 #    self.object_used_in[obj].add(updated_expr)
@@ -546,7 +549,7 @@ class ODE(ODEComponent):
                      isinstance(obj, Expression):
                 error("Cannot replace an ODE parameter with an Expression, "\
                       "only with Parameters and States.")
-            
+
             # If State, Parameter or DerivativeExpression we always raise an error
             elif any(isinstance(oo, (State, Parameter, Time, Dt, \
                                      DerivativeExpression,
@@ -590,7 +593,7 @@ class ODE(ODEComponent):
             # If expressions need to be re-created
             if replace_dict:
                 obj.replace_expr(replace_dict)
-                
+
             # If any expression was added we need to bump the count of the ODEObject
             if expression_added:
                 obj._recount()
@@ -633,7 +636,7 @@ class ODE(ODEComponent):
         self.present_ode_objects[old_obj.name] = replaced_obj
         replace_dicts[old_obj.sym] = replaced_obj.sym
         self.object_component[replaced_obj] = self.object_component.pop(old_obj)
-        
+
         for old_expr in self.object_used_in[old_obj]:
 
             # Recreate expression
@@ -654,7 +657,7 @@ class ODE(ODEComponent):
             if old_obj in self.expression_dependencies[old_expr]:
                 self.expression_dependencies[old_expr].remove(old_obj)
             self.expression_dependencies[old_expr].add(replaced_obj)
-            
+
             # FIXME: Do not remove the dependencies
             #self.expression_dependencies[updated_expr] = \
             #            self.expression_dependencies.pop(expr)
@@ -679,7 +682,7 @@ class ODE(ODEComponent):
         A help function to sort and add components in the ordered
         the intermediate expressions are added to the ODE
         """
-        
+
         if len(self.all_expr_components_ordered) == 0:
             self.all_expr_components_ordered.append(comp.name)
 
@@ -697,7 +700,7 @@ class ODE(ODEComponent):
             # Finalize the last component we visited
             self.all_components[\
                 self.all_expr_components_ordered[-1]].finalize_component()
-                
+
             # Append this component
             self.all_expr_components_ordered.append(comp.name)
 
@@ -708,14 +711,14 @@ class ODE(ODEComponent):
             # Recount the last added expression so the comment comes
             # infront of the expression
             expr._recount()
-        
+
     def _expand_single_derivative(self, comp, obj, der_expr, replace_dict):
         """
         Expand a single derivative and register it as new derivative expression
-        
+
         Returns True if an expression was actually added
 
-        Populate replace dict with a replacement for the derivative if it is trivial 
+        Populate replace dict with a replacement for the derivative if it is trivial
         """
 
         # Try accessing already registered derivative expressions
@@ -730,7 +733,7 @@ class ODE(ODEComponent):
         der_result = der_expr.args[0].diff(der_expr.args[1])
         if not der_result.atoms(sp.Derivative):
             replace_dict[der_expr] = der_result
-            return False 
+            return False
 
         if not isinstance(der_expr.args[0], AppliedUndef):
             error("Can only register Derivatives of allready registered "\
@@ -764,7 +767,7 @@ class ODE(ODEComponent):
 
         # Expand derivative and see if it is trivial
         der_result = expr_obj.expr.diff(var_obj.sym)
-        
+
         # If derivative result are trival we substitute it
         if der_result.is_number or \
                isinstance(der_result, (sp.Symbol, AppliedUndef)) or \
@@ -774,10 +777,10 @@ class ODE(ODEComponent):
                     for arg in der_result.args)):
             replace_dict[der_expr] = der_result
             return False
-        
+
         # Store expression
         comp.add_derivative(expr_obj, var_obj, der_result)
-        
+
         return True
 
     def expanded_expression(self, expr):
@@ -813,7 +816,7 @@ class ODE(ODEComponent):
         # Do the substitution
         exp_expr = expr.expr.xreplace(der_subs).xreplace(subs)
         self._expanded_expressions[expr] = exp_expr
-        
+
         return exp_expr
 
     def extract_components(self, name, *components):
@@ -838,7 +841,7 @@ class ODE(ODEComponent):
 
         if self.name in components:
             error("Can only extract sub component of this ODE.")
-        
+
         # Collect components and check that the ODE has the components
         for original_component in self.components:
 
@@ -856,7 +859,7 @@ class ODE(ODEComponent):
             else:
                 error("'{0}' is not a component of this ODE.".format(\
                     components[0]))
-        
+
         # Collect dependencies
         included_objects = []
         dependencies = set()
@@ -876,7 +879,7 @@ class ODE(ODEComponent):
         # Add dependencies as parameters to return ODE
         subs = dict()
         for dep in dependencies:
-            
+
             # Skip time
             if str(dep) in ["t", "time", "dt"]:
                 continue
@@ -885,11 +888,11 @@ class ODE(ODEComponent):
         # Add components together with states and parameters to the ODE
         components = sorted(collected_components, reverse=True)
         old_new_map = dict()
-        
+
         def add_comp_and_children(comp, components, parent):
             "Help function to add recursively components to ode"
 
-            # Add component 
+            # Add component
             added = parent.add_component(comp.name)
             old_new_map[comp] = added
 
@@ -905,7 +908,7 @@ class ODE(ODEComponent):
 
             for child in comp.children.values():
                 add_comp_and_children(child, components, added)
-        
+
         # Add component recursivly
         while components:
             add_comp_and_children(components[-1], components, ode)
@@ -918,7 +921,7 @@ class ODE(ODEComponent):
             # If we should add component
             if comp not in collected_components:
                 continue
-                
+
             comp_comment = "Expressions for the {0} "\
                            "component".format(comp.name)
 
@@ -952,7 +955,7 @@ class ODE(ODEComponent):
 
                     # All other Expressions
                     setattr(added, str(obj), new_expr)
-                        
+
                 # If saving a comment
                 elif isinstance(obj, Comment) and str(obj) != comp_comment:
                     added.add_comment(str(obj))
@@ -960,7 +963,7 @@ class ODE(ODEComponent):
         # Finalize ode and return it
         ode.finalize()
         return ode
-    
+
     @property
     def mass_matrix(self):
         """
@@ -969,14 +972,14 @@ class ODE(ODEComponent):
 
         if not self.is_finalized:
             error("The ODE must be finalized")
-            
+
         if not self._mass_matrix:
-        
+
             state_exprs = self.state_expressions
             N = len(state_exprs)
             self._mass_matrix = sp.Matrix(N, N, lambda i, j : 1 if i==j and \
                         isinstance(state_exprs[i], StateDerivative) else 0)
-            
+
         return self._mass_matrix
 
     @property
@@ -996,7 +999,7 @@ class ODE(ODEComponent):
         """
         for comp in self.components:
             comp.finalize_component()
-            
+
         self._is_finalized_ode = True
         self._present_component = self.name
 
@@ -1010,7 +1013,7 @@ class ODE(ODEComponent):
         for comp in self.components:
             if self != comp:
                 def_list.append(str(comp))
-            
+
             # Sort wrt stringified states and parameters avoiding trouble with
             # random ordering of **kwargs
             def_list += sorted([repr(state.param) \
