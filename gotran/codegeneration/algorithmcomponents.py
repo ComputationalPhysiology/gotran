@@ -605,21 +605,33 @@ class FactorizedJacobianComponent(CodeComponent):
         
         jacobian_name = jacobian.results[0]
 
-        # Get copy of jacobian
-        jac = jacobian.jacobian[:,:]
-        p = []
+        # Recreate jacobian using only sympy Symbols
+        jac_orig = jacobian.jacobian
 
         # Size of system
-        n = jac.rows
+        n = jac_orig.rows
+        jac = sp.Matrix(n, n, lambda i,j:sp.S.Zero)
+
+        for i in range(n):
+            for j in range(n):
+                #print jac_orig[i,j]
+                if not jac_orig[i,j].is_zero:
+                    name = sympycode(jac_orig[i,j])
+                    jac[i,j] = sp.Symbol(name, real=True, imaginary=False, commutative=True,
+                                         hermitian=True)
+                    print jac[i,j]
+        p = []
 
         self.shapes[jacobian_name] = (n,n)
         def add_intermediate_if_changed(jac, jac_ij, i, j):
             # If item has changed 
             if jac_ij != jac[i,j]:
+                print "jac",i,j, jac_ij
                 jac[i,j] = self.add_indexed_expression(jacobian_name, (i, j), jac_ij)
 
         # Do the factorization
         for j in range(n):
+
             for i in range(j):
                 
                 # Get sympy expr of A_ij
@@ -707,6 +719,7 @@ class ForwardBackwardSubstitutionComponent(CodeComponent):
         params : dict
             Parameters determining how the code should be generated
         """
+        timer = Timer("Computing forward backward substituion component")
         check_arg(factorized, FactorizedJacobianComponent)
         jacobian_name = factorized.shapes.keys()[0]
         additional_indexed_arguments = factorized.additional_arguments + \
@@ -721,11 +734,21 @@ class ForwardBackwardSubstitutionComponent(CodeComponent):
         self.add_comment("Forward backward substituting factorized "\
                          "linear system {0}".format(self.root.name))
         
-        # Get copy of jacobian
-        jac = factorized.factorized_jacobian[:,:]
+        # Recreate jacobian using only sympy Symbols
+        jac_orig = factorized.factorized_jacobian
 
         # Size of system
-        n = jac.rows
+        n = jac_orig.rows
+        jac = sp.Matrix(n, n, lambda i,j:sp.S.Zero)
+
+        for i in range(n):
+            for j in range(n):
+                #print jac_orig[i,j]
+                if not jac_orig[i,j].is_zero:
+                    name = sympycode(jac_orig[i,j])
+                    jac[i,j] = sp.Symbol(name, real=True, imaginary=False, commutative=True,
+                                         hermitian=True)
+                    print jac[i,j]
 
         self.shapes[jacobian_name] = (n,n)
         self.shapes[residual_name] = (n,)
