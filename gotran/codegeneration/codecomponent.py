@@ -36,6 +36,7 @@ from gotran.model.ode import ODE
 
 #FIXME: Remove our own cse, or move to this module?
 from gotran.codegeneration.sympy_cse import cse
+#from sympy import cse
 
 class CodeComponent(ODEComponent):
     """
@@ -133,7 +134,8 @@ class CodeComponent(ODEComponent):
         self.use_default_arguments = use_default_arguments
         self.additional_arguments = additional_arguments
             
-    def add_indexed_expression(self, basename, indices, expr, add_offset=False):
+    def add_indexed_expression(self, basename, indices, expr, add_offset=False,
+                               dependent=None):
         """
         Add an indexed expression using a basename and the indices
 
@@ -147,6 +149,9 @@ class CodeComponent(ODEComponent):
             The expression.
         add_offset : bool
             Add offset to indices
+        dependent : ODEObject
+            If given the count of this expression will follow as a
+            fractional count based on the count of the dependent object
         """
         # Create an IndexedExpression in the present component
         timer = Timer("Add indexed expression")
@@ -165,8 +170,8 @@ class CodeComponent(ODEComponent):
 
         # Create the indexed expression
         expr = IndexedExpression(basename, indices, expr, self.shapes[basename], \
-                                 self._params.array, add_offset)
-        self._register_component_object(expr)
+                                 self._params.array, add_offset, dependent)
+        self._register_component_object(expr, dependent)
 
         return expr.sym
 
@@ -389,7 +394,7 @@ class CodeComponent(ODEComponent):
         cse_exprs, cse_result_exprs = cse(expanded_result_exprs,\
                                           symbols=sp.numbered_symbols("cse_"),\
                                           optimizations=[])
-        
+
         # Map the cse_expr to an OrderedDict
         cse_exprs = OrderedDict(cse_expr for cse_expr in cse_exprs)
 
@@ -472,12 +477,14 @@ class CodeComponent(ODEComponent):
 
             #print cse_sym, expr
         
-            # If the expression is just one of the atoms of the ODE we skip
-            # the cse expressions but add a subs for the atom
-            if expr in atoms:
+            # If the expression is just one of the atoms of the ODE we
+            # skip the cse expressions but add a subs for the atom We
+            # also skip Relationals as the type checking in Piecewise
+            # otherwise kicks in and destroys things for us.
+            if expr in atoms or isinstance(expr, (\
+                sp.relational.Relational, sp.relational.Boolean)):
                 cse_subs[cse_sym] = expr
             else:
-
                 # Add body expression as an intermediate expression
                 sym = self.add_intermediate("cse_{0}".format(\
                     cse_cnt), expr.xreplace(cse_subs))
@@ -500,6 +507,7 @@ class CodeComponent(ODEComponent):
                     for result_name, indices in result_expr_map[result_expr]:
 
                         # Replace pure state and param expressions
+                        #print cse_subs, result_expr
                         exp_expr = result_expr.xreplace(cse_subs)
                     
                         sym = self.add_indexed_expression(result_name, indices, exp_expr)
@@ -828,7 +836,7 @@ class CodeComponent(ODEComponent):
                 # as the result name we just recreate it
                 if isinstance(expr, IndexedExpression) and \
                        result_name == expr.basename:
-                    
+
                     new_expr = recreate_expression(expr, der_replace_dict, \
                                                    replace_dict)
 
@@ -913,11 +921,20 @@ class CodeComponent(ODEComponent):
                 # Store the expressions
                 store_expressions(expr, new_expr)
                 
-            # 6) If the expression is just and ordinary body expression 
+            # 6) If the expression is just and ordinary body expression and we
+            #    are using named representation of body
             else:
 
-                new_expr = recreate_expression(expr, der_replace_dict, \
-                                               replace_dict)
+                # If the expression is a state derivative we need to add a
+                # replacement for the Derivative symbol
+                if isinstance(expr, StateDerivative):
+                    new_expr = Intermediate(sympycode(expr.sym),expr.expr.\
+                                            xreplace(der_replace_dict).\
+                                            xreplace(replace_dict))
+                    new_expr._recount(expr._count)
+                else:
+                    new_expr = recreate_expression(expr, der_replace_dict, \
+                                                   replace_dict)
                 
                 # Store the expressions
                 store_expressions(expr, new_expr)

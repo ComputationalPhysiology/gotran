@@ -52,7 +52,8 @@ class TestODEObject(unittest.TestCase):
         
         obj = ODEValueObject("bada", 45)
         
-        self.assertEqual(Symbol(obj.name), obj.sym)
+        self.assertEqual(Symbol(obj.name, real=True, imaginary=False,
+                                commutative=True, hermitian=True), obj.sym)
         self.assertEqual(45, obj.value)
 
     def test_state(self):
@@ -122,7 +123,12 @@ class TestODEObject(unittest.TestCase):
                          set([s_s, a_s, b_s, t_s]))
 
         # Create composite symbol
-        sa_s = Symbol("sa")(s_s, a_s)
+        sa_s = Symbol("sa", real=True, imaginary=False,
+                      commutative=True, hermitian=True, complex=True)(s_s, a_s)
+        sa_s._assumptions["real"] = True       
+        sa_s._assumptions["commutative"] = True
+        sa_s._assumptions["imaginary"] = False
+        sa_s._assumptions["hermitian"] = True  
         
         self.assertEqual(symbols_from_expr(sa_s*a_s + t_s*b_s*a_s), \
                          set([sa_s, a_s, b_s, t_s]))

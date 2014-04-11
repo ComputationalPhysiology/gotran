@@ -217,6 +217,14 @@ parameters = ParameterDict(
                                       "function."),
                 ),
 
+            generalized_rush_larsen = ParameterDict(
+                generate = Param(False, description="If true, generate code for "\
+                                 "solving an ODE using generalized Rush Larsen method."),
+                function_name = Param("forward_generalized_rush_larsen",\
+                                      description="The name of the generated "\
+                                      "function."),
+                ),
+
             simplified_implicit_euler = ParameterDict(
                 generate = Param(False, description="If true, generate code for "\
                                  "solving an ODE using Rush Larsen method."),

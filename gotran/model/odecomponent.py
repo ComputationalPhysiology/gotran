@@ -135,7 +135,7 @@ class ODEComponent(ODEObject):
         """
         return self.root._time
 
-    def add_comment(self, comment):
+    def add_comment(self, comment, dependent=None):
         """
         Add a comment to the ODE component
 
@@ -143,8 +143,11 @@ class ODEComponent(ODEObject):
         ---------
         comment : str
             The comment
+        dependent : ODEObject
+            If given the count of this comment will follow as a
+            fractional count based on the count of the dependent object
         """
-        comment = Comment(comment)
+        comment = Comment(comment, dependent)
         self.ode_objects.append(comment)
         self._local_comments.append(comment)
 
@@ -259,7 +262,7 @@ class ODEComponent(ODEObject):
 
         return comp
 
-    def add_solve_state(self, state, expr, **solve_flags):
+    def add_solve_state(self, state, expr, dependent=None, **solve_flags):
         """
         Add a solve state expression which tries to find a solution to
         a state by solving an algebraic expression
@@ -270,6 +273,9 @@ class ODEComponent(ODEObject):
             The State that is solved
         expr : sympy.Basic
             The expression that determines the state
+        dependent : ODEObject
+            If given the count of this expression will follow as a
+            fractional count based on the count of the dependent object
         solve_flags : dict
             Flags that are passed directly to sympy.solve
         """
@@ -302,11 +308,21 @@ class ODEComponent(ODEObject):
         # Unpack the solution
         solved_expr = solved_expr[0]
 
-        self.add_state_solution(state, solved_expr)
+        self.add_state_solution(state, solved_expr, dependent)
 
-    def add_state_solution(self, state, expr):
+    def add_state_solution(self, state, expr, dependent=None):
         """
         Add a solution expression for a state
+
+        Arguments
+        ---------
+        state : State, AppliedUndef
+            The State that is solved
+        expr : sympy.Basic
+            The expression that determines the state
+        dependent : ODEObject
+            If given the count of this expression will follow as a
+            fractional count based on the count of the dependent object
         """
 
         state = self._expect_state(state)
@@ -320,11 +336,11 @@ class ODEComponent(ODEObject):
                   "that has an algebraic expression registered.")
 
         # Create a StateSolution in the present component
-        obj = StateSolution(state, expr)
+        obj = StateSolution(state, expr, dependent)
 
         self._register_component_object(obj)
         
-    def add_intermediate(self, name, expr):
+    def add_intermediate(self, name, expr, dependent=None):
         """
         Register an intermediate math expression
 
@@ -334,17 +350,20 @@ class ODEComponent(ODEObject):
             The name of the expression
         expr : sympy.Basic, scalar
             The expression
+        dependent : ODEObject
+            If given the count of this expression will follow as a
+            fractional count based on the count of the dependent object
         """
 
         # Create an Intermediate in the present component
         timer = Timer("Add intermediate")
-        expr = Intermediate(name, expr)
+        expr = Intermediate(name, expr, dependent)
 
-        self._register_component_object(expr)
+        self._register_component_object(expr, dependent)
 
         return expr.sym
 
-    def add_derivative(self, der_expr, dep_var, expr):
+    def add_derivative(self, der_expr, dep_var, expr, dependent=None):
         """
         Add a derivative expression
 
@@ -356,6 +375,9 @@ class ODEComponent(ODEObject):
             The dependent variable
         expr : sympy.Basic
             The expression which the differetiation should be equal
+        dependent : ODEObject
+            If given the count of this expression will follow as a
+            fractional count based on the count of the dependent object
         """
         timer = Timer("Add derivatives")
 
@@ -376,18 +398,18 @@ class ODEComponent(ODEObject):
         # Check if der_expr is a State
         if isinstance(der_expr, State):
             self._expect_state(der_expr)
-            obj = StateDerivative(der_expr, expr)
+            obj = StateDerivative(der_expr, expr, dependent)
 
         else:
 
             # Create a DerivativeExpression in the present component
-            obj = DerivativeExpression(der_expr, dep_var, expr)
+            obj = DerivativeExpression(der_expr, dep_var, expr, dependent)
 
-        self._register_component_object(obj)
+        self._register_component_object(obj, dependent)
 
         return obj.sym
 
-    def add_algebraic(self, state, expr):
+    def add_algebraic(self, state, expr, dependent=None):
         """
         Add an algebraic expression which relates a State with an
         expression which should equal to 0
@@ -398,6 +420,9 @@ class ODEComponent(ODEObject):
             The State which the algebraic expression should determine
         expr : sympy.Basic
             The expression that should equal 0
+        dependent : ODEObject
+            If given the count of this expression will follow as a
+            fractional count based on the count of the dependent object
         """
 
         state = self._expect_state(state)
@@ -411,9 +436,9 @@ class ODEComponent(ODEObject):
                   "which is registered solved.")
 
         # Create an AlgebraicExpression in the present component
-        obj = AlgebraicExpression(state, expr)
+        obj = AlgebraicExpression(state, expr, dependent)
 
-        self._register_component_object(obj)
+        self._register_component_object(obj, dependent)
 
     @property
     def states(self):
@@ -672,7 +697,7 @@ class ODEComponent(ODEObject):
 
         return state
 
-    def _register_component_object(self, obj):
+    def _register_component_object(self, obj, dependent=None):
         """
         Register an ODEObject to the component
         """
@@ -686,7 +711,7 @@ class ODEComponent(ODEObject):
 
         # Register the object in the root ODE,
         # (here all duplication checks and expression expansions are done)
-        self.root.register_ode_object(obj, self)
+        self.root.register_ode_object(obj, self, dependent)
 
         # If registering a StateExpression
         if isinstance(obj, StateExpression):

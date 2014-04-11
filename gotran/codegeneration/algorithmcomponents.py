@@ -375,6 +375,9 @@ class JacobianComponent(CodeComponent):
                 break
             
             if isinstance(expr, StateExpression):
+                # Get count 
+                expr_count = expr._count
+                frac_count = 0.0001
                 num_state_expressions += 1
                 i = state_dict[expr.state.sym]
                 jac_expr_added = True
@@ -382,20 +385,20 @@ class JacobianComponent(CodeComponent):
                                if sym in state_dict]
             
                 self.add_comment("Expressions for the sparse jacobian of "\
-                                 "state {0}".format(expr.state.name))
-                for sym in states_syms:
+                                 "state {0}".format(expr.state.name), dependent=expr)
+                for loc_ind, sym in enumerate(states_syms):
                     j = state_dict[sym]
                     time_diff = Timer("Differentiate state_expressions")
                     jac_ij = expr.expr.diff(sym)
                     del time_diff
                     self.num_nonzero += 1
-                    jac_ij = self.add_indexed_expression(result_name, \
-                                                         (i, j), jac_ij)
+                    jac_ij = self.add_indexed_expression(\
+                        result_name, (i, j), jac_ij, dependent=expr)
+
+                    #jac_expr = self.root.present_ode_objects[sympycode(jac_ij)]
+                    #jac_expr._recount(expr_count+loc_ind*frac_count)
                     self.jacobian[i, j] = jac_ij
                     
-            elif jac_expr_added:
-                expr._recount()
-
         if might_take_time:
             info(" done")
 

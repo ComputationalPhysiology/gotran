@@ -76,7 +76,7 @@ class Expression(ODEValueObject):
     """
     class for all expressions such as intermediates and derivatives
     """
-    def __init__(self, name, expr):
+    def __init__(self, name, expr, dependent=None):
         """
         Create an Expression with an associated name
 
@@ -86,6 +86,9 @@ class Expression(ODEValueObject):
             The name of the Expression
         expr : sympy.Basic
             The expression
+        dependent : ODEObject
+            If given the count of this Expression will follow as a
+            fractional count based on the count of the dependent object
         """
 
         from modelparameters.sympytools import symbols_from_expr
@@ -120,7 +123,7 @@ class Expression(ODEValueObject):
                   "Symbol or Number.")
 
         # Call super class with expression as the "value"
-        super(Expression, self).__init__(name, expr)
+        super(Expression, self).__init__(name, expr, dependent)
 
         # Collect dependent symbols
         dependent = tuple(sorted(symbols_from_expr(expr), \
@@ -188,7 +191,7 @@ class Intermediate(Expression):
     """
     A class for all Intermediate classes
     """
-    def __init__(self, name, expr):
+    def __init__(self, name, expr, dependent=None):
         """
         Create an Intermediate with an associated name
 
@@ -198,14 +201,17 @@ class Intermediate(Expression):
             The name of the Expression
         expr : sympy.Basic
             The expression
+        dependent : ODEObject
+            If given the count of this Intermediate will follow as a
+            fractional count based on the count of the dependent object
         """
-        super(Intermediate, self).__init__(name, expr)
+        super(Intermediate, self).__init__(name, expr, dependent)
 
 class StateSolution(Intermediate):
     """
     Sub class of Expression for state solution expressions
     """
-    def __init__(self, state, expr):
+    def __init__(self, state, expr, dependent=None):
         """
         Create a StateSolution
 
@@ -215,6 +221,9 @@ class StateSolution(Intermediate):
             The state that is being solved for
         expr : sympy.Basic
             The expression that should equal 0 and which solves the state
+        dependent : ODEObject
+            If given the count of this StateSolution will follow as a
+            fractional count based on the count of the dependent object
         """
 
         check_arg(state, State, 0, StateSolution)
@@ -238,7 +247,7 @@ class DerivativeExpression(Intermediate):
     """
     A class for Intermediate derivative expressions
     """
-    def __init__(self, der_expr, dep_var, expr):
+    def __init__(self, der_expr, dep_var, expr, dependent=None):
         """
         Create a DerivativeExpression
 
@@ -250,6 +259,9 @@ class DerivativeExpression(Intermediate):
             The dependent variable
         expr : sympy.Basic
             The expression which the differetiation should be equal
+        dependent : ODEObject
+            If given the count of this DerivativeExpression will follow as a
+            fractional count based on the count of the dependent object
         """
         check_arg(der_expr, Expression, 0, DerivativeExpression)
         check_arg(dep_var, (State, Expression, Time), 1, DerivativeExpression)
@@ -263,7 +275,7 @@ class DerivativeExpression(Intermediate):
         self._der_expr = der_expr
         self._dep_var = dep_var
 
-        super(DerivativeExpression, self).__init__(sympycode(der_sym), expr)
+        super(DerivativeExpression, self).__init__(sympycode(der_sym), expr, dependent)
         self._sym = sp.Derivative(der_expr.sym, dep_var.sym)
         self._sym._assumptions["real"] = True
         self._sym._assumptions["commutative"] = True
@@ -293,13 +305,13 @@ class RateExpression(Intermediate):
     """
     A sub class of Expression holding single rates
     """
-    def __init__(self, to_state, from_state, expr):
+    def __init__(self, to_state, from_state, expr, dependent=None):
 
         check_arg(to_state, (State, StateSolution), 0, RateExpression)
         check_arg(from_state, (State, StateSolution), 1, RateExpression)
 
         super(RateExpression, self).__init__("rates_{0}_{1}".format(\
-            to_state, from_state), expr)
+            to_state, from_state), expr, dependent)
         self._to_state = to_state
         self._from_state = from_state
 
@@ -322,7 +334,7 @@ class StateExpression(Expression):
     """
     An expression which determines a State.
     """
-    def __init__(self, name, state, expr):
+    def __init__(self, name, state, expr, dependent=None):
         """
         Create an StateExpression with an assosiated name
 
@@ -335,11 +347,14 @@ class StateExpression(Expression):
             The state which the expression should determine
         expr : sympy.Basic
             The mathematical expression
+        dependent : ODEObject
+            If given the count of this StateExpression will follow as a
+            fractional count based on the count of the dependent object
         """
 
         check_arg(state, State, 0, StateExpression)
 
-        super(StateExpression, self).__init__(name, expr)
+        super(StateExpression, self).__init__(name, expr, dependent)
         self._state = state
         
     @property
@@ -357,7 +372,7 @@ class StateDerivative(StateExpression):
     """
     A class for all state derivatives
     """
-    def __init__(self, state, expr):
+    def __init__(self, state, expr, dependent=None):
         """
         Create a StateDerivative
 
@@ -367,6 +382,9 @@ class StateDerivative(StateExpression):
             The state for which the StateDerivative should apply
         expr : sympy.Basic
             The expression which the differetiation should be equal
+        dependent : ODEObject
+            If given the count of this StateDerivative will follow as a
+            fractional count based on the count of the dependent object
         """
         
         check_arg(state, State, 0, StateDerivative)
@@ -377,7 +395,8 @@ class StateDerivative(StateExpression):
         sym._assumptions["hermitian"] = True
         
         # Call base class constructor
-        super(StateDerivative, self).__init__(sympycode(sym), state, expr)
+        super(StateDerivative, self).__init__(sympycode(sym), state, expr, \
+                                              dependent)
         self._sym = sym
 
     @property
@@ -398,7 +417,7 @@ class AlgebraicExpression(StateExpression):
     A class for algebraic expressions which relates a State with an
     expression which should equal to 0
     """
-    def __init__(self, state, expr):
+    def __init__(self, state, expr, dependent=None):
         """
         Create an AlgebraicExpression
 
@@ -408,11 +427,14 @@ class AlgebraicExpression(StateExpression):
             The State which the algebraic expression should determine
         expr : sympy.Basic
             The expression that should equal 0
+        dependent : ODEObject
+            If given the count of this StateDerivative will follow as a
+            fractional count based on the count of the dependent object
         """
         check_arg(state, State, 0, AlgebraicExpression)
 
         super(AlgebraicExpression, self).__init__("alg_{0}_0".format(\
-            state), state, expr)
+            state), state, expr, dependent)
 
         # Check that the expr is dependent on the state
         # FIXME: No need because Simone says so!
@@ -436,7 +458,7 @@ class IndexedExpression(IndexedObject, Expression):
     associated with it
     """
     def __init__(self, basename, indices, expr, shape=None, \
-                 array_params=None, add_offset=""):
+                 array_params=None, add_offset="", dependent=None):
         """
         Create an IndexedExpression with an associated basename used in code
         generation.
@@ -455,11 +477,14 @@ class IndexedExpression(IndexedObject, Expression):
             Parameters to create the array name for the indexed object
         add_offset : bool, str
             If True a fixed offset is added to the indices
+        dependent : ODEObject
+            If given the count of this IndexedExpression will follow as a
+            fractional count based on the count of the dependent object
         """
         
-        IndexedObject.__init__(self, basename, indices, shape, array_params, add_offset)
-        Expression.__init__(self, self.name, expr)
-        
+        IndexedObject.__init__(self, basename, indices, shape, array_params, \
+                               add_offset, dependent)
+        Expression.__init__(self, self.name, expr, dependent)
 
 # Tuple with Derivative types, for type checking
 Derivatives = (StateDerivative, DerivativeExpression)

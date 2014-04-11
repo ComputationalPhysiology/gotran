@@ -17,6 +17,7 @@
 
 __all__ = ["ExplicitEuler", "explicit_euler_solver",
            "RushLarsen", "rush_larsen_solver",
+           "GeneralizedRushLarsen", "generalized_rush_larsen_solver",
            "SimplifiedImplicitEuler", "simplified_implicit_euler_solver"]
 
 # System imports
@@ -58,7 +59,7 @@ def explicit_euler_solver(ode, function_name="forward_explicit_euler", \
 def rush_larsen_solver(ode, function_name="forward_rush_larsen", \
                        params=None):
     """
-    Return an ODEComponent holding expressions for the explicit Euler method
+    Return an ODEComponent holding expressions for the Rush Larsen method
 
     Arguments
     ---------
@@ -73,6 +74,25 @@ def rush_larsen_solver(ode, function_name="forward_rush_larsen", \
         error("The ODE is not finalized")
 
     return RushLarsen(ode, function_name=function_name, params=params)
+
+def generalized_rush_larsen_solver(ode, function_name="forward_generalized_rush_larsen", \
+                                   params=None):
+    """
+    Return an ODEComponent holding expressions for the generalized Rush Larsen method
+
+    Arguments
+    ---------
+    ode : ODE
+        The ODE for which the jacobian expressions should be computed
+    function_name : str
+        The name of the function which should be generated
+    params : dict
+        Parameters determining how the code should be generated
+    """
+    if not ode.is_finalized:
+        error("The ODE is not finalized")
+
+    return GeneralizedRushLarsen(ode, function_name=function_name, params=params)
 
 def simplified_implicit_euler_solver(\
     ode, function_name="forward_simplified_implicit_euler", params=None):
@@ -101,7 +121,7 @@ class ExplicitEuler(CodeComponent):
     def __init__(self, ode, function_name="forward_explicit_euler", \
                  params=None):
         """
-        Create an ExplicitEuler 
+        Create an ExplicitEuler CodeComponent
 
         Arguments
         ---------
@@ -139,8 +159,6 @@ class ExplicitEuler(CodeComponent):
         state_offset = self._params.states.add_offset
         self.shapes[result_name] = (len(states),)
         
-        self.add_comment("Computing the explicit Euler algorithm")
-
         # Get time step and start creating the update algorithm
         if self._params.states.add_offset:
             offset_str = "{0}_offset".format(result_name)
@@ -163,15 +181,13 @@ class ExplicitEuler(CodeComponent):
                 i = state_dict[expr.state.sym]
                 solver_expr_added = True
 
+                res_sym = self.add_indexed_expression(result_name, (i,), \
+                                                      expr.state.sym+dt*expr.sym, offset_str)
                 if recount:
-                    expr._recount()
-                self.add_indexed_expression(result_name, (i,), \
-                                            expr.state.sym+dt*expr.sym, offset_str)
+                    res_obj = self.root.get_present_odeobjects[sympycode(res_sym)]
+                    res_obj._recount(expr._count+0.5)
                     
-            elif solver_expr_added and recount:
-                expr._recount()
-
-        # Call recreate body with the jacobian expressions as the result
+        # Call recreate body with the solver expressions as the result
         # expressions
         results = {result_name:self.indexed_objects(result_name)}
         results, body_expressions = self._body_from_results(**results)
@@ -185,7 +201,7 @@ class RushLarsen(CodeComponent):
     def __init__(self, ode, function_name="forward_rush_larsen", \
                  params=None):
         """
-        Create a JacobianComponent
+        Create a RushLarsen Solver component
 
         Arguments
         ---------
@@ -223,8 +239,6 @@ class RushLarsen(CodeComponent):
         state_offset = self._params.states.add_offset
         self.shapes[result_name] = (len(states),)
         
-        self.add_comment("Computing the explicit Euler algorithm")
-
         # Get time step and start creating the update algorithm
         if self._params.states.add_offset:
             offset_str = "{0}_offset".format(result_name)
@@ -257,19 +271,112 @@ class RushLarsen(CodeComponent):
                         expr.name+"_linearized", expr_diff)
                     
                     # Solve "exact" using exp
-                    self.add_indexed_expression(\
+                    res_sym = self.add_indexed_expression(\
                         result_name, (i,), expr.state.sym+expr.sym/linearized*\
                         (sp.exp(linearized*dt)-1.0), offset_str)
                     
                 else:
-                    # Explicit Euler step
-                    self.add_indexed_expression(result_name, (i,), \
-                                    expr.state.sym+dt*expr.sym, offset_str)
                     
-            elif solver_expr_added and recount:
-                expr._recount()
+                    # Explicit Euler step
+                    res_sym = self.add_indexed_expression(result_name, (i,), \
+                                    expr.state.sym+dt*expr.sym, offset_str)
 
-        # Call recreate body with the jacobian expressions as the result
+                if recount:
+                    res_obj = self.root.get_present_odeobjects[sympycode(res_sym)]
+                    res_obj._recount(expr._count+0.5)
+
+        # Call recreate body with the solver expressions as the result
+        # expressions
+        results = {result_name:self.indexed_objects(result_name)}
+        results, body_expressions = self._body_from_results(**results)
+        self.body_expressions = self._recreate_body(\
+            body_expressions, **results)
+
+class GeneralizedRushLarsen(CodeComponent):
+    """
+    An ODEComponent which compute one step of the Rush Larsen algorithm
+    """
+    def __init__(self, ode, function_name="forward_generalized_rush_larsen", \
+                 params=None):
+        """
+        Create a GeneralizedRushLarsen Solver component
+
+        Arguments
+        ---------
+        ode : ODE
+            The parent component of this ODEComponent
+        function_name : str
+            The name of the function which should be generated
+        params : dict
+            Parameters determining how the code should be generated
+        """
+        check_arg(ode, ODE)
+
+        if ode.is_dae:
+            error("Cannot generate a Generalized Rush Larsen forward step for a DAE.")
+
+        # Call base class using empty result_expressions
+        descr = "Compute a forward step using the rush larsen algorithm to the "\
+                "{0} ODE".format(ode)
+        super(GeneralizedRushLarsen, self).__init__("GeneralizedRushLarsen", \
+                                                    ode, function_name, \
+                                                    descr, params=params,
+                                                    additional_arguments=["dt"])
+
+        # Recount the expressions if representation of states are "array" as
+        # then the method is not full explcit
+        recount = self._params.states.representation != "array"
+
+        # Gather state expressions and states
+        state_exprs = self.root.state_expressions
+        states = self.root.full_states
+        state_dict = dict((state.sym, ind) for ind, state in enumerate(states))
+        all_exprs = sorted(self.root.intermediates + self.root.comments \
+                           + state_exprs)
+
+        result_name = self._params.states.array_name
+        state_offset = self._params.states.add_offset
+        self.shapes[result_name] = (len(states),)
+        
+        # Get time step and start creating the update algorithm
+        if self._params.states.add_offset:
+            offset_str = "{0}_offset".format(result_name)
+        else:
+            offset_str = ""
+        
+        solver_expr_added = False
+        total_num_state_expressions = sum(isinstance(expr, StateExpression) \
+                                          for expr in all_exprs)
+        dt = self.root._dt.sym
+        num_state_expressions = 0
+        for expr in all_exprs:
+
+            # Check if we are finished
+            if num_state_expressions == total_num_state_expressions:
+                break
+            
+            if isinstance(expr, StateExpression):
+                num_state_expressions += 1
+                i = state_dict[expr.state.sym]
+                solver_expr_added = True
+                expr_diff = expr.expr.diff(expr.state.sym)
+                
+                #if recount:
+                #    expr._recount()
+
+                dependent = expr if recount else None
+                linearized = self.add_intermediate(\
+                    expr.name+"_linearized", expr_diff, dependent=dependent)
+                    
+                # Solve "exact" using exp
+                self.add_indexed_expression(\
+                    result_name, (i,), expr.state.sym+expr.sym/linearized*\
+                    (sp.exp(linearized*dt)-1.0), offset_str, dependent=dependent)
+                    
+            #elif solver_expr_added and recount:
+            #    expr._recount()
+
+        # Call recreate body with the solver expressions as the result
         # expressions
         results = {result_name:self.indexed_objects(result_name)}
         results, body_expressions = self._body_from_results(**results)
@@ -284,7 +391,7 @@ class SimplifiedImplicitEuler(CodeComponent):
     def __init__(self, ode, function_name="forward_simplified_implicit_euler", \
                  params=None):
         """
-        Create a JacobianComponent
+        Create a SimplifiedImplicitEuler CodeComponent
 
         Arguments
         ---------
@@ -322,8 +429,6 @@ class SimplifiedImplicitEuler(CodeComponent):
         state_offset = self._params.states.add_offset
         self.shapes[result_name] = (len(states),)
         
-        self.add_comment("Computing the explicit Euler algorithm")
-
         # Get time step and start creating the update algorithm
         if self._params.states.add_offset:
             offset_str = "{0}_offset".format(result_name)
@@ -365,7 +470,7 @@ class SimplifiedImplicitEuler(CodeComponent):
             elif solver_expr_added and recount:
                 expr._recount()
 
-        # Call recreate body with the jacobian expressions as the result
+        # Call recreate body with the solver expressions as the result
         # expressions
         results = {result_name:self.indexed_objects(result_name)}
         results, body_expressions = self._body_from_results(**results)

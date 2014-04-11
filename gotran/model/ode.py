@@ -479,7 +479,7 @@ class ODE(ODEComponent):
         open(basename+".ode", "w").write("\n".join(\
             PythonCodeGenerator.indent_and_split_lines(lines)))
                     
-    def register_ode_object(self, obj, comp):
+    def register_ode_object(self, obj, comp, dependent=None):
         """
         Register an ODE object in the root ODEComponent
         """
@@ -588,7 +588,7 @@ class ODE(ODEComponent):
             replace_dict = {}
             for der_expr in obj.expr.atoms(sp.Derivative):
                 expression_added |= self._expand_single_derivative(\
-                    comp, obj, der_expr, replace_dict)
+                    comp, obj, der_expr, replace_dict, dependent)
 
             # If expressions need to be re-created
             if replace_dict:
@@ -596,7 +596,7 @@ class ODE(ODEComponent):
                 
             # If any expression was added we need to bump the count of the ODEObject
             if expression_added:
-                obj._recount()
+                obj._recount(dependent=dependent)
 
             # Add dependencies between registered comments and expressions so
             # they are carried over in Code components
@@ -960,7 +960,7 @@ class ODE(ODEComponent):
             # infront of the expression
             expr._recount()
         
-    def _expand_single_derivative(self, comp, obj, der_expr, replace_dict):
+    def _expand_single_derivative(self, comp, obj, der_expr, replace_dict, dependent):
         """
         Expand a single derivative and register it as new derivative expression
         
@@ -1027,6 +1027,6 @@ class ODE(ODEComponent):
             return False
         
         # Store expression
-        comp.add_derivative(expr_obj, var_obj, der_result)
+        comp.add_derivative(expr_obj, var_obj, der_result, dependent)
         
         return True

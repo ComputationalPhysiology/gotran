@@ -20,7 +20,8 @@ __all__ = ["ODEObject", "Comment", "ODEValueObject", "Parameter", "State", \
 
 # System imports
 import numpy as np
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
+import types
 
 # ModelParameters imports
 from modelparameters.sympytools import sp
@@ -35,7 +36,8 @@ class ODEObject(object):
     Base container class for all ODEObjects
     """
     __count = 0
-    def __init__(self, name):
+    __dependent_counts = defaultdict(lambda : 0)
+    def __init__(self, name, dependent=None):
         """
         Create ODEObject instance
 
@@ -43,15 +45,27 @@ class ODEObject(object):
         ---------
         name : str
             The name of the ODEObject
+        dependent : ODEObject
+            If given the count of this ODEObject will follow as a
+            fractional count based on the count of the dependent object
         """
 
+        
         check_arg(name, str, 0, ODEObject)
+        check_arg(dependent, (types.NoneType, ODEObject))
         self._name = self._check_name(name)
 
         # Unique identifyer
-        self._count = ODEObject.__count
-        ODEObject.__count += 1
+        if dependent is None:
+            self._count = ODEObject.__count
+            ODEObject.__count += 1
+        else:
+            ODEObject.__dependent_counts[dependent._count] += 1
 
+            # FIXME: Do not hardcode the fractional increase
+            self._count = dependent._count + \
+                          ODEObject.__dependent_counts[dependent._count] * 0.00001
+            
     def __hash__(self):
         return id(self)
 
@@ -103,17 +117,24 @@ class ODEObject(object):
 
         return name
 
-    def _recount(self, new_count=None):
+    def _recount(self, new_count=None, dependent=None):
         """
         Method called when an object need to get a new count
         """
         old_count = self._count
-        if new_count is None:
+
+        if isinstance(new_count, (int, float)):
+            check_arg(new_count, (int, float), ge=0, le=ODEObject.__count)
+            self._count = new_count
+        elif isinstance(dependent, ODEObject):
+            ODEObject.__dependent_counts[dependent._count] += 1
+
+            # FIXME: Do not hardcode the fractional increase
+            self._count = dependent._count + \
+                          ODEObject.__dependent_counts[dependent._count] * 0.00001
+        else:
             self._count = ODEObject.__count
             ODEObject.__count += 1
-        else:
-            check_arg(new_count, int, ge=0, le=ODEObject.__count)
-            self._count = new_count
             
         debug("Change count of {0} from {1} to {2}".format(\
             self.name, old_count, self._count))
@@ -122,7 +143,7 @@ class Comment(ODEObject):
     """
     A Comment. To keep track of user comments in an ODE
     """
-    def __init__(self, comment):
+    def __init__(self, comment, dependent=None):
         """
         Create a comment
 
@@ -130,10 +151,13 @@ class Comment(ODEObject):
         ---------
         comment : str
             The comment
+        dependent : ODEObject
+            If given the count of this comment will follow as a
+            fractional count based on the count of the dependent object
         """
 
         # Call super class
-        super(Comment, self).__init__(comment)
+        super(Comment, self).__init__(comment, dependent)
 
     def _repr_latex_(self):
         return "$\\mathbf{{{0}}}$".format(self.name.replace(" ", "\\;"))
@@ -142,7 +166,7 @@ class ODEValueObject(ODEObject):
     """
     A class for all ODE objects which has a value
     """
-    def __init__(self, name, value):
+    def __init__(self, name, value, dependent=None):
         """
         Create ODEObject instance
 
@@ -152,13 +176,16 @@ class ODEValueObject(ODEObject):
             The name of the ODEObject
         value : scalar, ScalarParam, np.ndarray, sp. Basic
             The value of this ODEObject
+        dependent : ODEObject
+            If given the count of this ODEValueObject will follow as a
+            fractional count based on the count of the dependent object
         """
 
         check_arg(name, str, 0, ODEValueObject)
         check_arg(value, scalars + (ScalarParam, sp.Basic), 1, ODEValueObject)
 
         # Init super class
-        super(ODEValueObject, self).__init__(name)
+        super(ODEValueObject, self).__init__(name, dependent)
 
         if isinstance(value, ScalarParam):
 
@@ -338,7 +365,7 @@ class IndexedObject(ODEObject):
         return parameters.generation.code.array.copy()
     
     def __init__(self, basename, indices, shape=None, array_params=None, \
-                 add_offset=""):
+                 add_offset="", dependent=None):
         """
         Create an IndexedExpression with an associated basename
 
@@ -354,6 +381,9 @@ class IndexedObject(ODEObject):
             Parameters to create the array name for the indexed object
         add_offset : bool, str
             If True a fixed offset is added to the indices
+        dependent : ODEObject
+            If given the count of this IndexedObject will follow as a
+            fractional count based on the count of the dependent object
         """
 
         array_params = array_params or {}
@@ -403,7 +433,7 @@ class IndexedObject(ODEObject):
         index_str = ",".join(offset_str+str(index) for index in indices)
         name = basename + index_format.format(index_str)
 
-        ODEObject.__init__(self, name)
+        ODEObject.__init__(self, name, dependent)
         self._basename = basename
         self._indices = orig_indices
         self._sym = sp.Symbol(name, real=True, imaginary=False, commutative=True,
