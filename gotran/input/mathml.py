@@ -17,6 +17,7 @@
 
 __all__ = ["MathMLBaseParser", "MathMLCPPParser"]
 
+from gotran.common import error
 from modelparameters.codegeneration import _all_keywords
 
 class MathMLBaseParser(object):
@@ -29,6 +30,7 @@ class MathMLBaseParser(object):
         self._precedence = {
             "piecewise" : 0, 
             "power" : 0,
+            "rem"   : 0.5,
             "divide": 1,
             "times" : 2,
             "minus" : 4,
@@ -57,6 +59,7 @@ class MathMLBaseParser(object):
     
         self._operators = {
             "power" : '**',
+            "rem"   : ' % ',
             "divide": '/',
             "times" : '*',
             "minus" : ' - ',
