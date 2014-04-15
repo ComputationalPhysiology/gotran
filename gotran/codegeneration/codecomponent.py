@@ -327,8 +327,7 @@ class CodeComponent(ODEComponent):
     def _expanded_result_expressions(self, **results):
 
         # Extract all result expressions
-        orig_result_expressions = reduce(sum, (result_exprs for result_exprs in \
-                                               results.values()), [])
+        orig_result_expressions = sum(results.values(), [])
         
         # A map between result expression and result name
         result_names = dict((result_expr, result_name) for \
@@ -564,10 +563,9 @@ class CodeComponent(ODEComponent):
     def _body_from_dependencies(self, **results):
         
         timer = Timer("Compute dependencies for {0}".format(self.name))
-        
+
         # Extract all result expressions
-        result_expressions = reduce(sum, (result_exprs for result_exprs in \
-                                          results.values()), [])
+        result_expressions = sum(results.values(), [])
         
         # Check passed expressions
         ode_expr_deps = self.root.expression_dependencies
@@ -638,8 +636,7 @@ class CodeComponent(ODEComponent):
                         itemtypes=(Expression, Comment))
 
         # Extract all result expressions
-        result_expressions = reduce(sum, (result_exprs for result_exprs in \
-                                          results.values()), [])
+        result_expressions = sum(results.values(), [])
 
         # A map between result expression and result name
         result_names = dict((result_expr, result_name) for \
