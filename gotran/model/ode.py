@@ -598,11 +598,11 @@ class ODE(ODEComponent):
             if expression_added:
                 obj._recount(dependent=dependent)
 
-            # Add dependencies between registered comments and expressions so
-            # they are carried over in Code components
-            for comment in comp._local_comments:
-                self.object_used_in[comment].add(obj)
-                self.expression_dependencies[obj].add(comment)
+            # Add dependencies between the last registered comment and
+            # expressions so they are carried over in Code components
+            if comp._local_comments:
+                self.object_used_in[comp._local_comments[-1]].add(obj)
+                self.expression_dependencies[obj].add(comp._local_comments[-1])
 
             # Get expression dependencies
             for sym in symbols_from_expr(obj.expr, include_derivatives=True):
