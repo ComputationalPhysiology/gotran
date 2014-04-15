@@ -198,7 +198,9 @@ class BaseCodeGenerator(object):
         if functions.linearized_rhs_evaluation.generate:
             comps.append(linearized_derivatives(\
                 ode, function_name=functions.linearized_rhs_evaluation.function_name,
-                result_name=functions.linearized_rhs_evaluation.result_name,
+                result_names=functions.linearized_rhs_evaluation.result_names,
+                only_linear=functions.linearized_rhs_evaluation.only_linear,
+                include_rhs=functions.linearized_rhs_evaluation.include_rhs,
                 params=self.params.code))
 
         # Add code for solvers
@@ -590,7 +592,9 @@ class PythonCodeGenerator(BaseCodeGenerator):
         check_arg(comp, CodeComponent)
         check_kwarg(indent, "indent", int)
         
-        body_lines = ["# Imports", "import numpy as np", "import math"]
+        body_lines = ["# Imports", "import numpy as np"]
+        if self.ns:
+            body_lines.append("import {0}".format(self.ns))
         body_lines += self._init_arguments(comp)
 
         # Iterate over any body needed to define the dy

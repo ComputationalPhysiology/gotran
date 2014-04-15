@@ -22,7 +22,7 @@ def main(filename, params):
         monitored = None
 
     # Create a C code generator
-    gen = PythonCodeGenerator(params)
+    gen = PythonCodeGenerator(params, ns=params.namespace)
 
     output = params.output
 
@@ -47,6 +47,8 @@ if __name__ == "__main__":
     
     params = ParameterDict(\
         output = Param("", description="Specify output file name"),\
+        namespace = OptionParam("math", ["math", "numpy", "ufl"],
+                                description="The math namespace of the generated code"), 
         **generation_params)
     params.parse_args(usage="usage: %prog FILE [options]")#sys.argv[2:])
     
