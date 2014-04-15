@@ -151,10 +151,6 @@ class ExplicitEuler(CodeComponent):
         # Gather state expressions and states
         state_exprs = self.root.state_expressions
         states = self.root.full_states
-        state_dict = dict((state.sym, ind) for ind, state in enumerate(states))
-        all_exprs = sorted(self.root.intermediates + self.root.comments \
-                           + state_exprs)
-
         result_name = self._params.states.array_name
         state_offset = self._params.states.add_offset
         self.shapes[result_name] = (len(states),)
@@ -165,27 +161,12 @@ class ExplicitEuler(CodeComponent):
         else:
             offset_str = ""
         
-        solver_expr_added = False
-        total_num_state_expressions = sum(isinstance(expr, StateExpression) \
-                                          for expr in all_exprs)
         dt = self.root._dt.sym
-        num_state_expressions = 0
-        for expr in all_exprs:
-
-            # Check if we are finished
-            if num_state_expressions == total_num_state_expressions:
-                break
-            
-            if isinstance(expr, StateExpression):
-                num_state_expressions += 1
-                i = state_dict[expr.state.sym]
-                solver_expr_added = True
-
-                res_sym = self.add_indexed_expression(result_name, (i,), \
-                                                      expr.state.sym+dt*expr.sym, offset_str)
-                if recount:
-                    res_obj = self.root.get_present_odeobjects[sympycode(res_sym)]
-                    res_obj._recount(expr._count+0.5)
+        for i, expr in enumerate(state_exprs):
+            dependent = expr if recount else None
+            self.add_indexed_expression(result_name, (i,), \
+                                        expr.state.sym+dt*expr.sym, offset_str, \
+                                        dependent=dependent)
                     
         # Call recreate body with the solver expressions as the result
         # expressions
@@ -231,9 +212,6 @@ class RushLarsen(CodeComponent):
         # Gather state expressions and states
         state_exprs = self.root.state_expressions
         states = self.root.full_states
-        state_dict = dict((state.sym, ind) for ind, state in enumerate(states))
-        all_exprs = sorted(self.root.intermediates + self.root.comments \
-                           + state_exprs)
 
         result_name = self._params.states.array_name
         state_offset = self._params.states.add_offset
@@ -245,46 +223,32 @@ class RushLarsen(CodeComponent):
         else:
             offset_str = ""
         
-        solver_expr_added = False
-        total_num_state_expressions = sum(isinstance(expr, StateExpression) \
-                                          for expr in all_exprs)
         dt = self.root._dt.sym
-        num_state_expressions = 0
-        for expr in all_exprs:
+        for i, expr in enumerate(state_exprs):
 
-            # Check if we are finished
-            if num_state_expressions == total_num_state_expressions:
-                break
-            
-            if isinstance(expr, StateExpression):
-                num_state_expressions += 1
-                i = state_dict[expr.state.sym]
-                solver_expr_added = True
-                expr_diff = expr.expr.diff(expr.state.sym)
+            dependent = expr if recount else None
+
+            # Diagonal jacobian value
+            expr_diff = expr.expr.diff(expr.state.sym)
                 
-                if recount:
-                    expr._recount()
+            if expr_diff and expr.state.sym not in expr_diff:
+                
+                linearized = self.add_intermediate(\
+                    expr.name+"_linearized", expr_diff, dependent=dependent)
+                
+                # Solve "exact" using exp
+                self.add_indexed_expression(\
+                    result_name, (i,), expr.state.sym+expr.sym/linearized*\
+                    (sp.exp(linearized*dt)-1.0), offset_str, dependent=dependent)
+                
+            else:
+                
+                # Explicit Euler step
+                self.add_indexed_expression(result_name, (i,), \
+                                            expr.state.sym+dt*expr.sym, offset_str, \
+                                            dependent=dependent)
 
-                if expr_diff and expr.state.sym not in expr_diff:
-                    
-                    linearized = self.add_intermediate(\
-                        expr.name+"_linearized", expr_diff)
-                    
-                    # Solve "exact" using exp
-                    res_sym = self.add_indexed_expression(\
-                        result_name, (i,), expr.state.sym+expr.sym/linearized*\
-                        (sp.exp(linearized*dt)-1.0), offset_str)
-                    
-                else:
-                    
-                    # Explicit Euler step
-                    res_sym = self.add_indexed_expression(result_name, (i,), \
-                                    expr.state.sym+dt*expr.sym, offset_str)
-
-                if recount:
-                    res_obj = self.root.get_present_odeobjects[sympycode(res_sym)]
-                    res_obj._recount(expr._count+0.5)
-
+            
         # Call recreate body with the solver expressions as the result
         # expressions
         results = {result_name:self.indexed_objects(result_name)}
@@ -312,9 +276,6 @@ class GeneralizedRushLarsen(CodeComponent):
         """
         check_arg(ode, ODE)
 
-        if ode.is_dae:
-            error("Cannot generate a Generalized Rush Larsen forward step for a DAE.")
-
         # Call base class using empty result_expressions
         descr = "Compute a forward step using the rush larsen algorithm to the "\
                 "{0} ODE".format(ode)
@@ -330,12 +291,9 @@ class GeneralizedRushLarsen(CodeComponent):
         # Gather state expressions and states
         state_exprs = self.root.state_expressions
         states = self.root.full_states
-        state_dict = dict((state.sym, ind) for ind, state in enumerate(states))
-        all_exprs = sorted(self.root.intermediates + self.root.comments \
-                           + state_exprs)
-
         result_name = self._params.states.array_name
         state_offset = self._params.states.add_offset
+
         self.shapes[result_name] = (len(states),)
         
         # Get time step and start creating the update algorithm
@@ -344,38 +302,20 @@ class GeneralizedRushLarsen(CodeComponent):
         else:
             offset_str = ""
         
-        solver_expr_added = False
-        total_num_state_expressions = sum(isinstance(expr, StateExpression) \
-                                          for expr in all_exprs)
         dt = self.root._dt.sym
-        num_state_expressions = 0
-        for expr in all_exprs:
+        for i, expr in enumerate(state_exprs):
 
-            # Check if we are finished
-            if num_state_expressions == total_num_state_expressions:
-                break
+            expr_diff = expr.expr.diff(expr.state.sym)
             
-            if isinstance(expr, StateExpression):
-                num_state_expressions += 1
-                i = state_dict[expr.state.sym]
-                solver_expr_added = True
-                expr_diff = expr.expr.diff(expr.state.sym)
+            dependent = expr if recount else None
+            linearized = self.add_intermediate(\
+                expr.name+"_linearized", expr_diff, dependent=dependent)
                 
-                #if recount:
-                #    expr._recount()
-
-                dependent = expr if recount else None
-                linearized = self.add_intermediate(\
-                    expr.name+"_linearized", expr_diff, dependent=dependent)
+            # Solve "exact" using exp
+            self.add_indexed_expression(\
+                result_name, (i,), expr.state.sym+expr.sym/linearized*\
+                (sp.exp(linearized*dt)-1.0), offset_str, dependent=dependent)
                     
-                # Solve "exact" using exp
-                self.add_indexed_expression(\
-                    result_name, (i,), expr.state.sym+expr.sym/linearized*\
-                    (sp.exp(linearized*dt)-1.0), offset_str, dependent=dependent)
-                    
-            #elif solver_expr_added and recount:
-            #    expr._recount()
-
         # Call recreate body with the solver expressions as the result
         # expressions
         results = {result_name:self.indexed_objects(result_name)}
@@ -421,9 +361,6 @@ class SimplifiedImplicitEuler(CodeComponent):
         # Gather state expressions and states
         state_exprs = self.root.state_expressions
         states = self.root.full_states
-        state_dict = dict((state.sym, ind) for ind, state in enumerate(states))
-        all_exprs = sorted(self.root.intermediates + self.root.comments \
-                           + state_exprs)
 
         result_name = self._params.states.array_name
         state_offset = self._params.states.add_offset
@@ -435,41 +372,24 @@ class SimplifiedImplicitEuler(CodeComponent):
         else:
             offset_str = ""
         
-        solver_expr_added = False
-        total_num_state_expressions = sum(isinstance(expr, StateExpression) \
-                                          for expr in all_exprs)
         dt = self.root._dt.sym
-        num_state_expressions = 0
-        for expr in all_exprs:
+        for i, expr in enumerate(state_exprs):
 
-            # Check if we are finished
-            if num_state_expressions == total_num_state_expressions:
-                break
-            
-            if isinstance(expr, StateExpression):
-                num_state_expressions += 1
-                i = state_dict[expr.state.sym]
-                solver_expr_added = True
+            dependent = expr if recount else None
 
-                if recount:
-                    expr._recount()
+            # Diagonal jacobian value
+            diag_jac_expr = expr.expr.diff(expr.state.sym)
 
-                # Diagonal jacobian value
-                diag_jac_expr = expr.expr.diff(expr.state.sym)
+            if not diag_jac_expr.is_zero:
+                diag_jac = self.add_intermediate(\
+                    expr.name+"_diag_jac", diag_jac_expr, dependent=dependent)
+            else:
+                diag_jac = 0.
 
-                if not diag_jac_expr.is_zero:
-                    diag_jac = self.add_intermediate(\
-                        expr.name+"_diag_jac", diag_jac_expr)
-                else:
-                    diag_jac = 0.
-
-                # Add simplified single Implicit Euler step
-                self.add_indexed_expression(result_name, (i,), \
-                    expr.state.sym+dt*expr.sym/(1-dt*diag_jac), offset_str)
+            # Add simplified single Implicit Euler step
+            self.add_indexed_expression(result_name, (i,), \
+                expr.state.sym+dt*expr.sym/(1-dt*diag_jac), offset_str)
                     
-            elif solver_expr_added and recount:
-                expr._recount()
-
         # Call recreate body with the solver expressions as the result
         # expressions
         results = {result_name:self.indexed_objects(result_name)}

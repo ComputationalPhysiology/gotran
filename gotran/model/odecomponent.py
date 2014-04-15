@@ -454,8 +454,8 @@ class ODEComponent(ODEObject):
         Return a list of all states in the component and its children that are
         not solved and determined by a state expression
         """
-        return sorted(obj for obj in iter_objects(self, False, False, False, \
-                                                  State) if not obj.is_solved)
+        return [expr.state for expr in self.state_expressions \
+                if not expr.state.is_solved]
 
     @property
     def full_state_vector(self):
@@ -487,8 +487,7 @@ class ODEComponent(ODEObject):
         Return a list of state expressions
         """
         return sorted((obj for obj in iter_objects(self, False, False, \
-                                                   False, StateExpression)),\
-                      lambda o0, o1 : cmp(o0.state, o1.state))
+                                                   False, StateExpression)))
 
     @property
     def rate_expressions(self):

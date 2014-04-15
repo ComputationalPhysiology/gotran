@@ -158,7 +158,8 @@ def componentwise_derivative(ode, indices, params=None, result_name="dy"):
                          params=params, **results)
 
 def linearized_derivatives(ode, function_name="linear_derivatives", \
-                           result_name="linearized", params=None):
+                           result_names=["linearized", "dy"], only_linear=True,
+                           include_rhs=False, params=None):
     """
     Return an ODEComponent holding the linearized derivative expressions
 
@@ -168,15 +169,21 @@ def linearized_derivatives(ode, function_name="linear_derivatives", \
         The ODE for which derivatives should be linearized
     function_name : str
         The name of the function which should be generated
-    result_name : str
-        The name of the variable storing the linearized derivatives
+    result_names : str
+        The name of the variable storing the linearized derivatives and the
+        rhs evaluation if that is included.
+    only_linear : bool
+        If True, only linear terms will be linearized
+    include_rhs : bool
+        If True, rhs evaluation will be included in the generated code.
     params : dict
         Parameters determining how the code should be generated
     """
     if not ode.is_finalized:
         error("The ODE is not finalized")
 
-    return LinearizedDerivativeComponent(ode, function_name, result_name, params)
+    return LinearizedDerivativeComponent(ode, function_name, result_names,
+                                         only_linear, include_rhs, params)
 
 def jacobian_expressions(ode, function_name="compute_jacobian", \
                          result_name="jac", params=None):
@@ -343,8 +350,6 @@ class JacobianComponent(CodeComponent):
         # Gather state expressions and states
         state_exprs = self.root.state_expressions
         states = self.root.full_states
-        all_exprs = sorted(self.root.intermediates + self.root.comments \
-                           + state_exprs)
 
         # Create Jacobian matrix
         N = len(states)
@@ -364,40 +369,24 @@ class JacobianComponent(CodeComponent):
                 ode.name))
             sys.stdout.flush()
 
-        jac_expr_added = False
-        total_num_state_expressions = sum(isinstance(expr, StateExpression) \
-                                          for expr in all_exprs)
-        num_state_expressions = 0
-        for expr in all_exprs:
+        for i, expr in enumerate(state_exprs):
 
-            # Check if we are finished
-            if num_state_expressions == total_num_state_expressions:
-                break
+            states_syms = sorted((state_dict[sym], sym) \
+                                 for sym in ode_primitives(expr.expr, time_sym) 
+                                 if sym in state_dict)
             
-            if isinstance(expr, StateExpression):
-                # Get count 
-                expr_count = expr._count
-                frac_count = 0.0001
-                num_state_expressions += 1
-                i = state_dict[expr.state.sym]
-                jac_expr_added = True
-                states_syms = [sym for sym in ode_primitives(expr.expr, time_sym) \
-                               if sym in state_dict]
-            
-                self.add_comment("Expressions for the sparse jacobian of "\
-                                 "state {0}".format(expr.state.name), dependent=expr)
-                for loc_ind, sym in enumerate(states_syms):
-                    j = state_dict[sym]
-                    time_diff = Timer("Differentiate state_expressions")
-                    jac_ij = expr.expr.diff(sym)
-                    del time_diff
-                    self.num_nonzero += 1
-                    jac_ij = self.add_indexed_expression(\
-                        result_name, (i, j), jac_ij, dependent=expr)
+            self.add_comment("Expressions for the sparse jacobian of "\
+                             "state {0}".format(expr.state.name), dependent=expr)
 
-                    #jac_expr = self.root.present_ode_objects[sympycode(jac_ij)]
-                    #jac_expr._recount(expr_count+loc_ind*frac_count)
-                    self.jacobian[i, j] = jac_ij
+            for j, sym in states_syms:
+                time_diff = Timer("Differentiate state_expressions")
+                jac_ij = expr.expr.diff(sym)
+                del time_diff
+                self.num_nonzero += 1
+                jac_ij = self.add_indexed_expression(\
+                    result_name, (i, j), jac_ij, dependent=expr)
+
+                self.jacobian[i, j] = jac_ij
                     
         if might_take_time:
             info(" done")
@@ -792,7 +781,8 @@ class LinearizedDerivativeComponent(CodeComponent):
     A component for all linear and linearized derivatives
     """
     def __init__(self, ode, function_name="linear_derivatives", \
-                 result_name="linearized", params=None):
+                 result_names=["linearized", "rhs"],
+                 only_linear=True, include_rhs=False, params=None):
         """
         Return an ODEComponent holding the linearized derivative expressions
     
@@ -802,35 +792,52 @@ class LinearizedDerivativeComponent(CodeComponent):
             The ODE for which derivatives should be linearized
         function_name : str
             The name of the function which should be generated
-        result_name : str
-            The name of the variable storing the linearized derivatives
+        result_names : str
+            The name of the variable storing the linearized derivatives and the
+            rhs evaluation if that is included.
+        only_linear : bool
+            If True, only linear terms will be linearized
+        include_rhs : bool
+            If True, rhs evaluation will be included in the generated code.
         params : dict
             Parameters determining how the code should be generated
         """
 
+        check_kwarg(result_names, "result_names", list, itemtypes=str)
+        if len(result_names)!=2:
+            error("expected the length of 'result_names' to be 2")
+            
         descr = "Computes the linearized derivatives for all linear derivatives"
         super(LinearizedDerivativeComponent, self).__init__(\
             "LinearizedDerivatives", ode, function_name, descr, params=params)
         
         check_arg(ode, ODE)
         assert ode.is_finalized
+
         self.linear_derivative_indices = [0]*self.root.num_full_states
-        self.shapes[result_name] = (self.root.num_full_states,)
-        for ind, expr in enumerate(self.root.state_expressions):
-            if not isinstance(expr, StateDerivative):
-                continue
-                error("Cannot generate a linearized derivative of an "\
-                      "algebraic expression.")
+        linearized_name, rhs_name = result_names
+
+        state_exprs = self.root.state_expressions
+        self.shapes[linearized_name] = (self.root.num_full_states,)
+        if include_rhs:
+            self.shapes[rhs_name] = (self.root.num_full_states,)
+            
+        for ind, expr in enumerate(state_exprs):
+
             expr_diff = expr.expr.diff(expr.state.sym)
 
             if expr_diff and expr.state.sym not in expr_diff:
-
                 self.linear_derivative_indices[ind] = 1
-                self.add_indexed_expression(result_name, ind, expr_diff)
+            elif only_linear:
+                continue
+                
+            self.add_indexed_expression(linearized_name, ind, expr_diff, dependent=expr)
 
         # Call recreate body with the jacobian action expressions as the 
         # result expressions
-        results = {result_name:self.indexed_objects(result_name)}
+        results = {linearized_name : self.indexed_objects(linearized_name)}
+        if include_rhs:
+            results[rhs_name] = state_exprs
         results, body_expressions = self._body_from_results(**results)
         self.body_expressions = self._recreate_body(body_expressions, \
                                                     **results)

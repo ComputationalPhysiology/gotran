@@ -193,8 +193,13 @@ parameters = ParameterDict(
                 function_name = Param("linearized_rhs",\
                                       description="The name of the generated "\
                                       "function."),
-                result_name = Param("values", description="The name of "\
-                                      "the result argument."),
+                include_rhs = Param(False, description="If True the rhs will be "\
+                                    "included as a result argument."),
+                only_linear = Param(True, description="If True only linearized "\
+                                    "expressions for the linear derivatives will "\
+                                    "be generated."),
+                result_names = Param(["linearized", "rhs"], description="The name of "\
+                                     "the two results arguments."),
                 ),
             ),
 
