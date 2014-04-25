@@ -18,7 +18,8 @@
 __all__ = ["ExplicitEuler", "explicit_euler_solver",
            "RushLarsen", "rush_larsen_solver",
            "GeneralizedRushLarsen", "generalized_rush_larsen_solver",
-           "SimplifiedImplicitEuler", "simplified_implicit_euler_solver"]
+           "SimplifiedImplicitEuler", "simplified_implicit_euler_solver",
+           "get_solver_fn"]
 
 # System imports
 import sys
@@ -114,6 +115,13 @@ def simplified_implicit_euler_solver(\
 
     return SimplifiedImplicitEuler(ode, function_name=function_name, params=params)
 
+def get_solver_fn(solver_type):
+    return {
+        'explicit_euler': explicit_euler_solver,
+        'rush_larsen': rush_larsen_solver,
+        'simplified_implicit_euler': simplified_implicit_euler_solver
+    }[solver_type]
+
 class ExplicitEuler(CodeComponent):
     """
     An ODEComponent which compute one step of the explicit Euler algorithm
@@ -154,20 +162,20 @@ class ExplicitEuler(CodeComponent):
         result_name = self._params.states.array_name
         state_offset = self._params.states.add_offset
         self.shapes[result_name] = (len(states),)
-        
+
         # Get time step and start creating the update algorithm
         if self._params.states.add_offset:
             offset_str = "{0}_offset".format(result_name)
         else:
             offset_str = ""
-        
+
         dt = self.root._dt.sym
         for i, expr in enumerate(state_exprs):
             dependent = expr if recount else None
             self.add_indexed_expression(result_name, (i,), \
                                         expr.state.sym+dt*expr.sym, offset_str, \
                                         dependent=dependent)
-                    
+
         # Call recreate body with the solver expressions as the result
         # expressions
         results = {result_name:self.indexed_objects(result_name)}
@@ -216,13 +224,13 @@ class RushLarsen(CodeComponent):
         result_name = self._params.states.array_name
         state_offset = self._params.states.add_offset
         self.shapes[result_name] = (len(states),)
-        
+
         # Get time step and start creating the update algorithm
         if self._params.states.add_offset:
             offset_str = "{0}_offset".format(result_name)
         else:
             offset_str = ""
-        
+
         dt = self.root._dt.sym
         for i, expr in enumerate(state_exprs):
 
@@ -230,25 +238,25 @@ class RushLarsen(CodeComponent):
 
             # Diagonal jacobian value
             expr_diff = expr.expr.diff(expr.state.sym)
-                
+
             if expr_diff and expr.state.sym not in expr_diff:
-                
+
                 linearized = self.add_intermediate(\
                     expr.name+"_linearized", expr_diff, dependent=dependent)
-                
+
                 # Solve "exact" using exp
                 self.add_indexed_expression(\
                     result_name, (i,), expr.state.sym+expr.sym/linearized*\
                     (sp.exp(linearized*dt)-1.0), offset_str, dependent=dependent)
-                
+
             else:
-                
+
                 # Explicit Euler step
                 self.add_indexed_expression(result_name, (i,), \
                                             expr.state.sym+dt*expr.sym, offset_str, \
                                             dependent=dependent)
 
-            
+
         # Call recreate body with the solver expressions as the result
         # expressions
         results = {result_name:self.indexed_objects(result_name)}
@@ -295,27 +303,27 @@ class GeneralizedRushLarsen(CodeComponent):
         state_offset = self._params.states.add_offset
 
         self.shapes[result_name] = (len(states),)
-        
+
         # Get time step and start creating the update algorithm
         if self._params.states.add_offset:
             offset_str = "{0}_offset".format(result_name)
         else:
             offset_str = ""
-        
+
         dt = self.root._dt.sym
         for i, expr in enumerate(state_exprs):
 
             expr_diff = expr.expr.diff(expr.state.sym)
-            
+
             dependent = expr if recount else None
             linearized = self.add_intermediate(\
                 expr.name+"_linearized", expr_diff, dependent=dependent)
-                
+
             # Solve "exact" using exp
             self.add_indexed_expression(\
                 result_name, (i,), expr.state.sym+expr.sym/linearized*\
                 (sp.exp(linearized*dt)-1.0), offset_str, dependent=dependent)
-                    
+
         # Call recreate body with the solver expressions as the result
         # expressions
         results = {result_name:self.indexed_objects(result_name)}
@@ -365,13 +373,13 @@ class SimplifiedImplicitEuler(CodeComponent):
         result_name = self._params.states.array_name
         state_offset = self._params.states.add_offset
         self.shapes[result_name] = (len(states),)
-        
+
         # Get time step and start creating the update algorithm
         if self._params.states.add_offset:
             offset_str = "{0}_offset".format(result_name)
         else:
             offset_str = ""
-        
+
         dt = self.root._dt.sym
         for i, expr in enumerate(state_exprs):
 
@@ -389,7 +397,7 @@ class SimplifiedImplicitEuler(CodeComponent):
             # Add simplified single Implicit Euler step
             self.add_indexed_expression(result_name, (i,), \
                 expr.state.sym+dt*expr.sym/(1-dt*diag_jac), offset_str)
-                    
+
         # Call recreate body with the solver expressions as the result
         # expressions
         results = {result_name:self.indexed_objects(result_name)}

@@ -25,10 +25,10 @@ parameters = ParameterDict(
 
     # Generation parameters
     generation = ParameterDict(
-        
+
         class_code = Param(False, description="If true methods are contained "\
                            "inside a class"),
-            
+
         # Code generation parameters
         code = ParameterDict(
 
@@ -36,22 +36,26 @@ parameters = ParameterDict(
             float_precision = OptionParam("double", ["double", "single"],
                                           description="Float precision in generated "\
                                           "code."),
-            
+
             # Parameter for default argument order
             default_arguments = OptionParam("stp", ["tsp", "stp", "spt", "ts", "st"],
                                             description="Default input argument order: "\
                                             "s=states, p=parameters, t=time"),
-            
+
             # Parameter for the time parameter name
             time = ParameterDict(
                 name = Param("t", description="Name of time argument")
                 ),
-            
+
             # Parameter for the time step parameter name
             dt = ParameterDict(
                 name = Param("dt", description="Name of time step argument")
                 ),
-            
+
+            # Number of nodes for solvers
+            n_nodes = ScalarParam(0, ge=0,
+                                  description="Number of nodes for simulation"),
+
             # Parameters for code generation of arrays
             array = ParameterDict(
                 index_format=OptionParam("[]", ["[]", "{}", "()"],
@@ -63,7 +67,7 @@ parameters = ParameterDict(
                               "flattened. jac[2,3] -> jac[27] if the shape of jac "\
                               "is (12,12)")
                 ),
-            
+
             # Parameters for code generation of parameters
             parameters = ParameterDict(
                 field_parameters = Param([""], description="A list of parameter names "\
@@ -84,7 +88,7 @@ parameters = ParameterDict(
                 add_field_offset = Param(False, description="If true an offset will be "\
                                          "added to the index of each field parameter"),
                 ),
-            
+
             # Parameters for code generation of states
             states = ParameterDict(
                 field_states = Param([""], description="A list of state names "\
@@ -99,7 +103,7 @@ parameters = ParameterDict(
                 add_offset = Param(False, description="If true an offset will be "\
                                    "added to the index of each state"),
                 ),
-            
+
             # Parameters for code generation of body expressions
             body = ParameterDict(
                 use_cse = Param(False, description="If true will the body be "\
@@ -108,25 +112,25 @@ parameters = ParameterDict(
 
                 in_signature = Param(False, description="If true the body argument "\
                                      "will be included in the signature."),
-            
+
                 representation = OptionParam("named", ["named", "array", "reused_array"],
                                              description="Controls how body variables are "\
                                              "represented in the code. As named variables,"\
                                              "as an indexed array or as indexed array with "\
                                              "reuse of unused array elements."),
-                
+
                 array_name = Param("body", description="The name of the array "\
                                    "representing the body."),
-                
+
                 optimize_exprs = OptionParam("none", ["none", "numerals",
                                                       "numerals_symbols"],
                                              description="Remove body expressions as "\
                                              "intermediates, which contains only a "\
                                              "numeral or numerals and a symbol."),
-                
+
                 ),
             ),
-        
+
         # Parameters for automatic generation of specific functions
         functions = ParameterDict(
 
@@ -157,7 +161,7 @@ parameters = ParameterDict(
                 result_name = Param("jac", description="The name of "\
                                       "the result argument."),
                 ),
-            
+
             lu_factorization = ParameterDict(
                 generate = Param(False, description="Generate code for "\
                                  "symbolicly factorize the jacobian."),
@@ -177,7 +181,7 @@ parameters = ParameterDict(
                 result_name = Param("dx", description="The name of "\
                                       "the incriment argument."),
                 ),
-            
+
             componentwise_rhs_evaluation = ParameterDict(
                 generate = Param(False, description="If true, generate code for "\
                                  "computing componentwise evaluation of the rhs."),
@@ -185,7 +189,7 @@ parameters = ParameterDict(
                                       description="The name of the generated "\
                                       "function."),
                 ),
-            
+
             linearized_rhs_evaluation = ParameterDict(
                 generate = Param(False, description="If true, generate code for "\
                                  "computing linearized evaluation of linear rhs "\
@@ -213,7 +217,7 @@ parameters = ParameterDict(
                                       description="The name of the generated "\
                                       "function."),
                 ),
-            
+
             rush_larsen = ParameterDict(
                 generate = Param(False, description="If true, generate code for "\
                                  "solving an ODE using Rush Larsen method."),
@@ -242,29 +246,29 @@ parameters = ParameterDict(
             ),
         ),
 
-    # Parameters for different input 
+    # Parameters for different input
     input = ParameterDict(
-        
-        # Parameters for CellML input 
+
+        # Parameters for CellML input
         cellml = ParameterDict(
 
             change_state_names=Param([], description="A list of state names "\
                                      "which should be changed to not interfere "\
                                      "with for example a parameter name."),
-            
+
             grouping=OptionParam("encapsulation", ["encapsulation", "containment"], \
                                  description="Determines what type of grouping "\
                                  "should be used when the cellml model is parsed."),
-            
+
             use_sympy_integers=Param(False, description="If yes dedicated sympy "\
                                      "integers will be used instead of the "\
                                      "integers 0-10. This will turn 1/2 into a "\
                                      "sympy rational instead of the float 0.5."),
-            
+
             strip_parent_name=Param(True, description="If True strip the name from "\
                                     "the child component it contains the name of the "\
                                     "parent component.")
-            
+
             ),
         ),
     )
