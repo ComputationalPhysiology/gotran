@@ -208,9 +208,9 @@ class ODECUDAHandler(object):
 
     def _get_grid(self):
         block_size = self.params.block_size
-        return (self._num_nodes//block_size +
-                    (0 if self._num_nodes % block_size == 0 else 1),
-                1)
+        grid = (self._num_nodes//block_size +
+                (0 if self._num_nodes % block_size == 0 else 1), 1)
+        return grid
 
     def _get_code(self):
         return self._cuda_code if self.is_ready() else ''
@@ -244,8 +244,10 @@ class CUDAODESystemSolver(object):
 
         if self.field_states is not None:
             self.get_field_states()
+            
         # FIXME: modelparameters needs a ListParam
-        if len(p_field_parameters) > 0 and p_field_states[0] != "":
+        if init_field_parameters is not None and len(p_field_parameters) > 0 and \
+               p_field_states[0] != "":
             self.set_field_parameters(init_field_parameters)
 
     @staticmethod
@@ -259,7 +261,7 @@ class CUDAODESystemSolver(object):
                     "explicit_euler", default_params.solvers.keys(),
                     description="Default solver type"),
                 block_size=ScalarParam(
-                    1024, ge=1, description="Number of threads per CUDA block")
+                    256, ge=1, description="Number of threads per CUDA block")
         )
 
     def _init_cuda(self, params=None):
@@ -269,8 +271,8 @@ class CUDAODESystemSolver(object):
         self._cudahandler.init_cuda(params=params)
 
     def forward(self, t, dt, update_host_states=False,
-                update_field_states=True,
-                update_simulation_runtimes=True):
+                update_field_states=False,
+                update_simulation_runtimes=False):
         if not self._cudahandler.is_ready():
             self._init_cuda() # TODO: Throw an error instead.
 
@@ -323,13 +325,15 @@ class CUDAODESystemSolver(object):
     def reset(self):
         self._cudahandler.clean_up()
 
-    def get_field_states(self):
+    def get_field_states(self, field_states=None):
         timer = Timer("get field states")
-        self._cudahandler.get_field_states(self.field_states)
+        field_states = field_states if field_states is not None else self.field_states
+        self._cudahandler.get_field_states(field_states)
 
-    def set_field_states(self):
+    def set_field_states(self, field_states=None):
         timer = Timer("set field states")
-        self._cudahandler.set_field_states(self.field_states)
+        field_states = field_states if field_states is not None else self.field_states
+        self._cudahandler.set_field_states(field_states)
 
     def set_field_parameters(self, field_parameters):
         self.field_parameters = field_parameters

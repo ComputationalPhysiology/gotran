@@ -88,7 +88,7 @@ def createTestCases(ode,
                     field_states_getter_fn=(None,),
                     field_parameters=([""],),
                     field_parameter_values_getter_fn=(None,),
-                    block_size=(1024,),
+                    block_size=(256,),
                     double=(True,),
                     statesrepr=('named',),
                     paramrepr=('named',),
@@ -107,7 +107,7 @@ def createTestCases(ode,
     print 'Generated {0} test cases.'.format(len(testcases))
     return testcases
 
-def testFloatPrecision(num_nodes=1024*8, dt=0.1, tstop=300.0, solver='rush_larsen',
+def testFloatPrecision(num_nodes=1024*64, dt=0.1, tstop=300.0, solver='rush_larsen',
                        field_states=['V'],
                        field_states_getter_fn=get_store_field_states_fn,
                        field_parameters=['g_to'],
@@ -135,7 +135,7 @@ def testFloatPrecision(num_nodes=1024*8, dt=0.1, tstop=300.0, solver='rush_larse
 
     return (names, all_field_states, runtimes, testcases, errors)
 
-def testThreadsPerBlock(num_nodes=1024*16, block_size=(16,32,64,128,256,512,1024),
+def testThreadsPerBlock(num_nodes=1024*16, block_size=(16,32,64,128,256),
                         dt=0.1, tstop=300.0, solver='rush_larsen',
                         field_states=['V'],
                         field_states_getter_fn=get_store_field_states_fn,
@@ -164,7 +164,7 @@ def testThreadsPerBlock(num_nodes=1024*16, block_size=(16,32,64,128,256,512,1024
 
     return (names, all_field_states, runtimes, testcases, errors)
 
-def testNumNodes(num_nodes=[1024*2**n for n in range(1,5)]+[1000*2**n for n in range(1,5)],
+def testNumNodes(num_nodes=[1024*2**n for n in range(3,8)]+[1000*2**n for n in range(3,8)],
                  dt=0.1, tstop=300.0, solver='rush_larsen',
                  field_states=['V'],
                  field_states_getter_fn=get_store_field_states_fn,
@@ -280,11 +280,11 @@ def testUpdateStates(num_nodes=1024*8, dt=0.1, tstop=300.0, solver='rush_larsen'
 
     return (names, all_field_states, runtimes, testcases, errors)
 
-def testRepresentation(num_nodes=1024, dt=0.1, tstop=300.0, solver='rush_larsen',
+def testRepresentation(num_nodes=1024*16, dt=0.1, tstop=300.0, solver='rush_larsen',
                        statesrepr=('named', 'array'),
                        paramrepr=('named', 'array', 'numerals'),
                        bodyrepr=('named', 'array', 'reused_array'),
-                       use_cse=(False,), # FIXME
+                       use_cse=(False,True), # FIXME
                        field_states=['V'],
                        field_states_getter_fn=get_store_field_states_fn,
                        field_parameters=['g_to'],
@@ -322,12 +322,16 @@ def testEverything():
 
     results = dict()
 
-    test_names = ('FLOAT PRECISION', 'THREADS PER BLOCK', 'NUM NODES',
-                  'SOLVERS', 'DT', 'UPDATE HOST/FIELD STATES')
+    tests = (('FLOAT PRECISION', testFloatPrecision),
+             ('THREADS PER BLOCK', testThreadsPerBlock),
+             ('NUM NODES', testNumNodes),
+             ('SOLVERS', testSolvers), 
+             ('DT', testDt), 
+             ('UPDATE HOST/FIELD STATES', testUpdateStates), 
+             ('REPRESENTATION', testRepresentation),
+             )
 
-    for name, test in zip(test_names,
-            (testFloatPrecision, testThreadsPerBlock, testNumNodes,
-             testSolvers, testDt, testUpdateStates)):
+    for name, test in tests:
         results[name] = test()
 
     for name, result in results.iteritems():
