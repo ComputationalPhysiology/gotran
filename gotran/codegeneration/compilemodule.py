@@ -35,7 +35,7 @@ from gotran.codegeneration.algorithmcomponents import rhs_expressions, \
      monitored_expressions, jacobian_expressions
 
 # Set log level of instant
-instant.set_logging_level("WARNING")
+instant.set_log_level("WARNING")
 
 __all__ = ["compile_module"]
 
