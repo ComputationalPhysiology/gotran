@@ -478,11 +478,12 @@ class CodeComponent(ODEComponent):
         
             # If the expression is just one of the atoms of the ODE we
             # skip the cse expressions but add a subs for the atom We
-            # also skip Relationals as the type checking in Piecewise
-            # otherwise kicks in and destroys things for us.
+            # also skip Relationals and Piecewise as the type checking
+            # in Piecewise otherwise kicks in and destroys things for
+            # us.
             if expr in atoms or isinstance(expr, (\
-                sp.relational.Relational, sp.relational.Boolean)):
-                cse_subs[cse_sym] = expr
+                sp.Piecewise, sp.relational.Relational, sp.relational.Boolean)):
+                cse_subs[cse_sym] = expr.xreplace(cse_subs)
             else:
                 # Add body expression as an intermediate expression
                 sym = self.add_intermediate("cse_{0}".format(\
