@@ -91,8 +91,14 @@ if __name__ == "__main__":
 
     print
     print "NUM DIFF DOUBLE:", np.absolute((goss_result-gpu_result_double)>1e-8).sum()
-    print "PROC REL DIFF SINGLE > 1%", (np.absolute((goss_result-gpu_result_single)\
+    print "PERCENT REL DIFF SINGLE > 0.1%", (np.absolute((goss_result-gpu_result_single)\
+                                    /goss_result)>1.e-3).sum()*1.0/len(goss_result)*100, "%"
+    print "PERCENT REL DIFF SINGLE > 1%", (np.absolute((goss_result-gpu_result_single)\
                                     /goss_result)>1.e-2).sum()*1.0/len(goss_result)*100, "%"
+    print "PERCENT REL DIFF SINGLE > 2%", (np.absolute((goss_result-gpu_result_single)\
+                                    /goss_result)>2.e-2).sum()*1.0/len(goss_result)*100, "%"
+    print "PERCENT REL DIFF SINGLE > 3%", (np.absolute((goss_result-gpu_result_single)\
+                                    /goss_result)>3.e-2).sum()*1.0/len(goss_result)*100, "%"
     print
     t = timings(True)
     print t.str(True)
