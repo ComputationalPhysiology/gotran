@@ -3,13 +3,16 @@
 
 from __future__ import division
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-03-13 -- 2014-04-15"
+__date__ = "2013-03-13 -- 2014-04-29"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
 from modelparameters.codegeneration import latex
 from scipy.integrate import odeint
-from scipy.optimize import root
+try:
+    from scipy.optimize import root
+except:
+    root = None
 from itertools import cycle
 import matplotlib.pyplot as plt
 import numpy as np
@@ -101,7 +104,7 @@ def main(filename, params):
     model_params = module.init_parameter_values(**user_params)
 
     # Check for steady state solve
-    if params.steady_state.solve:
+    if params.steady_state.solve and root:
         result = root(rhs, y0, args=(0., model_params,), jac=jac, \
                       method=params.steady_state.method, \
                       tol=params.steady_state.tol)
