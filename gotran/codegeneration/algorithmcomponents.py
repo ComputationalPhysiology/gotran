@@ -159,7 +159,7 @@ def componentwise_derivative(ode, indices, params=None, result_name="dy"):
 
 def linearized_derivatives(ode, function_name="linear_derivatives", \
                            result_names=["linearized", "dy"], only_linear=True,
-                           include_rhs=False, params=None):
+                           include_rhs=False, nonlinear_last=False, params=None):
     """
     Return an ODEComponent holding the linearized derivative expressions
 
@@ -176,6 +176,8 @@ def linearized_derivatives(ode, function_name="linear_derivatives", \
         If True, only linear terms will be linearized
     include_rhs : bool
         If True, rhs evaluation will be included in the generated code.
+    nonlinear_last : bool
+        If True the nonlinear expressions are added last after a comment
     params : dict
         Parameters determining how the code should be generated
     """
@@ -183,7 +185,8 @@ def linearized_derivatives(ode, function_name="linear_derivatives", \
         error("The ODE is not finalized")
 
     return LinearizedDerivativeComponent(ode, function_name, result_names,
-                                         only_linear, include_rhs, params)
+                                         only_linear, include_rhs,
+                                         nonlinear_last, params)
 
 def jacobian_expressions(ode, function_name="compute_jacobian", \
                          result_name="jac", params=None):
@@ -782,7 +785,8 @@ class LinearizedDerivativeComponent(CodeComponent):
     """
     def __init__(self, ode, function_name="linear_derivatives", \
                  result_names=["linearized", "rhs"],
-                 only_linear=True, include_rhs=False, params=None):
+                 only_linear=True, include_rhs=False, nonlinear_last=False,
+                 params=None):
         """
         Return an ODEComponent holding the linearized derivative expressions
     
@@ -821,7 +825,8 @@ class LinearizedDerivativeComponent(CodeComponent):
         self.shapes[linearized_name] = (self.root.num_full_states,)
         if include_rhs:
             self.shapes[rhs_name] = (self.root.num_full_states,)
-            
+
+        nonlinear_exprs = []
         for ind, expr in enumerate(state_exprs):
 
             expr_diff = expr.expr.diff(expr.state.sym)
@@ -830,8 +835,18 @@ class LinearizedDerivativeComponent(CodeComponent):
                 self.linear_derivative_indices[ind] = 1
             elif only_linear:
                 continue
-                
-            self.add_indexed_expression(linearized_name, ind, expr_diff, dependent=expr)
+
+            # Append nonlinear expressions for later addition
+            if nonlinear_last and self.linear_derivative_indices[ind]==0:
+                nonlinear_exprs.append((linearized_name, ind, expr_diff))
+            else:
+                self.add_indexed_expression(linearized_name, ind, expr_diff, dependent=expr)
+
+        if nonlinear_exprs:
+            self.add_comment("Nonlinear linearized expressions", dependent=expr)
+            for linearized_name, ind, expr_diff in nonlinear_exprs:
+                self.add_indexed_expression(linearized_name, ind, expr_diff,
+                                            dependent=expr)
 
         # Call recreate body with the jacobian action expressions as the 
         # result expressions
