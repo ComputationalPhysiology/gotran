@@ -3,10 +3,13 @@ from gotran import load_ode
 from gotran.common import Timer
 from goss import ODESystemSolver, RL1, jit, Progress, set_log_level, TRACE, \
      Timer as GossTimer, timings
-from cudaodesystemsolver import CUDAODESystemSolver
+from goss.cuda import CUDAODESystemSolver
 import numpy as np
 
 set_log_level(TRACE)
+
+global check_nans
+check_nans = False
 
 def get_field_values(num_nodes, field_parameters={}, field_states=[], dtype=np.float_):
     
@@ -27,10 +30,16 @@ def step_solver(solver, tstop, dt, field_states, what):
 
     t = 0.0
     p = Progress(what, int(tstop/dt))
+    num_nans = 0
     while t < tstop+1e-6:
         solver.set_field_states(field_states)
         solver.forward(t, dt)
         solver.get_field_states(field_states)
+        if check_nans:
+            n = np.isnan(field_states).sum()
+            if n > num_nans:
+                print t, n
+            num_nans = n
         t += dt
         p += 1
     
@@ -83,13 +92,13 @@ if __name__ == "__main__":
         if param.name in ["g_to", "g_CaL"]:
             field_parameters[param.name] = [param.init, param.init*0.01]
 
-    num_nodes = 100000
+    num_nodes = 1000
     gpu_result_double = run_gpu(ode, num_nodes, field_parameters=field_parameters)
     gpu_result_single = run_gpu(ode, num_nodes, field_parameters=field_parameters, \
                                 double=False)
+    print "NUM NAN SINGLE: ", np.isnan(gpu_result_single).sum()
     goss_result = run_goss(ode, num_nodes, field_parameters=field_parameters)
-
-    print
+    
     print "NUM DIFF DOUBLE:", np.absolute((goss_result-gpu_result_double)>1e-8).sum()
     print "PERCENT REL DIFF SINGLE > 0.1%", (np.absolute((goss_result-gpu_result_single)\
                                     /goss_result)>1.e-3).sum()*1.0/len(goss_result)*100, "%"
@@ -103,8 +112,8 @@ if __name__ == "__main__":
     t = timings(True)
     print t.str(True)
     goss_timing = t.get("GOSS", "Total time")
-    gpu_single_timing = t.get("GPU SINGLE", "Total time")
     gpu_double_timing = t.get("GPU DOUBLE", "Total time")
+    gpu_single_timing = t.get("GPU SINGLE", "Total time")
     
-    print "SPEEDUPS SINGLE PREC:", eval("{}/{}".format(goss_timing, gpu_single_timing))
     print "SPEEDUPS DOUBLE PREC:", eval("{}/{}".format(goss_timing, gpu_double_timing))
+    print "SPEEDUPS SINGLE PREC:", eval("{}/{}".format(goss_timing, gpu_single_timing))
