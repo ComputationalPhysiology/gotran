@@ -238,7 +238,8 @@ component("Sodium background current")
 i_b_Na = g_bna*(V - E_Na) # pA*pF**-1
 
 component("L_type Ca current")
-i_CaL = g_CaL*d*f*f2*fCass*4*(V - 15)*F**2/(R*T)*(0.25*Ca_ss*exp(2*(V - 15)*F/(R*T)) - Ca_o)/(exp(2*(V - 15)*F/(R*T)) - 1) # pA*pF**-1
+V_eff = Conditional(Lt(abs(V-15), 1.e-8), 1e-8, V-15)
+i_CaL = g_CaL*d*f*f2*fCass*4*V_eff*F**2/(R*T)*(0.25*Ca_ss*exp(2*V_eff*F/(R*T)) - Ca_o)/(exp(2*V_eff*F/(R*T)) - 1) # pA*pF**-1
 
 component("L_type Ca current", "d gate")
 d_inf = 1/(1 + exp((-8 - V)/7.5))
