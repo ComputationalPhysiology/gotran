@@ -3,7 +3,7 @@
 
 from __future__ import division
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-03-13 -- 2014-04-29"
+__date__ = "2013-03-13 -- 2014-04-30"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -43,7 +43,7 @@ def main(filename, params):
     for what in ["rhs", "monitored"]:
         generation.functions[what].generate = True
 
-    generation.functions.jacobian.generate = params.use_jacobian
+    generation.functions.jacobian.generate = params.code.generate_jacobian
     
     # Compile executeable code from gotran ode
     ode = load_ode(filename)
@@ -99,7 +99,7 @@ def main(filename, params):
     dt = params.dt
 
     rhs = module.rhs
-    jac = module.compute_jacobian if params.use_jacobian else None
+    jac = module.compute_jacobian if params.code.generate_jacobian else None
     y0 = module.init_state_values(**user_ic)
     model_params = module.init_parameter_values(**user_params)
 
@@ -181,6 +181,8 @@ if __name__ == "__main__":
         body_repr = dict.__getitem__(body_params, "representation"),
         use_cse = dict.__getitem__(body_params, "use_cse"),
         optimize_exprs = dict.__getitem__(body_params, "optimize_exprs"),
+        generate_jacobian = Param(True, description="Generate and use analytic "\
+                                  "jacobian when integrating."),\
         )
     
     steady_state = ParameterDict(
@@ -199,7 +201,6 @@ if __name__ == "__main__":
         tstop = ScalarParam(100., gt=0, description="Time for stopping simulation"),\
         dt = ScalarParam(0.1, gt=0, description="Timestep for plotting."),\
         plot = Param(["V"], description="States or monitored to plot."),\
-        use_jacobian = Param(True, description="Use analytic jacobian when integrating."),\
         code = code_params)
     
     params.parse_args(usage="usage: %prog FILE [options]")
