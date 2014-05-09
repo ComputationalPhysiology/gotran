@@ -28,6 +28,15 @@ def get_store_field_states_fn(num_nodes):
 
     return store_field_states_fn
 
+def get_store_all_field_states_fn(num_nodes):
+    i = len(stored_field_states)
+    stored_field_states.append(list())
+
+    def store_field_states_fn(field_states):
+        stored_field_states[i].append(field_states.copy())
+
+    return store_field_states_fn
+
 def get_g_to_field_parameter_values(num_nodes, float_precision):
     return \
         0.294*np.arange(0,
@@ -393,7 +402,74 @@ def runTests(testcases, printTimings=True):
             f = StringIO()
             traceback.print_exc(file=f)
             f.read()
-            results.append([('ERROR', 'ERROR', 'ERROR'), 0.0, f.buf])
+            results.append(['ERROR', 0.0, f.buf])
+            f.close()
+            print 'FAILED test {0}/{1}.'.format(i+1, ntests)
+
+    return results
+
+def runTestsStep(testcases, printTimings=True, checkNaN=False, update_host_states=False):
+    from goss import Progress, Timer as GossTimer, timings
+
+    results = list()
+
+    ntests = len(testcases)
+
+    for i, testcase in enumerate(testcases):
+        params = coss.CUDAODESystemSolver.default_parameters()
+        params.solver = testcase.solver
+        params.code.states.field_states = testcase.field_states
+        params.code.parameters.field_parameters = testcase.field_parameters
+        params.block_size = testcase.block_size
+        params.code.float_precision = get_float_prec_str(testcase.double)
+        params.code.states.representation = testcase.statesrepr
+        params.code.parameters.representation = testcase.paramrepr
+        params.code.body.representation = testcase.bodyrepr
+        params.code.body.use_cse = testcase.use_cse
+
+        try:
+            solver = coss.CUDAODESystemSolver(
+                testcase.num_nodes,
+                testcase.ode,
+                init_field_parameters=testcase.field_parameter_values,
+                params=params)
+
+            field_states = \
+                np.zeros(testcase.num_nodes*len(testcase.field_states),
+                         dtype=get_dtype_str(testcase.double))
+
+            solver.get_field_states(field_states)
+            testcase.field_states_fn(field_states)
+
+            t = testcase.t0
+            dt = testcase.dt
+            tstop = testcase.tstop
+            p = Progress("Test {0}".format(i+1), int(tstop/dt))
+            num_nans = 0
+
+            while t < tstop+1e-6:
+                solver.set_field_states(field_states)
+                solver.forward(t, dt, update_simulation_runtimes=True, update_host_states=update_host_states)
+                solver.get_field_states(field_states)
+                testcase.field_states_fn(field_states)
+
+                if checkNaN:
+                    n = np.isnan(field_states).sum()
+                    if n > num_nans:
+                        print t, n
+                    num_nans = n
+
+                t += dt
+                p += 1
+
+            results.append([field_states, solver.simulation_runtime, None])
+            solver.reset()
+            print 'Completed test {0}/{1} in {2:.2f}s.'.format(i+1, ntests, results[-1][1])
+        except:
+            f = StringIO()
+            traceback.print_exc(file=f)
+            f.read()
+            results.append(['ERROR', 0.0, f.buf])
             f.close()
             print 'FAILED test {0}/{1}.'.format(i+1, ntests)
 
