@@ -123,6 +123,8 @@ class ODECUDAHandler(object):
                 _d_array.free()
             except cuda.LogicError:
                 continue
+            except AttributeError:
+                continue
 
     def forward(self, t, dt, update_host_states=False, synchronize=True):
         if not self.is_ready():
@@ -134,6 +136,7 @@ class ODECUDAHandler(object):
             # FIXME: modelparameters needs a ListParam
             if len(field_parameters) != 1 or field_parameters[0] != "":
                 args.append(self._d_field_parameters)
+            args.append(np.uint32(self.num_nodes))
             self._forward_fn(*args,
                              block=self._get_block(),
                              grid=self._get_grid())
