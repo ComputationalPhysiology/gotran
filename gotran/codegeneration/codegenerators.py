@@ -1486,7 +1486,7 @@ class CUDACodeGenerator(CCodeGenerator):
 
         # Main body
         body_lines.extend(
-            "{0}[field_{1}_offset + {2}] = {3}{4}; // {5}".format(
+            "{0}[field_{1}_offset + {2}] = {3}{4}; //{5}".format(
                 field_array_name,
                 base_array_name,
                 i,
@@ -1551,7 +1551,7 @@ class CUDACodeGenerator(CCodeGenerator):
         # Main body
         body_lines.extend(
             "{0}[field_{2}_offset + {3}] = "\
-            "{1}[{2}_offset + {4}]; // {5}".format(\
+            "{1}[{2}_offset + {4}]; //{5}".format(\
                 field_array_name, array_name,
                 base_array_name, i, states.index(state), state.name)
             for i, state in enumerate(field_states))
@@ -1606,7 +1606,7 @@ class CUDACodeGenerator(CCodeGenerator):
         # Main body
         body_lines.extend(
             "{0}[{2}_offset + {3}] = "\
-            "{1}[field_{2}_offset + {4}]; // {5}".format(\
+            "{1}[field_{2}_offset + {4}]; //{5}".format(\
                 array_name, field_array_name,
                 base_array_name, states.index(state), i, state.name)
             for i, state in enumerate(field_states))
