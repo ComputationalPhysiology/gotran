@@ -360,27 +360,11 @@ class CodeComponent(ODEComponent):
         orig_result_expressions, result_names, expanded_result_exprs = \
                                  self._expanded_result_expressions(**results)
 
-        # Extract all result expressions
-        #orig_result_expressions = reduce(sum, (result_exprs for result_exprs in \
-        #                                       results.values()), [])
-        #
-        ## A map between result expression and result name
-        #result_names = dict((result_expr, result_name) for \
-        #                    result_name, result_exprs in results.items() \
-        #                    for result_expr in result_exprs)
-        #
-        ## The expanded result expressions
-        #expanded_result_exprs = [self.root.expanded_expression(obj) \
-        #                         for obj in orig_result_expressions]
+        state_offset = self._params["states"]["add_offset"]
 
         # Collect results and body_expressions
         body_expressions = []
         new_results = defaultdict(list)
-
-        # Set shape for result expressions
-        #for result_name, result_expressions in results.items():
-        #    if result_name not in self.shapes:
-        #        self.shapes[result_name] = (len(result_expressions),)
 
         might_take_time = len(orig_result_expressions) >= 40
 
@@ -399,9 +383,6 @@ class CodeComponent(ODEComponent):
 
         # Extract the symbols into a set for fast comparison
         cse_syms = set((sym for sym in cse_exprs))
-
-        #print
-        #print cse_syms
 
         # Create maps between cse_expr and result expressions trying
         # to optimized the code by weaving in the result expressions
@@ -427,8 +408,6 @@ class CodeComponent(ODEComponent):
         
         for ind, (orig_result_expr, result_expr) in \
                 enumerate(zip(orig_result_expressions, cse_result_exprs)):
-            
-            #print orig_result_expr, result_expr
             
             # Collect information so that we can recreate the result
             # expression from
@@ -510,7 +489,8 @@ class CodeComponent(ODEComponent):
                         #print cse_subs, result_expr
                         exp_expr = result_expr.xreplace(cse_subs)
                     
-                        sym = self.add_indexed_expression(result_name, indices, exp_expr)
+                        sym = self.add_indexed_expression(\
+                            result_name, indices, exp_expr, add_offset=state_offset)
 
                         expr = self.ode_objects.get(sympycode(sym))
 
@@ -523,34 +503,6 @@ class CodeComponent(ODEComponent):
                         # Register the new result expression
                         new_results[result_name].append(expr)
                         body_expressions.append(expr)
-
-        #assert(len(result_expr_map)==0)
-
-        #self.add_comment("Common sub expressions for the result expressions")
-        #body_expressions.append(self.ode_objects[-1])
-
-        # Register the result expressions
-        #for ind, (orig_result_expr, result_expr) in \
-        #        enumerate(zip(orig_result_expressions, cse_result_exprs)):
-        #
-        #    result_name = result_names[orig_result_expr]
-        #
-        #    # Replace pure state and param expressions
-        #    exp_expr = result_expr.xreplace(cse_subs)
-        #
-        #    # Add result expression as an indexed expression, if original
-        #    # expression already is an IndexedExpression then recreate the
-        #    # Expression using the same Indices
-        #    if isinstance(orig_result_expr, IndexedExpression):
-        #        sym = self.add_indexed_expression(result_name, \
-        #                                          orig_result_expr.indices, exp_expr)
-        #    else:
-        #        sym = self.add_indexed_expression(result_name, ind, exp_expr)
-        #    expr = self.ode_objects.get(sympycode(sym))
-        #
-        #    # Register the new result expression
-        #    new_results[result_name].append(expr)
-        #    body_expressions.append(expr)
 
         if might_take_time:
             info(" done")
