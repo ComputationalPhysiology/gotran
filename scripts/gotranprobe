@@ -2,13 +2,26 @@
 # -*- coding: utf-8 -*-
 
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-05-07 -- 2014-02-10"
+__date__ = "2013-05-07 -- 2014-05-13"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
 from gotran import *
 from gotran.model.loadmodel import load_ode
 from gotran.model.odeobjects import Comment
+from collections import deque
+
+def join_indent_and_split(code, baseindent=4):
+
+    code = deque(code)
+    output = [" "*baseindent+code.popleft()]
+    while code:
+        if len(output[-1]) + 2 + len(code[0])>80:
+            output.append(" "*baseindent+code.popleft())
+        else:
+            output[-1] += ", "+code.popleft()
+
+    return "\n".join(output)
 
 def main(filename, params):
 
@@ -16,12 +29,19 @@ def main(filename, params):
     ode = load_ode(filename)
     set_log_level(INFO)
 
-    print "Information of '{0}' Gotran model".format(ode.name)
-    
     if params.flat_view:
-        print "  States:        ", ", ".join(state.name for state in ode.full_states)
-        print "  Parameters:    ", ", ".join(param.name for param in ode.parameters)
-        print "  Intermediates: ", ", ".join(interm.name for interm in ode.intermediates)
+        print
+        print "  Components({}):".format(len(ode.components))
+        print join_indent_and_split([comp.name for comp in ode.components])
+        print
+        print "  States({}):".format(len(ode.full_states))
+        print join_indent_and_split([state.name for state in ode.full_states])
+        print
+        print "  Parameters({}):".format(len(ode.parameters))
+        print join_indent_and_split([param.name for param in ode.parameters])
+        print
+        print "  Intermediates({}): ".format(len(ode.intermediates))
+        print join_indent_and_split([interm.name for interm in ode.intermediates])
     else:
         for comp in ode.components:
             if comp.states or comp.parameters or comp.intermediates:
