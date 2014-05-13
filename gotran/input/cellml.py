@@ -982,7 +982,7 @@ class CellMLParser(object):
             import networkx as nx
         except:
             warning("networkx could not be imported. Circular "\
-                    "dependencies between components will not be sorted.")
+                    "dependencies between components will not be sorted out.")
             return sorted_components + circular_components
         
         # Collect zero and one dependencies
@@ -993,8 +993,6 @@ class CellMLParser(object):
         # Gather zero dependent equations
         for comp in circular_components:
             for dep_comp, equations in comp.dependencies.items():
-                #if dep_comp not in circular_components:
-                #    continue
                 for equation in equations:
                     if not equation.dependent_equations and equation.name \
                            in comp.used_variables:
@@ -1005,13 +1003,12 @@ class CellMLParser(object):
         one_dep_zero_dep = defaultdict(set)
         for comp in circular_components:
             for dep_comp, equations in comp.dependencies.items():
-                #if dep_comp not in circular_components:
-                #    continue
                 for equation in equations:
                     if len(equation.dependent_equations) == 1 and \
                            equation.name in comp.used_variables and \
                            equation.dependent_equations[0] in \
                            zero_dep_equations:
+                        
                         equation_map[equation.name] = equation
                         one_dep_equations.add(equation)
                         one_dep_zero_dep[equation.name].add(\
@@ -1024,6 +1021,7 @@ class CellMLParser(object):
         # Valid edges for removal
         valid_edges = [eq.name for eq in zero_dep_equations] + \
                       [eq.name for eq in one_dep_equations]
+        
         
         G = nx.MultiDiGraph()
         G.add_nodes_from([comp.name for comp in components])
@@ -1047,7 +1045,6 @@ class CellMLParser(object):
                     local_breaker.append([edge for edge in G[n0][n1]])
                     for edge in local_breaker[-1]:
                         edge_to_nodes[edge].add((n0, n1))
-                        
             cycle_breakers.append(local_breaker)
             for local_edges in local_breaker:
                 for edge in local_edges:
@@ -1060,8 +1057,8 @@ class CellMLParser(object):
         # Collect edges to be removed
         edge_removal = set()
         cycles_fixed = [False]*len(cycle_breakers)
-        
-        while not all(cycles_fixed):
+
+        while not all(cycles_fixed) and edge_score:
             score, edge = edge_score.pop()
 
             # Remove this/these edge/edges this iteration
@@ -1163,15 +1160,22 @@ class CellMLParser(object):
 
         # Sort graph components and apply the sortings to the collected
         # CellML compoents
-        sorted_components = nx.topological_sort(G)
-        components.sort(lambda n0, n1: cmp(sorted_components.index(n0.name), \
-                                           sorted_components.index(n1.name)))
-
+        try:
+            sorted_components = nx.topological_sort(G)
+            components.sort(lambda n0, n1: cmp(sorted_components.index(n0.name), \
+                                               sorted_components.index(n1.name)))
+            message = "To avoid circular dependency the following equations "\
+                      "has been moved:"
+            
+        except Exception, e:
+            warning("Topological sort failed: " + str(e))
+            message = "In a try to avoid circular dependency the following equations "\
+                      "has been moved:"
+            
         # Insert the ODE component with extracted equations first
         components.insert(0, ode_comp)
 
-        warning("To avoid circular dependency the following equations "\
-                "has been moved:")
+        warning(message)
         
         for eq, old_comp in removed_equations.items():
             warning("{0} : from {1} to {2} component".format(\
