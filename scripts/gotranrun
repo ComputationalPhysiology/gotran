@@ -3,7 +3,7 @@
 
 from __future__ import division
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-03-13 -- 2014-04-30"
+__date__ = "2013-03-13 -- 2014-05-13"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -159,13 +159,13 @@ def main(filename, params):
             monitored_plot_updated.append(monitor)
 
     plt.rcParams["lines.linewidth"] = 2
-    line_styles = cycle([c+s for c in plt.rcParams["axes.color_cycle"] \
-                         for s in ["-", "--", "-.", ":"]])
+    line_styles = cycle([c+s for s in ["-", "--", "-.", ":"]
+                         for c in plt.rcParams["axes.color_cycle"]])
     for values in plot_values:
         plt.plot(tsteps, values, next(line_styles))
     
     plt.legend(["$\\mathrm{{{0}}}$".format(latex(value))
-                  for value in plot_states + monitored_plot_updated])
+                  for value in plot_states + monitored_plot_updated], loc=0)
     plt.xlabel("time")
     plt.title(ode.name.replace("_", "\\_"))
     plt.show()

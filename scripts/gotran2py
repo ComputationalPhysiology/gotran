@@ -5,12 +5,13 @@ import os
 from gotran.model.loadmodel import load_ode
 from gotran.codegeneration.codegenerators import PythonCodeGenerator
 from gotran.common.options import parameters
-from gotran.common import error, info
+from gotran.common import error, info, list_timings, Timer
 
 def main(filename, params):
     """
     Create a c header file from a gotran model
     """
+    timer = Timer("Generate Python code from {}".format(filename))
 
     # Load Gotran model
     ode = load_ode(filename)
@@ -32,12 +33,16 @@ def main(filename, params):
     else:
         output = filename.replace(".ode", "")+".py"
 
-    f = open(output, "w")
-
-    info("")
-    info("Generating Python files for the {0} ode...".format(ode.name))
-    f.write(gen.module_code(ode, monitored=monitored))
-    info("  done.")
+    with open(output, "w") as f:
+        info("")
+        info("Generating Python code for the {0} ode...".format(ode.name))
+        f.write(gen.module_code(ode, monitored=monitored))
+        info("  done.")
+    
+    del timer
+    
+    if params.list_timings:
+        list_timings()
 
 if __name__ == "__main__":
     import sys, os
@@ -46,6 +51,8 @@ if __name__ == "__main__":
     generation_params=parameters.generation.copy()
     
     params = ParameterDict(\
+        list_timings = Param(False, description="If true timings for reading "\
+                             "and evaluating the model is listed."),
         output = Param("", description="Specify output file name"),\
         namespace = OptionParam("math", ["math", "numpy", "ufl"],
                                 description="The math namespace of the generated code"), 

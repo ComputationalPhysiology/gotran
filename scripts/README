@@ -1,0 +1,25 @@
+The following light weigth scripts are provided by Gotran
+=========================================================
+
+Translation to Gotran
+---------------------
+
+  cellml2gotran  : A CellML to gotran converter. 
+
+Translation from Gotran
+-----------------------
+
+  gotran2c       : Generates C code from a gotran file
+  gotran2cpp     : Generates C++ code from a gotran file
+  gotran2cuda    : Generates CUDA code from a gotran file
+  gotran2latex   : Generates LaTeX file from a gotran file
+  gotran2matlab  : Generates Matlab files from a gotran file
+  gotran2py      : Generates Python code from a gotran file 
+
+Utility scripts
+---------------
+
+  gotranprobe    : Used to probe a Gotran file for information
+  gotranrun      : Runs a Gotran model using scipy
+  gotranexport   : Extracts and export components of a Gotran file 
+                   to a new Gotran file

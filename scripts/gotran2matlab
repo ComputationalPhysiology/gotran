@@ -3,12 +3,14 @@
 from gotran.model.loadmodel import load_ode
 from gotran.codegeneration.codegenerators import MatlabCodeGenerator
 from gotran.common.options import parameters
-from gotran.common import error, info
+from gotran.common import error, info, list_timings, Timer
 
 def main(filename, params):
     """
     Create a matlab code from a gotran model
     """
+
+    timer = Timer("Generate Matlab code from {}".format(filename))
 
     # Load Gotran model
     ode = load_ode(filename)
@@ -38,6 +40,8 @@ if __name__ == "__main__":
     generation_params = MatlabCodeGenerator.default_parameters()
     
     params = ParameterDict(\
+        list_timings = Param(False, description="If true timings for reading "\
+                             "and evaluating the model is listed."),
         output = Param("", description="Specify output file name"),\
         **generation_params)
     params.parse_args(usage="usage: %prog FILE [options]")#sys.argv[2:])

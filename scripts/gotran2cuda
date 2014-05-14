@@ -5,7 +5,7 @@ import os
 from gotran.model.loadmodel import load_ode
 from gotran.codegeneration.codegenerators import CUDACodeGenerator
 from gotran.common.options import parameters
-from gotran.common import error
+from gotran.common import error, list_timings
 
 def main(filename, params):
     """
@@ -32,6 +32,8 @@ def main(filename, params):
         f.write("#include <string.h>\n")
 
     f.write(gen.module_code(ode))
+    if params.list_timings:
+        list_timings()
 
 if __name__ == "__main__":
     import sys, os
@@ -40,6 +42,8 @@ if __name__ == "__main__":
     generation_params=CUDACodeGenerator.default_parameters()
     
     params = ParameterDict(\
+        list_timings = Param(False, description="If true timings for reading "\
+                             "and evaluating the model is listed."),
         system_headers = Param(True, description="If true system "\
                                "headers needed to compile moudle is "\
                                "included."),\
