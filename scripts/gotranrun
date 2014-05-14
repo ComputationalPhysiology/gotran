@@ -3,7 +3,7 @@
 
 from __future__ import division
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-03-13 -- 2014-05-13"
+__date__ = "2013-03-13 -- 2014-05-14"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -181,7 +181,7 @@ if __name__ == "__main__":
         body_repr = dict.__getitem__(body_params, "representation"),
         use_cse = dict.__getitem__(body_params, "use_cse"),
         optimize_exprs = dict.__getitem__(body_params, "optimize_exprs"),
-        generate_jacobian = Param(True, description="Generate and use analytic "\
+        generate_jacobian = Param(False, description="Generate and use analytic "\
                                   "jacobian when integrating."),\
         )
     
