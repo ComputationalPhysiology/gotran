@@ -84,7 +84,8 @@ component("Sodium current")
 i_Na = (g_Na*m**3*h*j + g_Nac)*(V - E_Na) # uA*mm**-2
 
 component("Sodium current", "m gate")
-alpha_m = -1*(V + 47)/(exp(-0.1*(V + 47)) - 1) # ms**-1
+V_eff_0 = Conditional(Lt(abs(V+47), 1.e-2), 1e-2, V+47)
+alpha_m = -1*(V + 47)/(exp(-0.1*V_eff_0) - 1) # ms**-1
 beta_m = 40*exp(-0.056*(V + 72)) # ms**-1
 dm_dt = alpha_m*(1 - m) - beta_m*m
 
@@ -122,7 +123,8 @@ beta_x1 = 0.0013*exp(-(V + 20)/16.67)/(1 + exp(-(V + 20)/25)) # ms**-1
 dx1_dt = alpha_x1*(1 - x1) - beta_x1*x1
 
 component("Time independent outward current")
-i_K1 = 0.0035*(4*(exp(0.04*(V + 85)) - 1)/(exp(0.08*(V + 53)) + exp(0.04*(V + 53))) + 0.2*(V + 23)/(1 - exp(-0.04*(V + 23)))) # uA*mm**-2
+V_eff_1 = Conditional(Lt(abs(V + 23), 1.e-2), 1e-2, V + 23)
+i_K1 = 0.0035*(4*(exp(0.04*(V + 85)) - 1)/(exp(0.08*(V + 53)) + exp(0.04*(V + 53))) + 0.2*(V + 23)/(1 - exp(-0.04*V_eff_1))) # uA*mm**-2
 
 component("Stimulus protocol")
 Istim = Conditional(And(Ge(time, IstimStart), Le(time, IstimEnd), Le(time - IstimStart - floor((time - IstimStart)/IstimPeriod)*IstimPeriod, IstimPulseDuration), ), IstimAmplitude, 0) # uA*mm**-2
