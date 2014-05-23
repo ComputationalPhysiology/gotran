@@ -56,7 +56,7 @@ states("Slow inward current",
        Cai = ScalarParam(1e-4, unit="nmole*mm**-3"))
 
 parameters("Slow inward current",
-           g_s = ScalarParam(5e-4, unit="mS*mm**-2"))
+           g_s = ScalarParam(9e-4, unit="mS*mm**-2"))
 
 states("Slow inward current", "d gate",
        d = 0.003)
