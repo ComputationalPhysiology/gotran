@@ -116,7 +116,7 @@ def createTestCases(ode,
     print 'Generated {0} test cases.'.format(len(testcases))
     return testcases
 
-def testFloatPrecision(num_nodes=1024*64, dt=0.1, tstop=300.0, solver='rush_larsen',
+def testFloatPrecision(num_nodes=1024, dt=0.1, tstop=300.0, solver='rush_larsen',
                        field_states=['V'],
                        field_states_getter_fn=get_store_field_states_fn,
                        field_parameters=['g_to'],
@@ -131,7 +131,7 @@ def testFloatPrecision(num_nodes=1024*64, dt=0.1, tstop=300.0, solver='rush_lars
             field_states_getter_fn=(field_states_getter_fn,),
             field_parameters=(field_parameters,),
             field_parameter_values_getter_fn=(field_parameter_values_getter_fn,),
-            double=(True, False)
+            double=(True,)#, False)
     )
 
     print 'Running FLOAT PRECISION tests...'
@@ -257,7 +257,7 @@ def testDt(num_nodes=1024*8, dt=(1, 0.5, 0.2, 0.1, 0.05), tstop=300.0, solver='r
 
     return (names, all_field_states, runtimes, testcases, errors)
 
-def testUpdateStates(num_nodes=1024*8, dt=0.1, tstop=300.0, solver='rush_larsen',
+def testUpdateStates(num_nodes=1024, dt=0.1, tstop=300.0, solver='rush_larsen',
                      update_host_states=(True, False),
                      update_field_states=(True, False),
                      field_states=['V'],
@@ -290,9 +290,9 @@ def testUpdateStates(num_nodes=1024*8, dt=0.1, tstop=300.0, solver='rush_larsen'
     return (names, all_field_states, runtimes, testcases, errors)
 
 def testRepresentation(num_nodes=1024*16, dt=0.1, tstop=300.0, solver='rush_larsen',
-                       statesrepr=('named', 'array'),
-                       paramrepr=('named', 'array', 'numerals'),
-                       bodyrepr=('named', 'array', 'reused_array'),
+                       statesrepr=('named',),# 'array'),
+                       paramrepr=('named',),# 'array', 'numerals'),
+                       bodyrepr=('named',),# 'array', 'reused_array'),
                        use_cse=(False,True), # FIXME
                        field_states=['V'],
                        field_states_getter_fn=get_store_field_states_fn,
@@ -334,9 +334,9 @@ def testEverything():
     tests = (('FLOAT PRECISION', testFloatPrecision),
              ('THREADS PER BLOCK', testThreadsPerBlock),
              ('NUM NODES', testNumNodes),
-             ('SOLVERS', testSolvers), 
-             ('DT', testDt), 
-             ('UPDATE HOST/FIELD STATES', testUpdateStates), 
+             ('SOLVERS', testSolvers),
+             ('DT', testDt),
+             ('UPDATE HOST/FIELD STATES', testUpdateStates),
              ('REPRESENTATION', testRepresentation),
              )
 
@@ -381,6 +381,9 @@ def runTests(testcases, printTimings=True):
                 testcase.ode,
                 init_field_parameters=testcase.field_parameter_values,
                 params=params)
+
+            kernel_fname = solver._dump_kernel_code()
+            print 'Dumped CUDA code into \'{0}.\''.format(kernel_fname)
 
             solver.simulate(testcase.t0, testcase.dt, testcase.tstop,
                             field_states_fn=testcase.field_states_fn,

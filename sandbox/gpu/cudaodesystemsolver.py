@@ -3,7 +3,12 @@ __all__ = ["CUDAODESystemSolver", "ODECUDAHandler"]
 from gotran import CUDACodeGenerator, get_solver_fn, parameters
 from gotran.common import Timer
 
-from modelparameters.parameterdict import *
+import hashlib
+import os
+
+from modelparameters.parameters import Param, OptionParam, ScalarParam, \
+                                       TypelessParam
+from modelparameters.parameterdict import ParameterDict
 
 import pycuda.driver as cuda
 import pycuda.autoinit
@@ -30,7 +35,7 @@ class ODECUDAHandler(object):
 
     @staticmethod
     def default_parameters():
-        # Start out with a modified subset of the global parameters
+        # Start with a modified subset of the global parameters
         return CUDAODESystemSolver.default_parameters().copy()
 
     @property
@@ -54,17 +59,26 @@ class ODECUDAHandler(object):
         self.params = self.default_parameters()
         self.params.update(params)
 
-        # self.params.code.n_nodes = self._num_nodes
-
         ccg = CUDACodeGenerator(self.params)
         self._cuda_code = ccg.solver_code(self._ode, self.params.solver)
 
-        dev = cuda.Device(0)
-        comp_cap = dev.compute_capability()
-        arch = 'sm_%d%d' % comp_cap
-        optimisations = dict()
+        self.ctx = pycuda.autoinit.device.make_context()
+        dev = self.ctx.get_device()
+        nvcc = self.params.nvcc or "nvcc"
+        gpu_arch = self.params.gpu_arch if self.params.gpu_arch else None
+        gpu_code = self.params.gpu_code if self.params.gpu_arch else None
+        cuda_cache_dir = self.params.cuda_cache_dir \
+                         if self.params.cuda_cache_dir else None
+        nvcc_options = self.params.nvcc_options
+        # FIXME: modelparameters needs a ListParam
+        if nvcc_options is not None and len(nvcc_options) > 0 \
+                and nvcc_options[0] == "":
+            nvcc_options = None
 
-        self._mod = SourceModule(self._cuda_code, arch=arch)
+        self._mod = SourceModule(
+            self._cuda_code, nvcc=nvcc, options=nvcc_options,
+            keep=self.params.keep_cuda_code, no_extern_c=False, arch=gpu_arch,
+            code=gpu_code, cache_dir=cuda_cache_dir, include_dirs=[])
 
         float_t = 'float64' if self.params.code.float_precision == 'double' \
                   else 'float32'
@@ -125,6 +139,7 @@ class ODECUDAHandler(object):
                 continue
             except AttributeError:
                 continue
+        self.ctx.detach()
 
     def forward(self, t, dt, update_host_states=False, synchronize=True):
         if not self.is_ready():
@@ -141,7 +156,7 @@ class ODECUDAHandler(object):
                              block=self._get_block(),
                              grid=self._get_grid())
             if synchronize:
-                cuda.Context.synchronize()
+                self.ctx.synchronize()
             if update_host_states:
                 timer = Timer("update host states")
                 cuda.memcpy_dtoh(self._h_states, self._d_states)
@@ -218,6 +233,14 @@ class ODECUDAHandler(object):
     def _get_code(self):
         return self._cuda_code if self.is_ready() else ''
 
+    def _dump_kernel_code(self):
+        if not self.is_ready():
+            return ''
+        fname = 'tmp' + os.path.sep + 'kernel-' + hashlib.sha1(self._get_code()).hexdigest() + '.cu'
+        with open(fname, 'w') as f:
+            f.write(self._get_code())
+        return fname
+
 class CUDAODESystemSolver(object):
     def __init__(self, num_nodes, ode, init_field_parameters=None,
                  params=None):
@@ -247,7 +270,7 @@ class CUDAODESystemSolver(object):
 
         if self.field_states is not None:
             self.get_field_states()
-            
+
         # FIXME: modelparameters needs a ListParam
         if init_field_parameters is not None and len(p_field_parameters) > 0 and \
                p_field_states[0] != "":
@@ -255,7 +278,7 @@ class CUDAODESystemSolver(object):
 
     @staticmethod
     def default_parameters():
-        # Start out with a modified subset of the global parameters
+        # Start with a modified subset of the global parameters
         default_params = CUDACodeGenerator.default_parameters().copy()
         return ParameterDict(
                 code=default_params.code,
@@ -264,7 +287,38 @@ class CUDAODESystemSolver(object):
                     "explicit_euler", default_params.solvers.keys(),
                     description="Default solver type"),
                 block_size=ScalarParam(
-                    256, ge=1, description="Number of threads per CUDA block")
+                    256, ge=1, description="Number of threads per CUDA block"),
+                nvcc=Param(
+                    "nvcc",
+                    description="Command to run nvcc compiler"),
+                gpu_arch=TypelessParam(
+                    None,
+                    description="The name of the class of nVidia GPU "
+                                "architectures for which the CUDA input must "
+                                "be compiled"),
+                gpu_code=TypelessParam(
+                    None,
+                    description="The names of nVidia GPUs to generate code "
+                                "for"),
+                keep_cuda_code=Param(
+                    False,
+                    description="If true, CUDA compiler output is kept, and a"
+                                "line indicating its location in the file "
+                                "system is printed for debugging purposes"),
+                cuda_cache_dir=TypelessParam(
+                    None,
+                    description="Directory for compiler caching. Has a "
+                                "sensible per-user default. If False, caching "
+                                "is disabled."),
+                # no_extern_c=Param(
+                #     False,
+                #     description=""),
+                # cuda_include_dirs=Param(
+                #     [""],
+                #     description="Additional CUDA include directories"),
+                nvcc_options=Param(
+                    [""],
+                    description="Additional nvcc options")
         )
 
     def _init_cuda(self, params=None):
@@ -331,12 +385,14 @@ class CUDAODESystemSolver(object):
     def get_field_states(self, field_states=None):
         timer = Timer("get field states")
         field_states = field_states if field_states is not None else self.field_states
-        self._cudahandler.get_field_states(field_states)
+        if field_states is not None:
+            self._cudahandler.get_field_states(field_states)
 
     def set_field_states(self, field_states=None):
         timer = Timer("set field states")
         field_states = field_states if field_states is not None else self.field_states
-        self._cudahandler.set_field_states(field_states)
+        if field_states is not None:
+            self._cudahandler.set_field_states(field_states)
 
     def set_field_parameters(self, field_parameters):
         self.field_parameters = field_parameters
@@ -350,6 +406,9 @@ class CUDAODESystemSolver(object):
 
     def get_cuda_code(self):
         return self._cudahandler._get_code()
+
+    def _dump_kernel_code(self):
+        return self._cudahandler._dump_kernel_code()
 
     @property
     def num_nodes(self):
