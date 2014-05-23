@@ -25,7 +25,7 @@ __all__ = ["ExplicitEuler", "explicit_euler_solver",
 import sys
 
 # ModelParameters imports
-from modelparameters.sympytools import sp
+from modelparameters.sympytools import sp, Conditional
 from modelparameters.codegeneration import sympycode
 
 # Local imports
@@ -58,7 +58,7 @@ def explicit_euler_solver(ode, function_name="forward_explicit_euler", \
     return ExplicitEuler(ode, function_name=function_name, params=params)
 
 def rush_larsen_solver(ode, function_name="forward_rush_larsen", \
-                       params=None):
+                       delta=1e-8, params=None):
     """
     Return an ODEComponent holding expressions for the Rush Larsen method
 
@@ -68,16 +68,18 @@ def rush_larsen_solver(ode, function_name="forward_rush_larsen", \
         The ODE for which the jacobian expressions should be computed
     function_name : str
         The name of the function which should be generated
+    delta : float
+        Value to safeguard the evaluation of the rush larsen step.
     params : dict
         Parameters determining how the code should be generated
     """
     if not ode.is_finalized:
         error("The ODE is not finalized")
 
-    return RushLarsen(ode, function_name=function_name, params=params)
+    return RushLarsen(ode, function_name=function_name, delta=delta, params=params)
 
 def generalized_rush_larsen_solver(ode, function_name="forward_generalized_rush_larsen", \
-                                   params=None):
+                                   delta=1e-8, params=None):
     """
     Return an ODEComponent holding expressions for the generalized Rush Larsen method
 
@@ -87,13 +89,16 @@ def generalized_rush_larsen_solver(ode, function_name="forward_generalized_rush_
         The ODE for which the jacobian expressions should be computed
     function_name : str
         The name of the function which should be generated
+    delta : float
+        Value to safeguard the evaluation of the rush larsen step.
     params : dict
         Parameters determining how the code should be generated
     """
     if not ode.is_finalized:
         error("The ODE is not finalized")
 
-    return GeneralizedRushLarsen(ode, function_name=function_name, params=params)
+    return GeneralizedRushLarsen(ode, function_name=function_name, \
+                                 delta=delta, params=params)
 
 def simplified_implicit_euler_solver(\
     ode, function_name="forward_simplified_implicit_euler", params=None):
@@ -119,6 +124,7 @@ def get_solver_fn(solver_type):
     return {
         'explicit_euler': explicit_euler_solver,
         'rush_larsen': rush_larsen_solver,
+        'generalized_rush_larsen': generalized_rush_larsen_solver,
         'simplified_implicit_euler': simplified_implicit_euler_solver
     }[solver_type]
 
@@ -188,7 +194,7 @@ class RushLarsen(CodeComponent):
     An ODEComponent which compute one step of the Rush Larsen algorithm
     """
     def __init__(self, ode, function_name="forward_rush_larsen", \
-                 params=None):
+                 delta=1e-8, params=None):
         """
         Create a RushLarsen Solver component
 
@@ -198,9 +204,13 @@ class RushLarsen(CodeComponent):
             The parent component of this ODEComponent
         function_name : str
             The name of the function which should be generated
+        delta : float
+            Value to safeguard the evaluation of the rush larsen step.
         params : dict
             Parameters determining how the code should be generated
         """
+
+        timer = Timer("Create RushLarsen expressions")
         check_arg(ode, ODE)
 
         if ode.is_dae:
@@ -231,8 +241,109 @@ class RushLarsen(CodeComponent):
         else:
             offset_str = ""
 
+        might_take_time = len(states) >= 10
+
+        if might_take_time:
+            info("Calculating derivatives of {0}. Might take some time...".format(\
+                ode.name))
+            sys.stdout.flush()
+
         dt = self.root._dt.sym
         for i, expr in enumerate(state_exprs):
+
+            dependent = expr if recount else None
+
+            # Diagonal jacobian value
+            time_diff = Timer("Differentiate state_expressions for RushLarsen")
+            expr_diff = expr.expr.diff(expr.state.sym)
+            del time_diff
+            
+            if expr_diff and expr.state.sym not in expr_diff:
+
+                linearized = self.add_intermediate(\
+                    expr.name+"_linearized", expr_diff, dependent=dependent)
+
+                # Solve "exact" using exp
+                self.add_indexed_expression(\
+                    result_name, (i,), expr.state.sym+Conditional(\
+                        abs(linearized)>delta, expr.sym/linearized*\
+                        (sp.exp(linearized*dt)-1.0), dt*expr.sym), \
+                    offset_str, dependent=dependent)
+
+            else:
+
+                # Explicit Euler step
+                self.add_indexed_expression(result_name, (i,), \
+                                            expr.state.sym+dt*expr.sym, offset_str, \
+                                            dependent=dependent)
+
+        if might_take_time:
+            info(" done")
+
+        # Call recreate body with the solver expressions as the result
+        # expressions
+        del timer
+        results = {result_name:self.indexed_objects(result_name)}
+        results, body_expressions = self._body_from_results(**results)
+        self.body_expressions = self._recreate_body(\
+            body_expressions, **results)
+
+class RushLarsenOneStep(CodeComponent):
+    """
+    An ODEComponent which compute one step of the Rush Larsen algorithm
+    """
+    def __init__(self, ode, function_name="forward_rush_larsen", \
+                 params=None):
+        """
+        Create a RushLarsen Solver component
+
+        Arguments
+        ---------
+        ode : ODE
+            The parent component of this ODEComponent
+        function_name : str
+            The name of the function which should be generated
+        params : dict
+            Parameters determining how the code should be generated
+        """
+        check_arg(ode, ODE)
+
+        if ode.is_dae:
+            error("Cannot generate a Rush Larsen forward step for a DAE.")
+
+        # Call base class using empty result_expressions
+        descr = "Compute a forward step using the rush larsen algorithm to the "\
+                "{0} ODE".format(ode)
+        state_name = params.states.array_name
+        super(RushLarsen, self).__init__("RushLarsen", ode, function_name, \
+                                         descr, params=params,
+                                         additional_arguments=[\
+                                             "dt", state_name+"_0"])
+
+        # Recount the expressions if representation of states are "array" as
+        # then the method is not full explcit
+        recount = self._params.states.representation != "array"
+
+        # Gather state expressions and states
+        state_exprs = self.root.state_expressions
+        states = self.root.full_states
+
+        result_name = self._params.states.array_name+"_1"
+        previous_name = self._params.states.array_name+"_0"
+        state_offset = self._params.states.add_offset
+        self.shapes[result_name] = (len(states),)
+        self.shapes[previous_name] = (len(states),)
+
+        # Get time step and start creating the update algorithm
+        if self._params.states.add_offset:
+            offset_str = "{0}_offset".format(result_name)
+        else:
+            offset_str = ""
+
+        dt = self.root._dt.sym
+        for i, expr in enumerate(state_exprs):
+
+            prev = self.add_indexed_object(previous_name, (i,), offset_str)
 
             dependent = expr if recount else None
 
@@ -246,16 +357,15 @@ class RushLarsen(CodeComponent):
 
                 # Solve "exact" using exp
                 self.add_indexed_expression(\
-                    result_name, (i,), expr.state.sym+expr.sym/linearized*\
+                    result_name, (i,), prev+expr.sym/linearized*\
                     (sp.exp(linearized*dt)-1.0), offset_str, dependent=dependent)
 
             else:
 
                 # Explicit Euler step
                 self.add_indexed_expression(result_name, (i,), \
-                                            expr.state.sym+dt*expr.sym, offset_str, \
+                                            prev+dt*expr.sym, offset_str, \
                                             dependent=dependent)
-
 
         # Call recreate body with the solver expressions as the result
         # expressions
@@ -269,7 +379,7 @@ class GeneralizedRushLarsen(CodeComponent):
     An ODEComponent which compute one step of the Rush Larsen algorithm
     """
     def __init__(self, ode, function_name="forward_generalized_rush_larsen", \
-                 params=None):
+                 delta=1e-8, params=None):
         """
         Create a GeneralizedRushLarsen Solver component
 
@@ -279,6 +389,8 @@ class GeneralizedRushLarsen(CodeComponent):
             The parent component of this ODEComponent
         function_name : str
             The name of the function which should be generated
+        delta : float
+            Value to safeguard the evaluation of the rush larsen step.
         params : dict
             Parameters determining how the code should be generated
         """
@@ -321,8 +433,10 @@ class GeneralizedRushLarsen(CodeComponent):
 
             # Solve "exact" using exp
             self.add_indexed_expression(\
-                result_name, (i,), expr.state.sym+expr.sym/linearized*\
-                (sp.exp(linearized*dt)-1.0), offset_str, dependent=dependent)
+                result_name, (i,), expr.state.sym+Conditional(\
+                    abs(linearized)>delta, expr.sym/linearized*\
+                    (sp.exp(linearized*dt)-1.0), dt*expr.sym), \
+                offset_str, dependent=dependent)
 
         # Call recreate body with the solver expressions as the result
         # expressions

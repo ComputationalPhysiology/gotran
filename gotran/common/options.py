@@ -224,6 +224,9 @@ parameters = ParameterDict(
                 function_name = Param("forward_rush_larsen",\
                                       description="The name of the generated "\
                                       "function."),
+                delta = ScalarParam(1e-8, gt=0, lt=1.0, description="Value to "\
+                                    "safeguard the evaluation of the rush larsen "\
+                                    "step."),
                 ),
 
             generalized_rush_larsen = ParameterDict(
@@ -232,6 +235,9 @@ parameters = ParameterDict(
                 function_name = Param("forward_generalized_rush_larsen",\
                                       description="The name of the generated "\
                                       "function."),
+                delta = ScalarParam(1e-8, gt=0, lt=1.0, description="Value to "\
+                                    "safeguard the evaluation of the rush larsen "\
+                                    "step."),
                 ),
 
             simplified_implicit_euler = ParameterDict(

@@ -206,9 +206,11 @@ class BaseCodeGenerator(object):
         # Add code for solvers
         for solver, solver_params in self.params.solvers.items():
             if solver_params.generate:
+                kwargs = solver_params.copy(to_dict=True)
+                kwargs.pop("generate")
+                kwargs["params"] = self.params.code
                 comps.append(eval(solver+"_solver")(\
-                    ode, function_name=solver_params.function_name,
-                    params=self.params.code))
+                    ode, **kwargs))
 
         # Create code snippest of all
         code.update((comp.function_name, \
