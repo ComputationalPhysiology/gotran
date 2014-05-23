@@ -279,8 +279,8 @@ parameters("Membrane potential",
            Cmem = 1.381e-10,
            stim_start = ScalarParam(1., unit="ms"),
            stim_period = ScalarParam(1000., unit="ms"),
-           stim_duration = ScalarParam(1., unit="ms"),
-           stim_amplitude = ScalarParam(0.0, unit="uA*uF**-1"))
+           stim_duration = ScalarParam(5., unit="ms"),
+           stim_amplitude = ScalarParam(9.5, unit="uA*uF**-1"))
 
 component("Geometry")
 Vcell = pi*cellRadius**2*cellLength*1e-15
