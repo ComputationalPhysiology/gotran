@@ -608,14 +608,10 @@ class CodeComponent(ODEComponent):
         object_used_in = defaultdict(set)
         for expr, used in self.root.object_used_in.items():
             object_used_in[expr].update(used)
-        #object_used_in = dict((expr, used.copy()) for expr, used in \
-        #                      self.root.object_used_in.items())
 
         expression_dependencies = defaultdict(set)
         for expr, deps in self.root.expression_dependencies.items():
             expression_dependencies[expr].update(deps)
-        #expression_dependencies = dict((expr, deps.copy()) for expr, deps in \
-        #                               self.root.expression_dependencies.items())
         
         # Get body parameters
         body_repr = self._params["body"]["representation"]
@@ -647,6 +643,9 @@ class CodeComponent(ODEComponent):
         def store_expressions(expr, new_expr):
             "Help function to store new expressions"
             
+            timer = Timer("Store expression while recreating body of {}".format(\
+                self.name))
+
             # Update sym replace dict
             if isinstance(expr, Derivatives):
                 der_replace_dict[expr.sym] = new_expr.sym
@@ -673,10 +672,6 @@ class CodeComponent(ODEComponent):
                 expression_dependencies[new_expr] = expression_dependencies.pop(\
                     expr)
 
-            # Update expressions
-            #self.ode_objects.remove(expr)
-            #self.ode_objects.append(new_expr)
-
         self.add_comment("Recreated body expressions")
 
         # The main iteration over all body_expressions
@@ -691,6 +686,8 @@ class CodeComponent(ODEComponent):
 
             # 2) Check for expression optimzations 
             if not (optimize_exprs == "none" or expr in result_expressions):
+
+                timer_opt = Timer("Handle expression optimization for {0}".format(self.name))
                 
                 # If expr is just a number we exchange the expression with the
                 # number
@@ -760,6 +757,8 @@ class CodeComponent(ODEComponent):
                     object_used_in.pop(expr)
                     continue
 
+                del timer_opt
+
             # 3) General operations for all Expressions that are kept
 
             # Before we process the expression we check if any indices gets
@@ -779,6 +778,8 @@ class CodeComponent(ODEComponent):
             # 4) Handle result expression
             if expr in result_expressions:
 
+                timer_result = Timer("Handle result expressions for {0}".format(self.name))
+                
                 # Get the result name
                 result_name = result_names[expr]
                 
@@ -814,21 +815,29 @@ class CodeComponent(ODEComponent):
 
                 # Store the expressions
                 store_expressions(expr, new_expr)
+
+                del timer_result
                     
             # 4) Handle indexed expression
             # All indexed expressions are just kept but recreated with updated
             # sympy expressions
             elif isinstance(expr, IndexedExpression):
 
+                timer_indexed = Timer("Handle indexed expressions for {0}".format(self.name))
+                
                 new_expr = recreate_expression(expr, der_replace_dict, \
                                                replace_dict)
                 
                 # Store the expressions
                 store_expressions(expr, new_expr)
 
+                del timer_result
+
             # 5) If replacing all body exressions with an indexed expression
             elif "array" in body_repr:
                 
+                timer_body = Timer("Handle body expressions for {0}".format(self.name))
+
                 # 5a) If we reuse array indices
                 if "reused" in body_repr:
                     
@@ -870,15 +879,19 @@ class CodeComponent(ODEComponent):
                 
                 # Store the expressions
                 store_expressions(expr, new_expr)
+
+                del timer_result
                 
             # 6) If the expression is just and ordinary body expression and we
             #    are using named representation of body
             else:
 
+                timer_expr = Timer("Handle expressions for {0}".format(self.name))
+
                 # If the expression is a state derivative we need to add a
                 # replacement for the Derivative symbol
                 if isinstance(expr, StateDerivative):
-                    new_expr = Intermediate(sympycode(expr.sym),expr.expr.\
+                    new_expr = Intermediate(sympycode(expr.sym), expr.expr.\
                                             xreplace(der_replace_dict).\
                                             xreplace(replace_dict))
                     new_expr._recount(expr._count)
@@ -886,6 +899,8 @@ class CodeComponent(ODEComponent):
                     new_expr = recreate_expression(expr, der_replace_dict, \
                                                    replace_dict)
                 
+                del timer_expr
+
                 # Store the expressions
                 store_expressions(expr, new_expr)
 

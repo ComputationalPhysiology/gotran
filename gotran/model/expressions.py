@@ -138,6 +138,12 @@ class Expression(ODEValueObject):
         else:
             self._sym = self.param.sym
 
+        self._dependent = set(dependent)
+
+    @property
+    def dependent(self):
+        return self._dependent
+
     @property
     def expr(self):
         """
