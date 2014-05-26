@@ -28,19 +28,21 @@ def main(filename, params):
     else:
         output = filename.replace(".ode", "")+".h"
 
+    info("")
+    info("Generating C++ code for the {0} ode...".format(ode.name))
+    if params.class_code:
+        code = gen.class_code(ode)
+    else:
+        code = gen.module_code(ode)
+    info("  done.")
+     
     with open(output, "w") as f:
         if params.system_headers:
             f.write("#include <cmath>\n")
             f.write("#include <cstring>\n")
             f.write("#include <stdexcept>\n")
 
-        info("")
-        info("Generating C++ code for the {0} ode...".format(ode.name))
-        if params.class_code:
-            f.write(gen.class_code(ode))
-        else:
-            f.write(gen.module_code(ode))
-        info("  done.")
+        f.write(code)
 
     del timer
     

@@ -5,7 +5,7 @@ import os
 from gotran.model.loadmodel import load_ode
 from gotran.codegeneration.codegenerators import CUDACodeGenerator
 from gotran.common.options import parameters
-from gotran.common import error, list_timings
+from gotran.common import error, list_timings, info
 
 def main(filename, params):
     """
@@ -26,12 +26,17 @@ def main(filename, params):
     else:
         output = filename.replace(".ode", "")+".cu"
 
-    f = open(output, "w")
-    if params.system_headers:
-        f.write("#include <math.h>\n")
-        f.write("#include <string.h>\n")
+    info("")
+    info("Generating C code for the {0} ode...".format(ode.name))
+    code = gen.module_code(ode)
+    info("  done.")
+    with open(output, "w") as f:
+        if params.system_headers:
+            f.write("#include <math.h>\n")
+            f.write("#include <string.h>\n")
 
-    f.write(gen.module_code(ode))
+        f.write(code)
+    
     if params.list_timings:
         list_timings()
 
