@@ -33,11 +33,12 @@ def main(filename, params):
     else:
         output = filename.replace(".ode", "")+".py"
 
+    info("")
+    info("Generating Python code for the {0} ode...".format(ode.name))
+    code = gen.module_code(ode, monitored=monitored)
+    info("  done.")
     with open(output, "w") as f:
-        info("")
-        info("Generating Python code for the {0} ode...".format(ode.name))
-        f.write(gen.module_code(ode, monitored=monitored))
-        info("  done.")
+        f.write(code)
     
     del timer
     

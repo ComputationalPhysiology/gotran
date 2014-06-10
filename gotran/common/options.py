@@ -72,7 +72,7 @@ parameters = ParameterDict(
             parameters = ParameterDict(
                 field_parameters = Param([""], description="A list of parameter names "\
                                          "which should be treated as field parameters. "\
-                                         "Not available for all backends..."),
+                                         "Only available for CUDA backends."),
                 representation = OptionParam("named", ["named", "array", "numerals"],
                                              description="Controls how parameters are "\
                                              "represented in the code. As named variables,"\

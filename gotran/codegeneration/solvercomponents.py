@@ -101,7 +101,8 @@ def generalized_rush_larsen_solver(ode, function_name="forward_generalized_rush_
                                  delta=delta, params=params)
 
 def simplified_implicit_euler_solver(\
-    ode, function_name="forward_simplified_implicit_euler", params=None):
+    ode, function_name="forward_simplified_implicit_euler",
+    numeric_jacobian=False, params=None):
     """
     Return an ODEComponent holding expressions for the simplified
     implicit Euler method
@@ -112,13 +113,16 @@ def simplified_implicit_euler_solver(\
         The ODE for which the jacobian expressions should be computed
     function_name : str
         The name of the function which should be generated
+    numeric_jacobian : bool
+        If True use numeric calculated diagonal jacobian.
     params : dict
         Parameters determining how the code should be generated
     """
     if not ode.is_finalized:
         error("The ODE is not finalized")
 
-    return SimplifiedImplicitEuler(ode, function_name=function_name, params=params)
+    return SimplifiedImplicitEuler(ode, function_name=function_name,
+                                   numeric_jacobian=numeric_jacobian, params=params)
 
 def get_solver_fn(solver_type):
     return {
@@ -451,7 +455,7 @@ class SimplifiedImplicitEuler(CodeComponent):
     algorithm
     """
     def __init__(self, ode, function_name="forward_simplified_implicit_euler", \
-                 params=None):
+                 numeric_jacobian=False, params=None):
         """
         Create a SimplifiedImplicitEuler CodeComponent
 
@@ -461,6 +465,8 @@ class SimplifiedImplicitEuler(CodeComponent):
             The parent component of this ODEComponent
         function_name : str
             The name of the function which should be generated
+        numeric_jacobian : bool
+            If True use numeric calculated diagonal jacobian.
         params : dict
             Parameters determining how the code should be generated
         """
