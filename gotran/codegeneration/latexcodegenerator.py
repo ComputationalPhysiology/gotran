@@ -29,7 +29,10 @@ from modelparameters.parameters import Param, ScalarParam, ArrayParam
 from modelparameters.parameterdict import ParameterDict
 
 # Other imports
+import string
+from StringIO import StringIO
 import sympy
+import tokenize
 
 # Latex templates
 _global_opts = """\\setkeys{{breqn}}{{breakdepth={{1}}}}
@@ -152,7 +155,7 @@ def _default_latex_params():
     # params["font_size"] = ScalarParam(
     #     10, ge=1, description="Set global font size for LaTeX document")
     params["font_size"] = Param(
-        10, description="Set global font size for LaTeX document")
+        10.0, description="Set global font size for LaTeX document")
 
     # Set font size for mathematical expressions.
     # FIXME: ScalarParam might cause parse_args() to crash due to non-ASCII
@@ -162,7 +165,7 @@ def _default_latex_params():
     #    "expressions in LaTeX document. Uses global font size if left "
     #    "blank")
     params["math_font_size"] = Param(
-        0, description="Set font size for mathematical expressions in "
+        0.0, description="Set font size for mathematical expressions in "
         "LaTeX document. Uses global font size if left blank")
 
     # Toggle bold equation labels
@@ -183,31 +186,42 @@ def _default_latex_params():
     params["mul_symbol"] = Param(
         "dot", description="Multiplication symbol for Sympy LatexPrinter")
 
+    # Flag to disable page numbers
     params["no_page_numbers"] = Param(
         False, description="Disable page numbers")
 
+    # Flag to disable state table
     params["no_state_descriptions"] = Param(
         False, description="Disable table column for state descriptions")
 
+    # Flag to disable parameter table
     params["no_parameter_descriptions"] = Param(
         False, description="Disable table column for parameter descriptions")
 
+    # Set headline types for States, Parameters and Components
     params["section_type"] = Param(
         "section", description="Section type (e.g. 'section', 'subsection')")
 
+    # Set page margins
     params["margins"] = Param(
         "", description="Set page margins (e.g. '0.75in'). Uses LaTeX "
         "defaults if left blank")
 
+    # Set column seperator distance
     params["columnsep"] = Param(
         "", description="Set column separator distance (e.g. '0.25cm'). "
         "Uses LaTeX default if left blank")
 
+    # Set column separator line width
     params["columnseprule"] = Param(
         "", description="Set column separator line width (e.g. '0.2pt'). "
         "Uses LaTeX default if left blank")
 
-    params
+    # Flag to let the code generator attempt automatically converting
+    # state and parameter names in descriptions to math-mode
+    params["auto_description_format"] = Param(
+        False, description="Automatically format state and parameter "
+        "descriptions")
 
     # Return the ParameterDict
     return ParameterDict(**params)
@@ -234,7 +248,7 @@ class LatexCodeGenerator(object):
             self.print_settings["mul_symbol"] = None
 
         if self.params.margins:
-            self.packages.append(("geometry", self.params.margins))
+            self.packages.append(("geometry", '[margin='+self.params.margins+']'))
 
     def generate(self, params=None):
         """
@@ -348,7 +362,8 @@ class LatexCodeGenerator(object):
                "\\hspace{{0.5cm}} & {DESC}".format(\
                             NAME=self.format_expr(param.name),
                             VAL=param._repr_latex_(),
-                            DESC=param.param.description)
+                            DESC=self.format_description(
+                                    param.param.description, param.name))
 
     def format_state_table_row(self, state):
         """
@@ -363,7 +378,8 @@ class LatexCodeGenerator(object):
         return "  ${NAME}$\\hspace{{0.5cm}} & {VAL}" \
                "\\hspace{{0.5cm}} & {DESC}".format(
                    NAME=self.format_expr(state.name), VAL=state._repr_latex_(),
-                   DESC=state.param.description)
+                   DESC=self.format_description(state.param.description,
+                                                state.name))
 
     def format_component_label(self, label):
         """
@@ -373,6 +389,52 @@ class LatexCodeGenerator(object):
         return "{0}{1}{2}\\\\".format(label_opts["begin"],
                                       label.replace("_", "\\_"),
                                       label_opts["end"])
+
+    def format_description(self, description, name):
+        """
+        If auto-format flag is set, attempt to automatically format description,
+        setting references to states and parameters in math mode.
+        """
+        description_opts = self.format_options(override=['font_size'])
+
+        if not self.params["auto_description_format"]:
+            #return description_opts['begin'] + description \
+            #    + description_opts['end']
+            return description
+
+        formatted_description = ''
+        first = True
+        for ttype, token, _, _, _ \
+                in tokenize.generate_tokens(StringIO(description).readline):
+            if tokenize.ISEOF(ttype):
+                break
+
+            formatted_token = token
+            mathmode = False
+
+            if any([c in token for c in ('_', '^')]) or token == name:
+                    # or token in [state.name for state in self.ode.full_states] \
+                    # or token in [par.name for par in self.ode.parameters]:
+                mathmode = True
+
+            if mathmode:
+                for c in ('_', '^'):
+                    i = formatted_token.find(c)
+                    while i != -1:
+                        formatted_token = formatted_token[:i+1] \
+                            + '{' + formatted_token[i+1:] + '}'
+                        i = formatted_token.find(c, i+1)
+                formatted_token = '$' + formatted_token + '$'
+
+            if token not in string.punctuation and not first:
+                formatted_token = ' ' + formatted_token
+
+            formatted_description += formatted_token
+            first = False
+
+        #return description_opts['begin'] + formatted_description \
+        #    + description_opts['end']
+        return formatted_description
 
     def format_options(self, exclude=None, override=None, params=None):
         """
@@ -397,7 +459,7 @@ class LatexCodeGenerator(object):
         # Non-standard options -- only include if specified in override:
 
         if "font_size" in override:
-            begin_str = "{{\\fontsize{{{0}}}{{{1:.1f}}}\n".format(
+            begin_str = "{{\\fontsize{{{0}}}{{{1:.1f}}}\\selectfont\n".format(
                 opts.font_size, opts.font_size*1.2) + begin_str
             end_str += "}% end fontsize\n"
 
