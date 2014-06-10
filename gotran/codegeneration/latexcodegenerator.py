@@ -32,7 +32,8 @@ from modelparameters.parameterdict import ParameterDict
 import sympy
 
 # Latex templates
-_global_opts = "\\setkeys{breqn}{breakdepth={1}}"
+_global_opts = """\\setkeys{{breqn}}{{breakdepth={{1}}}}
+{GLOBALOPTS}"""
 
 _latex_template = """\\documentclass[a4paper,{FONTSIZE}pt]{{article}}
 {PKGS}
@@ -48,7 +49,7 @@ _latex_template = """\\documentclass[a4paper,{FONTSIZE}pt]{{article}}
 _param_table_template = """
 % ---------------- BEGIN PARAMETERS ---------------- %
 
-\\section*{{Parameters}}\n
+\\{SECTIONTYPE}*{{Parameters}}\n
 {OPTS}
 \\begin{{longtable}}{{| l l p{{4cm}} |}}
 \\caption[Parameter Table]{{\\textbf{{Parameter Table}}}}\\\\
@@ -80,7 +81,7 @@ _param_table_template = """
 _state_table_template = """
 % ---------------- BEGIN STATES ---------------- %
 
-\\section*{{Initial Values}}\n
+\\{SECTIONTYPE}*{{Initial Values}}\n
 {OPTS}
 \\begin{{longtable}}{{| l l p{{4cm}} |}}
 \\caption[State Table]{{\\textbf{{State Table}}}}\\\\
@@ -112,7 +113,7 @@ _state_table_template = """
 _components_template = """
 % ---------------- BEGIN COMPONENTS ---------------- %
 
-\\section*{{Components}}
+\\{SECTIONTYPE}*{{Components}}
 {OPTS}
 {BODY}
 {ENDOPTS}
@@ -182,6 +183,32 @@ def _default_latex_params():
     params["mul_symbol"] = Param(
         "dot", description="Multiplication symbol for Sympy LatexPrinter")
 
+    params["no_page_numbers"] = Param(
+        False, description="Disable page numbers")
+
+    params["no_state_descriptions"] = Param(
+        False, description="Disable table column for state descriptions")
+
+    params["no_parameter_descriptions"] = Param(
+        False, description="Disable table column for parameter descriptions")
+
+    params["section_type"] = Param(
+        "section", description="Section type (e.g. 'section', 'subsection')")
+
+    params["margins"] = Param(
+        "", description="Set page margins (e.g. '0.75in'). Uses LaTeX "
+        "defaults if left blank")
+
+    params["columnsep"] = Param(
+        "", description="Set column separator distance (e.g. '0.25cm'). "
+        "Uses LaTeX default if left blank")
+
+    params["columnseprule"] = Param(
+        "", description="Set column separator line width (e.g. '0.2pt'). "
+        "Uses LaTeX default if left blank")
+
+    params
+
     # Return the ParameterDict
     return ParameterDict(**params)
 
@@ -206,6 +233,9 @@ class LatexCodeGenerator(object):
         else:
             self.print_settings["mul_symbol"] = None
 
+        if self.params.margins:
+            self.packages.append(("geometry", self.params.margins))
+
     def generate(self, params=None):
         """
         Generate a LaTeX-formatted document describing a Gotran ODE.
@@ -213,17 +243,19 @@ class LatexCodeGenerator(object):
         params = params if params else self.params
         latex_output = ""
 
+        global_opts = self.format_global_options(_global_opts)
+
         if params.no_preamble:
             latex_output = self.generate_parameter_table() \
                           + self.generate_state_table() \
                           + self.generate_components()
         else:
             document_opts = self.format_options(
-                override=["font_size", "landscape"])
+                override=["font_size", "landscape", "no_page_numbers"])
             latex_output = _latex_template.format(
                 FONTSIZE=params.font_size,
                 PKGS=self.format_packages(self.packages),
-                PREOPTS=_global_opts, OPTS=document_opts["begin"],
+                PREOPTS=global_opts, OPTS=document_opts["begin"],
                 BODY=self.generate_parameter_table()
                      + self.generate_state_table()
                      + self.generate_components(),
@@ -231,39 +263,44 @@ class LatexCodeGenerator(object):
 
         return latex_output
 
-    def generate_parameter_table(self):
+    def generate_parameter_table(self, params=None):
         """
         Return a LaTeX-formatted string for a longtable describing the ODE's
         parameters.
         """
+        params = params if params else self.params
         param_str = "\\\\\n".join(
             self.format_param_table_row(par)
             for par in self.ode.parameters)
         param_table_opts = self.format_options(exclude=["page_columns"])
         param_table_output = _param_table_template.format(
+            SECTIONTYPE=params["section_type"],
             OPTS=param_table_opts["begin"], BODY=param_str,
             ENDOPTS=param_table_opts["end"])
         return param_table_output
 
-    def generate_state_table(self):
+    def generate_state_table(self, params=None):
         """
         Return a LaTeX-formatted string for a longtable describing the ode's
         states.
         """
+        params = params if params else self.params
         state_str = "\\\\\n".join(
             self.format_state_table_row(state)
             for state in self.ode.full_states)
         state_table_opts = self.format_options(exclude=["page_columns"])
         state_table_output = _state_table_template.format(
+            SECTIONTYPE=params["section_type"],
             OPTS=state_table_opts["begin"], BODY=state_str,
             ENDOPTS=state_table_opts["end"])
         return state_table_output
 
-    def generate_components(self):
+    def generate_components(self, params=None):
         """
         Return a LaTeX-formatted string of the ODE's derivative components and
         intermediate calculations.
         """
+        params = params if params else self.params
         components_str = ""
         comp_template = "{LABEL}\n\\begin{{dgroup*}}\n{BODY}\\end{{dgroup*}}\n"
         eqn_template = \
@@ -292,6 +329,7 @@ class LatexCodeGenerator(object):
         components_opts = \
             self.format_options(override=["page_columns", "math_font_size"])
         components_output = _components_template.format(
+            SECTIONTYPE=params["section_type"],
             OPTS=components_opts["begin"], BODY=components_str,
             ENDOPTS=components_opts["end"])
         return components_output
@@ -379,7 +417,34 @@ class LatexCodeGenerator(object):
             begin_str = "\\begin{landscape}\n" + begin_str
             end_str += "\\end{landscape}\n"
 
+        if "no_page_numbers" in override and opts.no_page_numbers:
+            begin_str = "\\pagenumbering{gobble}\n" + begin_str
+
         return {"begin": begin_str, "end": end_str}
+
+    def format_global_options(self, option_template, params=None):
+        """
+        Inject additional options into the global option template
+        """
+        opts = _default_latex_params()
+        opts.update(params if params else self.params)
+
+        additional_options = list()
+
+        if opts.columnsep:
+            additional_options.append(
+                "\\setlength{{\\columnsep}}{{{COLSEP}}}".format(
+                    COLSEP=opts.columnsep))
+
+        if opts.columnseprule:
+            additional_options.append(
+                "\\setlength{{\\columnseprule}}{{{COLSEPR}}}".format(
+                    COLSEPR=opts.columnseprule))
+
+        global_options = option_template.format(
+            GLOBALOPTS='\n'.join(additional_options))
+
+        return global_options
 
     def format_expr(self, expr):
         """
