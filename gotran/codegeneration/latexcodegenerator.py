@@ -1,4 +1,4 @@
-# Copyright (C) 2013 George Bahij / Johan Hake
+# Copyright (C) 2014 George Bahij / Johan Hake
 #
 # This file is part of Gotran.
 #
@@ -53,20 +53,21 @@ _param_table_template = """
 % ---------------- BEGIN PARAMETERS ---------------- %
 
 \\{SECTIONTYPE}*{{Parameters}}\n
+\\label{{sec:ODE_Parameters}}
 {OPTS}
-\\begin{{longtable}}{{| l l p{{4cm}} |}}
+\\begin{{longtabu}}{{| l l {PDESCCELLSTYLE} |}}
 \\caption[Parameter Table]{{\\textbf{{Parameter Table}}}}\\\\
 \\hline
 \\multicolumn{{1}}{{|c}}{{\\textbf{{Parameter\\hspace{{0.5cm}}}}}} &
 \\multicolumn{{1}}{{c}}{{\\textbf{{Value\\hspace{{0.5cm}}}}}} &
-\\multicolumn{{1}}{{c|}}{{\\textbf{{Description}}}}\\\\ \\hline
+\\multicolumn{{1}}{{c|}}{{\\textbf{{Description\\hspace{{0.5cm}}}}}}\\\\ \\hline
 \\endfirsthead
 \\multicolumn{{3}}{{c}}%
 {{{{\\bfseries\\tablename\\ \\thetable{{}} --- continued from previous page}}}}
 \\\\ \hline
 \\multicolumn{{1}}{{|c}}{{\\textbf{{Parameter\\hspace{{0.5cm}}}}}} &
 \\multicolumn{{1}}{{c}}{{\\textbf{{Value\\hspace{{0.5cm}}}}}} &
-\\multicolumn{{1}}{{c|}}{{\\textbf{{Description}}}}\\\\ \\hline
+\\multicolumn{{1}}{{c|}}{{\\textbf{{Description\\hspace{{0.5cm}}}}}}\\\\ \\hline
 \\endhead
 \\hline
 \\multicolumn{{3}}{{|r|}}{{{{Continued on next page}}}}\\\\ \\hline
@@ -75,7 +76,7 @@ _param_table_template = """
 \\endlastfoot
 {BODY}\\\\
 \\hline
-\\end{{longtable}}
+\\end{{longtabu}}
 {ENDOPTS}
 
 % ----------------- END PARAMETERS ----------------- %
@@ -85,20 +86,21 @@ _state_table_template = """
 % ---------------- BEGIN STATES ---------------- %
 
 \\{SECTIONTYPE}*{{Initial Values}}\n
+\\label{{sec:ODE_States}}
 {OPTS}
-\\begin{{longtable}}{{| l l p{{4cm}} |}}
+\\begin{{longtabu}}{{| l l {SDESCCELLSTYLE} |}}
 \\caption[State Table]{{\\textbf{{State Table}}}}\\\\
 \\hline
 \\multicolumn{{1}}{{|c}}{{\\textbf{{State\\hspace{{0.5cm}}}}}} &
 \\multicolumn{{1}}{{c}}{{\\textbf{{Value\\hspace{{0.5cm}}}}}} &
-\\multicolumn{{1}}{{c|}}{{\\textbf{{Description}}}}\\\\ \\hline
+\\multicolumn{{1}}{{c|}}{{\\textbf{{Description\\hspace{{0.5cm}}}}}}\\\\ \\hline
 \\endfirsthead
 \\multicolumn{{3}}{{c}}%
 {{{{\\bfseries\\tablename\\ \\thetable{{}} --- continued from previous page}}}}
 \\\\ \hline
 \\multicolumn{{1}}{{|c}}{{\\textbf{{State\\hspace{{0.5cm}}}}}} &
 \\multicolumn{{1}}{{c}}{{\\textbf{{Value\\hspace{{0.5cm}}}}}} &
-\\multicolumn{{1}}{{c|}}{{\\textbf{{Description}}}}\\\\ \\hline
+\\multicolumn{{1}}{{c|}}{{\\textbf{{Description\\hspace{{0.5cm}}}}}}\\\\ \\hline
 \\endhead
 \\hline
 \\multicolumn{{3}}{{|r|}}{{{{Continued on next page}}}}\\\\ \\hline
@@ -107,7 +109,7 @@ _state_table_template = """
 \\endlastfoot
 {BODY}\\\\
 \\hline
-\\end{{longtable}}
+\\end{{longtabu}}
 {ENDOPTS}
 
 % ----------------- END STATES ----------------- %
@@ -117,6 +119,7 @@ _components_template = """
 % ---------------- BEGIN COMPONENTS ---------------- %
 
 \\{SECTIONTYPE}*{{Components}}
+\\label{{sec:ODE_Components}}
 {OPTS}
 {BODY}
 {ENDOPTS}
@@ -219,16 +222,28 @@ def _default_latex_params():
 
     # Flag to let the code generator attempt automatically converting
     # state and parameter names in descriptions to math-mode
-    params["auto_description_format"] = Param(
+    params["auto_format_description"] = Param(
         False, description="Automatically format state and parameter "
         "descriptions")
+
+    # Flag to toggle numbering style for equations.
+    params["equation_subnumbering"] = Param(
+        True, description="Use component-wise equation subnumbering")
+
+    params["parameter_description_cell_style"] = Param(
+        "l", description="Set description cell type for the parameter table. " \
+        "Use 'X' for long descriptions, or 'p{5cm}' to set a fixed 5 cm")
+
+    params["state_description_cell_style"] = Param(
+        "l", description="Set description cell type for the state table. " \
+        "Use 'X' for long descriptions, or 'p{5cm}' to set a fixed 5 cm")
 
     # Return the ParameterDict
     return ParameterDict(**params)
 
 
 class LatexCodeGenerator(object):
-    packages = [("fullpage", ""), ("longtable", ""), ("multicol", ""),
+    packages = [("fullpage", ""), ("longtable,tabu", ""), ("multicol", ""),
                 ("amsmath", ""), ("mathpazo", ""), ("flexisym", "[mathpazo]"),
                 ("breqn", "")]
     print_settings = dict()
@@ -289,6 +304,7 @@ class LatexCodeGenerator(object):
         param_table_opts = self.format_options(exclude=["page_columns"])
         param_table_output = _param_table_template.format(
             SECTIONTYPE=params["section_type"],
+            PDESCCELLSTYLE=params["parameter_description_cell_style"],
             OPTS=param_table_opts["begin"], BODY=param_str,
             ENDOPTS=param_table_opts["end"])
         return param_table_output
@@ -305,6 +321,7 @@ class LatexCodeGenerator(object):
         state_table_opts = self.format_options(exclude=["page_columns"])
         state_table_output = _state_table_template.format(
             SECTIONTYPE=params["section_type"],
+            SDESCCELLSTYLE=params["state_description_cell_style"],
             OPTS=state_table_opts["begin"], BODY=state_str,
             ENDOPTS=state_table_opts["end"])
         return state_table_output
@@ -316,9 +333,14 @@ class LatexCodeGenerator(object):
         """
         params = params if params else self.params
         components_str = ""
-        comp_template = "{LABEL}\n\\begin{{dgroup*}}\n{BODY}\\end{{dgroup*}}\n"
+        comp_template = "{LABEL}\n\\label{{comp:{LABELID}}}\n" \
+            "\\begin{{dgroup{SUBNUM}}}\n" \
+            "{BODY}\\end{{dgroup{SUBNUM}}}\n"
         eqn_template = \
-            "  \\begin{{dmath}}\n    {0} = {1}\\\\\n  \\end{{dmath}}\n"
+            "  \\begin{{dmath}}\n    \\label{{eq:{0}}}\n" \
+            "    {1} = {2}\\\\\n  \\end{{dmath}}\n"
+
+        subnumbering = '' if params["equation_subnumbering"] else '*'
 
         for comp in self.ode.components:
             body = [obj for obj in comp.ode_objects \
@@ -328,17 +350,20 @@ class LatexCodeGenerator(object):
                 continue
             
             format_label = self.format_component_label(comp.name)
+            label_id = comp.name.replace(' ', '_')
             format_body = ""
 
             # Iterate over all objects of the component
             for obj in body:
-
                 format_body += eqn_template.format(
+                    obj.name,
                     obj._repr_latex_name(),
                     obj._repr_latex_expr())
 
             components_str += comp_template.format(LABEL=format_label,
-                                                   BODY=format_body)
+                                                   LABELID=label_id,
+                                                   BODY=format_body,
+                                                   SUBNUM=subnumbering)
 
         components_opts = \
             self.format_options(override=["page_columns", "math_font_size"])
@@ -395,12 +420,9 @@ class LatexCodeGenerator(object):
         If auto-format flag is set, attempt to automatically format description,
         setting references to states and parameters in math mode.
         """
-        description_opts = self.format_options(override=['font_size'])
 
-        if not self.params["auto_description_format"]:
-            #return description_opts['begin'] + description \
-            #    + description_opts['end']
-            return description
+        if not self.params["auto_format_description"]:
+            return description + '\\hspace{0.5cm}'
 
         formatted_description = ''
         first = True
@@ -432,9 +454,7 @@ class LatexCodeGenerator(object):
             formatted_description += formatted_token
             first = False
 
-        #return description_opts['begin'] + formatted_description \
-        #    + description_opts['end']
-        return formatted_description
+        return formatted_description + '\\hspace{0.5cm}'
 
     def format_options(self, exclude=None, override=None, params=None):
         """
