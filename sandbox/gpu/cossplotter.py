@@ -30,7 +30,7 @@ def plotResults(_file, plotTypes=None, get_stored_fstates=False):
                       'index': 0,
                       'name': 'V'}}]
     """
-    title, data = getDataFromFile(_file, get_stored_fstates=get_stored_fstates)
+    title, data = getDataFromFileSimple(_file)
     names = [datum['name'] for datum in data]
     subnames = [name.split(' ', 2)[-1][1:-1] for name in names]
     if plotTypes is None:
@@ -49,11 +49,13 @@ def plotResults(_file, plotTypes=None, get_stored_fstates=False):
         else:
             plotTypes = list()
             for _type in list(set(namekeys))[0]:
+                if _type == 'um_nodes':
+                    _type = 'num_nodes'
                 plotTypes.append({'x': {'type': _type},
                                   'y': {'type': 'runtime'}})
 
     validPlotTypes = ('block_size', 'double', 'dt', 'field_parameter_values',
-                      'field_state_values', 'runtime')
+                      'field_state_values', 'num_nodes', 'runtime')
     figures = list()
     for pType in plotTypes:
         if pType['x']['type'] not in validPlotTypes \
@@ -74,7 +76,7 @@ def plotResults(_file, plotTypes=None, get_stored_fstates=False):
             xy_pos[axis] = None
 
             if figure[axis]['type'] in \
-                    ('block_size', 'dt', 'runtime'):
+                    ('block_size', 'dt', 'num_nodes', 'runtime'):
                 xy_pos[axis] = [datum[figure[axis]['type']] for datum in data]
 
             if figure[axis]['type'] == 'field_state_values':

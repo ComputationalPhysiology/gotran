@@ -8,6 +8,7 @@ import itertools as it
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import pickle
 try:
     import progressbar
 except ImportError:
@@ -41,12 +42,14 @@ PLOT_STRINGS = {
     'dt': 'Time step',
     'field_state_values': 'Field state value',
     'field_parameter_values': 'Field parameter value',
+    'num_nodes': 'Number of nodes',
     'runtime': 'Time (s)',
     'time': 'Time (s)'
 }
 
 PLOT_TITLES = {
     'double': 'Float precision for {0}',
+    'num_nodes': 'Number of nodes for {0}',
     'runtime': 'Simulation time for {0}'
 }
 
@@ -68,6 +71,7 @@ class COSSTestCase(object):
 
         self.__dict__.update(params)
 
+        print self.ode_model
         self.ode = load_ode(self.ode_model)
         self.stored_field_states = list()
         if self.field_states_getter_fn is None:
@@ -176,7 +180,7 @@ def runTestSuite(title, keep_cuda_code=False, printTimings=True,
     printResults(results)
 
     if saveDirectory is not None:
-        saveResults(title, results, saveDirectory)
+        saveResultsSimple(title, results, saveDirectory)
 
     return results
 
@@ -745,6 +749,69 @@ def saveResults(title, results, directory):
             else:
                 f.write('0\n')
 
+def saveResultsSimple(title, results, directory):
+    if title is not None or len(title) == 0:
+        print 'Title error in saveResultsSimple'
+
+    try:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+    except OSError as e:
+        print 'OSError: {0}'.format(e)
+        return
+
+    if directory[-1] != os.path.sep:
+        directory += os.path.sep
+
+    fname = directory + title.replace(' ', '_')
+
+    data = [title]
+
+    print 'Processing results...'
+
+    for i, result in enumerate(results):
+        tc = result['testcase']
+        if result['error']:
+            data.append({
+                'i': i,
+                'name': result['name'],
+                'error': result['error'],
+                'runtime': result['runtime'],
+            })
+            continue
+        data.append({
+            'i': i,
+            'name': result['name'],
+            'error': result['error'],
+            'runtime': result['runtime'],
+            'block_size': tc.block_size,
+            'bodyrepr': tc.bodyrepr,
+            'cuda_cache_dir': tc.cuda_cache_dir,
+            'double': tc.double,
+            'dt': tc.dt,
+            'field_parameters': tc.field_parameters,
+            'field_states': tc.field_states,
+            'gpu_arch': tc.gpu_arch,
+            'gpu_code': tc.gpu_code,
+            'num_nodes': tc.num_nodes,
+            'nvcc_options': tc.nvcc_options,
+            'ode_model': tc.ode_model,
+            'paramrepr': tc.paramrepr,
+            'solver': tc.solver,
+            'statesrepr': tc.statesrepr,
+            't0': tc.t0,
+            'tstop': tc.tstop,
+            'update_field_states': tc.update_field_states,
+            'update_host_states': tc.update_host_states,
+            'use_cse': tc.use_cse
+        })
+
+    print 'Writing results to {0}...'.format(fname)
+
+    with open(fname, 'w') as f:
+        pickle.dump(data, f)
+
+
 def getDataFromFile(_file, get_stored_fstates=False):
     with open(_file) as f:
         title = f.readline().rstrip()
@@ -798,6 +865,13 @@ def getDataFromFile(_file, get_stored_fstates=False):
                     f.readline()
 
             data.append(datum)
+
+    return title, data
+
+def getDataFromFileSimple(_file):
+    with open(_file, 'r') as f:
+        raw_data = pickle.load(f)
+        title, data = raw_data[0], raw_data[1:]
 
     return title, data
 
