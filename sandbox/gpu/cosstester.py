@@ -8,7 +8,12 @@ import itertools as it
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+try:
+    import progressbar
+except ImportError:
+    progressbar = None
 import threading
+import time
 import traceback
 
 DEFAULT_ODE_MODEL = 'tentusscher'
@@ -160,13 +165,13 @@ def createTestCases(**kwargs):
 
 
 def runTestSuite(title, keep_cuda_code=False, printTimings=True,
-        saveDirectory=None, **kwargs):
+        saveDirectory=None, showProgress=True, **kwargs):
     testcases, names = createTestCases(**kwargs)
 
     print 'Running \'{0}\' tests...'.format(title)
 
     results = runTests(testcases, names=names, keep_cuda_code=keep_cuda_code,
-                       printTimings=printTimings)
+                       printTimings=printTimings, showProgress=showProgress)
 
     printResults(results)
 
@@ -177,7 +182,7 @@ def runTestSuite(title, keep_cuda_code=False, printTimings=True,
 
 
 def runTestSuites(test_suites=None, keep_cuda_code=False, saveDirectory=None,
-        printTimings=True):
+        printTimings=True, showProgress=True):
     test_suites = test_suites or getSampleTestSuites()
 
     results = dict()
@@ -187,7 +192,8 @@ def runTestSuites(test_suites=None, keep_cuda_code=False, saveDirectory=None,
                                       keep_cuda_code=keep_cuda_code,
                                       printTimings=printTimings,
                                       saveDirectory=saveDirectory,
-                                      clear_stored_fstates=False,
+                                      #clear_stored_fstates=False,
+                                      showProgress=showProgress,
                                       **test_suite)
 
     for title, result in results.iteritems():
@@ -216,7 +222,7 @@ def printResults(results, indent=0):
 
 
 def runTestCase(testcase, name, keep_cuda_code=False, printTimings=True,
-                solver=None):
+                showProgress=True, solver=None):
     params = getTestCaseParams(testcase, keep_cuda_code=keep_cuda_code)
 
     result = {'testcase': testcase, 'name': name,
@@ -260,7 +266,98 @@ def runTestCase(testcase, name, keep_cuda_code=False, printTimings=True,
     return result
 
 
-def runTests(testcases, names=None, keep_cuda_code=False, printTimings=True):
+def runSteppedTestCase(testcase, name, keep_cuda_code=False, printTimings=True,
+                       showProgress=True, solver=None):
+    params = getTestCaseParams(testcase, keep_cuda_code=keep_cuda_code)
+
+    epsilon = 1e-6
+    bar = None
+    result = {'testcase': testcase, 'name': name,
+              'field_states': None, 'runtime': 0.0, 'error': None}
+
+    try:
+        if solver is None:
+            solver = coss.CUDAODESystemSolver(
+                testcase.num_nodes,
+                testcase.ode,
+                init_field_parameters=testcase.field_parameter_values,
+                params=params)
+
+        field_states_fn = testcase.field_states_fn
+        if field_states_fn is None:
+            field_states_fn = lambda _: None
+
+        if testcase.field_states is not None and testcase.field_states != ['']:
+            field_states = \
+                np.zeros(testcase.num_nodes*len(testcase.field_states),
+                         dtype=getFloatPrecisionDtypeStr(testcase.double))
+            solver.get_field_states(field_states)
+
+            field_states_fn(field_states)
+        else:
+            field_states = None
+
+            field_states_fn(solver.field_states)
+
+        t = testcase.t0
+        dt = testcase.dt
+        tstop = testcase.tstop
+
+        if progressbar is not None and showProgress:
+            bar = progressbar.ProgressBar(maxval=tstop+epsilon,
+                widgets=[progressbar.Bar('=', '[', ']'), ' ',
+                         progressbar.Percentage(), ' ',
+                         progressbar.ETA()])
+
+        while t < tstop+epsilon:
+            if testcase.update_field_states:
+                solver.set_field_states(field_states)
+            solver.forward(t, dt, update_simulation_runtimes=True,
+                update_host_states=testcase.update_host_states)
+            if testcase.update_field_states:
+                solver.get_field_states(field_states)
+                if field_states is not None:
+                    field_states_fn(field_states)
+                else:
+                    field_states_fn(solver.field_states)
+
+            if progressbar is not None and showProgress:
+                bar.update(t)
+
+            t += dt
+
+        if progressbar is not None and showProgress:
+            bar.finish()
+
+        if printTimings:
+            list_timings()
+            clear_timings()
+
+        solver.get_field_states(field_states)
+
+        result['field_states'] = field_states
+        result['runtime'] = solver.simulation_runtime
+
+        solver.reset()
+
+        print 'Completed test \'{0}\' in {1:.2f}s'.format(
+            name, result['runtime'])
+    except:
+        if bar is not None:
+            bar.finish()
+        f = StringIO()
+        traceback.print_exc(file=f)
+        f.read()
+        result['error'] = f.buf
+        f.close()
+        print 'FAILED test \'{0}\'.'.format(name)
+
+    print
+    return result
+
+
+def runTests(testcases, names=None, keep_cuda_code=False, printTimings=True,
+             showProgress=True):
     results = list()
 
     ntests = len(testcases)
@@ -269,9 +366,13 @@ def runTests(testcases, names=None, keep_cuda_code=False, printTimings=True):
 
     for i, testcase, name in it.izip(xrange(ntests), testcases, names):
         print 'Running test {0}/{1} ({2})...'.format(i+1, ntests, name)
-        results.append(runTestCase(testcase, name,
-                                   keep_cuda_code=keep_cuda_code,
-                                   printTimings=printTimings))
+        #results.append(runTestCase(testcase, name,
+        #                           keep_cuda_code=keep_cuda_code,
+        #                           printTimings=printTimings))
+        results.append(runSteppedTestCase(testcase, name,
+                                          keep_cuda_code=keep_cuda_code,
+                                          printTimings=printTimings,
+                                          showProgress=showProgress))
 
     return results
 
@@ -373,6 +474,7 @@ sample_test_suites = {
         'tstop': 12.0,
         'solver': ('explicit_euler',
                    'rush_larsen',
+                   'generalized_rush_larsen',
                    'simplified_implicit_euler'),
         'block_size': 128,
         'field_states': FIELD_STATES[DEFAULT_ODE_MODEL],
@@ -388,6 +490,7 @@ sample_test_suites = {
         'num_nodes': 8192,
         'dt': 0.1,
         'tstop': 300.0,
+        'solver': 'generalized_rush_larsen',
         'field_states': {
             ODE_MODELS['tentusscher']: FIELD_STATES['tentusscher'],
             ODE_MODELS['beeler']: FIELD_STATES['beeler'],
