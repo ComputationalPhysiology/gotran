@@ -3,12 +3,11 @@
 
 from __future__ import division
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-03-13 -- 2014-05-14"
+__date__ = "2013-03-13 -- 2014-06-12"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
 from modelparameters.codegeneration import latex
-from scipy.integrate import odeint
 try:
     from scipy.optimize import root
 except:
@@ -37,13 +36,19 @@ def main(filename, params):
     for what_not in ["componentwise_rhs_evaluation",
                      "forward_backward_subst",
                      "linearized_rhs_evaluation",
-                     "lu_factorization"]:
+                     "lu_factorization",
+                     "jacobian"]:
         generation.functions[what_not].generate = False
 
-    for what in ["rhs", "monitored"]:
-        generation.functions[what].generate = True
+    # Always generate code for monitored expressions
+    generation.functions.monitored.generate = True
 
-    generation.functions.jacobian.generate = params.code.generate_jacobian
+    # If scipy is used to solve we generate RHS and potentially a jacobian
+    if params.solver == "scipy":
+        generation.functions.rhs.generate = True
+        generation.functions.jacobian.generate = params.code.generate_jacobian
+    else:
+        generation.solvers[params.solver].generate = True
     
     # Compile executeable code from gotran ode
     ode = load_ode(filename)
@@ -54,7 +59,11 @@ def main(filename, params):
               "and is hence a DAE.".format(ode.name))
     
     # Get monitored and plot states
-    plot_states = params.plot
+    plot_states = params.plot_y
+
+    # Get x_values
+    x_name = params.plot_x
+    
     state_names = [state.name for state in ode.full_states]
     monitored_plot = [plot_states.pop(plot_states.index(name)) \
                       for name in plot_states[:] if name not in state_names]
@@ -63,7 +72,25 @@ def main(filename, params):
     for expr in sorted(ode.intermediates + ode.state_expressions):
         if expr.name not in monitored:
             monitored.append(expr.name)
+
+    # Check valid monitored plot
+    for mp in monitored_plot:
+        if mp not in monitored:
+            error("{} is not a state or intermediate in this ODE".format(mp))
         
+    # Check x_name
+    if x_name not in ["time"]+monitored+state_names:
+        error("Expected plot_x to be either 'time' or one of the plotable "\
+              "variables, got {}".format(x_name))
+
+    # Logic if x_name is not 'time' as we then need to add the name to
+    # either plot_states or monitored_plot
+    if x_name != "time":
+        if x_name in state_names:
+            plot_states.append(x_name)
+        else:
+            monitored_plot.append(x_name)
+
     module = compile_module(ode, params.code.language, monitored, generation)
 
     parameter_values = params.parameters
@@ -117,14 +144,34 @@ def main(filename, params):
             warning(result.message)
 
     tsteps = np.linspace(t0, t1, t1/dt+1)
-    results = odeint(rhs, y0, tsteps, Dfun=jac, args=(model_params,))
+
+    # What solver should we use
+    if params.solver == "scipy":
+        try:
+            from scipy.integrate import odeint
+        except Exception, e:
+            error("Problem importing scipy.integrate.odeint. {}".format(e))
+        results = odeint(rhs, y0, tsteps, Dfun=jac, args=(model_params,))
+    else:
+
+        # Get generated forward method
+        forward = getattr(module, "forward_"+params.solver)
+        
+        results = [y0]
+        states = y0.copy()
+        
+        # Integrate solution using generated forward method
+        for ind, t in enumerate(tsteps[:-1]):
+
+            # Step solver
+            forward(states, t, dt, model_params)
+            results.append(states.copy())
 
     # Plot results
     if not (plot_states or monitored):
         return
     
     plot_inds = [module.state_indices(state) for state in plot_states]
-    #plot_results = [[] for state in plot_states]
     
     monitored_values = [[] for monitor in monitored_plot]
     monitor_inds = np.array([monitored.index(monitor) \
@@ -158,15 +205,30 @@ def main(filename, params):
         else:
             monitored_plot_updated.append(monitor)
 
+    plot_items = plot_states + monitored_plot
+    if x_name != "time":
+        x_values = plot_values[plot_items.index(x_name)]
+    else:
+        x_values = tsteps
+
     plt.rcParams["lines.linewidth"] = 2
     line_styles = cycle([c+s for s in ["-", "--", "-.", ":"]
                          for c in plt.rcParams["axes.color_cycle"]])
-    for values in plot_values:
-        plt.plot(tsteps, values, next(line_styles))
     
-    plt.legend(["$\\mathrm{{{0}}}$".format(latex(value))
-                  for value in plot_states + monitored_plot_updated], loc=0)
-    plt.xlabel("time")
+    plotted_items = 0
+    for what, values in zip(plot_items, plot_values):
+        if what == x_name:
+            continue
+        plotted_items += 1
+        plt.plot(x_values, values, next(line_styles))
+
+    if plotted_items > 1:
+        plt.legend(["$\\mathrm{{{0}}}$".format(latex(value))
+                    for value in plot_items])
+    else:
+        plt.ylabel("$\\mathrm{{{0}}}$".format(latex(plot_items[0])))
+        
+    plt.xlabel("$\\mathrm{{{0}}}$".format(latex(x_name)))
     plt.title(ode.name.replace("_", "\\_"))
     plt.show()
 
@@ -193,14 +255,22 @@ if __name__ == "__main__":
                                       "excitingmixing", "krylov"]),
         tol = ScalarParam(1e-5, description="Tolerance for root finding algorithm."),
         )
+
+    solver = OptionParam("scipy", ["scipy"]+\
+                         parameters.generation.solvers.keys(),
+                         description="The solver that will be used to "\
+                         "integrate the ODE.")
     
     params = ParameterDict(\
+        solver = solver,
         steady_state = steady_state,
         parameters = Param([""], description="Set parameter of model"),
         init_conditions = Param([""], description="Set initial condition of model"),
         tstop = ScalarParam(100., gt=0, description="Time for stopping simulation"),\
         dt = ScalarParam(0.1, gt=0, description="Timestep for plotting."),\
-        plot = Param(["V"], description="States or monitored to plot."),\
+        plot_y = Param(["V"], description="States or monitored to plot on the y axis."),\
+        plot_x = Param("time", description="Values used for the x axis. Can be time "\
+                       "and any valid plot_y variable."), 
         code = code_params)
     
     params.parse_args(usage="usage: %prog FILE [options]")
