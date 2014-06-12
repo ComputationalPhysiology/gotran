@@ -774,7 +774,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
         parameters = ode.parameters
 
         body_lines = []
-        body_lines.append("param_inds = dict({0})".format(\
+        body_lines.append("param_inds = dict([{0}])".format(\
             ", ".join("(\"{0}\", {1})".format(param.param.name, i) for i, param \
                                         in enumerate(parameters))))
         body_lines.append("")
@@ -792,7 +792,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
         # Add function prototype
         function = self.wrap_body_with_function_prototype(\
             body_lines, "parameter_indices", \
-            "**params", "Parameter indices", self.decorators())
+            "*params", "Parameter indices", self.decorators())
 
         return "\n".join(self.indent_and_split_lines(function, indent=indent))
 
