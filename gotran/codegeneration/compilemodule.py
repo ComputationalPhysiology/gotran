@@ -93,6 +93,28 @@ import_array();
   $1 = (double *)PyArray_DATA(xa);
 }}
 
+%typemap(in) (double* {states_name})
+{{
+  // Check type
+  if (!PyArray_Check($input))
+    SWIG_exception(SWIG_TypeError, "Numpy array expected");
+
+  // Get PyArrayObject
+  PyArrayObject *xa = (PyArrayObject *)$input;
+
+  // Check data type
+  if (!(PyArray_ISCONTIGUOUS(xa) && PyArray_TYPE(xa) == NPY_DOUBLE))
+    SWIG_exception(SWIG_TypeError, "Contigous numpy array of doubles expected."
+           " Make sure the numpy array is contiguous, and uses dtype=float_.");
+
+  // Check size of passed array
+  if ( PyArray_SIZE(xa) != {num_states} )
+    SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
+                              "{num_states}, for the {states_name} argument.");
+  
+  $1 = (double *)PyArray_DATA(xa);
+}}
+
 %typemap(in) (double* {parameters_name})
 {{
   // Check type
