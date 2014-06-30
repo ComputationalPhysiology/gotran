@@ -1,3 +1,4 @@
+import os
 from collections import OrderedDict
 from gotran import load_ode
 from gotran.common import Timer
@@ -51,6 +52,8 @@ def run_goss(ode, num_nodes, field_parameters={}, field_states=["V"], tstop=300,
     solver = ODESystemSolver(num_nodes, RL1(),          
                              jit(ode, field_parameters=field_parameters.keys(),
                                  field_states=field_states))
+    
+    solver.set_num_threads(8)
 
     # Reset default
     solver.reset_default()
@@ -74,7 +77,7 @@ def run_gpu(ode, num_nodes, field_parameters={}, field_states=["V"], tstop=300,
 
     solver = CUDAODESystemSolver(num_nodes, ode, params=params)
 
-    dtype = np.float_ if double else np.float32
+    dtype = np.float64 if double else np.float32
     field_parameters, field_states = get_field_values(num_nodes, field_parameters,
                                                       field_states, dtype=dtype)
     if field_parameters is not None:
@@ -85,6 +88,7 @@ def run_gpu(ode, num_nodes, field_parameters={}, field_states=["V"], tstop=300,
     return step_solver(solver, tstop, dt, field_states, what)
     
 if __name__ == "__main__":
+    os.environ["GOMP_CPU_AFFINITY"] = "0-7"
     filename = "tentusscher_panfilov_2006_M_cell.ode"
     ode = load_ode(filename)
     field_parameters = OrderedDict()
@@ -92,14 +96,16 @@ if __name__ == "__main__":
         if param.name in ["g_to", "g_CaL"]:
             field_parameters[param.name] = [param.init, param.init*0.01]
 
-    num_nodes = 1000
-    gpu_result_double = run_gpu(ode, num_nodes, field_parameters=field_parameters)
+    num_nodes = 1024*8*8
+    gpu_result_double = run_gpu(ode, num_nodes, field_parameters=field_parameters, \
+                                double=True)
     gpu_result_single = run_gpu(ode, num_nodes, field_parameters=field_parameters, \
                                 double=False)
     print "NUM NAN SINGLE: ", np.isnan(gpu_result_single).sum()
     goss_result = run_goss(ode, num_nodes, field_parameters=field_parameters)
     
     print "NUM DIFF DOUBLE:", np.absolute((goss_result-gpu_result_double)>1e-8).sum()
+    print "NUM DIFF SINGLE:", np.absolute((goss_result-gpu_result_single)>1e-8).sum()
     print "PERCENT REL DIFF SINGLE > 0.1%", (np.absolute((goss_result-gpu_result_single)\
                                     /goss_result)>1.e-3).sum()*1.0/len(goss_result)*100, "%"
     print "PERCENT REL DIFF SINGLE > 1%", (np.absolute((goss_result-gpu_result_single)\
