@@ -426,3 +426,7 @@ class CUDAODESystemSolver(object):
         else:
             self._num_nodes = value
             self.params.code.n_nodes = value
+
+    def __del__(self):
+        self.reset()
+
