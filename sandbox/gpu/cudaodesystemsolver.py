@@ -66,7 +66,7 @@ class ODECUDAHandler(object):
         dev = self.ctx.get_device()
         nvcc = self.params.nvcc or "nvcc"
         gpu_arch = self.params.gpu_arch if self.params.gpu_arch else None
-        gpu_code = self.params.gpu_code if self.params.gpu_arch else None
+        gpu_code = self.params.gpu_code if self.params.gpu_code else None
         cuda_cache_dir = self.params.cuda_cache_dir \
                          if self.params.cuda_cache_dir else None
         nvcc_options = self.params.nvcc_options
@@ -79,6 +79,8 @@ class ODECUDAHandler(object):
             self._cuda_code, nvcc=nvcc, options=nvcc_options,
             keep=self.params.keep_cuda_code, no_extern_c=False, arch=gpu_arch,
             code=gpu_code, cache_dir=cuda_cache_dir, include_dirs=[])
+
+        self.ctx.set_cache_config(cuda.func_cache.PREFER_L1)
 
         float_t = 'float64' if self.params.code.float_precision == 'double' \
                   else 'float32'
@@ -139,7 +141,8 @@ class ODECUDAHandler(object):
                 continue
             except AttributeError:
                 continue
-        self.ctx.detach()
+        #self.ctx.detach()
+        self.ctx.pop()
 
     def forward(self, t, dt, update_host_states=False, synchronize=True):
         if not self.is_ready():

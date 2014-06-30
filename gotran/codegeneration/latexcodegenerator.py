@@ -139,7 +139,7 @@ def _default_latex_params():
     params = dict()
 
     # Specify output file
-    params["latex_output"] = Param(
+    params["output"] = Param(
         "", description="Specify LaTeX output file")
 
     # Set number of columns per page
@@ -176,9 +176,9 @@ def _default_latex_params():
         True, description="Give equation labels a bold typeface in "
         "LaTeX document")
 
-    # If set to True, does not generate the preamble
-    params["no_preamble"] = Param(
-        False, description="If set to True, LaTeX document will be "
+    # If set to False, does not generate the preamble
+    params["preamble"] = Param(
+        True, description="If set to False, LaTeX document will be "
         "be generated without the preamble")
 
     # If set to true, sets document to a landscape page layout
@@ -189,17 +189,17 @@ def _default_latex_params():
     params["mul_symbol"] = Param(
         "dot", description="Multiplication symbol for Sympy LatexPrinter")
 
-    # Flag to disable page numbers
-    params["no_page_numbers"] = Param(
-        False, description="Disable page numbers")
+    # Flag to enable page numbers
+    params["page_numbers"] = Param(
+        True, description="Enable page numbers")
 
-    # Flag to disable state table
-    params["no_state_descriptions"] = Param(
-        False, description="Disable table column for state descriptions")
+    # Flag to disable state table (currently unused)
+    # params["no_state_descriptions"] = Param(
+    #     False, description="Disable table column for state descriptions")
 
-    # Flag to disable parameter table
-    params["no_parameter_descriptions"] = Param(
-        False, description="Disable table column for parameter descriptions")
+    # Flag to disable parameter table (currently unused)
+    # params["no_parameter_descriptions"] = Param(
+    #     False, description="Disable table column for parameter descriptions")
 
     # Set headline types for States, Parameters and Components
     params["section_type"] = Param(
@@ -253,7 +253,7 @@ class LatexCodeGenerator(object):
         self._name = ode.name
         self.params = params if params else _default_latex_params()
 
-        self.output_file = params.latex_output or '{0}.tex'.format(
+        self.output_file = params.output or '{0}.tex'.format(
             ode.name)
 
         # Verify valid multiplication symbol
@@ -274,13 +274,13 @@ class LatexCodeGenerator(object):
 
         global_opts = self.format_global_options(_global_opts)
 
-        if params.no_preamble:
+        if not params.preamble:
             latex_output = self.generate_parameter_table() \
                           + self.generate_state_table() \
                           + self.generate_components()
         else:
             document_opts = self.format_options(
-                override=["font_size", "landscape", "no_page_numbers"])
+                override=["font_size", "landscape", "page_numbers"])
             latex_output = _latex_template.format(
                 FONTSIZE=params.font_size,
                 PKGS=self.format_packages(self.packages),
@@ -499,7 +499,7 @@ class LatexCodeGenerator(object):
             begin_str = "\\begin{landscape}\n" + begin_str
             end_str += "\\end{landscape}\n"
 
-        if "no_page_numbers" in override and opts.no_page_numbers:
+        if "page_numbers" in override and not opts.page_numbers:
             begin_str = "\\pagenumbering{gobble}\n" + begin_str
 
         return {"begin": begin_str, "end": end_str}

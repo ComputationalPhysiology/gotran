@@ -51,6 +51,8 @@ def plotResults(_file, plotTypes=None, get_stored_fstates=False):
             for _type in list(set(namekeys))[0]:
                 if _type == 'um_nodes':
                     _type = 'num_nodes'
+                if _type == 'lock_size':
+                    _type = 'block_size'
                 plotTypes.append({'x': {'type': _type},
                                   'y': {'type': 'runtime'}})
 
