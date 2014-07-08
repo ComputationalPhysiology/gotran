@@ -132,7 +132,6 @@ class ODECUDAHandler(object):
         self._cuda_ready = True
 
     def clean_up(self):
-        self._cuda_ready = False
         for _d_array in (self._d_states, self._d_parameters,
                          self._d_field_states, self._d_field_parameters):
             try:
@@ -142,7 +141,9 @@ class ODECUDAHandler(object):
             except AttributeError:
                 continue
         #self.ctx.detach()
-        self.ctx.pop()
+        if not self._cuda_ready:
+            self.ctx.pop()
+        self._cuda_ready = False
 
     def forward(self, t, dt, update_host_states=False, synchronize=True):
         if not self.is_ready():
