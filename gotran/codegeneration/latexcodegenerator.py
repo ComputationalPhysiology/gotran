@@ -378,8 +378,10 @@ class LatexCodeGenerator(object):
         Return a LaTeX-formatted string for a longtable row describing a
         parameter.
         E.g.:
-        >>> LatexCodeGenerator.format_param_table_row("g_earth",
-        ... "Surface gravity", 9.81, "m/s**2")
+        >>> LatexCodeGenerator.format_param_table_row(
+        ...     Parameter("g_earth",
+        ...         ScalarParam(9.81, unit="m/s**2",
+        ...                     description="Surface gravity"))
         '  $g_{earth}$\\hspace{0.5cm} & $9.81 \\mathrm{\\frac{m}{s^{2}}}$
         \\hspace{0.5cm} & Surface gravity'
         """
