@@ -13,6 +13,7 @@ try:
     import progressbar
 except ImportError:
     progressbar = None
+import random
 import threading
 import time
 import traceback
@@ -111,6 +112,7 @@ class COSSTestCase(object):
                 'use_cse': False,
                 'update_host_states': False,
                 'update_field_states': True,
+                'ode_substeps': 1,
                 'gpu_arch': None,
                 'gpu_code': None,
                 'cuda_cache_dir': None,
@@ -304,7 +306,7 @@ def runSteppedTestCase(testcase, name, keep_cuda_code=False, printTimings=True,
             field_states_fn(solver.field_states)
 
         t = testcase.t0
-        dt = testcase.dt
+        dt = testcase.dt*testcase.ode_substeps
         tstop = testcase.tstop
 
         if progressbar is not None and showProgress:
@@ -392,6 +394,7 @@ def getTestCaseParams(testcase, keep_cuda_code=False):
     params.code.parameters.representation = testcase.paramrepr
     params.code.body.representation = testcase.bodyrepr
     params.code.body.use_cse = testcase.use_cse
+    params.ode_substeps = testcase.ode_substeps
     params.gpu_arch = testcase.gpu_arch
     params.gpu_code = testcase.gpu_code
     params.keep_cuda_code = keep_cuda_code
@@ -408,6 +411,19 @@ def get_store_partial_field_state_fn(num_nodes, stored_field_states, n=3):
             [field_states[j*(len(field_states)-1)/(n-1)] for j in xrange(n)])
 
     return store_field_states_fn
+
+
+def get_c_s_partial_field_state_fn(num_nodes, stored_field_states, n=3):
+
+    def c_s_field_states_fn(field_states):
+        # Waste some time:
+        for fs in field_states:
+            fs*random.uniform(.1, 10.0)
+
+        stored_field_states.append(
+            [field_states[j*(len(field_states)-1)/(n-1)] for j in xrange(n)])
+
+    return c_s_field_states_fn
 
 
 def get_store_all_field_states_fn(num_nodes, stored_field_states):
@@ -565,6 +581,18 @@ sample_test_suites = {
         'field_parameters': FIELD_PARAMETERS[DEFAULT_ODE_MODEL],
         'field_parameter_values_getter_fn': linear_field_parameter_transform,
         'cuda_cache_dir': (False, False, None, None)
+    },
+
+    'SUBSTEPS': {
+        'ode_model': ODE_MODELS[DEFAULT_ODE_MODEL],
+        'num_nodes': 8192,
+        'dt': 0.1,
+        'tstop': 300.0,
+        'ode_substeps': (1, 4, 8, 16),
+        'field_states': FIELD_STATES[DEFAULT_ODE_MODEL],
+        'field_states_getter_fn': get_c_s_partial_field_state_fn,
+        'field_parameters': FIELD_PARAMETERS[DEFAULT_ODE_MODEL],
+        'field_parameter_values_getter_fn': linear_field_parameter_transform
     }
 }
 
@@ -608,10 +636,13 @@ def testRepresentation(**kwargs):
     return runSampleTest('REPRESENTATION/CSE', **kwargs)
 
 def testFastMath(**kwargs):
-    return runSampleTest('TIME STEP', **kwargs)
+    return runSampleTest('FAST MATH', **kwargs)
 
 def testCudaCacheDir(**kwargs):
     return runSampleTest('CUDA CACHE DIR', **kwargs)
+
+def testSubsteps(**kwargs):
+    return runSampleTest('SUBSTEPS', **kwargs)
 
 def testEverything(subset=None, keep_cuda_code=False, printTimings=True,
                    **kwargs):
