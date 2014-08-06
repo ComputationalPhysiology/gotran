@@ -141,7 +141,7 @@ class ODECUDAHandler(object):
             except AttributeError:
                 continue
         #self.ctx.detach()
-        if not self._cuda_ready:
+        if self._cuda_ready:
             self.ctx.pop()
         self._cuda_ready = False
 
@@ -280,6 +280,8 @@ class CUDAODESystemSolver(object):
                p_field_states[0] != "":
             self.set_field_parameters(init_field_parameters)
 
+        self.ode_substeps = self.params.ode_substeps
+
     @staticmethod
     def default_parameters():
         # Start with a modified subset of the global parameters
@@ -292,6 +294,9 @@ class CUDAODESystemSolver(object):
                     description="Default solver type"),
                 block_size=ScalarParam(
                     256, ge=1, description="Number of threads per CUDA block"),
+                ode_substeps=ScalarParam(
+                    1, ge=1, description="Number of ODE steps to compute per "
+                    "forward function call"),
                 nvcc=Param(
                     "nvcc",
                     description="Command to run nvcc compiler"),
@@ -346,7 +351,11 @@ class CUDAODESystemSolver(object):
 
         if update_field_states and self.field_states is not None:
             self.set_field_states()
-        self._cudahandler.forward(t, dt, update_host_states)
+
+        for _ in xrange(self.ode_substeps):
+            self._cudahandler.forward(t, dt, update_host_states)
+            t += dt
+
         if update_field_states and self.field_states is not None:
             self.get_field_states()
 
@@ -430,4 +439,3 @@ class CUDAODESystemSolver(object):
 
     def __del__(self):
         self.reset()
-
