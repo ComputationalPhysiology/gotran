@@ -152,7 +152,7 @@ class TestODE(unittest.TestCase):
         self.assertEqual(sum(ode.mass_matrix), 7)
         self.assertEqual(sum(vector), 7)
 
-        self.assertEqual("".join(s.name for s in ode.full_states), "jiklmorsq")
+        self.assertEqual("".join(s.name for s in ode.full_states), "ijkmlorsq")
         self.assertEqual(ode.present_component, ode)
 
         # Test saving
