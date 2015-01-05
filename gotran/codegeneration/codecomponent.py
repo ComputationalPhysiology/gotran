@@ -831,7 +831,7 @@ class CodeComponent(ODEComponent):
                 # Store the expressions
                 store_expressions(expr, new_expr)
 
-                del timer_result
+                del timer_indexed
 
             # 5) If replacing all body exressions with an indexed expression
             elif "array" in body_repr:
@@ -880,7 +880,7 @@ class CodeComponent(ODEComponent):
                 # Store the expressions
                 store_expressions(expr, new_expr)
 
-                del timer_result
+                del timer_body
                 
             # 6) If the expression is just and ordinary body expression and we
             #    are using named representation of body

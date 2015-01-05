@@ -135,6 +135,7 @@ class Expression(ODEValueObject):
             self._sym._assumptions["commutative"] = True
             self._sym._assumptions["imaginary"] = False
             self._sym._assumptions["hermitian"] = True
+            self._sym._assumptions["complex"] = True
         else:
             self._sym = self.param.sym
 
@@ -273,7 +274,7 @@ class DerivativeExpression(Intermediate):
         check_arg(dep_var, (State, Expression, Time), 1, DerivativeExpression)
 
         # Check that the der_expr is dependent on var
-        if dep_var.sym not in der_expr.sym:
+        if dep_var.sym not in der_expr.sym.args:
             error("Cannot create a DerivativeExpression as {0} is not "\
                   "dependent on {1}".format(der_expr, dep_var))
 
@@ -287,6 +288,7 @@ class DerivativeExpression(Intermediate):
         self._sym._assumptions["commutative"] = True
         self._sym._assumptions["imaginary"] = False
         self._sym._assumptions["hermitian"] = True
+        self._sym._assumptions["complex"] = True
 
     @property
     def der_expr(self):
@@ -399,6 +401,7 @@ class StateDerivative(StateExpression):
         sym._assumptions["imaginary"] = False
         sym._assumptions["commutative"] = True
         sym._assumptions["hermitian"] = True
+        sym._assumptions["complex"] = True
         
         # Call base class constructor
         super(StateDerivative, self).__init__(sympycode(sym), state, expr, \

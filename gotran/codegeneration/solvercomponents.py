@@ -261,8 +261,9 @@ class RushLarsen(CodeComponent):
             time_diff = Timer("Differentiate state_expressions for RushLarsen")
             expr_diff = expr.expr.diff(expr.state.sym)
             del time_diff
-            
-            if expr_diff and expr.state.sym not in expr_diff:
+
+            #print expr.state.sym, expr_diff, expr_diff.args
+            if expr_diff and expr.state.sym not in expr_diff.args:
 
                 linearized = self.add_intermediate(\
                     expr.name+"_linearized", expr_diff, dependent=dependent)

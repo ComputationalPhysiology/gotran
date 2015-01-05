@@ -302,12 +302,14 @@ class State(ODEValueObject):
         self.sym_0._assumptions["imaginary"] = False
         self.sym_0._assumptions["commutative"] = True
         self.sym_0._assumptions["hermitian"] = True
+        self.sym_0._assumptions["complex"] = True
 
         self._sym = self._param.sym(self.time.sym)
         self._sym._assumptions["real"] = True
         self._sym._assumptions["imaginary"] = False
         self._sym._assumptions["commutative"] = True
         self._sym._assumptions["hermitian"] = True
+        self._sym._assumptions["complex"] = True
 
         # Flag to determine if State is solved or not
         self._is_solved = False
@@ -437,7 +439,7 @@ class IndexedObject(ODEObject):
         self._basename = basename
         self._indices = orig_indices
         self._sym = sp.Symbol(name, real=True, imaginary=False, commutative=True,
-                              hermitian=True)
+                              hermitian=True, complex=True)
         self._shape = shape
 
     @property
@@ -486,7 +488,7 @@ class Time(ODEValueObject):
 
         # Add previous value symbol
         self.sym_0 = sp.Symbol("{0}_0".format(name), real=True, imaginary=False,
-                               commutative=True, hermitian=True)
+                               commutative=True, hermitian=True, complex=True)
 
 class Dt(ODEValueObject):
     """

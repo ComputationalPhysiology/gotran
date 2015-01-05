@@ -613,7 +613,7 @@ class FactorizedJacobianComponent(CodeComponent):
                 if not jac_orig[i,j].is_zero:
                     name = sympycode(jac_orig[i,j])
                     jac[i,j] = sp.Symbol(name, real=True, imaginary=False, commutative=True,
-                                         hermitian=True)
+                                         hermitian=True, complex=True)
                     print jac[i,j]
         p = []
 
@@ -742,7 +742,7 @@ class ForwardBackwardSubstitutionComponent(CodeComponent):
                 if not jac_orig[i,j].is_zero:
                     name = sympycode(jac_orig[i,j])
                     jac[i,j] = sp.Symbol(name, real=True, imaginary=False, commutative=True,
-                                         hermitian=True)
+                                         hermitian=True, complex=True)
                     print jac[i,j]
 
         self.shapes[jacobian_name] = (n,n)
