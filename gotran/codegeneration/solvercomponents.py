@@ -431,13 +431,13 @@ class GeneralizedRushLarsen(CodeComponent):
         for i, expr in enumerate(state_exprs):
 
             expr_diff = expr.expr.diff(expr.state.sym)
+            dependent = expr if recount else None
             if expr_diff.is_zero:
                 self.add_indexed_expression(\
                     result_name, (i,), expr.state.sym+dt*expr.sym, \
                     offset_str, dependent=dependent)
                 continue
             
-            dependent = expr if recount else None
             linearized = self.add_intermediate(\
                 expr.name+"_linearized", expr_diff, dependent=dependent)
 
