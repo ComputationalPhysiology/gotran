@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # System imports
-from distutils.core import setup
-from distutils.core import Command
+from setuptools import setup, Command
 
 from os.path import join as pjoin
 import glob
@@ -79,8 +78,16 @@ setup(name = "Gotran",
       packages = ["gotran", "gotran.common", "gotran.model",
                   "gotran.algorithms", "gotran.codegeneration",
                   "gotran.input"],
+      install_requires = ["modelparameters>=0.1", "sympy>=0.7.5"],
+      dependency_links = ["https://bitbucket.org/johanhake/modelparameters/"\
+                          "get/master.tar.gz#egg=modelparameters-0.1"],
+      extras_require = {
+          "gotranrun":  ["scipy>=0.11"],
+          },
+      
       scripts = scripts,
       cmdclass    = {'test': run_tests,
                      'clean': clean,
                      },
+        
       )

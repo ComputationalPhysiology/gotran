@@ -38,14 +38,24 @@ if remove:
         print "  removing:", filename
         os.unlink(filename)
 else:
-    print "No temp files removed"
+    print "\nNo temp files removed"
 
-if os.path.isdir("build"):
-    message = "\nFound build dir, which will be removed."
+remove_dirs = ["build", "Gotran.egg-info", "doc/_build", "dist"]
+removed_dirs = []
+for remove_dir in remove_dirs:
+    if os.path.isdir(remove_dir):
+        shutil.rmtree(remove_dir)
+        removed_dirs.append(remove_dir)
+
+if removed_dirs:
+    message = "\nFound {} director{} that will be removed.".format(\
+        len(removed_dirs), "y" if len(removed_dirs)==1 else "ies")
     print message
     print "-"*len(message)
-    print "  removing: build"
-    shutil.rmtree("build")
+    for remove_dir in removed_dirs:
+        print "  removing: '{}'".format(remove_dir)
+else:
+    print "\nNo temp dirs removed"
     
 remove = []
 

@@ -312,7 +312,8 @@ component("Sodium dynamics")
 dNa_i_dt = -1*(i_Na + i_b_Na + 3*i_NaK + 3*i_NaCa)/(1*V_c*F)*Cm
 
 component("Membrane")
-i_Stim = Conditional(And(Gt(time - floor(time/stim_period)*stim_period, stim_start), Le(time - floor(time/stim_period)*stim_period, stim_start + stim_duration), ), -stim_amplitude, 0) # pA*pF**-1
+stim_time = time % stim_period
+i_Stim = Conditional(And(Gt(stim_time, stim_start), Le(stim_time, stim_start + stim_duration), ), -stim_amplitude, 0) # pA*pF**-1
 dV_dt = -(i_K1 + i_to + i_Kr + i_Ks + i_CaL + i_NaK + i_Na + i_b_Na + i_NaCa + i_b_Ca + i_p_K + i_p_Ca + i_Stim)
 
 component("Potassium dynamics")
