@@ -15,6 +15,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
+# FIXME: This is a deprecated module. Most of it should be
+# incorporated into other modules by now.
+
 # System imports
 from collections import deque, OrderedDict
 import hashlib

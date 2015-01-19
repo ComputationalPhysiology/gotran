@@ -87,7 +87,7 @@ class BaseCodeGenerator(object):
                   include_index_map=True,
                   indent=0):
         """
-        Generate a list of code snippets
+        Generates a dict of code snippets
 
         Arguments
         ---------
@@ -590,6 +590,9 @@ class PythonCodeGenerator(BaseCodeGenerator):
         return body_lines
 
     def function_code(self, comp, indent=0, include_signature=True):
+        """
+        Generate code for a single function given by a CodeComponent
+        """
 
         check_arg(comp, CodeComponent)
         check_kwarg(indent, "indent", int)
