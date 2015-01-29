@@ -831,7 +831,7 @@ class LinearizedDerivativeComponent(CodeComponent):
 
             expr_diff = expr.expr.diff(expr.state.sym)
 
-            if expr_diff and expr.state.sym not in expr_diff:
+            if expr_diff and expr.state.sym not in expr_diff.args:
                 self.linear_derivative_indices[ind] = 1
             elif only_linear:
                 continue
