@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2012-05-07 -- 2014-03-07"
+__date__ = "2012-05-07 -- 2015-03-03"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -57,7 +57,7 @@ for what_not in ["componentwise_rhs_evaluation",
 
 # Only generate rhs and jacobian
 generation.functions.rhs.generate = True
-generation.functions.jacobian.generate = True
+generation.functions.jacobian.generate = False
 
 class TestBase(object):
     def test_run(self):
@@ -79,7 +79,7 @@ class TestBase(object):
         # Compile ODE
         module = compile_module(self.ode, language="C", generation_params=generation)
         rhs = module.rhs
-        jac = module.compute_jacobian
+        jac = None#module.compute_jacobian
         y0 = module.init_state_values()
         model_params = module.init_parameter_values()
         

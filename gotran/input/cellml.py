@@ -938,9 +938,12 @@ class CellMLParser(object):
 
         return comp
 
-    def sort_components(self, components):
+    def sort_components(self, components, sorted_once=False):
 
-        begin_log("Sorting components with respect to dependencies")
+        if not sorted_once:
+            begin_log("Sorting components with respect to dependencies")
+        else:
+            begin_log("Sorting components with respect to dependencies second time")
         
         # Check internal dependencies
         for comp0 in components:
@@ -1016,12 +1019,18 @@ class CellMLParser(object):
 
         # Try to eliminate circular dependency
         # Extract dependent equation to a new component
-        ode_comp = Component(self.name, {}, [], {})
+
+        # Find ODE component. If not found create one
+        for comp in components:
+            if comp.name == self.name:
+                ode_comp = comp
+                break
+        else:
+            ode_comp = Component(self.name, {}, [], {})
 
         # Valid edges for removal
         valid_edges = [eq.name for eq in zero_dep_equations] + \
                       [eq.name for eq in one_dep_equations]
-        
         
         G = nx.MultiDiGraph()
         G.add_nodes_from([comp.name for comp in components])
@@ -1098,8 +1107,16 @@ class CellMLParser(object):
                                 cycles_fixed[i] = True
                                 
                                 break
-            
 
+        # If no edge sugested for removal we pick the zero dep equations
+        if not edge_removal:
+            if zero_dep_equations:
+                edge_removal = [eq.name for eq in zero_dep_equations]
+            elif one_dep_equations:
+                edge_removal = [eq.name for eq in one_dep_equations]
+            else:
+                warning("Could not sort out circular dependencies.")
+            
         # Remove the edges from the graph
         for edge in edge_removal:
             for n0, n1 in edge_to_nodes[edge]:
@@ -1160,6 +1177,7 @@ class CellMLParser(object):
 
         # Sort graph components and apply the sortings to the collected
         # CellML compoents
+        sort_again = False
         try:
             sorted_components = nx.topological_sort(G)
             components.sort(lambda n0, n1: cmp(sorted_components.index(n0.name), \
@@ -1171,6 +1189,7 @@ class CellMLParser(object):
             warning("Topological sort failed: " + str(e))
             message = "In a try to avoid circular dependency the following equations "\
                       "has been moved:"
+            sort_again = True
             
         # Insert the ODE component with extracted equations first
         components.insert(0, ode_comp)
@@ -1182,6 +1201,26 @@ class CellMLParser(object):
                 eq.name, old_comp.name, ode_comp.name))
 
         end_log()
+        
+        if sort_again:
+
+            # Try rebuild the graph and make another topological sort
+            G = nx.MultiDiGraph()
+            G.add_nodes_from([comp.name for comp in components])
+        
+            # Build graph
+            for comp in components:
+                [G.add_edge(dep.name, comp.name, key=equation.name)
+                 for dep, equations in comp.dependencies.items() \
+                 for equation in equations]
+
+            try:
+                sorted_components = nx.topological_sort(G)
+                components.sort(lambda n0, n1: cmp(sorted_components.index(n0.name), \
+                                                   sorted_components.index(n1.name)))
+            except Exception, e:
+                warning("Topological sort failed a second time: " + str(e))
+            
         return components
 
     def parse_components(self, targets):
