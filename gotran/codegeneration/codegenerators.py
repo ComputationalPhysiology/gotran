@@ -1896,7 +1896,7 @@ class MatlabCodeGenerator(BaseCodeGenerator):
         state_names.append("state_names = cell({0}, 1)".format(ode.num_full_states))
 
         present_state_component = None
-        for ind, state in enumerate(ode.states):
+        for ind, state in enumerate(ode.full_states):
 
             if present_state_component != ode.object_component[state]:
                 present_state_component = ode.object_component[state]
