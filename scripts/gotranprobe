@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-05-07 -- 2014-05-13"
+__date__ = "2013-05-07 -- 2015-06-04"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -14,7 +14,7 @@ from collections import deque
 def join_indent_and_split(code, baseindent=4):
 
     code = deque(code)
-    output = [" "*baseindent+code.popleft()]
+    output = [" "*baseindent+code.popleft()] if code else [""]
     while code:
         if len(output[-1]) + 2 + len(code[0])>80:
             output.append(" "*baseindent+code.popleft())
@@ -36,8 +36,9 @@ def main(filename, params):
         print
         print "  States({}):".format(len(ode.full_states))
         print join_indent_and_split([state.name for state in ode.full_states])
-        print
-        print "  Parameters({}):".format(len(ode.parameters))
+        if len(ode.parameters)>0:
+            print
+            print "  Parameters({}):".format(len(ode.parameters))
         print join_indent_and_split([param.name for param in ode.parameters])
         print
         print "  Intermediates({}): ".format(len(ode.intermediates))

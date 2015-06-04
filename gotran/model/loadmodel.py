@@ -278,7 +278,7 @@ def _namespace_binder(namespace, ode, load_arguments):
         
     def subode(subode, prefix="", components=None):
         """
-        Load an ODE and add it to the present ODE
+        Load an ODE and add it to the present ODE (deprecated)
 
         Argument
         --------
@@ -290,13 +290,31 @@ def _namespace_binder(namespace, ode, load_arguments):
             A list of components which will be extracted and added to the present
             ODE. If not given the whole ODE will be added.
         """
-        
+        warning("Usage of 'sub_ode()' is deprecated. "\
+                "Use 'import_ode()' instead.")
+        import_model(subode, prefix, components)
+
+    def import_ode(subode, prefix="", components=None):
+        """
+        Import an ODE into the present ode
+
+        Argument
+        --------
+        subode : str
+            The ode which should be imported
+        prefix : str (optional)
+            A prefix which all state, parameters and intermediates are
+            prefixed with.
+        components : list, tuple of str (optional)
+            A list of components which will either be extracted or excluded
+            from the imported ode. If not given the whole ODE will be imported.
+        """
+
         check_arg(subode, str, 0)
 
         # Add the subode and update namespace
-        ode().add_subode(subode, prefix=prefix, \
-                         components=components)
-    
+        ode().import_ode(subode, prefix=prefix, components=components)
+
     def states(*args, **kwargs):
         """
         Add a number of states to the current component or to the
@@ -313,6 +331,10 @@ def _namespace_binder(namespace, ode, load_arguments):
         else:
             comp = ode().present_component
             
+        # Update the rates name so it points to the present components
+        # rates dictionary
+        namespace["rates"] = comp.rates
+
         # Add the states
         comp.add_states(*args, **kwargs)
     
@@ -331,6 +353,10 @@ def _namespace_binder(namespace, ode, load_arguments):
         else:
             comp = ode().present_component
             
+        # Update the rates name so it points to the present components
+        # rates dictionary
+        namespace["rates"] = comp.rates
+
         # Add the parameters and update namespace
         comp.add_parameters(*args, **kwargs)
         
@@ -374,9 +400,14 @@ def _namespace_binder(namespace, ode, load_arguments):
 
     def component(*args):
         """
-        Set the present component
+        Set the present component, deprecated
         """
-        
+        warning("Usage of 'component()' is deprecated. "\
+                "Use 'expressions()' instead.")
+        return expressions(*args)
+
+    def expressions(*args):
+    
         check_arg(args, tuple, 0, itemtypes=str)
         
         comp = ode()
@@ -400,7 +431,9 @@ def _namespace_binder(namespace, ode, load_arguments):
         parameters=parameters,
         model_arguments=model_arguments,
         component=component,
+        expressions=expressions,
         subode=subode,
+        import_ode=import_ode,
         comment=comment
         )
                      )

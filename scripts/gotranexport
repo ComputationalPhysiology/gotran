@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-05-07 -- 2014-05-14"
+__date__ = "2013-05-07 -- 2015-06-04"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -23,7 +23,7 @@ def main(filename, params):
         error("Expected the name of the ODE to be different from the components.")
         
     sub_ode = ODE(params.name)
-    sub_ode.add_subode(load_ode(filename), components=params.components)
+    sub_ode.import_ode(load_ode(filename), components=params.components)
     sub_ode.finalize()
     sub_ode.save()
 

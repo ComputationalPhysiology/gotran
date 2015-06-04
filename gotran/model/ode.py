@@ -140,39 +140,36 @@ class ODE(ODEComponent):
         """
         return self.all_components[self._present_component]
 
-    def add_subode(self, subode, prefix="", components=None):
+    def import_ode(self, ode, prefix="", components=None):
         """
-        Load an ODE and add it to the present ODE
+        Import a Model into the present Model
 
         Argument
         --------
-        subode : str, ODE
-            The subode which should be added. If subode is a str an
+        ode : str, ODE
+            The ode which should be added. If ode is a str an
             ODE stored in that file will be loaded. If it is an ODE it will be
             added directly to the present ODE.
         prefix : str (optional)
             A prefix which all state, parameters and intermediates are
             prefixed with.
         components : list, tuple of str (optional)
-            A list of components which will be extracted and added to the present
-            ODE. If not given the whole ODE will be added.
+            A list of components which will either be extracted or excluded
+            from the imported model. If not given the whole ODE will be imported.
         """
 
-        timer = Timer("Load sub ode")
+        timer = Timer("Import ode")
 
         components = components or []
-        check_arg(subode, (str, ODE), 0, context=ODE.add_subode)
-        check_arg(prefix, str, 1, context=ODE.add_subode)
-        check_arg(components, list, 2, context=ODE.add_subode, itemtypes=str)
+        check_arg(ode, (str, ODE), 0, context=ODE.import_ode)
+        check_arg(prefix, str, 1, context=ODE.import_ode)
+        check_arg(components, list, 2, context=ODE.import_ode, itemtypes=str)
 
         # If ode is given directly
-        if isinstance(subode, ODE):
-            ode = subode
-
-        else:
+        if isinstance(ode, str):
             # If not load external ODE
             from gotran.model.loadmodel import load_ode
-            ode = load_ode(subode)
+            ode = load_ode(ode)
 
         # Postfix prefix with "_" if prefix is not ""
         if prefix and prefix[-1] != "_":

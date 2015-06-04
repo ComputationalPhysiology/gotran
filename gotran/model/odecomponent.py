@@ -918,7 +918,7 @@ class ODEComponent(ODEObject):
         for rate in self.rate_expressions:
 
             # Get the states
-            from_state, to_state = rate.states
+            to_state, from_state = rate.states
             
             # Add to derivatives of the two states
             derivatives[from_state] -= rate.sym*from_state.sym
