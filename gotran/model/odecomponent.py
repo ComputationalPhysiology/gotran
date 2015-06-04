@@ -24,7 +24,7 @@ import weakref
 from sympy.core.function import AppliedUndef
 
 # ModelParameters imports
-from modelparameters.sympytools import sp
+from modelparameters.sympytools import sp, symbols_from_expr
 from modelparameters.utils import Timer
 from modelparameters.codegeneration import sympycode, _all_keywords
 
@@ -289,7 +289,7 @@ class ODEComponent(ODEObject):
 
         # Check that there are no expressions that are dependent on the state
         for sym in symbols_from_expr(expr, include_derivatives=True):
-            if (state.sym not in sym) and (state.sym in sym):
+            if (state.sym is not sym) and (state.sym in sym.atoms()):
                 error("{0}, a sub expression of the expression, cannot depend "\
                       "on the state for which we try to solve for.".format(sym))
 
@@ -670,7 +670,8 @@ class ODEComponent(ODEObject):
             
         return comp
 
-    def _expect_state(self, state, allow_state_solution=False):
+    def _expect_state(self, state, allow_state_solution=False,
+                      only_local_states=False):
         """
         Help function to check an argument which should be expected
         to be a state
@@ -686,7 +687,13 @@ class ODEComponent(ODEObject):
             state = self.root.present_ode_objects.get(name)
 
             if state is None:
-                error("{0} is not registered in this ODE".format(name))
+                error("{} is not registered in this ODE".format(name))
+
+            if only_local_states and not (state in self.states or \
+                                          (state in self.intermediates and \
+                                           allow_state_solution)):
+                error("{} is not registered in component {}".format(\
+                    name, self.name))
 
         check_arg(state, allowed, 0)
 
@@ -789,8 +796,8 @@ class ODEComponent(ODEObject):
             the states argument
         """
 
-        check_arg(states, (tuple, list), 0, MarkovModelComponent.add_rates)
-        check_arg(rate_matrix, sp.MatrixBase, 1, MarkovModelComponent.add_rates)
+        check_arg(states, (tuple, list), 0, ODEComponent._add_rates)
+        check_arg(rate_matrix, sp.MatrixBase, 1, ODEComponent._add_rates)
 
         # If list
         if isinstance(states, list):
@@ -806,20 +813,20 @@ class ODEComponent(ODEObject):
         local_states = self.states
         
         # Check index arguments
-        for list_of_states in states:
-
-            if not all(state in local_states for state in list_of_states):
-                error("Expected the states arguments to be States in "\
-                      "the Markov model")
+        #for list_of_states in states:
+        #    print list_of_states, local_states
+        #    if not all(state in local_states for state in list_of_states):
+        #        error("Expected the states arguments to be States in "\
+        #              "the Markov model")
 
         # Check that the length of the state lists corresponds with the shape of
         # the rate matrix
-        if rate.shape[0] != len(states[0]) or rate.shape[1] != len(states[1]):
+        if rate_matrix.shape[0] != len(states[0]) or rate_matrix.shape[1] != len(states[1]):
             error("Shape of rates does not match given states")
 
         for i, state_i in enumerate(states[0]):
             for j, state_j in enumerate(states[1]):
-                value = rate[i,j]
+                value = rate_matrix[i,j]
 
                 # If 0 as rate
                 if (isinstance(value, scalars) and value == 0) or \
@@ -847,10 +854,10 @@ class ODEComponent(ODEObject):
 
         expr = sp.sympify(expr)
         
-        to_state = self._expect_state(to_state, \
-                                      allow_state_solution=True)
-        from_state = self._expect_state(from_state, \
-                                        allow_state_solution=True)
+        to_state = self._expect_state(to_state, allow_state_solution=True,
+                                      only_local_states=True)
+        from_state = self._expect_state(from_state, allow_state_solution=True,
+                                        only_local_states=True)
 
         if to_state == from_state:
             error("The two states cannot be the same.")
@@ -859,7 +866,10 @@ class ODEComponent(ODEObject):
             error("Rate between state {0} and {1} is already "\
                   "registered.".format(from_state, to_state))
 
-        if to_state.sym in expr or from_state.sym in expr:
+        # FIXME: It should also not be possible to include other
+        # states in the markov model, right?
+        syms_expr = symbols_from_expr(expr)
+        if to_state.sym in syms_expr or from_state.sym in syms_expr:
             error("The rate expression cannot be dependent on the "\
                   "states it connects.")
 

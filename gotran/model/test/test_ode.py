@@ -142,17 +142,39 @@ class TestODE(unittest.TestCase):
         nada.rates[nada.p, nada.q] = 4.0
         
         self.assertEqual(ode.present_component, nada)
+
+        markov = bada.add_component("markov_2")
+        markov.add_states(("tt", 3.0), ("u", 4.0), ("v", 1.0))
+        
+        with self.assertRaises(GotranException) as cm:
+            markov.rates[nada.s, nada.r] = 2.0
+        
+        with self.assertRaises(GotranException) as cm:
+            markov.rates[markov.tt, markov.u] = 2*exp(markov.u)
+        
+        with self.assertRaises(GotranException) as cm:
+            markov.rates[[markov.tt, markov.u, markov.v]] = 5.
+        
+        with self.assertRaises(GotranException) as cm:
+            markov.rates[[markov.tt, markov.u, markov.v]] = Matrix([[1,2*i,0.0],[0.,2.,4.]])
+        with self.assertRaises(GotranException) as cm:
+            markov.rates[markov.tt, markov.tt] = 5.
+        
+        markov.rates[[markov.tt, markov.u, markov.v]] = Matrix([[0.,2*i,2.0],
+                                                                [4.,0.,2.],
+                                                                [5.0, 2.0, 0.]])
+        
         ode.finalize()
         self.assertTrue(ode.is_complete)
         self.assertTrue(ode.is_dae)
 
         # Test Mass matrix
-        vector = ode.mass_matrix*Matrix([1,1,1,1,1,1,1,1,1])
+        vector = ode.mass_matrix*Matrix([1]*ode.num_full_states)
         self.assertEqual((0,0), (vector[2], vector[5]))
-        self.assertEqual(sum(ode.mass_matrix), 7)
-        self.assertEqual(sum(vector), 7)
+        self.assertEqual(sum(ode.mass_matrix), ode.num_full_states-2)
+        self.assertEqual(sum(vector), ode.num_full_states-2)
 
-        self.assertEqual("".join(s.name for s in ode.full_states), "ijkmlorsq")
+        self.assertEqual("".join(s.name for s in ode.full_states), "ijkmlorsqttuv")
         self.assertEqual(ode.present_component, ode)
 
         # Test saving

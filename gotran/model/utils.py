@@ -320,12 +320,11 @@ class RateDict(OrderedDict):
             see explaination in for states argument for how the columns and
             rows are interpreted.
         """
-        
+
         if isinstance(expr, sp.Matrix):
             self._comp()._add_rates(states, expr)
         else:
-            check_arg(states, tuple, itemtypes=AppliedUndef)
-            if len(states)!=2:
+            if not isinstance(states, tuple) or len(states)!=2:
                 error("Expected a tuple of size 2 with states when "\
                       "registering a single rate.")
 
