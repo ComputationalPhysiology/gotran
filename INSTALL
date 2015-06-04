@@ -3,10 +3,10 @@ Dependencies
 
 Gotran depends on Instant, SymPy, NumPy and ModelParameters.
 
-  - Instant:          <https://launchpad.net/instant>
-  - SymPy:            <http://sympy.org> (0.7.2 version)
+  - Instant:          <https://bitbucket.org/fenics-project/instant>
+  - SymPy:            <http://sympy.org> (0.7.5 version)
   - NumPy:            <http://numpy.scipy.org>
-  - ModelParameters:  <https://launchpad.net/modelparameters>
+  - ModelParameters:  <https://bitbucket.org/johanhake/modelparameters>
 
 To install Gotran system-wide (typically requires root access):
 
