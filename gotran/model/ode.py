@@ -271,16 +271,15 @@ class ODE(ODEComponent):
                                                    subs[states[1].sym], \
                                                    new_expr)
                             continue
-
+                        
                     # If no prefix we just add the expression by using setattr
                     # magic
                     if prefix == "":
                         setattr(added, str(obj), new_expr)
-                        new_sym = added.ode_objects.get(obj.name).sym
+                        subs[obj.sym] = added.ode_objects.get(obj.name).sym
 
                     elif isinstance(obj, (StateExpression, StateSolution)):
 
-                        # Get new state sym
                         state = subs[obj.state.sym]
 
                         if isinstance(obj, AlgebraicExpression):
@@ -293,6 +292,7 @@ class ODE(ODEComponent):
                         elif isinstance(obj, StateSolution):
                             subs[obj.sym] = added.add_state_solution(\
                                 state, new_expr)
+                            print repr(obj), obj.sym
                         else:
                             error("Should not reach here...")
 

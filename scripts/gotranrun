@@ -3,7 +3,7 @@
 
 from __future__ import division
 __author__ = "Johan Hake (hake.dev@gmail.com)"
-__date__ = "2013-03-13 -- 2014-06-12"
+__date__ = "2013-03-13 -- 2015-06-04"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
 
@@ -51,7 +51,20 @@ def main(filename, params):
         generation.solvers[params.solver].generate = True
     
     # Compile executeable code from gotran ode
-    ode = load_ode(filename)
+    model_arguments = params.model_arguments
+    if len(model_arguments)==1 and model_arguments[0] == "":
+        model_arguments = []
+    
+    if len(model_arguments) % 2 != 0:
+        error("Expected an even number of values for 'model_arguments'")
+
+    arguments = dict()
+    for arg_name, arg_value in [(model_arguments[i*2], model_arguments[i*2+1]) \
+                                for i in range(int(len(model_arguments)/2))]:
+        
+        arguments[arg_name] = arg_value
+
+    ode = load_ode(filename, **arguments)
 
     # Check for DAE
     if ode.is_dae:
@@ -271,6 +284,7 @@ if __name__ == "__main__":
         plot_y = Param(["V"], description="States or monitored to plot on the y axis."),\
         plot_x = Param("time", description="Values used for the x axis. Can be time "\
                        "and any valid plot_y variable."), 
+        model_arguments = Param([""], description="Set model arguments of the model"),
         code = code_params)
     
     params.parse_args(usage="usage: %prog FILE [options]")

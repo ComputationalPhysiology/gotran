@@ -27,7 +27,7 @@ from collections import OrderedDict, deque
 
 # modelparameters import
 from modelparameters.parameters import Param, ScalarParam, ArrayParam, \
-     ConstParam, scalars
+     ConstParam, scalars, OptionParam
 from modelparameters.sympytools import sp_namespace, sp
 
 # gotran imports
@@ -137,6 +137,7 @@ def _init_namespace(ode, load_arguments, namespace):
                           ScalarParam=ScalarParam,
                           ArrayParam=ArrayParam,
                           ConstParam=ConstParam,
+                          OptionParam=OptionParam,
                           sp=sp,
                           ))
 
@@ -391,10 +392,28 @@ def _namespace_binder(namespace, ode, load_arguments):
         # Update the namespace
         ns = {}
         for key, value in kwargs.items():
+            if not isinstance(value, (float, int, str, Param)):
+                error("expected only 'float', 'int', 'str' or 'Param', as model_arguments, "\
+                      "got: '{}' for '{}'".format(type(value).__name__, key))
+                
             if key not in load_arguments:
-                ns[key] = value
+                ns[key] = value.getvalue() if isinstance(value, Param) else value
+                    
             else:
-                ns[key] = load_arguments[key]
+                # Try to cast the passed load_arguments with the orginal type
+                if isinstance(value, Param):
+
+                    # Cast value
+                    new_value = value.value_type(load_arguments[key])
+
+                    # Try to set new value
+                    value.setvalue(new_value)
+
+                    # Assign actual value of Param
+                    ns[key] = value.getvalue()
+                    
+                else:
+                    ns[key] = type(value)(load_arguments[key])
         
         namespace.update(ns)
 
