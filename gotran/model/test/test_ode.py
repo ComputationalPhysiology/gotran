@@ -286,7 +286,7 @@ class TestODE(unittest.TestCase):
         self.assertTrue(Na_i in ode.expression_dependencies[E_Na])
         self.assertTrue(E_Na in ode.object_used_in[Na_i])
         
-        ode.import_model("Sodium")
+        ode.import_ode("Sodium")
 
         # Check dependencies after sub ode has been loaded
         E_Na = ode.present_ode_objects["E_Na"]
@@ -299,12 +299,12 @@ class TestODE(unittest.TestCase):
         self.assertTrue(E_Na in ode.object_used_in[Na_i_new])
 
         pot = load_ode("Potassium")
-        ode.import_model(pot, prefix="pot")
+        ode.import_ode(pot, prefix="pot")
         
         pot_comps = [comp.name for comp in pot.components]
         
         # Add sub ode by extracting components
-        ode.import_model(ode_from_file, components=[\
+        ode.import_ode(ode_from_file, components=[\
             "Calcium dynamics", "Calcium background current",\
             "Calcium pump current","L type ca current"])
         
