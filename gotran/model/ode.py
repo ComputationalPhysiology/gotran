@@ -140,7 +140,7 @@ class ODE(ODEComponent):
         """
         return self.all_components[self._present_component]
 
-    def import_ode(self, ode, prefix="", components=None):
+    def import_ode(self, ode, prefix="", components=None, **arguments):
         """
         Import a Model into the present Model
 
@@ -156,6 +156,8 @@ class ODE(ODEComponent):
         components : list, tuple of str (optional)
             A list of components which will either be extracted or excluded
             from the imported model. If not given the whole ODE will be imported.
+        arguments : dict (optional)
+            Optional arguments which can control loading of model
         """
 
         timer = Timer("Import ode")
@@ -169,7 +171,7 @@ class ODE(ODEComponent):
         if isinstance(ode, str):
             # If not load external ODE
             from gotran.model.loadmodel import load_ode
-            ode = load_ode(ode)
+            ode = load_ode(ode, **arguments)
 
         # Postfix prefix with "_" if prefix is not ""
         if prefix and prefix[-1] != "_":

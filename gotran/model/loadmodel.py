@@ -295,7 +295,7 @@ def _namespace_binder(namespace, ode, load_arguments):
                 "Use 'import_ode()' instead.")
         import_model(subode, prefix, components)
 
-    def import_ode(subode, prefix="", components=None):
+    def import_ode(subode, prefix="", components=None, **arguments):
         """
         Import an ODE into the present ode
 
@@ -309,12 +309,14 @@ def _namespace_binder(namespace, ode, load_arguments):
         components : list, tuple of str (optional)
             A list of components which will either be extracted or excluded
             from the imported ode. If not given the whole ODE will be imported.
+        arguments : dict (optional)
+            Optional arguments which can control loading of model
         """
 
         check_arg(subode, str, 0)
 
         # Add the subode and update namespace
-        ode().import_ode(subode, prefix=prefix, components=components)
+        ode().import_ode(subode, prefix=prefix, components=components, **arguments)
 
     def states(*args, **kwargs):
         """
@@ -379,7 +381,7 @@ def _namespace_binder(namespace, ode, load_arguments):
         When the model gets loaded
         
           >>> ...
-          >>> load_model("model", include_Na=False)
+          >>> load_ode("model", include_Na=False)
           >>> ...
           
         """
