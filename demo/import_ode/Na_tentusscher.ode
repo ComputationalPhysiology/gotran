@@ -1,0 +1,45 @@
+parameters(V=ScalarParam(-85.423),
+           E_Na=ScalarParam(70.1488312531))
+
+parameters("Fast sodium current",
+           g_Na=ScalarParam(14.838, unit='nS*pF**-1'))
+
+states("Fast sodium current", "m gate",
+       m=ScalarParam(0.00165))
+
+states("Fast sodium current", "h gate",
+       h=ScalarParam(0.749))
+
+states("Fast sodium current", "j gate",
+       j=ScalarParam(0.6788))
+
+expressions("Fast sodium current")
+i_Na = g_Na*(m*m*m)*(V - E_Na)*h*j
+
+expressions("Fast sodium current", "m gate")
+m_inf = 1.0/((1 + 0.00184221158117*exp(-0.110741971207*V))*(1 +\
+    0.00184221158117*exp(-0.110741971207*V)))
+alpha_m = 1.0/(1 + exp(-12 - V/5))
+beta_m = 0.1/(1 + exp(7 + V/5)) + 0.1/(1 + exp(-1/4 + V/200))
+tau_m = alpha_m*beta_m
+dm_dt = (-m + m_inf)/tau_m
+
+expressions("Fast sodium current", "h gate")
+h_inf = 1.0/((1 + 15212.5932857*exp(0.134589502019*V))*(1 +\
+    15212.5932857*exp(0.134589502019*V)))
+alpha_h = Conditional(Lt(V, -40), 4.43126792958e-07*exp(-0.147058823529*V), 0)
+beta_h = Conditional(Lt(V, -40), 310000*exp(0.3485*V) + 2.7*exp(0.079*V),\
+    0.77/(0.13 + 0.0497581410839*exp(-0.0900900900901*V)))
+tau_h = 1.0/(alpha_h + beta_h)
+dh_dt = (-h + h_inf)/tau_h
+
+expressions("Fast sodium current", "j gate")
+j_inf = 1.0/((1 + 15212.5932857*exp(0.134589502019*V))*(1 +\
+    15212.5932857*exp(0.134589502019*V)))
+alpha_j = Conditional(Lt(V, -40), (37.78 + V)*(-25428*exp(0.2444*V) -\
+    6.948e-06*exp(-0.04391*V))/(1 + 50262745826.0*exp(0.311*V)), 0)
+beta_j = Conditional(Lt(V, -40), 0.02424*exp(-0.01052*V)/(1 +\
+    0.0039608683399*exp(-0.1378*V)), 0.6*exp(0.057*V)/(1 +\
+    0.0407622039784*exp(-0.1*V)))
+tau_j = 1.0/(alpha_j + beta_j)
+dj_dt = (-j + j_inf)/tau_j

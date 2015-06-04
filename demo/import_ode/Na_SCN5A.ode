@@ -1,0 +1,113 @@
+# gotranrun SCN5A.ode --dt=0.01 --tstop=1 --plot_y UC3 UC2 UC1 UO IF IS --parameters V 0
+
+model_arguments(WT=True)
+
+parameters(V = -93,
+           E_Na=ScalarParam(70.1488312531))
+
+parameters("Fast sodium current",
+           g_Na=ScalarParam(14.838, unit='nS*pF**-1'))
+
+states("Fast sodium current", "gates",
+       UO = 0,
+       LO = 0,
+       IF = 0,
+       IS = 0,
+       UC1 = 0,
+       UC2 = 0,
+       UC3 = 1,
+       LC1 = 0,
+       LC2 = 0,
+       LC3 = 0,
+       UB =  0,
+       LB =  0,
+       IB =  0
+       )
+
+parameters("Fast sodium current", "gates",
+  aM = 0,
+  bM = 0,
+  aL = 0,
+  bL = 0,
+  )
+
+
+expressions("Fast sodium current")
+i_Na = g_Na*(UO+LO)*(V - E_Na)
+
+expressions("Fast sodium current", "gates")
+
+# Reduce the C2 state algebraically
+UC2 = 1 - (UO + LO + IF + IS + UC1 + UC3 + LC1 + LC2 + LC3 + UB + LB + IB)
+
+if WT:
+  a1_scale = 1.
+  a3_scale = 1.
+  b3_scale = 1.
+
+  a2= 9.178*exp(V/29.68)
+
+  a0 = 0.0
+  b0 = 1.0
+else:
+  #### Markov model for MUT INa - Clancy 2007######
+  a1_scale = 1.25
+  a3_scale = 20.
+  b3_scale = 2.
+
+  a2 = 9.178*exp(V/100)
+
+  a0 = 2.0e-6
+  b0 = 1.0e-4
+
+#### Markov model for WT INa - Clancy 2007######
+a11 = a1_scale*3.802/(0.1027*exp(-V/17.0)+0.20*exp(-V/150))
+a12 = a1_scale*3.802/(0.1027*exp(-V/15.0)+0.23*exp(-V/150)) 
+a13 = a1_scale*3.802/(0.1027*exp(-V/12.0)+0.25*exp(-V/150)) 
+b11 = 0.1917*exp(-V/20.3)
+b12 = 0.20*exp(-(V-5)/20.3)
+b13 = 0.22*exp(-(V-10)/20.3)
+
+#  a3= 3.7933e-7*exp(-V/7.7)
+a3= a3_scale*3.7933e-9*exp(-V/5.2)
+b3= b3_scale*0.0084+.00002*V
+
+a4 = a2/100
+b4 = a3
+b2 = ((a13*a2*a3)/(b13*b3))
+
+#a2=b2=a3=b3=a4=b4=0
+
+A = zeros(4)
+A[1:,:-1] += diag(*(a11,a12,a13))
+A[:-1,1:] += diag(*(b11,b12,b13))
+
+upper = [UC3, UC2, UC1, UO]
+lower = [LC3, LC2, LC1, LO]
+
+rates[upper] = A
+rates[lower] = A
+
+I = eye(4)
+rates[lower, upper] = a0*I
+rates[upper, lower] = b0*I
+
+# transitions between inactivated and open states:
+rates[UO, IF] = b2
+rates[IF, UO] = a2
+rates[IF, IS] = b4
+rates[IS, IF] = a4
+
+# transitions between inactivated and closed states:
+rates[IF, UC1] = b3
+rates[UC1, IF] = a3
+
+# transitions between open and drugged states:
+rates[UB, UO] = aM
+rates[UO, UB] = bM
+rates[LB, LO] = aM
+rates[LO, LB] = bM
+
+# transitions between inactivated and drugged states:
+rates[IB, IF] = aL
+rates[IF, IB] = bL
