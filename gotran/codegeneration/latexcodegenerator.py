@@ -21,7 +21,7 @@ import re
 # Gotran imports
 from gotran.common import warning
 from gotran.model.odeobjects import SingleODEObjects
-from gotran.model.expressions import Expression
+from gotran.model.expressions import Expression, StateDerivative
 
 # Model parameters imports
 from modelparameters.codegeneration import latex as mp_latex
@@ -343,8 +343,13 @@ class LatexCodeGenerator(object):
         subnumbering = '' if params["equation_subnumbering"] else '*'
 
         for comp in self.ode.components:
-            body = [obj for obj in comp.ode_objects \
-                    if isinstance(obj, Expression)]
+            if comp.rates:
+                body = [obj for obj in comp.ode_objects \
+                        if isinstance(obj, Expression) and \
+                        not isinstance(obj, StateDerivative)]
+            else:
+                body = [obj for obj in comp.ode_objects \
+                        if isinstance(obj, Expression)]
 
             if not body:
                 continue

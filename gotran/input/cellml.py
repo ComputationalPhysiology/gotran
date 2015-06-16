@@ -1523,7 +1523,7 @@ class CellMLParser(object):
             # Collect all intermediate equations
             if comp.equations:
                 equation_lines.append("")
-                equation_lines.append("component({0})".format(\
+                equation_lines.append("expressions({0})".format(\
                     comp_name))
 
                 equation_lines.extend("{0} = {1}{2}".format(\
@@ -1539,13 +1539,11 @@ class CellMLParser(object):
         gotran_lines.append("")
         gotran_lines.append("")
         
-
         # Return joined lines
         return "\n".join(gotran_lines)
 
         # Write file
-        open("{0}.ode".format(self.name), \
-             "w").write()
+        open("{0}.ode".format(self.name), "w").write()
 
 def cellml2ode(model_source, **options):
     """
