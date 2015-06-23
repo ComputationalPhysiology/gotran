@@ -464,7 +464,7 @@ class ODE(ODEComponent):
                         lines.append("")
                         comp_name = comp_names[comp] if comp_names[comp] \
                                     else "\"{0}\"".format(basename)
-                        lines.append("component({0})".format(comp_name))
+                        lines.append("expressions({0})".format(comp_name))
 
                     # Just add the comment
                     else:

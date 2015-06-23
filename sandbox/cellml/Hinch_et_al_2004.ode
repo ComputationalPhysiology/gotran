@@ -81,46 +81,46 @@ states("Intracellular ion concentrations",
 parameters("Intracellular ion concentrations",
            Na_i = ScalarParam(10, unit="mmole*l**-1"))
 
-component("Membrane")
+expressions("Membrane")
 V = Conditional(And(Ge(time, 0), Le(time, 200), ), 0, -80) # mV
 FVRT = F*V/(R*T)
 FVRT_Ca = 2*FVRT
 
-component("CaRU", "DS Calcium Concentrations")
+expressions("CaRU", "DS Calcium Concentrations")
 C_cc = Ca_i # mmole*l**-1
 C_co = (Ca_i + J_R/g_D*Ca_SR)/(1 + J_R/g_D) # mmole*l**-1
 C_oc = Conditional(Gt(abs(FVRT_Ca), 0.000000001), (Ca_i + J_L/g_D*Ca_o*FVRT_Ca*exp(-FVRT_Ca)/(1 - exp(-FVRT_Ca)))/(1 + J_L/g_D*FVRT_Ca/(1 - exp(-FVRT_Ca))), (Ca_i + J_L/g_D*Ca_o)/(1 + J_L/g_D)) # mmole*l**-1
 C_oo = Conditional(Gt(abs(FVRT_Ca), 0.000000001), (Ca_i + J_R/g_D*Ca_SR + J_L/g_D*Ca_o*FVRT_Ca*exp(-FVRT_Ca)/(1 - exp(-FVRT_Ca)))/(1 + J_R/g_D + J_L/g_D*FVRT_Ca/(1 - exp(-FVRT_Ca))), (Ca_i + J_R/g_D*Ca_SR + J_L/g_D*Ca_o)/(1 + J_R/g_D + J_L/g_D)) # mmole*l**-1
 
-component("CaRU", "LCC and RyR fluxes")
+expressions("CaRU", "LCC and RyR fluxes")
 J_Rco = J_R*(Ca_SR - Ca_i)/(1 + J_R/g_D) # um**3*mmole*l**-1*ms**-1
 J_Roo = Conditional(Gt(abs(FVRT_Ca), 0.00001), J_R*(Ca_SR - Ca_i + J_L/g_D*FVRT_Ca/(1 - exp(-FVRT_Ca))*(Ca_SR - Ca_o*exp(-FVRT_Ca)))/(1 + J_R/g_D + J_L/g_D*FVRT_Ca/(1 - exp(-FVRT_Ca))), J_R*(Ca_SR - Ca_i + J_L/g_D*0.00001/(1 - exp(-0.00001))*(Ca_SR - Ca_o*exp(-0.00001)))/(1 + J_R/g_D + J_L/g_D*0.00001/(1 - exp(-0.00001)))) # um**3*mmole*l**-1*ms**-1
 J_Loc = Conditional(Gt(abs(FVRT_Ca), 0.00001), J_L*FVRT_Ca/(1 - exp(-FVRT_Ca))*(Ca_o*exp(-FVRT_Ca) - Ca_i)/(1 + J_L/g_D*FVRT_Ca/(1 - exp(-FVRT_Ca))), J_L*0.00001/(1 - exp(-0.00001))*(Ca_o*exp(-0.00001) - Ca_i)/(1 + J_L/g_D*0.00001/(1 - exp(-0.00001)))) # um**3*mmole*l**-1*ms**-1
 J_Loo = Conditional(Gt(abs(FVRT_Ca), 0.00001), J_L*FVRT_Ca/(1 - exp(-FVRT_Ca))*(Ca_o*exp(-FVRT_Ca) - Ca_i + J_R/g_D*(Ca_o*exp(-FVRT_Ca) - Ca_SR))/(1 + J_R/g_D + J_L/g_D*FVRT_Ca/(1 - exp(FVRT_Ca))), J_L*0.00001/(1 - exp(-0.00001))*(Ca_o*exp(-0.00001) - Ca_i + J_R/g_D*(Ca_o*exp(-0.00001) - Ca_SR))/(1 + J_R/g_D + J_L/g_D*0.00001/(1 - exp(-0.00001)))) # um**3*mmole*l**-1*ms**-1
 
-component("Na Ca Exchanger")
+expressions("Na Ca Exchanger")
 I_NaCa = g_NCX*(exp(eta*FVRT)*Na_i**3*Ca_o - exp((eta - 1)*FVRT)*Na_o**3*Ca_i)/((Na_o**3 + K_mNa**3)*(Ca_o + K_mCa)*(1 + k_sat*exp((eta - 1)*FVRT))) # mmole*l**-1*ms**-1
 
-component("SERCA")
+expressions("SERCA")
 I_SERCA = g_SERCA*Ca_i**2/(K_SERCA**2 + Ca_i**2) # mmole*l**-1*ms**-1
 
-component("Sarcolemmal Ca pump")
+expressions("Sarcolemmal Ca pump")
 I_pCa = g_pCa*Ca_i/(K_mpCa + Ca_i) # mmole*l**-1*ms**-1
 
-component("Background Ca current")
+expressions("Background Ca current")
 E_Ca = R*T/(2*F)*log(Ca_o/Ca_i) # mV
 I_CaB = g_CaB*(E_Ca - V) # mmole*l**-1*ms**-1
 
-component("SR Ca leak current")
+expressions("SR Ca leak current")
 I_SR = g_SRl*(Ca_SR - Ca_i) # mmole*l**-1*ms**-1
 
-component("Troponin Ca buffer")
+expressions("Troponin Ca buffer")
 I_TRPN = k_m_TRPN*(B_TRPN - TRPN) - k_p_TRPN*TRPN*Ca_i # mmole*l**-1*ms**-1
 
-component("Calmodulin Ca buffer")
+expressions("Calmodulin Ca buffer")
 beta_CMDN = (1 + k_CMDN*B_CMDN/(k_CMDN + Ca_i)**2)**-1
 
-component("CaRU", "Transitions")
+expressions("CaRU", "Transitions")
 expVL = exp((V - V_L)/del_VL)
 t_R = 1.17*t_L # ms
 alpha_p = expVL/(t_L*(expVL + 1)) # ms**-1
@@ -136,7 +136,7 @@ mu_pcc = (Ca_i**2 + c*K_RyR**2)/(tau_R*(Ca_i**2 + K_RyR**2)) # ms**-1
 mu_moc = theta_R*d*(C_oc**2 + c*K_RyR**2)/(tau_R*(d*C_oc**2 + c*K_RyR**2)) # ms**-1
 mu_mcc = theta_R*d*(Ca_i**2 + c*K_RyR**2)/(tau_R*(d*Ca_i**2 + c*K_RyR**2)) # ms**-1
 
-component("CaRU", "States")
+expressions("CaRU", "States")
 denom = (alpha_p + alpha_m)*((alpha_m + beta_m + beta_poc)*(beta_m + beta_pcc) + alpha_p*(beta_m + beta_poc)) # ms**-3
 y_oc = alpha_p*beta_m*(alpha_p + alpha_m + beta_m + beta_pcc)/denom
 y_co = alpha_m*(beta_pcc*(alpha_m + beta_m + beta_poc) + beta_poc*alpha_p)/denom
@@ -148,7 +148,7 @@ y_ic = beta_m/(beta_pcc + beta_m)
 y_io = beta_pcc/(beta_pcc + beta_m)
 y_ii = 1 - y_oc - y_co - y_oo - y_cc - y_ci - y_ic - y_oi - y_io
 
-component("CaRU", "Reduced states")
+expressions("CaRU", "Reduced states")
 r_1 = y_oc*mu_poc + y_cc*mu_pcc # ms**-1
 r_2 = (alpha_p*mu_moc + alpha_m*mu_mcc)/(alpha_p + alpha_m) # ms**-1
 r_3 = beta_m*mu_pcc/(beta_m + beta_pcc) # ms**-1
@@ -162,17 +162,17 @@ dz_1_dt = -(r_1 + r_5)*z_1 + r_2*z_2 + r_6*z_3
 dz_2_dt = r_1*z_1 - (r_2 + r_7)*z_2 + r_8*z_4
 dz_3_dt = r_5*z_1 - (r_6 + r_3)*z_3 + r_4*z_4
 
-component("CaRU", "RyR current")
+expressions("CaRU", "RyR current")
 J_R1 = y_oo*J_Roo + J_Rco*y_co # um**3*mmole*l**-1*ms**-1
 J_R3 = J_Rco*beta_pcc/(beta_m + beta_pcc) # um**3*mmole*l**-1*ms**-1
 I_RyR = (z_1*J_R1 + z_3*J_R3)*N/V_myo # mmole*l**-1*ms**-1
 
-component("CaRU", "LCC current")
+expressions("CaRU", "LCC current")
 J_L1 = J_Loo*y_oo + J_Loc*y_oc # um**3*mmole*l**-1*ms**-1
 J_L2 = J_Loc*alpha_p/(alpha_p + alpha_m) # um**3*mmole*l**-1*ms**-1
 I_LCC = (z_1*J_L1 + z_2*J_L2)*N/V_myo # mmole*l**-1*ms**-1
 
-component("Intracellular ion concentrations")
+expressions("Intracellular ion concentrations")
 dTRPN_dt = I_TRPN
 dCa_i_dt = beta_CMDN*(I_LCC + I_RyR - I_SERCA + I_SR + I_NaCa - I_pCa + I_CaB + I_TRPN)
 dCa_SR_dt = V_myo/V_SR*(-I_RyR + I_SERCA - I_SR)
