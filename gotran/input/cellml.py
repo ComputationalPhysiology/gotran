@@ -44,7 +44,7 @@ prefix_map = {"deca":"da", "hecto":"h", "kilo":"k", "mega":"M", "giga":"G",
               "tera":"T", "peta":"P", "exa":"E", "zetta":"Z", "yotta":"Y",
               "deci":"d", "centi":"c", "milli":"m", "micro":"u", "nano":"n",
               "pico":"p", "femto":"f", "atto":"a", "zepto":"z", "yocto":"y",
-              None:""}
+              None:"", "-3":"m"}
 
 ui = "UNINITIALIZED"
 
@@ -464,6 +464,7 @@ class CellMLParser(object):
                 if unit.attrib.get("multiplier"):
                     warning("skipping multiplier in unit {0}".format(units.attrib["name"]))
                 cellml_unit = unit.attrib.get("units")
+
                 prefix = prefix_map[unit.attrib.get("prefix")]
                 exponent = unit.attrib.get("exponent", "1")
                 if cellml_unit in si_unit_map:
@@ -1215,9 +1216,13 @@ class CellMLParser(object):
                  for equation in equations]
 
             try:
-                sorted_components = nx.topological_sort(G)
-                components.sort(lambda n0, n1: cmp(sorted_components.index(n0.name), \
-                                                   sorted_components.index(n1.name)))
+                pass
+                # sorted_components = nx.topological_sort(G)
+                # components = nx.topological_sort(G)
+                # components.sort(lambda n0, n1: cmp(list(sorted_components)[n0.name],list(sorted_components)[n1.name]))
+                
+                # components.sort(lambda n0, n1: cmp(sorted_components.index(n0.name), \
+                                                   # sorted_components.index(n1.name)))
             except Exception, e:
                 warning("Topological sort failed a second time: " + str(e))
             
