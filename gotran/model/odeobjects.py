@@ -353,6 +353,49 @@ class Parameter(ODEValueObject):
         # Call super class
         super(Parameter, self).__init__(name, init)
 
+    def _get_binary_operands(self, x):
+        
+        # Check what type x is
+        if type(x) in scalars:
+            return (self.value, float(x))
+        else:
+            # Only allow for Parameter class
+            # TODO: allow for other types of objects
+            # in the modelparameter repo
+            check_arg(x, Parameter)
+
+            # TODO: Implement functionality for unit
+            # conversion
+            msg = ("Addition not implemented for "+
+                   "parameters with different units")
+            assert x.param.unit == self.param.unit, msg
+        
+            return (self.value,  x.value)
+
+            
+    def __add__(self, x):
+        """
+        Method wrapper for addition
+        """
+        x1,x2 = self._get_binary_operands(x)
+        return x1 + x2
+    
+    def __radd__(self, x):
+        """
+        Method wrapper for addition
+        """
+        return self.__add__(x)
+    
+    def __mul__(self, x):
+        """
+        Method wrapper fro multiplication
+        """
+        x1,x2 = self._get_binary_operands(x)
+        return x1 * x2
+
+    def __rmul__(self, x):
+        return self.__mul__(x)
+
     init = ODEValueObject.value
 
 class IndexedObject(ODEObject):
