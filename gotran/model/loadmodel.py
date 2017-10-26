@@ -15,11 +15,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ["load_ode", "exec_ode"]
+__all__ = ["load_ode", "exec_ode", "load_cell"]
 
 # System imports
 import inspect
 import os
+import shutil
 import re
 import tempfile
 import weakref
@@ -33,6 +34,7 @@ from modelparameters.sympytools import sp_namespace, sp
 # gotran imports
 from gotran.common import *
 from gotran.model.ode import ODE
+from gotran.model.cellmodel import CellModel
 
 _for_template = re.compile("\A[ ]*for[ ]+.*in[ ]+:[ ]*\Z")
 _no_intermediate_template = re.compile(".*# NO INTERMEDIATE.*")
@@ -208,14 +210,26 @@ def load_ode(filename, name=None, **arguments):
     arguments : dict (optional)
         Optional arguments which can control loading of model
     """
-
-    timer = Timer("Load ODE")
-
-    # If a Param is provided turn it into its value
-    for key, value in arguments.items():
-        if isinstance(value, Param):
-            arguments[key] = value.getvalue()
     
+    arguments["class_type"] = "ode"
+    return _load(filename, name, **arguments)
+
+def _load(filename, name, **arguments):
+    """
+    Load an ODE or Cell from file and return the instance
+
+    The method looks for a file with .ode extension.
+
+    Arguments
+    ---------
+    filename : str
+        Name of the ode file to load
+    name : str (optional)
+        Set the name of ODE (defaults to filename)
+    arguments : dict (optional)
+        Optional arguments which can control loading of model
+    """
+    timer = Timer("Load ODE")
     # Extract name from filename
     if len(filename) < 4 or filename[-4:] != ".ode":
         name = name or filename
@@ -223,12 +237,43 @@ def load_ode(filename, name=None, **arguments):
     elif name is None:
         name = filename[:-4]
 
+
+    # Execute the file
+    if (not os.path.isfile(filename)):
+        error("Could not find '{0}'".format(filename))
+
+   
+    # Copy file temporary to current directory
+    basename = os.path.basename(filename)
+    copyfile = False
+    if not basename == filename:
+        shutil.copy(filename, basename)
+        filename = basename
+        name = filename[:-4]
+        copyfile=True
+    
+    
+    # If a Param is provided turn it into its value
+    for key, value in arguments.items():
+        if isinstance(value, Param):
+            arguments[key] = value.getvalue()
+
+
+    class_type = arguments.pop("class_type", "ode")
+    msg = "Argument class_type must be one of "\
+          "('ode', 'cell'), got %s " % class_type
+    assert(class_type in ("ode", "cell")), msg
+    
     # Dict to collect namespace
     intermediate_dispatcher = IntermediateDispatcher()
 
     # Create an ODE which will be populated with data when ode file is loaded
-    ode = ODE(name, intermediate_dispatcher)
     
+    if class_type == "ode":
+        ode = ODE(name, intermediate_dispatcher)
+    else:
+        ode = CellModel(name, intermediate_dispatcher)
+
     intermediate_dispatcher.ode = ode
 
     debug("Loading {}".format(ode.name))
@@ -236,10 +281,7 @@ def load_ode(filename, name=None, **arguments):
     # Create namespace which the ode file will be executed in
     _init_namespace(ode, arguments, intermediate_dispatcher)
 
-    # Execute the file
-    if (not os.path.isfile(filename)):
-        error("Could not find '{0}'".format(filename))
-
+    
     # Execute file and collect
     execfile(filename, intermediate_dispatcher)
     
@@ -255,7 +297,33 @@ def load_ode(filename, name=None, **arguments):
         num = getattr(ode, "num_{0}".format(what))
         info("{0}: {1}".format(("Num "+what.replace("_", \
                                                     " ")).rjust(20), num))
+    if copyfile: os.unlink(filename)
+    
     return ode
+
+
+
+def load_cell(filename, name=None, **arguments):
+    """
+    Load a Cell from file and return the instance
+
+    The method looks for a file with .ode extension.
+
+    Arguments
+    ---------
+    filename : str
+        Name of the ode file to load
+    name : str (optional)
+        Set the name of ODE (defaults to filename)
+    arguments : dict (optional)
+        Optional arguments which can control loading of model
+    """
+    arguments["class_type"] = "cell"
+    
+    cell =_load(filename, name, **arguments)
+    cell._initialize_cell_model()
+    return cell
+    
 
 def _namespace_binder(namespace, ode, load_arguments):
     """
