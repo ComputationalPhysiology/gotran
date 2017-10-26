@@ -20,6 +20,7 @@ import expressions
 import odecomponent
 import utils
 import ode
+import cellmodel
 import loadmodel
  
 
@@ -28,6 +29,7 @@ from odeobjects import *
 from odecomponent import *
 from expressions import *
 from ode import *
+from cellmodel import *
 from loadmodel import *
 
 __all__ = [_name for _name in globals().keys() if _name[0] != "_"]
