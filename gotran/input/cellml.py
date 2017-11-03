@@ -24,6 +24,7 @@ from gotran.common import info, warning, error, check_arg, begin_log, end_log
 
 from modelparameters.codegeneration import _all_keywords
 from modelparameters.parameterdict import *
+from modelparameters.units import si_unit_map, prefix_map
 
 # Local imports
 from gotran.common.options import parameters
@@ -31,20 +32,7 @@ from gotran.input.mathml import MathMLBaseParser
 
 __all__ = ["cellml2ode", "CellMLParser"]
 
-si_unit_map = {"ampere":"A", "becquerel":"Bq", "candela":"cd", "celsius":"gradC",
-               "coulomb":"C","dimensionless":"1", "farad":"F", "gram":"g",
-               "gray":"Gy", "henry":"H", "hertz":"Hz", "joule":"J", "katal":"kat",
-               "kelvin":"K", "kilogram":"kg", "liter":"l", "litre":"l",
-               "lumen":"lm", "lux":"lx", "meter":"m", "metre":"m", "mole":"mole",
-               "newton":"N", "ohm":"Omega", "pascal":"Pa", "radian":"rad",
-               "second":"s", "siemens":"S", "sievert":"Sv", "steradian":"sr",
-               "tesla":"T", "volt":"V", "watt":"W", "weber":"Wb", "dimensionless":"1"}
 
-prefix_map = {"deca":"da", "hecto":"h", "kilo":"k", "mega":"M", "giga":"G",
-              "tera":"T", "peta":"P", "exa":"E", "zetta":"Z", "yotta":"Y",
-              "deci":"d", "centi":"c", "milli":"m", "micro":"u", "nano":"n",
-              "pico":"p", "femto":"f", "atto":"a", "zepto":"z", "yocto":"y",
-              None:"", "-3":"m"}
 
 ui = "UNINITIALIZED"
 
@@ -368,6 +356,7 @@ class CellMLParser(object):
         self.cellml_namespace = self.cellml.tag.split("}")[0] + "}"
         self.parse_units()
         self.components = self.parse_components(targets)
+   
         self.documentation = self.parse_documentation()
         end_log()
 
@@ -1203,8 +1192,10 @@ class CellMLParser(object):
 
         end_log()
         
-        if sort_again:
+        if 0:#sort_again:
 
+            from IPython import embed; embed()
+            exit()
             # Try rebuild the graph and make another topological sort
             G = nx.MultiDiGraph()
             G.add_nodes_from([comp.name for comp in components])
@@ -1222,7 +1213,7 @@ class CellMLParser(object):
                 # components.sort(lambda n0, n1: cmp(list(sorted_components)[n0.name],list(sorted_components)[n1.name]))
                 
                 # components.sort(lambda n0, n1: cmp(sorted_components.index(n0.name), \
-                                                   # sorted_components.index(n1.name)))
+                #                                    sorted_components.index(n1.name)))
             except Exception, e:
                 warning("Topological sort failed a second time: " + str(e))
             
@@ -1242,7 +1233,8 @@ class CellMLParser(object):
         # Parse imported components
         components, collected_states, collected_parameters, \
                     collected_equations = self.parse_imported_model()
-
+        
+        
         # Get parent relationship between components
         encapsulations, all_parents = self.get_parents(self._params.grouping)
 
@@ -1268,11 +1260,12 @@ class CellMLParser(object):
                 if parent_name not in targets:
                     continue
                 target_parents[targets[comp_name]] = targets[parent_name]
-        
+
+       
         # Iterate over the components
         for comp in self.get_iterator("component"):
             comp_name = comp.attrib["name"]
-
+            
             # Only parse selected and non-empty components
             if (targets and comp_name not in targets) or \
                    len(comp.getchildren()) == 0:
@@ -1287,6 +1280,7 @@ class CellMLParser(object):
             # Store component
             components[comp_name] = self.parse_single_component(\
                 comp, collected_states, collected_parameters, collected_equations)
+            
 
         # Add parent information
         all_component_names = components.keys()
@@ -1487,11 +1481,12 @@ class CellMLParser(object):
 
             return " ".join(single_words)
 
+        
         # Iterate over components and collect stuff
         for comp in self.components:
-            
-            names = deque([unders_score_replace(comp)])
 
+            names = deque([unders_score_replace(comp)])
+            
             parent = comp.parent
             while parent is not None:
                 names.appendleft(unders_score_replace(parent))
@@ -1506,7 +1501,7 @@ class CellMLParser(object):
                 for name, info in comp.state_variables.items():
                     if info["unit"] != "1":
                         declaration_lines.append("       {0} = ScalarParam({1}"\
-                                ", unit=\"{2}\"),".format(name, info["init"], info["unit"]))
+                                ", unit=\"{2}\"),".format(name, float(info["init"]), info["unit"]))
                     else:
                         declaration_lines.append("       {0} = {1},".format(\
                             name, info["init"]))
@@ -1519,7 +1514,7 @@ class CellMLParser(object):
                 for name, info in comp.parameters.items():
                     if info["unit"] != "1":
                         declaration_lines.append("           {0} = ScalarParam({1}"\
-                                ", unit=\"{2}\"),".format(name, info["init"], info["unit"]))
+                                ", unit=\"{2}\"),".format(name, float(info["init"]), info["unit"]))
                     else:
                         declaration_lines.append("           {0} = {1},".format(\
                             name, info["init"]))
@@ -1531,6 +1526,15 @@ class CellMLParser(object):
                 equation_lines.append("expressions({0})".format(\
                     comp_name))
 
+                for eq in comp.equations:
+                    expr = []
+                    for eqi in eq.expr:
+                        if eqi.isdigit():
+                            expr.append(str(float(eqi)))
+                        else:
+                            expr.append(eqi)
+                    eq.expr = expr
+                
                 equation_lines.extend("{0} = {1}{2}".format(\
                     eq.name, "".join(eq.expr), " # {0}".format(\
                         comp.variable_info[eq.name]["unit"]) \
