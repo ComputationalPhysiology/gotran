@@ -123,6 +123,7 @@ class MathMLBaseParser(object):
         self._derivative = None
         self.used_variables = set()
 
+      
         equation_list = self._parse_subtree(root)
         return equation_list, self._state_variable, self._derivative, \
                self.used_variables
@@ -157,16 +158,21 @@ class MathMLBaseParser(object):
 
                     # If an unary minus is infront of a plus we always use parenthesize
                     if self._gettag(root[0]) == "apply" and \
-                           self._gettag(root[0].getchildren()[0]) in ["plus"]:
+                           self._gettag(root[0].getchildren()[0]) in ["plus", "minus"]:
+
                         use_parent = True
 
+                        
+
                     eq += ["-"]
+                                        
                 else:
                     
                     # Always use paranthesis for unary operators
                     use_parent = True
                     eq += [self._operators[op]]
 
+                  
                 eq += ["("]*use_parent + self._parse_subtree(root[0], op) + \
                       [")"]*use_parent
                 return eq
@@ -177,6 +183,7 @@ class MathMLBaseParser(object):
                     eq = eq + [self._operators[op]] + self._parse_subtree(\
                         operand, op, first_operand=False)
                 eq = eq + [")"]*use_parent
+               
                 return eq
         else:
             error("No support for parsing MathML " + op + " operator.")
