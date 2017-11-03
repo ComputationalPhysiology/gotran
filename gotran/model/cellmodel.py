@@ -161,7 +161,7 @@ class CellModel(ODE):
         return [s.value for s in self.states]
 
 
-    def intermediate_unit(self, name, si_unit=True):
+    def intermediate_unit(self, name, si_unit=True, return_factor=False):
         """
         Get unit of intermediate expression
         Note that we neglect units within a funtion like
@@ -182,11 +182,12 @@ class CellModel(ODE):
 
         """
         
-
+        
         def get_intermediate_unit(name, si_unit):
             check_arginlist(name, self.intermediate_symbols)
             intermediate = self.intermediates[self.intermediate_symbols.index(name)]
 
+            factor = 1.0
             # Extract expression
             expr = intermediate.expr.copy()
             
@@ -196,7 +197,6 @@ class CellModel(ODE):
             
             expr = expr.replace(sp.log, lambda t : 1)
             expr = expr.replace(sp.exp, lambda t : 1)
-            # expr = expr.replace(sp.sqrt, lambda t: 1)
             expr = expr.replace(sp.zoo, lambda : 1)
             
             unit_dep_map = {}
@@ -204,7 +204,6 @@ class CellModel(ODE):
             for dep in sp_tools.symbols_from_expr(expr):
 
                 
-
                 dep_str = str(dep).rsplit("(")[0]
                               
                 if dep_str in self.parameter_symbols:
@@ -215,12 +214,10 @@ class CellModel(ODE):
                 elif dep_str in self.state_symbols:
                     p = self.get_state(dep_str)
                     unit = p.unit
-                    # print "State = " , p, ", unit = ", p.unit
-                   
 
                 elif dep_str in self.intermediate_symbols:
-                    unit = get_intermediate_unit(dep_str, si_unit)
-                    
+                    unit, factor_= get_intermediate_unit(dep_str, si_unit)
+                    factor *= factor_
 
                 else:
                     # Parmaterer not found (most likely the time variable)
@@ -241,13 +238,13 @@ class CellModel(ODE):
             unit_exprs = []
 
             def add_unit(k,v):
-                if not k.is_Number: 
-                
-                    if v == 1:
-                        unit_exprs.append(str(k))
-                    else:
-                        unit_exprs.append(str(k) + "**" + str(v))
+                if not k.is_Number and v.as_numer_denom()[1] == 1: 
 
+                    exp = "**{}".format(str(v)) if v != 1 else ""
+                    unit_ = str(k)
+                    
+                    unit_exprs.append(unit_+exp)
+                    
             
             for k, v in expr.as_powers_dict().items():
 
@@ -267,7 +264,7 @@ class CellModel(ODE):
             # Check if this is a sum and use only one term
             unit_expr = unit_expr.split(" + ")[0].split(" - ")[0]
      
-            # Strip away any numbers
+            # Strip away any numbers but collect the factor
             subunits = "^".join(unit_expr.split("**")).split("*")
             new_subunits = []
 
@@ -275,30 +272,31 @@ class CellModel(ODE):
                 try: float(el)
                 except: return False
                 else: return True
-            
-            for u in subunits:
-                if not isfloat(u): new_subunits.append(u)
 
-                
+    
+            for u in subunits:
+                if not isfloat(u):
+                    new_subunits.append(u)
+                else:
+                    factor *= float(u)
+
+
+            # Join new expression
             unit_expr = "**".join("*".join(new_subunits).split("^"))
             if unit_expr == "": unit_expr = "1"
 
-            try:
-                unit = Unit(unit_expr)
-            except:
-                from IPython import embed; embed()
-                exit()
-                
-            if si_unit:
-                return unit.si_unit
-            else:
-                return unit_expr
-            
-        # print "\n\n"+"#"*50
+            unit = Unit(unit_expr)
 
-        unit_ = get_intermediate_unit(name, si_unit)
-        # print "name = ", name, ", unit = ", unit_
-        # print "-"*50
+            factor_ = unit.si_unit_factor if si_unit else unit.factor
+            retunit = unit.si_unit if si_unit else unit_expr
+
+            factor *= factor_
+            return retunit, factor
+            
+        unit_, factor_ = get_intermediate_unit(name, si_unit)
+
+        if return_factor:
+            return unit_, factor_
         return unit_
 
        
