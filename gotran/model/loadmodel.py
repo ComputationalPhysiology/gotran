@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ["load_ode", "exec_ode", "load_cell"]
+__all__ = ["load_ode", "exec_ode", "load_cell", "get_model_as_python_module"]
 
 # System imports
 import inspect
@@ -39,6 +39,32 @@ from gotran.model.cellmodel import CellModel
 _for_template = re.compile("\A[ ]*for[ ]+.*in[ ]+:[ ]*\Z")
 _no_intermediate_template = re.compile(".*# NO INTERMEDIATE.*")
 
+def get_model_as_python_module(model):
+    from gotran.common.options import parameters
+    from gotran.codegeneration.codegenerators import PythonCodeGenerator
+    
+
+    import imp
+
+    
+    params = parameters.generation.copy()
+    params.functions.rhs.function_name="__call__"
+    params.code.default_arguments="tsp" 
+    params.class_code=1
+    
+
+    monitored = [expr.name for expr in model.intermediates + model.state_expressions]
+    gen = PythonCodeGenerator(params)
+    
+    name = model.name
+    model.rename("ODESim")
+    code = gen.class_code(model, monitored)
+    model.rename(name)
+
+    module = imp.new_module("simulation")
+    exec code in module.__dict__
+    return module.ODESim()
+
 class IntermediateDispatcher(dict):
     """
     Dispatch intermediates to ODE attributes
@@ -52,6 +78,7 @@ class IntermediateDispatcher(dict):
             self._ode = weakref.ref(ode)
         else:
             self._ode = None
+
 
     @property
     def ode(self):
@@ -72,7 +99,6 @@ class IntermediateDispatcher(dict):
         # Set the attr of the ODE
         # If a scalar or a sympy number or it is a sympy.Basic consisting of
         # sp.Symbols
-
         if isinstance(value, scalars) or isinstance(value, sp.Number) or \
                (isinstance(value, sp.Basic) and symbols_from_expr(value)):
 
@@ -263,7 +289,8 @@ def _load(filename, name, **arguments):
     msg = "Argument class_type must be one of "\
           "('ode', 'cell'), got %s " % class_type
     assert(class_type in ("ode", "cell")), msg
-    
+
+
     # Dict to collect namespace
     intermediate_dispatcher = IntermediateDispatcher()
 
@@ -278,12 +305,14 @@ def _load(filename, name, **arguments):
 
     debug("Loading {}".format(ode.name))
 
+    
     # Create namespace which the ode file will be executed in
     _init_namespace(ode, arguments, intermediate_dispatcher)
 
     
     # Execute file and collect
     execfile(filename, intermediate_dispatcher)
+
     
     # Finalize ODE
     ode.finalize()

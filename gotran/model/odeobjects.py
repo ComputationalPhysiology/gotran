@@ -241,6 +241,9 @@ class ODEValueObject(ODEObject):
     def value(self):
         return self._param.getvalue()
 
+    def update(self, value):
+        self._param.update(value)
+    
     @value.setter
     def value(self, value):
         self._param.setvalue(value)
@@ -249,6 +252,10 @@ class ODEValueObject(ODEObject):
     def sym(self):
         return self._param.sym
 
+    @property
+    def unit(self):
+        return self._param.unit
+    
     @property
     def param(self):
         return self._param
