@@ -35,7 +35,10 @@ def main(filename, params):
 
     info("")
     info("Generating Python code for the {0} ode...".format(ode.name))
-    code = gen.module_code(ode, monitored=monitored)
+    if params.class_code:
+        code = gen.class_code(ode, monitored=monitored)
+    else:
+        code = gen.module_code(ode, monitored=monitored)
     info("  done.")
     with open(output, "w") as f:
         f.write(code)
