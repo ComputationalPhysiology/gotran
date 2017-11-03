@@ -25,6 +25,8 @@ from gotran.model.odeobjects import *
 # from gotran.common import error, debug, check_arg, check_kwarg, check_arginlist
 
 from modelparameters.parameters import *
+import modelparameters.sympytools as sp_tools
+from modelparameters.units import Unit
 
 # Holder for all cellmodels
 _all_cellmodels = {}
@@ -56,7 +58,7 @@ def get_parameter_list_from_string(string, lst, case_insesitive=True):
     
     """
     if case_insesitive:
-        return [p for p in lst if string in p.name.lower()]
+        return [p for p in lst if string.lower() in p.name.lower()]
 
     else:
         return [p for p in lst if string in p.name]
@@ -158,6 +160,153 @@ class CellModel(ODE):
     def state_values(self):
         return [s.value for s in self.states]
 
+
+    def intermediate_unit(self, name, si_unit=True):
+        """
+        Get unit of intermediate expression
+        Note that we neglect units within a funtion like
+        exponential and logaritm.
+
+        Arguments
+        ---------
+        name : str
+            Name of intermediate
+        si_unit : bool
+            If True, return the unit converted to 
+            SI units (default:True)
+
+        Returns
+        -------
+        unit : str
+            Unit of the expression for the intermediate
+
+        """
+        
+
+        def get_intermediate_unit(name, si_unit):
+            check_arginlist(name, self.intermediate_symbols)
+            intermediate = self.intermediates[self.intermediate_symbols.index(name)]
+
+            # Extract expression
+            expr = intermediate.expr.copy()
+            
+            if isinstance(expr, sp.Piecewise):
+                expr = expr.args[0][0]
+
+            
+            expr = expr.replace(sp.log, lambda t : 1)
+            expr = expr.replace(sp.exp, lambda t : 1)
+            # expr = expr.replace(sp.sqrt, lambda t: 1)
+            expr = expr.replace(sp.zoo, lambda : 1)
+            
+            unit_dep_map = {}
+            
+            for dep in sp_tools.symbols_from_expr(expr):
+
+                
+
+                dep_str = str(dep).rsplit("(")[0]
+                              
+                if dep_str in self.parameter_symbols:
+                    p = self.get_parameter(str(dep))
+                    unit = p.unit
+
+
+                elif dep_str in self.state_symbols:
+                    p = self.get_state(dep_str)
+                    unit = p.unit
+                    # print "State = " , p, ", unit = ", p.unit
+                   
+
+                elif dep_str in self.intermediate_symbols:
+                    unit = get_intermediate_unit(dep_str, si_unit)
+                    
+
+                else:
+                    # Parmaterer not found (most likely the time variable)
+                    continue
+                    
+                    
+                expr = expr.subs(dep, unit)
+                unit_dep_map[dep]=unit
+                
+
+            # Substitute again 
+            for k, v in unit_dep_map.items():
+                for k1, v1 in unit_dep_map.items():
+                    k = k.subs(k1, v1)
+                expr = expr.subs(k, v)
+                
+            # Fix fractions and remove possible numbers
+            unit_exprs = []
+
+            def add_unit(k,v):
+                if not k.is_Number: 
+                
+                    if v == 1:
+                        unit_exprs.append(str(k))
+                    else:
+                        unit_exprs.append(str(k) + "**" + str(v))
+
+            
+            for k, v in expr.as_powers_dict().items():
+
+                # If term consist of multiple term, choose one of them
+                if k.is_Add:
+                    k = k.as_coeff_add()[1][0]
+            
+                    for k1, v1 in k.as_powers_dict().items():
+                        add_unit(k1, v1)
+                    
+                else:
+                    add_unit(k, v)
+
+            # Join by multiplication
+            unit_expr = "*".join(unit_exprs)
+
+            # Check if this is a sum and use only one term
+            unit_expr = unit_expr.split(" + ")[0].split(" - ")[0]
+     
+            # Strip away any numbers
+            subunits = "^".join(unit_expr.split("**")).split("*")
+            new_subunits = []
+
+            def isfloat(el):
+                try: float(el)
+                except: return False
+                else: return True
+            
+            for u in subunits:
+                if not isfloat(u): new_subunits.append(u)
+
+                
+            unit_expr = "**".join("*".join(new_subunits).split("^"))
+            if unit_expr == "": unit_expr = "1"
+
+            try:
+                unit = Unit(unit_expr)
+            except:
+                from IPython import embed; embed()
+                exit()
+                
+            if si_unit:
+                return unit.si_unit
+            else:
+                return unit_expr
+            
+        # print "\n\n"+"#"*50
+
+        unit_ = get_intermediate_unit(name, si_unit)
+        # print "name = ", name, ", unit = ", unit_
+        # print "-"*50
+        return unit_
+
+       
+
+    @property
+    def intermediate_symbols(self):
+        return [i.name for i in self.intermediates]
+        
     @property
     def stimulation_parameters(self):
         return get_parameter_list_from_string("stim", self.parameters)
@@ -166,11 +315,16 @@ class CellModel(ODE):
     def stimulation_protocol(self):
 
         stim_params = self.stimulation_parameters
- 
+
         if stim_params:
             amplitude =  get_parameter_list_from_string("amp", stim_params)[0]
             duration = get_parameter_list_from_string("dur", stim_params)[0]
-            period = get_parameter_list_from_string("period", stim_params)[0]
+            
+            period = get_parameter_list_from_string("period", stim_params)
+            frequency = get_parameter_list_from_string("frequency", stim_params)
+            if period: period = period[0]    
+            if frequency: frequency=frequency[0]
+            
             start = get_parameter_list_from_string("start", stim_params)[0]
             end = get_parameter_list_from_string("end", stim_params)[0]
         else:
@@ -179,12 +333,30 @@ class CellModel(ODE):
             period = Parameter("period", 500)
             start = Parameter("start", 0)
             end = Parameter("end", 1000)
+            frequency=None
             
         return {"amplitude":amplitude,
                 "duration": duration,
                 "period": period,
+                "frequency": frequency,
                 "start": start,
                 "end": end}
+
+    @property
+    def currents(self):
+        """
+        Return a list of the currents used in the 
+        computation of the membrane potential.
+        Note that intermediate currents (not involved in
+        th computation of the membrane potential) 
+        are not retured
+        """
+
+        dV_dt = get_parameter_list_from_string("dV_dt", self.state_expressions)[0]
+        currents = [str(type(c)) for c in dV_dt.dependent]
+        return currents
+        
+        
                 
 
     def simulate(self, **kwargs):
@@ -204,36 +376,54 @@ class CellModel(ODE):
         
         """
 
-
+        # Parameters for time
         t_end = kwargs.pop("t_end", None)
         dt = kwargs.pop("dt", 0.1)
+
+        # Number of beats
         nbeats = kwargs.pop("nbeats", 1)
+
+        # Number of points (only assimulo)
         npts = kwargs.pop("npts", None)
-        
+
+        # Solver backend
         backend = kwargs.pop("backend", "goss")
+        # Solver meothd
         method = kwargs.pop("solver_method", "RKF32")
+        # Return only the final beat (if simulating multiple beats)
         return_final_beat = kwargs.pop("return_final_beat", False)
-       
+
+        # Get stimulation prototocal
         stim_params = self.stimulation_protocol
+
+        # We let the period of the frequency
+        # define the lenght of each beat
+        if stim_params["period"]:
+            period = stim_params["period"].value
+        else:
+            period = 60.0/stim_params["frequency"].value
                
         if t_end is None:
             # Use the stimultation protocol to determine the end time
             t0 =  stim_params["start"]
-            t_end = t0 + nbeats * stim_params["period"]
+            t_end = t0 + nbeats * period
 
+        # Estimate number of steps
         nsteps = int(t_end/float(dt))
-        
-        if return_final_beat:
 
-            start_idx = int(nsteps*( 1 - (stim_params["period"].value \
-                                          + stim_params["start"].value) \
+        # Find start and end indices
+        if return_final_beat:
+            start_idx = int(nsteps*( 1 - (period + \
+                                          stim_params["start"].value) \
                                      / float(t_end)) -1)
             end_idx = int(nsteps)
         else:
             start_idx = 0
             end_idx = nsteps
 
-        stim_params["end"].value = t_end
+
+        # Set the end value for stimulation
+        stim_params["end"].param.setvalue(t_end, False)
 
         if backend == "goss":
 
@@ -249,13 +439,11 @@ class CellModel(ODE):
             solver = getattr(goss, method)(module)
             x0 = module.init_state_values()
             t = 0.0
-
             
             ys = np.zeros((nsteps, len(x0)))
             ts = np.zeros(nsteps)
           
             for step in range(nsteps):
-          
                 solver.forward(x0, t, dt)
              
                 ys[step,:] = x0
@@ -343,6 +531,29 @@ class CellModel(ODE):
         idx = self.parameter_symbols.index(name)
         # Return the parameter
         return self.parameters[idx]
+
+    def get_state(self, name):
+        """
+        Get the parameter with the given name
+
+        Arguments
+        ---------
+
+        name : str
+            Name of the parameter
+
+        Returns
+        -------
+        par : Parameter
+            The parameter
+
+        """
+        # Check if parameter exist
+        check_arginlist(name, self.state_symbols)
+        # Get the index
+        idx = self.state_symbols.index(name)
+        # Return the parameter
+        return self.states[idx]
 
     def get_parameter(self, name):
         """
