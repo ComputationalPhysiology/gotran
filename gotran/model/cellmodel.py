@@ -161,7 +161,7 @@ class CellModel(ODE):
         return [s.value for s in self.states]
 
 
-    def intermediate_unit(self, name, si_unit=True, return_factor=False):
+    def intermediate_unit(self, name, unit_type="si", return_factor=False):
         """
         Get unit of intermediate expression
         Note that we neglect units within a funtion like
@@ -171,9 +171,8 @@ class CellModel(ODE):
         ---------
         name : str
             Name of intermediate
-        si_unit : bool
-            If True, return the unit converted to 
-            SI units (default:True)
+        unit_type : str
+            Type of unit, options `si`, `base` or `original`
 
         Returns
         -------
@@ -183,14 +182,14 @@ class CellModel(ODE):
         """
         
         
-        def get_intermediate_unit(name, si_unit):
+        def get_intermediate_unit(name, unit_type):
             check_arginlist(name, self.intermediate_symbols)
             intermediate = self.intermediates[self.intermediate_symbols.index(name)]
 
             factor = 1.0
             # Extract expression
             expr = intermediate.expr.copy()
-            
+          
             if isinstance(expr, sp.Piecewise):
                 expr = expr.args[0][0]
 
@@ -200,6 +199,7 @@ class CellModel(ODE):
             expr = expr.replace(sp.zoo, lambda : 1)
             
             unit_dep_map = {}
+            
             
             for dep in sp_tools.symbols_from_expr(expr):
 
@@ -216,18 +216,27 @@ class CellModel(ODE):
                     unit = p.unit
 
                 elif dep_str in self.intermediate_symbols:
-                    unit, factor_= get_intermediate_unit(dep_str, si_unit)
-                    factor *= factor_
+                    unit, factor_= get_intermediate_unit(dep_str, "original")
+                    # factor *= factor_
 
                 else:
                     # Parmaterer not found (most likely the time variable)
                     continue
                     
-                    
-                expr = expr.subs(dep, unit)
-                unit_dep_map[dep]=unit
-                
 
+               
+                expr1 = expr.subs(dep, unit)
+                if expr1 == 0:
+                    # We got some cancellation because of the previous substitutioin
+
+                    # Let us add a dummy number
+                    expr = expr.subs(dep, "*".join(["2.0", unit]))
+                else:
+                    expr = expr1
+
+            
+                unit_dep_map[dep]=unit
+                       
             # Substitute again 
             for k, v in unit_dep_map.items():
                 for k1, v1 in unit_dep_map.items():
@@ -237,6 +246,7 @@ class CellModel(ODE):
             # Fix fractions and remove possible numbers
             unit_exprs = []
 
+           
             def add_unit(k,v):
                 if not k.is_Number and v.as_numer_denom()[1] == 1: 
 
@@ -258,6 +268,7 @@ class CellModel(ODE):
                 else:
                     add_unit(k, v)
 
+
             # Join by multiplication
             unit_expr = "*".join(unit_exprs)
 
@@ -277,28 +288,57 @@ class CellModel(ODE):
             for u in subunits:
                 if not isfloat(u):
                     new_subunits.append(u)
-                else:
-                    factor *= float(u)
-
+                
 
             # Join new expression
             unit_expr = "**".join("*".join(new_subunits).split("^"))
+
             if unit_expr == "": unit_expr = "1"
 
             unit = Unit(unit_expr)
 
-            factor_ = unit.si_unit_factor if si_unit else unit.factor
-            retunit = unit.si_unit if si_unit else unit_expr
+            if unit_type == "si":
+                factor = unit.si_unit_factor
+                retunit = unit.si_unit
+            elif unit_type == "base":
+                factor = unit.factor
+                retunit = unit.base_unit
+            elif unit_type == "original":
+                factor = 1.0
+                retunit = unit.unit
 
-            factor *= factor_
             return retunit, factor
             
-        unit_, factor_ = get_intermediate_unit(name, si_unit)
+        unit_, factor_ = get_intermediate_unit(name, unit_type)
 
         if return_factor:
             return unit_, factor_
         return unit_
 
+
+    def set_residual_current(self, t, current):
+        """
+        Set rediual current
+
+        Arguments
+        ---------
+
+        t : array
+            List of times
+        current : array
+            List with residual current
+        
+        """
+        from scipy.interpolate import UnivariateSpline
+        self._residual_current = UnivariateSpline(t, current, s= 0)
+
+    def residual_current(self, t):
+
+        if not hasattr(self, "_residual_current"):
+            return np.zeros_like(t)
+
+        return self._residual_current(t)
+        
        
 
     @property
@@ -388,8 +428,12 @@ class CellModel(ODE):
         backend = kwargs.pop("backend", "goss")
         # Solver meothd
         method = kwargs.pop("solver_method", "RKF32")
+        # Residual current
+        update_residual_current = kwargs.pop("residual_current", False)        
         # Return only the final beat (if simulating multiple beats)
         return_final_beat = kwargs.pop("return_final_beat", False)
+        # Return monitored values
+        return_monitored = kwargs.pop("return_monitored", False)
 
         # Get stimulation prototocal
         stim_params = self.stimulation_protocol
@@ -432,16 +476,38 @@ class CellModel(ODE):
                    "{}, got {}".format(goss.goss_solvers, method))
             assert method in goss.goss_solvers, msg
 
-            module = goss.jit(self)
+            monitored_symbols = self.intermediate_symbols if return_monitored else None
+
+            module = goss.jit(self, monitored=monitored_symbols)
 
             solver = getattr(goss, method)(module)
             x0 = module.init_state_values()
             t = 0.0
             
-            ys = np.zeros((nsteps, len(x0)))
+            ys = np.zeros((nsteps, module.num_states()))
+            if return_monitored:
+                monitored = np.zeros((nsteps, module.num_monitored()))
+                monitor = np.zeros(module.num_monitored())
             ts = np.zeros(nsteps)
           
             for step in range(nsteps):
+
+                if update_residual_current:
+                    
+                    module.set_parameter("i_res_amp", float(self.residual_current(t)))
+                    # from IPython import embed; embed()
+                    # exit()
+                    # print t
+                    # solver = getattr(goss, method)(module)
+                    # print float(self.residual_current(t))
+
+                if return_monitored:
+                    module.eval_monitored(x0, t, monitor)
+                    monitored[step,:] = monitor
+             
+                
+
+                # print t
                 solver.forward(x0, t, dt)
              
                 ys[step,:] = x0
@@ -450,6 +516,9 @@ class CellModel(ODE):
 
            
             ret = [ts, ys]
+
+            if return_monitored:
+                ret.append(monitored)
            
 
         else:
@@ -532,18 +601,18 @@ class CellModel(ODE):
 
     def get_state(self, name):
         """
-        Get the parameter with the given name
+        Get the state with the given name
 
         Arguments
         ---------
 
         name : str
-            Name of the parameter
+            Name of the state variable
 
         Returns
         -------
         par : Parameter
-            The parameter
+            The state
 
         """
         # Check if parameter exist
@@ -552,6 +621,30 @@ class CellModel(ODE):
         idx = self.state_symbols.index(name)
         # Return the parameter
         return self.states[idx]
+
+    def get_intermediate(self, name):
+        """
+        Get the intermediate with the given name
+
+        Arguments
+        ---------
+
+        name : str
+            Name of the intermediate
+
+        Returns
+        -------
+        par : Parameter
+            The parameter
+
+        """
+        # Check if parameter exist
+        check_arginlist(name, self.intermediate_symbols)
+        # Get the index
+        idx = self.intermediate_symbols.index(name)
+        # Return the parameter
+        return self.intermediates[idx]
+
 
     def get_parameter(self, name):
         """
