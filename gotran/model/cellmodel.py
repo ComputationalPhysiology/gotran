@@ -393,7 +393,50 @@ class CellModel(ODE):
         dV_dt = get_parameter_list_from_string("dV_dt", self.state_expressions)[0]
         currents = [str(type(c)) for c in dV_dt.dependent]
         return currents
+
+
+    def get_time_steps(self, nbeats=1, t1=None, dt=1.0, t0 = 0.0):
+        """
+        Get list with time steps given the number 
+        of beats and time increment
+
+        Arguments
+        ---------
+        nbeats : int
+            Nuber of beats (Default:1)
+        dt : float
+            Time increament between two time steps. (Default:1.0)
+            Note that you need to think about the time unit. 
+            If time unit is `ms` then dt = 1.0 is probably OK, but
+            if time unit is `s` then dt should probably be lower
+        t1 : float
+            End time. If not provided then end time will determined from
+            the number of beats
+        t0 : float
+            Start time (Default: 0.0)
+
+        """
+
+        # Get stimulation prototocal
+        stim_params = self.stimulation_protocol
         
+        
+        # We let the period of the frequency
+        # define the lenght of each beat
+        if stim_params["period"]:
+            period = stim_params["period"].value
+        else:
+            period = 60.0/stim_params["frequency"].value
+               
+        if t1 is None:
+            # Use the stimultation protocol to determine the end time
+            t0 =  stim_params["start"]
+            t1 = t0 + nbeats * period
+
+        # Estimate number of steps
+        nsteps = int(t1/float(dt))+1
+        tsteps = np.linspace(t0, t1, nsteps)
+        return tsteps
         
                 
 
@@ -574,7 +617,29 @@ class CellModel(ODE):
         return ret
     
         
-        
+    def get_component(self, name):
+        """
+        Get the component with the given name
+
+        Arguments
+        ---------
+
+        name : str
+            Name of the component
+
+        Returns
+        -------
+        par : ODECompoenent
+            The component
+
+        """
+
+        # Check if parameter exist
+        check_arginlist(name, self.component_names)
+        # Get the index
+        idx = self.component_names.index(name)
+        # Return the component
+        return self.components[idx]
         
     def get_parameter(self, name):
         """

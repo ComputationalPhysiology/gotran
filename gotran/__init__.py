@@ -28,6 +28,7 @@ import model
 #import algorithms
 import codegeneration
 import input
+import solver
 
 # Import classes and routines from gotran modules
 from common import DEBUG, INFO, WARNING, ERROR, CRITICAL, \
@@ -37,6 +38,7 @@ from model import *
 #from algorithms import *
 from codegeneration import *
 from input import *
+from solver import *
 
 # Model parameters
 from modelparameters.parameters import ScalarParam
