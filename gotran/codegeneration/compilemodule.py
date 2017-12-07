@@ -39,7 +39,7 @@ instant.set_log_level("WARNING")
 
 __all__ = ["compile_module"]
 
-additional_declarations = r"""
+additional_declarations_ = r"""
 %init%{{
 import_array();
 %}}
@@ -150,7 +150,7 @@ import_array();
 }}
 
 %pythoncode%{{
-def {rhs_function_name}({args}, {rhs_name}=None):
+def {rhs_function_name}({args},{rhs_name} = None):
     '''
     Evaluates the right hand side of the model
 
@@ -163,7 +163,7 @@ def {rhs_function_name}({args}, {rhs_name}=None):
     import numpy as np
     if {rhs_name} is None:
         {rhs_name} = np.zeros_like({states_name})
-    
+
     _{rhs_function_name}({args}, {rhs_name})
     return {rhs_name}
 
@@ -177,7 +177,7 @@ def {rhs_function_name}({args}, {rhs_name}=None):
 {monitor_declaration}
 """
 
-jacobian_declaration_template = """
+jacobian_declaration_template_ = """
 // Typemaps
 %typemap(in) (double* {jac_name})
 {{
@@ -282,7 +282,10 @@ def {monitored_function_name}({args}, {monitored_name}=None):
 %rename (_{monitored_function_name}) {monitored_function_name};
 """
 
-def compile_module(ode, language="C", monitored=None, generation_params=None):
+def compile_module(ode, language="C", monitored=None,
+                   generation_params=None,
+                   additional_declarations=None,
+                   jacobian_declaration_template=None):
     """
     JIT compile an ode
     
@@ -320,7 +323,9 @@ def compile_module(ode, language="C", monitored=None, generation_params=None):
     params.update(generation_params)
 
     if language == "C":
-        return compile_extension_module(ode, monitored, params)
+        return compile_extension_module(ode, monitored, params,
+                                        additional_declarations,
+                                        jacobian_declaration_template)
 
     # Create unique module name for this application run
     modulename = "gotran_python_module_{0}_{1}".format(\
@@ -359,7 +364,9 @@ def compile_module(ode, language="C", monitored=None, generation_params=None):
     python_module = instant.import_module(modulename)
     return getattr(python_module, class_name(ode.name))()
 
-def compile_extension_module(ode, monitored, params):
+def compile_extension_module(ode, monitored, params,
+                             additional_declarations=None,
+                             jacobian_declaration_template=None):
     """
     Compile an extension module, based on the C code from the ode
     """
@@ -418,6 +425,10 @@ def compile_extension_module(ode, monitored, params):
             debug("Generating jacobian C-code, forcing jacobian array "\
                   "to be flattened.")
             params.code.array.flatten = True
+
+        jacobian_declaration_template = jacobian_declaration_template_ if \
+                                        jacobian_declaration_template is None \
+                                        else jacobian_declaration_template
         
         jacobian_declaration = jacobian_declaration_template.format(\
             num_states = ode.num_full_states,
@@ -442,6 +453,7 @@ def compile_extension_module(ode, monitored, params):
     
     pcode = "\n\n".join(\
         pgen.code_dict(ode, monitored=monitored).values())
+    
     ccode = "\n\n".join(cgen.code_dict(ode,
                         monitored=monitored,
                         include_init=False,
@@ -454,6 +466,8 @@ def compile_extension_module(ode, monitored, params):
 
     # Configure instant and add additional system headers
     instant_kwargs = configure_instant()
+
+
 
     declaration_form = dict(\
         num_states = ode.num_full_states,
@@ -469,7 +483,10 @@ def compile_extension_module(ode, monitored, params):
         parameters_name=params.code.parameters.array_name,
         monitor_declaration=monitor_declaration,
         )
-    
+
+    additional_declarations = additional_declarations_ if \
+                              additional_declarations is None \
+                              else additional_declarations
     # Compile extension module with instant
     compiled_module = instant.build_module(\
         code  = ccode,
