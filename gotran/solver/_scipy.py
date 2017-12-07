@@ -19,11 +19,6 @@ class ScipySolver(Solver):
 
         Solver.__init__(self, ode, **options)
 
-        self._rhs = self.module.rhs
-        self._jac = None if not hasattr(self.module,'compute_jacobian') \
-                    else self.module.compute_jacobian
-        
-
         self._options =  ScipySolver.list_solver_options()
         self._options.update(**options)
 

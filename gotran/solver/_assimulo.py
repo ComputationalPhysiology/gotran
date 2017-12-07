@@ -11,24 +11,6 @@ from .utils import *
 
 __all__ = ["AssimuloSolver", "has_assimulo"]
 
-class Jac(object):
-    def __init__(self, module):
-        self._module = module
-
-    def __call__(self, time, states):
-        parameters = self._module.init_parameter_values()
-        return self._module.compute_jacobian(states, time, parameters)
-    
-
-class RHS(object):
-    def __init__(self, module):
-        self._module = module
-
-    def __call__(self, time, states):
-        parameters = self._module.init_parameter_values()
-        return self._module.rhs(states, time, parameters)
-
-
 
 class AssimuloSolver(Solver):
     
@@ -45,21 +27,21 @@ class AssimuloSolver(Solver):
         assert method in sundials_methods, msg
         self._method = method
 
-        Solver.__init__(self, ode, **options)
+        Solver.__init__(self, ode, arguments="tsp",
+                        additional_declarations=additional_declarations,
+                        jacobian_declaration_template=jacobian_declaration_template,
+                        **options)
+       
         
-
-        self._rhs = RHS(self.module)
-        self._jac = None if not hasattr(self.module,'compute_jacobian') \
-                    else Jac(self.module)
-        
-        
+        # Create problem
         self._problem = Explicit_Problem(self._rhs, self._y0)
 
+        # Set Jacobian if used
         if self._jac is not None:
             self._problem.jac = self._jac
             options['usejac'] = True
         
-        
+        # Create the solver
         if method == "cvode":
             self._solver = CVode(self._problem)
         elif method == "ida":
@@ -70,9 +52,17 @@ class AssimuloSolver(Solver):
             self._solver =  LSODAR(self._problem)
 
 
+        # Parse parameters to rhs
+        self._solver.sw = self._model_params.tolist()
+        self._solver.problem_info["switches"]=True
+        
+            
         solver_parameters = AssimuloSolver.list_solver_options(self._method)
         solver_parameters.update(**options)
         self._solver.options.update(**solver_parameters)
+
+    def _eval_monitored(self, time, res, params, values):
+        self.module.monitor(time, res, params, values)
 
     @property
     def problem(self):
@@ -231,3 +221,190 @@ class _LSODAR(LSODAR):
         d.pop("atol")
         return d
         
+
+additional_declarations = r"""
+%init%{{
+import_array();
+%}}
+
+%include <exception.i>
+%feature("autodoc", "1");
+
+// Typemaps
+%typemap(in) (double* {rhs_name})
+{{
+  // Check type
+  if (!PyArray_Check($input))
+    SWIG_exception(SWIG_TypeError, "Numpy array expected");
+
+  // Get PyArrayObject
+  PyArrayObject *xa = (PyArrayObject *)$input;
+
+  // Check data type
+  if (!(PyArray_ISCONTIGUOUS(xa) && PyArray_TYPE(xa) == NPY_DOUBLE))
+    SWIG_exception(SWIG_TypeError, "Contigous numpy array of doubles "
+                  "expected. Make sure the numpy array is contiguous, "
+                  "and uses dtype=float_.");
+
+  // Check size of passed array
+  if ( PyArray_SIZE(xa) != {num_states} )
+    SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
+                                  "{num_states}, for the {rhs_name} argument.");
+  
+  $1 = (double *)PyArray_DATA(xa);
+}}
+
+%typemap(in) (const double* {states_name})
+{{
+  // Check type
+  if (!PyArray_Check($input))
+    SWIG_exception(SWIG_TypeError, "Numpy array expected");
+
+  // Get PyArrayObject
+  PyArrayObject *xa = (PyArrayObject *)$input;
+
+  // Check data type
+  if (!(PyArray_ISCONTIGUOUS(xa) && PyArray_TYPE(xa) == NPY_DOUBLE))
+    SWIG_exception(SWIG_TypeError, "Contigous numpy array of doubles expected."
+           " Make sure the numpy array is contiguous, and uses dtype=float_.");
+
+  // Check size of passed array
+  if ( PyArray_SIZE(xa) != {num_states} )
+    SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
+                              "{num_states}, for the {states_name} argument.");
+  
+  $1 = (double *)PyArray_DATA(xa);
+}}
+
+%typemap(in) (double* {states_name})
+{{
+  // Check type
+  if (!PyArray_Check($input))
+    SWIG_exception(SWIG_TypeError, "Numpy array expected");
+
+  // Get PyArrayObject
+  PyArrayObject *xa = (PyArrayObject *)$input;
+
+  // Check data type
+  if (!(PyArray_ISCONTIGUOUS(xa) && PyArray_TYPE(xa) == NPY_DOUBLE))
+    SWIG_exception(SWIG_TypeError, "Contigous numpy array of doubles expected."
+           " Make sure the numpy array is contiguous, and uses dtype=float_.");
+
+  // Check size of passed array
+  if ( PyArray_SIZE(xa) != {num_states} )
+    SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
+                              "{num_states}, for the {states_name} argument.");
+  
+  $1 = (double *)PyArray_DATA(xa);
+}}
+
+%typemap(in) (double* {parameters_name})
+{{
+  // Check type
+  if (!PyArray_Check($input))
+    SWIG_exception(SWIG_TypeError, "Numpy array expected");
+
+  // Get PyArrayObject
+  PyArrayObject *xa = (PyArrayObject *)$input;
+
+  // Check data type
+  if (!(PyArray_ISCONTIGUOUS(xa) && PyArray_TYPE(xa) == NPY_DOUBLE))
+    SWIG_exception(SWIG_TypeError, "Contigous numpy array of doubles expected."
+           " Make sure the numpy array is contiguous, and uses dtype=float_.");
+
+  // Check size of passed array
+  if ( PyArray_SIZE(xa) != {num_parameters} )
+    SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
+             "{num_parameters}, for the {parameters_name} argument.");
+  
+  $1 = (double *)PyArray_DATA(xa);
+  
+}}
+
+// The typecheck
+%typecheck(SWIG_TYPECHECK_DOUBLE_ARRAY) double *
+{{
+    $1 = PyArray_Check($input) ? 1 : 0;
+}}
+
+%typecheck(SWIG_TYPECHECK_DOUBLE_ARRAY) const double *
+{{
+    $1 = PyArray_Check($input) ? 1 : 0;
+}}
+
+%pythoncode%{{
+def {rhs_function_name}({args}):
+    '''
+    Evaluates the right hand side of the model
+
+    Arguments:
+    ----------
+{args_doc}    
+    '''
+    import numpy as np
+
+    {rhs_name} = np.zeros_like({states_name})
+
+    if not isinstance(parameters, np.ndarray):
+        parameters = np.array(parameters, dtype=np.float_)
+    _{rhs_function_name}({args}, {rhs_name})
+    return {rhs_name}
+
+{python_code}
+%}}
+
+%rename (_{rhs_function_name}) {rhs_function_name};
+
+{jacobian_declaration}
+
+{monitor_declaration}
+"""
+
+
+jacobian_declaration_template = """
+// Typemaps
+%typemap(in) (double* {jac_name})
+{{
+  // Check type
+  if (!PyArray_Check($input))
+    SWIG_exception(SWIG_TypeError, "Numpy array expected");
+
+  // Get PyArrayObject
+  PyArrayObject *xa = (PyArrayObject *)$input;
+
+  // Check data type
+  if (!(PyArray_ISCONTIGUOUS(xa) && PyArray_TYPE(xa) == NPY_DOUBLE))
+    SWIG_exception(SWIG_TypeError, "Contigous numpy array of doubles "
+                  "expected. Make sure the numpy array is contiguous, "
+                  "and uses dtype=float_.");
+
+  // Check size of passed array
+  if ( PyArray_SIZE(xa) != {num_states}*{num_states} )
+    SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
+                                  "{num_states}*{num_states}, for the {jac_name} argument.");
+  
+  $1 = (double *)PyArray_DATA(xa);
+}}
+
+%pythoncode%{{
+def {jacobian_function_name}({args}, {jac_name}=None):
+    '''
+    Evaluates the jacobian of the model
+
+    Arguments:
+    ----------
+{args_doc}    
+    {jac_name} : np.ndarray (optional)
+        The computed result 
+    '''
+    import numpy as np
+
+    {jac_name} = np.zeros({num_states}*{num_states}, dtype=np.float_)
+       
+    _{jacobian_function_name}({args}, {jac_name})
+    {jac_name}.shape = ({num_states},{num_states})
+    return {jac_name}
+%}}
+
+%rename (_{jacobian_function_name}) {jacobian_function_name};
+"""
