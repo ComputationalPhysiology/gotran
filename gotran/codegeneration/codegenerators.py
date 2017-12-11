@@ -132,7 +132,6 @@ class BaseCodeGenerator(object):
                 result_name=functions.rhs.result_name,
                 params=self.params.code))
 
-        
         # Code for any monitored intermediates
         if monitored and functions.monitored.generate:
             if include_index_map:
@@ -213,7 +212,6 @@ class BaseCodeGenerator(object):
                 comps.append(eval(solver+"_solver")(\
                     ode, **kwargs))
 
-        
         # Create code snippest of all
         code.update((comp.function_name, \
                      self.function_code(comp, indent=indent)) for comp in comps)
@@ -223,7 +221,7 @@ class BaseCodeGenerator(object):
             if snippet:
                 code[functions.componentwise_rhs_evaluation.function_name] = \
                                                                 snippet
-            
+
         if ode.is_dae:
             mass = self.mass_matrix(ode, indent=indent)
             if mass is not None:
@@ -384,11 +382,6 @@ class PythonCodeGenerator(BaseCodeGenerator):
         Build argument str
         """
 
-        if isinstance(comp, str):
-            if self.params.class_code and not "self" in comp:
-                comp = ",".join(["self",comp]).rstrip(",")
-            return comp
-
         params = self.params.code
         default_arguments = params.default_arguments \
                             if comp.use_default_arguments else ""
@@ -396,7 +389,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
         additional_arguments = comp.additional_arguments[:]
 
         skip_result = []
-        ret_args = ["self"] if self.params.class_code else []
+        ret_args = []
         for arg in default_arguments:
             if arg == "s":
                 if params.states.array_name in comp.results:
@@ -415,28 +408,24 @@ class PythonCodeGenerator(BaseCodeGenerator):
                      "numerals":
                 if params.parameters.array_name in comp.results:
                     skip_result.append(params.parameters.array_name)
-                if not self.params.class_code:
-                    ret_args.append(params.parameters.array_name)
+                ret_args.append(params.parameters.array_name)
 
-       
         ret_args.extend(additional_arguments)
 
-        if not self.params.class_code:
-            # Arguments with default (None) values
-            if params.body.in_signature and params.body.representation != "named":
-                ret_args.append("{0}=None".format(params.body.array_name))
+        # Arguments with default (None) values
+        if params.body.in_signature and params.body.representation != "named":
+            ret_args.append("{0}=None".format(params.body.array_name))
 
-            for result_name in comp.results:
-                if result_name not in skip_result:
-                    ret_args.append("{0}=None".format(result_name))
+        for result_name in comp.results:
+            if result_name not in skip_result:
+                ret_args.append("{0}=None".format(result_name))
 
         return ", ".join(ret_args)
 
     def decorators(self):
         # FIXME: Make this extendable with mode decorators or make it possible
         # FIXME: to use other standard decorators like classmethod
-        return ""
-        # return "@staticmethod" if self.params.class_code else ""
+        return "@staticmethod" if self.params.class_code else ""
 
     @staticmethod
     def wrap_body_with_function_prototype(body_lines, name, args, \
@@ -529,11 +518,8 @@ class PythonCodeGenerator(BaseCodeGenerator):
             parameters_name = params.parameters.array_name
             body_lines.append("")
             body_lines.append("# Assign parameters")
-            if self.params.class_code:
-                 body_lines.append("parameters=self.init_parameter_values()")
-            else:
-                body_lines.append("assert(len({0}) == {1})".format(\
-                parameters_name, num_parameters))
+            body_lines.append("assert(len({0}) == {1})".format(\
+                        parameters_name, num_parameters))
 
             # Generate parameters assign code
             if params.parameters.representation == "named":
@@ -594,16 +580,12 @@ class PythonCodeGenerator(BaseCodeGenerator):
                     if params.array.flatten:
                         shape = (reduce(lambda a,b:a*b, shape, 1),)
 
-                if self.params.class_code:
-                    body_lines.append("{0} = np.zeros({1}, dtype=np.{2})".format(\
-                         result_name, shape, self.float_type))
-                else:
-                    body_lines.append("if {0} is None:".format(result_name))
-                    body_lines.append(["{0} = np.zeros({1}, dtype=np.{2})".format(\
-                        result_name, shape, self.float_type)])
-                    body_lines.append("else:".format(result_name))
-                    body_lines.append(["assert isinstance({0}, np.ndarray) and "\
-                    "{1}.shape == {2}".format(result_name, result_name, shape)])
+                body_lines.append("if {0} is None:".format(result_name))
+                body_lines.append(["{0} = np.zeros({1}, dtype=np.{2})".format(\
+                    result_name, shape, self.float_type)])
+                body_lines.append("else:".format(result_name))
+                body_lines.append(["assert isinstance({0}, np.ndarray) and "\
+                "{1}.shape == {2}".format(result_name, result_name, shape)])
 
         return body_lines
 
@@ -612,12 +594,10 @@ class PythonCodeGenerator(BaseCodeGenerator):
         Generate code for a single function given by a CodeComponent
         """
 
-        
         check_arg(comp, CodeComponent)
         check_kwarg(indent, "indent", int)
 
         body_lines = ["# Imports", "import numpy as np"]
-
         if self.ns:
             body_lines.append("import {0}".format(self.ns))
 
@@ -697,10 +677,8 @@ class PythonCodeGenerator(BaseCodeGenerator):
         body_lines.append("return init_values")
 
         # Add function prototype
-        
-
         init_function = self.wrap_body_with_function_prototype(\
-            body_lines, "init_state_values", self.args("**values"), \
+            body_lines, "init_state_values", "**values", \
             "Initialize state values", self.decorators())
 
         return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
@@ -755,7 +733,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
         # Add function prototype
         function = self.wrap_body_with_function_prototype(\
             body_lines, "init_parameter_values", \
-            self.args("**values"), "Initialize parameter values", self.decorators())
+            "**values", "Initialize parameter values", self.decorators())
 
         return "\n".join(self.indent_and_split_lines(function, indent=indent))
 
@@ -785,7 +763,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
         # Add function prototype
         function = self.wrap_body_with_function_prototype(\
             body_lines, "state_indices", \
-            self.args("*states"), "State indices", self.decorators())
+            "*states", "State indices", self.decorators())
 
         return "\n".join(self.indent_and_split_lines(function, indent=indent))
 
@@ -817,7 +795,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
         # Add function prototype
         function = self.wrap_body_with_function_prototype(\
             body_lines, "parameter_indices", \
-            self.args("*params"), "Parameter indices", self.decorators())
+            "*params", "Parameter indices", self.decorators())
 
         return "\n".join(self.indent_and_split_lines(function, indent=indent))
 
@@ -852,7 +830,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
         # Add function prototype
         function = self.wrap_body_with_function_prototype(\
             body_lines, "monitor_indices", \
-            self.args("*monitored"), "Monitor indices", self.decorators())
+            "*monitored", "Monitor indices", self.decorators())
 
         return "\n".join(self.indent_and_split_lines(function, indent=indent))
 
@@ -889,7 +867,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
         self.params.class_code = True
 
         check_arg(ode, ODE)
-        name = class_name(ode.name)        
+        name = class_name(ode.name)
         code_list = self.code_dict(ode, monitored=monitored, indent=1).values()
 
         self.params.class_code = class_code_param
@@ -1308,7 +1286,6 @@ class CCodeGenerator(BaseCodeGenerator):
 
         # Create code for each individuate component
         body_lines = []
-
         body_lines.append("// Return value")
         body_lines.append("{0} dy_comp[1] = {{0.0{1}}}".format(self.float_type, float_str))
         body_lines.append("")
@@ -2115,4 +2092,3 @@ class MatlabCodeGenerator(BaseCodeGenerator):
             "", "M", "The mass matrix of the {0} ODE".format(ode.name))
 
         return "\n".join(self.indent_and_split_lines(body_lines))
-
