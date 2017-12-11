@@ -49,6 +49,8 @@ def main(filename, params):
         generation.functions.jacobian.generate = params.code.generate_jacobian
     else:
         generation.solvers[params.solver].generate = True
+
+    
     
     # Compile executeable code from gotran ode
     model_arguments = params.model_arguments
@@ -65,6 +67,7 @@ def main(filename, params):
         arguments[arg_name] = arg_value
 
     ode = load_ode(filename, **arguments)
+
 
     # Check for DAE
     if ode.is_dae:
@@ -87,6 +90,7 @@ def main(filename, params):
         if expr.name not in monitored:
             monitored.append(expr.name)
         all_monitored_names.append(expr.name)
+
 
     # Check valid monitored plot
     for mp in monitored_plot:
@@ -140,6 +144,7 @@ def main(filename, params):
     t1 = params.tstop
     dt = params.dt
 
+    
     rhs = module.rhs
     jac = module.compute_jacobian if params.code.generate_jacobian else None
     y0 = module.init_state_values(**user_ic)
@@ -167,6 +172,8 @@ def main(filename, params):
         except Exception, e:
             error("Problem importing scipy.integrate.odeint. {}".format(e))
         results = odeint(rhs, y0, tsteps, Dfun=jac, args=(model_params,))
+
+
     else:
 
         # Get generated forward method
@@ -248,14 +255,17 @@ def main(filename, params):
         x_values = tsteps
 
     plt.rcParams["lines.linewidth"] = 2
+    # line_styles = cycle([c+s for s in ["-", "--", "-.", ":"]
+                         # for c in plt.rcParams["axes.color_cycle"]])
     line_styles = cycle([c+s for s in ["-", "--", "-.", ":"]
-                         for c in plt.rcParams["axes.color_cycle"]])
+                         for c in ['b', 'g', 'r', 'c', 'm', 'y', 'k' ]])
     
     plotted_items = 0
     for what, values in zip(plot_items, plot_values):
         if what == x_name:
             continue
         plotted_items += 1
+
         plt.plot(x_values, values, next(line_styles))
 
     if plotted_items > 1:
