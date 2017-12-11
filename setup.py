@@ -10,7 +10,7 @@ import platform
 import sys
 
 # Version number
-major = 2
+major = 3
 minor = 0
 
 scripts = glob.glob("scripts/*")
