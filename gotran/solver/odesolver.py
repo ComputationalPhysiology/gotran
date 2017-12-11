@@ -8,9 +8,6 @@ from ._scipy import *
 from .utils import *
 
 
-# class ODESolver(object):
-   
-    # def __init__(self, ode, method="cvode", **options):
 def ODESolver(ode, method="scipy", **options):
      """
     A generic ODE solver for solving problem of the types on the form,
@@ -47,35 +44,5 @@ def ODESolver(ode, method="scipy", **options):
      else:
          raise NotImplementedError
         
-
-    
-
-    # @staticmethod
-    # def list_solver_method():
-    #     return methods
-    
-              
-    # def get_solver_options(self):
-    #     """
-    #     Get solver options for the current solver
-    #     """
-
-    #     return self.odesolver.get_options()
-        
-
-
-    # @property
-    # def odesolver(self):
-    #     return self._solver
-
-    # def solve(self, *args, **kwargs):
-
-
-        
-    #     ts, ys = self.odesolver.solve(*args, **kwargs)
-
-    #     return ts, ys
-        
-
 
 

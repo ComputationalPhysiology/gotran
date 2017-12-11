@@ -1,3 +1,10 @@
+"""
+To use install assimulo which is a python wrapper of
+the sundials solvers
+
+pip install assimulo
+
+"""
 # Assimulo imports
 try:
     from assimulo.solvers import CVode, LSODAR, IDA, Radau5ODE
@@ -57,9 +64,8 @@ class AssimuloSolver(Solver):
         self._solver.problem_info["switches"]=True
         
             
-        solver_parameters = AssimuloSolver.list_solver_options(self._method)
-        solver_parameters.update(**options)
-        self._solver.options.update(**solver_parameters)
+        self._solver.options.update( (k,v) for k,v in options.iteritems() \
+                                     if k in self._solver.options.keys())
 
     def _eval_monitored(self, time, res, params, values):
         self.module.monitor(time, res, params, values)

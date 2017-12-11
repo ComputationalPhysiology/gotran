@@ -20,7 +20,8 @@ class ScipySolver(Solver):
         Solver.__init__(self, ode, **options)
 
         self._options =  ScipySolver.list_solver_options()
-        self._options.update(**options)
+        self._options.update( (k,v) for k,v in options.iteritems() \
+                              if k in self._options.keys())
 
 
     def get_options(self):
