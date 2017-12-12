@@ -151,7 +151,7 @@ class CellModel(ODE):
         return [s.name for s in self.components]
 
     def parameter_values(self):
-        return [s.value for s in self.parameter]
+        return [s.value for s in self.parameters]
     
     @property
     def state_symbols(self):
