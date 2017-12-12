@@ -105,128 +105,128 @@ class AssimuloSolver(Solver):
         
         return self._solver.simulate(t_end, ncp, ncp_list)
     
+if has_assimulo:
+    class _Radau5ODE:
+        @staticmethod
+        def default_options():
+            d = {'backward': False,
+                 'clock_step': False,
+                 'display_progress': True,
+                 'fac1': 0.2,
+                 'fac2': 8.0,
+                 'fnewt': 0.0,
+                 'inith': 0.01,
+                 'maxh': 10.0,
+                 'maxsteps': 100000,
+                 'newt': 7,
+                 'num_threads': 1,
+                 'quot1': 1.0,
+                 'quot2': 1.2,
+                 'report_continuously': False,
+                 'rtol': 1e-06,
+                 'safe': 0.9,
+                 'store_event_points': True,
+                 'thet': 0.001,
+                 'time_limit': 0,
+                 'usejac': False,
+                 'verbosity': 30}
+            return d
 
-class _Radau5ODE:
-    @staticmethod
-    def default_options():
-        d = {'backward': False,
-             'clock_step': False,
-             'display_progress': True,
-             'fac1': 0.2,
-             'fac2': 8.0,
-             'fnewt': 0.0,
-             'inith': 0.01,
-             'maxh': 10.0,
-             'maxsteps': 100000,
-             'newt': 7,
-             'num_threads': 1,
-             'quot1': 1.0,
-             'quot2': 1.2,
-             'report_continuously': False,
-             'rtol': 1e-06,
-             'safe': 0.9,
-             'store_event_points': True,
-             'thet': 0.001,
-             'time_limit': 0,
-             'usejac': False,
-             'verbosity': 30}
-        return d
-        
-class _IDA:
-    @staticmethod
-    def default_options():
-        d = {'backward': False,
-             'clock_step': False,
-             'display_progress': True,
-             'dqrhomax': 0.0,
-             'dqtype': 'CENTERED',
-             'external_event_detection': False,
-             'inith': 0.0,
-             'linear_solver': 'DENSE',
-             'lsoff': False,
-             'maxcorS': 3,
-             'maxh': 0.0,
-             'maxord': 5,
-             'maxsteps': 10000,
-             'num_threads': 1,
-             'pbar': [],
-             'report_continuously': False,
-             'rtol': 1e-06,
-             'sensmethod': 'STAGGERED',
-             'store_event_points': True,
-             'suppress_alg': False,
-             'suppress_sens': False,
-             'time_limit': 0,
-             'tout1': 0.0001,
-             'usejac': False,
-             'usesens': False,
-             'verbosity': 30}
-        
-        return d
+    class _IDA:
+        @staticmethod
+        def default_options():
+            d = {'backward': False,
+                 'clock_step': False,
+                 'display_progress': True,
+                 'dqrhomax': 0.0,
+                 'dqtype': 'CENTERED',
+                 'external_event_detection': False,
+                 'inith': 0.0,
+                 'linear_solver': 'DENSE',
+                 'lsoff': False,
+                 'maxcorS': 3,
+                 'maxh': 0.0,
+                 'maxord': 5,
+                 'maxsteps': 10000,
+                 'num_threads': 1,
+                 'pbar': [],
+                 'report_continuously': False,
+                 'rtol': 1e-06,
+                 'sensmethod': 'STAGGERED',
+                 'store_event_points': True,
+                 'suppress_alg': False,
+                 'suppress_sens': False,
+                 'time_limit': 0,
+                 'tout1': 0.0001,
+                 'usejac': False,
+                 'usesens': False,
+                 'verbosity': 30}
 
-class _CVode:
-    @staticmethod
-    def default_options():
-        d =  {'atol': np.array([]),
-              'backward': False,
-              'clock_step': False,
-              'discr': 'BDF',
-              'display_progress': True,
-              'dqrhomax': 0.0,
-              'dqtype': 'CENTERED',
-              'external_event_detection': False,
-              'inith': 0.0,
-              'iter': 'Newton',
-              'linear_solver': 'DENSE',
-              'maxcor': 3,
-              'maxcorS': 3,
-              'maxh': 0.0,
-              'maxkrylov': 5,
-              'maxncf': 10,
-              'maxnef': 20,
-              'maxord': 5,
-              'maxsteps': 500,
-              'minh': 0.0,
-              'nnz': -1,
-              'norm': 'WRMS',
-              'num_threads': 1,
-              'pbar': [],
-              'precond': "Banded",
-              'report_continuously': False,
-              'rtol': 1e-06,
-              'sensmethod': 'STAGGERED',
-              'stablimit': False,
-              'store_event_points': True,
-              'suppress_sens': False,
-              'time_limit': 0,
-              'usejac': False,
-              'usesens': False,
-              'verbosity': 30}
-        d.pop("atol")
-        return d
-        
-class _LSODAR(LSODAR):
-    @staticmethod
-    def default_options():
-        d = {'atol': np.array([]),
-             'backward': False,
-             'clock_step': False,
-             'display_progress': True,
-             'maxh': 0.0,
-             'maxordn': 12,
-             'maxords': 5,
-             'maxsteps': 100000,
-             'num_threads': 1,
-             'report_continuously': False,
-             'rkstarter': 1,
-             'rtol': 1e-06,
-             'store_event_points': True,
-             'time_limit': 0,
-             'usejac': False,
-             'verbosity': 30}
-        d.pop("atol")
-        return d
-        
+            return d
+
+    class _CVode:
+        @staticmethod
+        def default_options():
+            d =  {'atol': np.array([]),
+                  'backward': False,
+                  'clock_step': False,
+                  'discr': 'BDF',
+                  'display_progress': True,
+                  'dqrhomax': 0.0,
+                  'dqtype': 'CENTERED',
+                  'external_event_detection': False,
+                  'inith': 0.0,
+                  'iter': 'Newton',
+                  'linear_solver': 'DENSE',
+                  'maxcor': 3,
+                  'maxcorS': 3,
+                  'maxh': 0.0,
+                  'maxkrylov': 5,
+                  'maxncf': 10,
+                  'maxnef': 20,
+                  'maxord': 5,
+                  'maxsteps': 500,
+                  'minh': 0.0,
+                  'nnz': -1,
+                  'norm': 'WRMS',
+                  'num_threads': 1,
+                  'pbar': [],
+                  'precond': "Banded",
+                  'report_continuously': False,
+                  'rtol': 1e-06,
+                  'sensmethod': 'STAGGERED',
+                  'stablimit': False,
+                  'store_event_points': True,
+                  'suppress_sens': False,
+                  'time_limit': 0,
+                  'usejac': False,
+                  'usesens': False,
+                  'verbosity': 30}
+            d.pop("atol")
+            return d
+
+    class _LSODAR(LSODAR):
+        @staticmethod
+        def default_options():
+            d = {'atol': np.array([]),
+                 'backward': False,
+                 'clock_step': False,
+                 'display_progress': True,
+                 'maxh': 0.0,
+                 'maxordn': 12,
+                 'maxords': 5,
+                 'maxsteps': 100000,
+                 'num_threads': 1,
+                 'report_continuously': False,
+                 'rkstarter': 1,
+                 'rtol': 1e-06,
+                 'store_event_points': True,
+                 'time_limit': 0,
+                 'usejac': False,
+                 'verbosity': 30}
+            d.pop("atol")
+            return d
+
 
 additional_declarations = r"""
 %init%{{
