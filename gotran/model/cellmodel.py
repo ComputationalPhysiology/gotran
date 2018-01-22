@@ -394,6 +394,40 @@ class CellModel(ODE):
         currents = [str(type(c)) for c in dV_dt.dependent]
         return currents
 
+    def get_beattime(self, dt=1.0, extra=60.0):
+        """
+        Return number timepoints for one beat
+
+        Arguments
+        ---------
+        dt : float
+            Time increment in the same time unit 
+            as the model
+        extra : float
+            Add some extra time (in ms) to prolonge the
+            the time. Default 60 ms
+            
+        """
+
+        # Get stimulation parameters
+        stim_params = self.stimulation_protocol
+    
+        # Get duration of one beat
+        if stim_params["period"]:
+            period = stim_params["period"].value
+        else:
+            period = 60.0/stim_params["frequency"].value
+            
+        # Get duration of simulus
+        duration = stim_params["duration"].value
+
+        
+        factor = 1e-3 if stim_params["duration"].param.unit == "s" else 1.0
+        # Include additional 60 ms before stimulation
+        extra_ = factor * extra
+        beattime = int((period+duration+extra_) / float(dt)) + 1
+        
+        return beattime
 
     def get_time_steps(self, nbeats=1, t1=None, dt=1.0, t0 = 0.0):
         """
