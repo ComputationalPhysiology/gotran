@@ -78,7 +78,7 @@ setup(name = "Gotran",
       packages = ["gotran", "gotran.common", "gotran.model",
                   "gotran.algorithms", "gotran.codegeneration",
                   "gotran.input", "gotran.solver"],
-      install_requires = ["modelparameters>=0.1", "sympy>=0.7.5",
+      install_requires = ["modelparameters>=0.1", "sympy==0.7.6.1",
                           "instant>=2016.1"],
       dependency_links = ["https://bitbucket.org/johanhake/modelparameters/"\
                           "get/master.tar.gz#egg=modelparameters-0.1",
