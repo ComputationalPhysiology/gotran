@@ -459,7 +459,7 @@ def compile_extension_module(ode, monitored, params,
                         include_init=False,
                         include_index_map=False).values())
     
-    push_log_level(INFO)
+    # push_log_level(INFO)
     info("Calling GOTRAN just-in-time (JIT) compiler, this may take some "\
          "time...")
     sys.stdout.flush()
@@ -496,7 +496,7 @@ def compile_extension_module(ode, monitored, params,
         **instant_kwargs)
 
     info(" done")
-    pop_log_level()
+    # pop_log_level()
     sys.stdout.flush()
     return compiled_module
 
