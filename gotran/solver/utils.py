@@ -1,5 +1,6 @@
 
 import numpy as np
+from gotran.common import warning
 
 gotran_methods = ['explicit_euler',
                  'rush_larsen', 'generalized_rush_larsen',
@@ -11,7 +12,7 @@ goss_methods = ["RKF32"]
 
 methods = ["scipy"] + gotran_methods + sundials_methods + goss_methods
 
-
+class ODESolverError(Exception):pass
 
 class Solver(object):
     def __init__(self, ode, **options):
@@ -103,7 +104,7 @@ def generate_module(ode, monitored, **options):
 
     generation.code.default_arguments \
         = options.pop("arguments", "stp")
-        
+           
     generation.functions.rhs.generate = True
     generation.functions.jacobian.generate \
         = options.pop("generate_jacobian", False)

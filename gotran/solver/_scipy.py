@@ -1,8 +1,11 @@
+import warnings
+from copy import deepcopy
 try:
-    from scipy.integrate import odeint
+    import scipy.integrate as spi
     has_scipy = True
 except:
     has_scipy = False
+
 
 
 # Local imports
@@ -45,12 +48,61 @@ class ScipySolver(Solver):
                 'printmessg': 0,
                 'rtol': None,
                 'tcrit': None}
+        
+    def solve(self, tsteps, attempts = 3):
+        """
+        Solve ode using scipy.integrade.odeint
 
-    def solve(self, tsteps):
+        Arguments
+        ---------
+        tsteps : array
+            The time steps
+        attempts : int
+            If integration fails, i.e the solver does not 
+            converge, we could reduce the step size and try again.
+            This varible controls how many time we should try to
+            solve the problem. Default: 3
+        
+        """
 
-        results = odeint(self._rhs, self._y0,
-                         tsteps, Dfun=self._jac,
-                         args=(self._model_params,),
-                         **self._options)
+        # Some flags
+        it = 0
+        converged = False
 
+        # Get solver options
+        options = deepcopy(self._options)
+      
+        while it < attempts and not converged:
+
+            
+            # Somehow scipy only display a warning if the ODE itegrator fails.
+            # We can record these warnings using the warning module
+            with warnings.catch_warnings(record=True) as caught_warnings:
+
+                # Allways catch warnings (not only the first)
+                warnings.simplefilter("always")
+                
+                # Solve ode
+                results = spi.odeint(self._rhs, self._y0,
+                                     tsteps, Dfun=self._jac,
+                                     args=(self._model_params,),
+                                     **options)
+
+            # Check if we caught any warnings 
+            converged = len(caught_warnings) == 0
+            it += 1
+            # If we did, reduce maximum step size
+            options["hmax"] /= 2.0
+
+        # If we still caught some warnings raise exception
+        if len(caught_warnings) > 0:
+            for w in caught_warnings:
+                msg="Catched warning {}\n{}".format(w.category,
+                                                    w.message)
+                warning(msg)
+
+                if w.category == spi.odepack.ODEintWarning:
+                    raise ODESolverError(msg)
+            
+            
         return tsteps, results
