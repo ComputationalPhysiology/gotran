@@ -73,14 +73,14 @@ setup(name = "Gotran",
       description = """
       A declarative language describing ordinary differential equations.
       """,
-      author = "Johan Hake",
-      author_email = "hake.dev@gmail.com",
+      author = "Henrik Finsberg",
+      author_email = "henriknf@simula.no",
       packages = ["gotran", "gotran.common", "gotran.model",
                   "gotran.algorithms", "gotran.codegeneration",
                   "gotran.input", "gotran.solver"],
       install_requires = ["modelparameters>=0.1", "sympy==0.7.6.1",
                           "instant>=2016.1"],
-      dependency_links = ["https://bitbucket.org/johanhake/modelparameters/"\
+      dependency_links = ["https://bitbucket.org/finsberg/modelparameters/"\
                           "get/master.tar.gz#egg=modelparameters-0.1",
                           "https://bitbucket.org/fenics-project/instant/"\
                           "downloads/instant-2016.1.0.tar.gz"\
