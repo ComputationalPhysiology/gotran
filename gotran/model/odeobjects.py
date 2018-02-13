@@ -529,6 +529,8 @@ class Argument(ODEValueObject):
         # Call super class
         super(Argument, self).__init__(name, 0.0)
 
+
+
 class Time(ODEValueObject):
     """
     Specialization for a Time class
@@ -540,12 +542,36 @@ class Time(ODEValueObject):
         self.sym_0 = sp.Symbol("{0}_0".format(name), real=True, imaginary=False,
                                commutative=True, hermitian=True, complex=True)
 
+    def update_unit(self, unit):
+        """
+        Update unit. For example if time has unit
+        seconds in stead of milliseconds
+        """
+      
+        if unit in ["ms", "s"]:
+            self._param = ScalarParam(0.0, unit=unit, name=self._name)
+        else:
+            info("Unknow time unit {}".format(unit))
+        
+
 class Dt(ODEValueObject):
     """
     Specialization for a time step class
     """
     def __init__(self, name, unit="ms"):
         super(Dt, self).__init__(name, ScalarParam(0.1, unit=unit))
+
+    def update_unit(self, unit):
+        """
+        Update unit. For example if time has unit
+        seconds in stead of milliseconds
+        """
+        if unit == "ms":
+            self._param = ScalarParam(0.1, unit=unit, name=self._name)
+        elif unit == "s":
+            self._param = ScalarParam(100, unit=unit, name=self._name)
+        else:
+            info("Unknow time unit {}".format(unit))
 
 
 # Tuple with single ODE Objects, for type checking
