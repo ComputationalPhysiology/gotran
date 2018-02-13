@@ -116,7 +116,7 @@ class CellModel(ODE):
 
         check_arg(name_, str)
         name = name_
-        
+
         super(CellModel, self).__init__(name, ns)
         
 
@@ -136,10 +136,12 @@ class CellModel(ODE):
 
     def _initialize_cell_model(self):
         # Set current CellModel
+        global _current_cellmodel
         _current_cellmodel = self
 
-
-        # Perhaps out more here later
+        
+        # Perhaps more here later
+        
         
 
     @property
@@ -367,18 +369,39 @@ class CellModel(ODE):
             end = get_parameter_list_from_string("end", stim_params)[0]
         else:
             amplitude = Parameter("amplidude", 0)
-            duration = Parameter("duractioN", 0)
+            duration = Parameter("duration", 0)
             period = Parameter("period", 500)
             start = Parameter("start", 0)
             end = Parameter("end", 1000)
             frequency=None
+
+
+
+        if not period and frequency:
+            # Let the period be the reciprocal of the frequency
+            unit = Unit(frequency.unit)
+            period = Parameter("period", ScalarParam(60/frequency.value,
+                                                     unit=unit.reciprocal))
+        if not frequency and period:
+            unit = Unit(period.unit)
+            frequency = Parameter("frequency", ScalarParam(60/period.value,
+                                                           unit=unit.reciprocal))
+
+        class StimDict(dict):
+            def set(self, key, value):
+                self[key].update(value)
+                if key == "period":
+                    self["frequency"].update(60.0/value)
+                elif key == "frequency":
+                    self["period"].update(60.0/value)
             
-        return {"amplitude":amplitude,
-                "duration": duration,
-                "period": period,
-                "frequency": frequency,
-                "start": start,
-                "end": end}
+            
+        return StimDict(amplitude=amplitude,
+                        duration=duration,
+                        period=period,
+                        frequency=frequency,
+                        start=start,
+                        end=end)
 
     @property
     def currents(self):
@@ -464,7 +487,6 @@ class CellModel(ODE):
                
         if t1 is None:
             # Use the stimultation protocol to determine the end time
-            t0 =  stim_params["start"]
             t1 = t0 + nbeats * period
 
         # Estimate number of steps
