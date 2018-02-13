@@ -97,13 +97,19 @@ class AssimuloSolver(Solver):
         elif method == "radau5ode":
             return _Radau5ODE.default_options()
 
-    def solve(self, t_end, ncp = 0, ncp_list = None):
+    def solve(self, tsteps, *args, **kwargs):
         """
         Solve the problem
         """
+
+        t_end = tsteps[-1]
+        ncp = len(tsteps)
+        ncp_list = tsteps
         # Construct problem
-        
-        return self._solver.simulate(t_end, ncp, ncp_list)
+        t,y = self._solver.simulate(t_end, ncp, ncp_list)
+        # t,y = self._solver.simulate(t_end)
+
+        return t,y
     
 if has_assimulo:
     class _Radau5ODE:
