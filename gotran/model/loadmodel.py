@@ -93,19 +93,22 @@ class IntermediateDispatcher(dict):
         self._ode = weakref.ref(ode)
 
     def __setitem__(self, name, value):
+        """
+        This is only for expressions
+        """
 
         from modelparameters.sympytools import symbols_from_expr
         timer = Timer("Namespace dispatcher")
         # Set the attr of the ODE
         # If a scalar or a sympy number or it is a sympy.Basic consisting of
         # sp.Symbols
+       
         if isinstance(value, scalars) or isinstance(value, sp.Number) or \
                (isinstance(value, sp.Basic) and symbols_from_expr(value)):
 
             # Get source which triggers the insertion to the global namespace
             frame = inspect.currentframe().f_back
             lines, lnum = inspect.findsource(frame)
-
             # Try getting the code
             try:
                 code = lines[frame.f_lineno-1].strip()
@@ -293,6 +296,7 @@ def _load(filename, name, **arguments):
 
     # Dict to collect namespace
     intermediate_dispatcher = IntermediateDispatcher()
+    
 
     # Create an ODE which will be populated with data when ode file is loaded
     
@@ -309,17 +313,15 @@ def _load(filename, name, **arguments):
     # Create namespace which the ode file will be executed in
     _init_namespace(ode, arguments, intermediate_dispatcher)
 
-    
     # Execute file and collect
     execfile(filename, intermediate_dispatcher)
 
-    
     # Finalize ODE
     ode.finalize()
     
     # Check for completeness
     if not ode.is_complete:
-        warning("ODE mode '{0}' is not complete.".format(ode.name))
+        warning("ODE model '{0}' is not complete.".format(ode.name))
     
     info("Loaded ODE model '{0}' with:".format(ode.name))
     for what in ["full_states", "parameters"]:
@@ -358,7 +360,8 @@ def _namespace_binder(namespace, ode, load_arguments):
     """
     Add functions all bound to current ode, namespace and arguments
     """
-
+    
+    
     def comment(comment):
         """
         Add a comment to the present ODE component
@@ -385,7 +388,7 @@ def _namespace_binder(namespace, ode, load_arguments):
         prefix : str (optional)
             A prefix which all state and parameters are prefixed with.
         components : list, tuple of str (optional)
-            A list of components which will be extracted and added to the present
+        A list of components which will be extracted and added to the present
             ODE. If not given the whole ODE will be added.
         """
         warning("Usage of 'sub_ode()' is deprecated. "\
@@ -415,12 +418,23 @@ def _namespace_binder(namespace, ode, load_arguments):
         # Add the subode and update namespace
         ode().import_ode(subode, prefix=prefix, components=components, **arguments)
 
+    def timeunit(*args, **kwargs):
+        """
+        Update timeunit according to timeunit in file
+        """
+        comp = ode()
+
+        if args and isinstance(args[0], str):
+            comp._time.update_unit(args[0])
+            comp._dt.update_unit(args[0])
+        
+
     def states(*args, **kwargs):
         """
         Add a number of states to the current component or to the
         chosed component
         """
-        
+      
         # If comp string is passed we get the component
         if args and isinstance(args[0], str):
             comp = ode()
@@ -437,12 +451,13 @@ def _namespace_binder(namespace, ode, load_arguments):
 
         # Add the states
         comp.add_states(*args, **kwargs)
+
+        
     
     def parameters(*args, **kwargs):
         """
         Add a number of parameters to the current ODE or to the chosed component
         """
-        
         # If comp string is passed we get the component
         if args and isinstance(args[0], str):
             comp = ode()
@@ -545,6 +560,7 @@ def _namespace_binder(namespace, ode, load_arguments):
 
     # Update provided namespace
     namespace.update(dict(
+        timeunit=timeunit,
         states=states,
         parameters=parameters,
         model_arguments=model_arguments,
