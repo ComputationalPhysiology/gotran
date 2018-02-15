@@ -2,17 +2,17 @@
 
 # First of all you need CMAKE: "conda install -c conda-forge cmake"
 
-INSTALL_PREFIX="~/local"
+INSTALL_PREFIX="/home/henriknf/local"
 # SET THE BLAS DIRECTORY
-BLAS_DIR="/usr"
+BLAS_DIR="/usr/lib"
 # BLAS_DIR="/usr/local"
-# BLAS_DIR="~/anaconda2"
+# BLAS_DIR="/usit/abel/u1/henriknf/anaconda2"
 # YOU can e.g install blas using "conda install -c conda-forge blas"
 
 # SET THE LAPACK DIRECTORY
-LAPACK_DIR="/usr"
+LAPACK_DIR="/usr/lib"
 # LAPACK_DIR="/usr/local"
-# LAPACK_DIR="~/anaconda2"
+# LAPACK_DIR="/usit/abel/u1/henriknf/anaconda2"
 # Install it with "conda install -c conda-forge lapack"
 
 
