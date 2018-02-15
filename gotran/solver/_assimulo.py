@@ -33,6 +33,7 @@ class AssimuloSolver(Solver):
                "Possible methods are {}".format(sundials_methods))
         assert method in sundials_methods, msg
         self._method = method
+        
 
         Solver.__init__(self, ode, arguments="tsp",
                         additional_declarations=additional_declarations,
@@ -62,7 +63,14 @@ class AssimuloSolver(Solver):
         # Parse parameters to rhs
         self._solver.sw = self._model_params.tolist()
         self._solver.problem_info["switches"]=True
-        
+
+        # Set verbosity to 100 (i.e turn of printing) if not specified
+        verbosity = options.pop("verbosity", 100)
+        options["verbosity"] = verbosity
+
+        # Set verbosity to 100 (i.e turn of printing) if not specified
+        maxh = options.pop("maxh", 5e-4)
+        options["maxh"] = maxh
             
         self._solver.options.update( (k,v) for k,v in options.iteritems() \
                                      if k in self._solver.options.keys())

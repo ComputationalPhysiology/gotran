@@ -1,5 +1,5 @@
 
 
 from odesolver import ODESolver
-from utils import ODESolverError
+from utils import ODESolverError, methods
 
