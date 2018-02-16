@@ -36,10 +36,11 @@ def test_aslak(eps_value = 1e-1, method = "cvode"):
     tsteps = np.linspace(t0, t1, t1/dt+1)
 
     t0 = time.clock()
-    if method == "scipy":
-        t, results = solver.solve(tsteps)
-    elif method in ["cvode", "lsodar"]:
-        t, results = solver.solve(t1, ncp_list=tsteps)
+    t, results = solver.solve(tsteps)
+    # if method == "scipy":
+        # t, results = solver.solve(tsteps)
+    # elif method in ["cvode", "lsodar"]:
+        # t, results = solver.solve(t1, ncp_list=tsteps)
         
     tend = time.clock()
     print("Elapsed time: {}".format(tend-t0))
@@ -91,10 +92,11 @@ def test_paci(method="scipy"):
     tsteps = np.linspace(t0, t1, t1/dt+1)
 
     t0 = time.clock()
-    if method == "scipy":
-        t, results = solver.solve(tsteps)
-    elif method in ["cvode", "lsodar"]:
-        t, results = solver.solve(t1, ncp_list=tsteps)
+    t, results = solver.solve(tsteps)
+    # if method == "scipy":
+        # t, results = solver.solve(tsteps)
+    # elif method in ["cvode", "lsodar"]:
+        # t, results = solver.solve(t1, ncp_list=tsteps)
     t1 = time.clock()
     print("Elapsed time: {}".format(t1-t0))
 
