@@ -360,11 +360,6 @@ class Parameter(ODEValueObject):
         # Call super class
         super(Parameter, self).__init__(name, init)
 
-    def _args_str(self):
-        """
-        Return a formatted str of __init__ arguments
-        """
-        return "'{0}'".format(self._name)
     
     def _get_binary_operands(self, x):
         

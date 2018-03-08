@@ -36,12 +36,22 @@ class Solver(object):
 
         # Initial conditions for the states
         self._y0 = self.module.init_state_values()
-        # self._y0 = np.array(ode.state_values(), dtype='float64')
+    
         # The model parameters
-        #self._model_params = self.module.init_parameter_values()
+        self._model_params = self.module.init_parameter_values()
+        
+
+    def update_model_parameter(self):
+        """
+        Update model parameters according
+        to parameters in the cell model
+        """
         self._model_params = np.array(ode.parameter_values(), dtype='float64')
 
+    def solve(self, *args, **kwargs):
 
+        self.update_model_parameter()
+        self._solve(*args, **kwargs)
         
     @property
     def module(self):

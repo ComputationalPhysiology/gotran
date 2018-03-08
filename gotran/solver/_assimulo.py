@@ -33,6 +33,8 @@ class AssimuloSolver(Solver):
                "Possible methods are {}".format(sundials_methods))
         assert method in sundials_methods, msg
         self._method = method
+
+        self._options = options
         
 
         Solver.__init__(self, ode, arguments="tsp",
@@ -40,7 +42,8 @@ class AssimuloSolver(Solver):
                         jacobian_declaration_template=jacobian_declaration_template,
                         **options)
        
-        
+
+    def _create_solver(self):
         # Create problem
         self._problem = Explicit_Problem(self._rhs, self._y0)
 
@@ -50,11 +53,11 @@ class AssimuloSolver(Solver):
             options['usejac'] = True
         
         # Create the solver
-        if method == "cvode":
+        if self._method == "cvode":
             self._solver = CVode(self._problem)
-        elif method == "ida":
+        elif self._method == "ida":
             self._solver = IDA(self._problem)
-        elif method == "radau5ode":
+        elif self._method == "radau5ode":
             self._solver = Radau5ODE(self._problem)
         else:
             self._solver =  LSODAR(self._problem)
@@ -65,11 +68,11 @@ class AssimuloSolver(Solver):
         self._solver.problem_info["switches"]=True
 
         # Set verbosity to 100 (i.e turn of printing) if not specified
-        verbosity = options.pop("verbosity", 100)
+        verbosity = self._options.pop("verbosity", 100)
         options["verbosity"] = verbosity
 
         # Set verbosity to 100 (i.e turn of printing) if not specified
-        maxh = options.pop("maxh", 5e-4)
+        maxh = self._options.pop("maxh", 5e-4)
         options["maxh"] = maxh
             
         self._solver.options.update( (k,v) for k,v in options.iteritems() \
@@ -105,11 +108,12 @@ class AssimuloSolver(Solver):
         elif method == "radau5ode":
             return _Radau5ODE.default_options()
 
-    def solve(self, tsteps, *args, **kwargs):
+    def _solve(self, tsteps, *args, **kwargs):
         """
         Solve the problem
         """
 
+        self._create_solver()
         t_end = tsteps[-1]
         ncp = len(tsteps)
         ncp_list = tsteps

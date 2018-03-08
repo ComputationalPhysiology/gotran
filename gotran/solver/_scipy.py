@@ -49,7 +49,7 @@ class ScipySolver(Solver):
                 'rtol': None,
                 'tcrit': None}
         
-    def solve(self, tsteps, attempts = 3):
+    def _solve(self, tsteps, attempts = 3):
         """
         Solve ode using scipy.integrade.odeint
 
@@ -65,6 +65,7 @@ class ScipySolver(Solver):
         
         """
 
+        
         # Some flags
         it = 0
         converged = False

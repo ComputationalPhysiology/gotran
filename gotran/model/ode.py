@@ -861,9 +861,9 @@ class ODE(ODEComponent):
 
             # Sort wrt stringified states and parameters avoiding trouble with
             # random ordering of **kwargs
-            def_list += sorted([repr(state) \
+            def_list += sorted([repr(state.param) \
                                 for state in comp.full_states])
-            def_list += sorted([repr(param) \
+            def_list += sorted([repr(param.param) \
                                 for param in comp.parameters])
             def_list += [sympycode(expr.expr) for expr in comp.intermediates]
 
