@@ -861,9 +861,9 @@ class ODE(ODEComponent):
 
             # Sort wrt stringified states and parameters avoiding trouble with
             # random ordering of **kwargs
-            def_list += sorted([repr(state.param) \
+            def_list += sorted([repr(state) \
                                 for state in comp.full_states])
-            def_list += sorted([repr(param.param) \
+            def_list += sorted([repr(param) \
                                 for param in comp.parameters])
             def_list += [sympycode(expr.expr) for expr in comp.intermediates]
 
@@ -872,6 +872,7 @@ class ODE(ODEComponent):
                 self.state_expressions, cmp=lambda o0, o1: cmp(\
                     str(o0.state), str(o1.state)))]
 
+            
         h = hashlib.sha1()
         h.update(";".join(def_list))
         return h.hexdigest()
