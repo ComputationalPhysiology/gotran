@@ -33,12 +33,16 @@ class Solver(object):
         # The jacobian
         self._jac = None if not hasattr(self.module,'compute_jacobian') \
                     else self.module.compute_jacobian
+
         # Initial conditions for the states
         self._y0 = self.module.init_state_values()
+        # self._y0 = np.array(ode.state_values(), dtype='float64')
+        # The model parameters
+        #self._model_params = self.module.init_parameter_values()
+        self._model_params = np.array(ode.parameter_values(), dtype='float64')
 
-        # The model parameters 
-        self._model_params = self.module.init_parameter_values()
 
+        
     @property
     def module(self):
         return self._module
