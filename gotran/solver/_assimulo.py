@@ -50,7 +50,7 @@ class AssimuloSolver(Solver):
         # Set Jacobian if used
         if self._jac is not None:
             self._problem.jac = self._jac
-            options['usejac'] = True
+            self._options['usejac'] = True
         
         # Create the solver
         if self._method == "cvode":
@@ -69,13 +69,13 @@ class AssimuloSolver(Solver):
 
         # Set verbosity to 100 (i.e turn of printing) if not specified
         verbosity = self._options.pop("verbosity", 100)
-        options["verbosity"] = verbosity
+        self._options["verbosity"] = verbosity
 
         # Set verbosity to 100 (i.e turn of printing) if not specified
         maxh = self._options.pop("maxh", 5e-4)
-        options["maxh"] = maxh
+        self._options["maxh"] = maxh
             
-        self._solver.options.update( (k,v) for k,v in options.iteritems() \
+        self._solver.options.update( (k,v) for k,v in self._options.iteritems() \
                                      if k in self._solver.options.keys())
 
     def _eval_monitored(self, time, res, params, values):

@@ -39,6 +39,8 @@ class Solver(object):
     
         # The model parameters
         self._model_params = self.module.init_parameter_values()
+
+        self._ode = ode
         
 
     def update_model_parameter(self):
@@ -46,12 +48,12 @@ class Solver(object):
         Update model parameters according
         to parameters in the cell model
         """
-        self._model_params = np.array(ode.parameter_values(), dtype='float64')
+        self._model_params = np.array(self._ode.parameter_values(), dtype='float64')
 
     def solve(self, *args, **kwargs):
 
         self.update_model_parameter()
-        self._solve(*args, **kwargs)
+        return self._solve(*args, **kwargs)
         
     @property
     def module(self):
