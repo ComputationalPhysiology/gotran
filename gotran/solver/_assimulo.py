@@ -41,6 +41,7 @@ class AssimuloSolver(Solver):
                         additional_declarations=additional_declarations,
                         jacobian_declaration_template=jacobian_declaration_template,
                         **options)
+        self._create_solver()
        
 
     def _create_solver(self):
