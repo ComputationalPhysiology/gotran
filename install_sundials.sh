@@ -3,7 +3,8 @@
 # First of all you need CMAKE: "conda install -c conda-forge cmake"
 
 # INSTALL_PREFIX="/usit/abel/u1/henriknf/local"
-INSTALL_PREFIX="/home/finsberg/local"
+# INSTALL_PREFIX="/home/finsberg/local"
+INSTALL_PREFIX="/usr/local"
 # SET THE BLAS DIRECTORY
 # BLAS_DIR="/usr/lib/libblas"
 # BLAS_DIR="/usr/local"
