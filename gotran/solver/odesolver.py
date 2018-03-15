@@ -36,7 +36,12 @@ def ODESolver(ode, method="scipy", **options):
      if method == "scipy":
          return ScipySolver(ode, **options)
      elif method in sundials_methods:
-         return AssimuloSolver(ode, method, **options)
+          try:
+               return AssimuloSolver(ode, method, **options)
+          except:
+               print("Could not import Sundials solvers. Use Scipy ODE solver instead")
+               return ScipySolver(ode)
+               
      elif method in gotran_methods:
          raise NotImplementedError
      elif method in goss_methods:
