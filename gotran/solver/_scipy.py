@@ -36,7 +36,7 @@ class ScipySolver(Solver):
                 'col_deriv': 0,
                 'full_output': 0,
                 'h0': 0.0,
-                'hmax': 0.0,
+                'hmax': 1e-3,
                 'hmin': 0.0,
                 'ixpr': 0,
                 'ml': None,
