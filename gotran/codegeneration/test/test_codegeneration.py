@@ -60,7 +60,8 @@ exec(module_code)
 debug = 0
 
 if debug:
-    open("module_code.py", "w").write(module_code)
+    with open("module_code.py", "w") as f:
+        f.write(module_code)
 
 states_values = init_state_values()
 parameter_values = init_parameter_values()
@@ -103,22 +104,25 @@ def function_closure(body_repr, body_optimize, param_repr, \
         code_params["body"]["optimize_exprs"] = body_optimize
         code_params["body"]["representation"] = body_repr
         code_params["body"]["in_signature"] = body_in_arg
-        code_params["body"]["array_name"] =  body_array_name
+        code_params["body"]["array_name"] = body_array_name
         code_params["parameters"]["representation"] = param_repr
         code_params["parameters"]["array_name"] = parameters_name
         code_params["states"]["representation"] = state_repr
         code_params["states"]["array_name"] = states_name
         code_params["body"]["use_cse"] = use_cse
         code_params["float_precision"] = float_precision
-        code_params["default_arguments"] = "stp" 
+        code_params["default_arguments"] = "stp"
 
         # Reload ODE for each test
         ode = load_ode("tentusscher_2004_mcell_updated.ode")
         codegen = PythonCodeGenerator(gen_params)
         rhs_comp = rhs_expressions(ode, params=code_params)
         rhs_code = codegen.function_code(rhs_comp)
-        exec(rhs_code, globals(), locals())
 
+        # exec(rhs_code, globals(), locals())
+        rhs_namespace = {}
+        exec(rhs_code, rhs_namespace)
+        
         # DEBUG
         if debug:
             test_name = "_".join([body_repr, body_optimize, state_repr, param_repr, \
@@ -126,7 +130,8 @@ def function_closure(body_repr, body_optimize, param_repr, \
                                   body_array_name, str(body_in_arg)])
             test_name += "_use_cse_" + str(use_cse)
 
-            open("rhs_code_{0}.py".format(test_name), "w").write(rhs_code)
+            with open("rhs_code_{0}.py".format(test_name), "w") as f:
+                f.write(rhs_code)
 
         args = [states_values, 0.0]
         if param_repr != "numerals":
@@ -137,7 +142,8 @@ def function_closure(body_repr, body_optimize, param_repr, \
             args.append(body)
 
         # Call the generated rhs function
-        rhs_values = rhs(*args)
+        rhs_values = rhs_namespace['rhs'](*args)
+        
         rhs_norm = np.sqrt(np.sum(rhs_ref_values-rhs_values)**2)
 
         # DEBUG
@@ -163,7 +169,8 @@ def function_closure(body_repr, body_optimize, param_repr, \
 
             open("jac_code_{0}.py".format(test_name), "w").write(jac_code)
 
-        exec(jac_code, globals(), locals())
+        jac_namespace = {}
+        exec(jac_code, jac_namespace)
 
         args = [states_values, 0.0]
         if param_repr != "numerals":
@@ -173,7 +180,7 @@ def function_closure(body_repr, body_optimize, param_repr, \
             body = np.zeros(jac_comp.shapes[body_array_name])
             args.append(body)
 
-        jac_values = compute_jacobian(*args)
+        jac_values = jac_namespace['compute_jacobian'](*args)
         jac_norm = np.sqrt(np.sum(jac_ref_values-jac_values)**2)
 
         if debug:
@@ -209,7 +216,7 @@ for use_cse in [False, True]:
 # Generate an empy test class
 class TestCodeComponent(unittest.TestCase):
 
-    def test_param_setting(self):
+    def a_test_param_setting(self):
         "Test that different ways of setting parameters generates the same code"
 
         # Generate basic code
@@ -262,10 +269,10 @@ class TestCodeComponent(unittest.TestCase):
         
 for param_name, state_name, body_name in [["PARAMETERS", "STATES", "ALGEBRAIC"], \
                                           ["params", "states", "algebraic"]]:
-    #for use_cse in [False, True]:
-    for use_cse in [False]:
-        for body_repr in ["array", "reused_array"]:
-            for body_in_arg in [False, True]:
+    # for use_cse in [False, True]:
+    for use_cse in [True]:
+        for body_repr in ['array']:#["array", "reused_array"]:
+            for body_in_arg in [True]:
 
                 test_name = "_".join([param_name, body_name, body_repr, \
                                       str(body_in_arg)])

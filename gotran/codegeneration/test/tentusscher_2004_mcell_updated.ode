@@ -160,19 +160,19 @@ parameters("Membrane",
 parameters("Potassium dynamics",
            K_o = 5.4)
 
-component("Reversal potentials")
+expressions("Reversal potentials")
 E_Na = (R*T)/F*log(Na_o/Na_i)
 E_K = (R*T)/F*log(K_o/K_i)
 E_Ks = (R*T)/F*log((K_o + P_kna*Na_o)/(K_i + P_kna*Na_i))
 E_Ca = (0.5*R*T)/F*log(Ca_o/Ca_i)
 
-component("Inward rectifier potassium current")
+expressions("Inward rectifier potassium current")
 alpha_K1 = 0.1/(one + exp(0.06*((V - E_K) - 200)))
 beta_K1 = (three*exp(0.0002*(V - E_K + 100)) + exp(0.1*((V - E_K) - ten)))/(one + exp(-0.5*(V - E_K)))
 xK1_inf = alpha_K1/(alpha_K1 + beta_K1)
 i_K1 = g_K1*xK1_inf*sqrt(K_o/5.4)*(V - E_K)
 
-comp = component("Rapid time dependent potassium current")
+comp = expressions("Rapid time dependent potassium current")
 i_Kr = g_Kr*sqrt(K_o/5.4)*Xr1*Xr2*(V - E_K)
 
 comp("xr1 gate")
@@ -189,27 +189,27 @@ beta_xr2 = 1.12/(one + exp((V - 60)/20.0))
 tau_xr2 = one*alpha_xr2*beta_xr2
 dXr2_dt = (xr2_inf - Xr2)/tau_xr2
 
-component("Slow time dependent potassium current")
+expressions("Slow time dependent potassium current")
 i_Ks = g_Ks*Xs**two*(V - E_Ks)
 
-component("Slow time dependent potassium current", "xs gate")
+expressions("Slow time dependent potassium current", "xs gate")
 xs_inf = one/(one + exp((-five - V)/14.0))
 alpha_xs = 1100.0/sqrt(one + exp((-ten - V)/6.0))
 beta_xs = one/(one + exp((V - 60)/20.0))
 tau_xs = one*alpha_xs*beta_xs
 dXs_dt = (xs_inf - Xs)/tau_xs
 
-component("Fast sodium current")
+expressions("Fast sodium current")
 i_Na = g_Na*m**three*h*j*(V - E_Na)
 
-component("Fast sodium current", "m gate")
+expressions("Fast sodium current", "m gate")
 m_inf = one/(one + exp((-56.86 - V)/9.03))**two
 alpha_m = one/(one + exp((-60 - V)/five))
 beta_m = 0.1/(one + exp((V + 35)/five)) + 0.1/(one + exp((V - 50)/200.0))
 tau_m = one*alpha_m*beta_m
 dm_dt = (m_inf - m)/tau_m
 
-component("Fast sodium current", "h gate")
+expressions("Fast sodium current", "h gate")
 h_inf = one/(one + exp((V + 71.55)/7.43))**two
 #alpha_h = Conditional(Lt(V, -40), 0.057*exp(-((V + 80))/6.8), 0)
 #beta_h = Conditional(Lt(V, -40), 2.7*exp(0.079*V) + 310000*exp(0.3485*V), 0.77/(0.13*(one + exp((V + 10.66)/-11.1))))
@@ -218,7 +218,7 @@ beta_h = ContinuousConditional(Lt(V, -40), 2.7*exp(0.079*V) + 310000*exp(0.3485*
 tau_h = one/(alpha_h + beta_h)
 dh_dt = (h_inf - h)/tau_h
 
-component("Fast sodium current", "j gate")
+expressions("Fast sodium current", "j gate")
 j_inf = one/(one + exp((V + 71.55)/7.43))**two
 #alpha_j = Conditional(Lt(V, -40), ((-25428*exp(0.2444*V) - 6.948e-6*exp(-0.04391*V))*(V + 37.78))/one/(one + exp(0.311*(V + 79.23))), 0)
 #beta_j = Conditional(Lt(V, -40), (0.02424*exp(-0.01052*V))/(one + exp(-0.1378*(V + 40.14))), (0.6*exp(0.057*V))/(one + exp(-0.1*(V + 32))))
@@ -227,13 +227,13 @@ beta_j = ContinuousConditional(Lt(V, -40), (0.02424*exp(-0.01052*V))/(one + exp(
 tau_j = one/(alpha_j + beta_j)
 dj_dt = (j_inf - j)/tau_j
 
-component("Sodium background current")
+expressions("Sodium background current")
 i_b_Na = g_bna*(V - E_Na)
 
-component("L type ca current")
+expressions("L type ca current")
 i_CaL = ((g_CaL*d*f*fCa*four*V*F**two)/(R*T)*(Ca_i*exp((two*V*F)/(R*T)) - 0.341*Ca_o))/(exp((two*V*F)/(R*T)) - one)
 
-component("L type ca current", "d gate")
+expressions("L type ca current", "d gate")
 d_inf = one/(one + exp((-five - V)/7.5))
 alpha_d = 1.4/(one + exp((-35 - V)/13.0)) + 0.25
 beta_d = 1.4/(one + exp((V + five)/five))
@@ -241,12 +241,12 @@ gamma_d = one/(one + exp((50 - V)/20.0))
 tau_d = one*alpha_d*beta_d + gamma_d
 dd_dt = (d_inf - d)/tau_d
 
-component("L type ca current", "f gate")
+expressions("L type ca current", "f gate")
 f_inf = one/(one + exp((V + 20)/7.0))
 tau_f = 1125*exp(-((V + 27)**two)/240.0) + 80 + 165.0/(one + exp((25 - V)/ten))
 df_dt = (f_inf - f)/tau_f
 
-component("L type ca current", "fca gate")
+expressions("L type ca current", "fca gate")
 alpha_fCa = one/(one + (Ca_i/0.000325)**8)
 beta_fCa = 0.1/(one + exp((Ca_i - 0.0005)/0.0001))
 gama_fCa = 0.2/(one + exp((Ca_i - 0.00075)/0.0008))
@@ -255,35 +255,35 @@ tau_fCa = two
 d_fCa = (fCa_inf - fCa)/tau_fCa
 dfCa_dt = (1-ContinuousConditional(Le(fCa_inf, fCa), 1., 0., 0.1)*ContinuousConditional(Le(V, -60), 1, 0., 1))*d_fCa
 
-component("Calcium background current")
+expressions("Calcium background current")
 i_b_Ca = g_bca*(V - E_Ca)
 
-component("Transient outward current")
+expressions("Transient outward current")
 i_to = g_to*r*s*(V - E_K)
 
-component("Transient outward current", "s gate")
+expressions("Transient outward current", "s gate")
 s_inf = one/(one + exp((V + 20)/five))
 tau_s = 85*exp(-((V + 45)**two)/320.0) + five/(one + exp((V - 20)/five)) + three
 ds_dt = (s_inf - s)/tau_s
 
-component("Transient outward current", "r gate")
+expressions("Transient outward current", "r gate")
 r_inf = one/(one + exp((20 - V)/6.0))
 tau_r = 9.5*exp(-((V + 40)**two)/1800.0) + 0.8
 dr_dt = (r_inf - r)/tau_r
 
-component("Sodium potassium pump current")
+expressions("Sodium potassium pump current")
 i_NaK = ((P_NaK*K_o)/(K_o + K_mk)*Na_i)/(Na_i + K_mNa)/(one + 0.1245*exp((-0.1*V*F)/(R*T)) + 0.0353*exp((-V*F)/(R*T)))
 
-component("Sodium calcium exchanger current")
+expressions("Sodium calcium exchanger current")
 i_NaCa = (K_NaCa*(exp((gamma*V*F)/(R*T))*Na_i**three*Ca_o - exp(((gamma - one)*V*F)/(R*T))*Na_o**three*Ca_i*alpha))/((Km_Nai**three + Na_o**three)*(Km_Ca + Ca_o)*(one + K_sat*exp(((gamma - one)*V*F)/(R*T))))
 
-component("Calcium pump current")
+expressions("Calcium pump current")
 i_p_Ca = (g_pCa*Ca_i)/(Ca_i + K_pCa)
 
-component("Potassium pump current")
+expressions("Potassium pump current")
 i_p_K = (g_pK*(V - E_K))/(one + exp((25 - V)/5.98))
 
-component("Calcium dynamics")
+expressions("Calcium dynamics")
 i_rel = ((a_rel*Ca_SR**two)/(b_rel**two + Ca_SR**two) + c_rel)*d*g
 i_up = Vmax_up/(one + K_up**two/Ca_i**two)
 i_leak = V_leak*(Ca_SR - Ca_i)
@@ -297,14 +297,14 @@ dg_dt = (1-ContinuousConditional(Le(g_inf, g), 1., 0, 0.1)*ContinuousConditional
 dCa_i_dt = Ca_i_bufc*((i_leak - i_up + i_rel) - (one*((i_CaL + i_b_Ca + i_p_Ca) - two*i_NaCa))/(two*one*V_c*F)*Cm)
 dCa_SR_dt = (Ca_sr_bufsr*V_c)/V_sr*(i_up - (i_rel + i_leak))
 
-component("Sodium dynamics")
+expressions("Sodium dynamics")
 dNa_i_dt = (-one*(i_Na + i_b_Na + three*i_NaK + three*i_NaCa)*Cm)/(one*V_c*F)
 
-component("Membrane")
+expressions("Membrane")
 #i_Stim = Conditional(And(Ge(time, stim_start), Le(time, stim_start + stim_duration)), -stim_amplitude, 0)
 i_Stim = -stim_amplitude*ContinuousConditional(Ge(time, stim_start), 1, 0, 0.2)*ContinuousConditional(Le(time, stim_start + stim_duration), 1, 0, 0.2)
 dV_dt = -one/one*(i_K1 + i_to + i_Kr + i_Ks + i_CaL + i_NaK + i_Na + i_b_Na + i_NaCa + i_b_Ca + i_p_K + i_p_Ca + i_Stim)
 
-component("Potassium dynamics")
+expressions("Potassium dynamics")
 dK_i_dt = (-one*((i_K1 + i_to + i_Kr + i_Ks + i_p_K + i_Stim) - two*i_NaK)*Cm)/(one*V_c*F)
 

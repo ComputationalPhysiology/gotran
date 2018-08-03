@@ -21,6 +21,7 @@ __all__ = ["CodeComponent"]
 from collections import OrderedDict, deque, defaultdict
 from sympy.core.function import AppliedUndef
 import sys
+from functools import cmp_to_key
 
 # ModelParameters imports
 from modelparameters.sympytools import sp
@@ -29,7 +30,7 @@ from modelparameters.codegeneration import sympycode
 # Local imports
 from gotran.common import error, info, debug, check_arg, check_kwarg, \
      scalars, Timer, warning, tuplewrap, parameters
-from gotran.model.odeobjects import State, Parameter, IndexedObject, Comment
+from gotran.model.odeobjects import State, Parameter, IndexedObject, Comment, cmp
 from gotran.model.expressions import *
 from gotran.model.odecomponent import ODEComponent
 from gotran.model.ode import ODE
@@ -424,8 +425,8 @@ class CodeComponent(ODEComponent):
                 # Get last cse_sym used in result expression
                 last_cse_sym = sorted((cse_sym for cse_sym in result_expr.atoms() \
                                        if cse_sym in cse_syms), \
-                                      cmp=lambda a,b : cmp(int(a.name[4:]), \
-                                                           int(b.name[4:])))[-1]
+                                      key=cmp_to_key(lambda a,b : cmp(int(a.name[4:]), \
+                                                           int(b.name[4:]))))[-1]
 
                 if result_expr not in \
                        last_cse_expr_used_in_result_expr[last_cse_sym]:
