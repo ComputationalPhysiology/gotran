@@ -112,7 +112,7 @@ class iter_objects(object):
     """
     def __init__(self, comp, return_comp=True, only_return_comp=False,
                  reverse=False, *types):
-        from odecomponent import ODEComponent
+        from .odecomponent import ODEComponent
         assert isinstance(comp, ODEComponent)
         self._types = tuplewrap(types) or (ODEObject,)
         self._return_comp = return_comp
@@ -127,7 +127,7 @@ class iter_objects(object):
     def _reverse_iter_objects(self, comp):
 
         # First all children components in reversed order
-        for sub_comp in reversed(comp.children.values()):
+        for sub_comp in reversed(list(comp.children.values())):
             for sub_tree in self._reverse_iter_objects(sub_comp):
                 yield sub_tree
 
@@ -157,12 +157,12 @@ class iter_objects(object):
                     yield obj
 
         # Thrirdly all children components
-        for sub_comp in comp.children.values():
+        for sub_comp in list(comp.children.values()):
             for sub_tree in self._iter_objects(sub_comp):
                 yield sub_tree
 
-    def next(self):
-        return self._object_iterator.next()
+    def __next__(self):
+        return next(self._object_iterator)
 
     def __iter__(self):
         return self
@@ -210,7 +210,7 @@ class ODEObjectList(list):
         self._objects = {}
 
     def keys(self):
-        return self._objects.keys()
+        return list(self._objects.keys())
 
     def append(self, item):
         check_arg(item, ODEObject, 0, ODEObjectList.append)
@@ -296,7 +296,7 @@ class RateDict(OrderedDict):
     A storage class for Markov model rates
     """
     def __init__(self, comp):
-        from odecomponent import ODEComponent
+        from .odecomponent import ODEComponent
         check_arg(comp, ODEComponent)
         self._comp = weakref.ref(comp)
         super(RateDict, self).__init__()

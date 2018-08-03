@@ -190,7 +190,7 @@ class TestODE(unittest.TestCase):
         #self.assertEqual(ode.signature(), ode_loaded.signature())
 
         # Check that all objects are the same and evaluates to same value
-        for name, obj in ode.present_ode_objects.items():
+        for name, obj in list(ode.present_ode_objects.items()):
             loaded_obj = ode_loaded.present_ode_objects[name]
             self.assertEqual(type(obj), type(loaded_obj))
             self.assertAlmostEqual(loaded_obj.param.value, obj.param.value)
@@ -207,7 +207,7 @@ class TestODE(unittest.TestCase):
                                     "Potassium dynamics",\
                                     "Transient outward current")
 
-        for name, obj in potassium.present_ode_objects.items():
+        for name, obj in list(potassium.present_ode_objects.items()):
             orig_obj = ode.present_ode_objects[name]
             self.assertAlmostEqual(orig_obj.param.value, obj.param.value)
 
@@ -218,7 +218,7 @@ class TestODE(unittest.TestCase):
                                         "Sodium calcium exchanger current",\
                                         "Sodium dynamics")
 
-        for name, obj in sodium.present_ode_objects.items():
+        for name, obj in list(sodium.present_ode_objects.items()):
             orig_obj = ode.present_ode_objects[name]
             self.assertAlmostEqual(orig_obj.param.value, obj.param.value)
 
@@ -228,7 +228,7 @@ class TestODE(unittest.TestCase):
                                          "Calcium pump current",\
                                          "L type ca current")
         
-        for name, obj in calcium.present_ode_objects.items():
+        for name, obj in list(calcium.present_ode_objects.items()):
             orig_obj = ode.present_ode_objects[name]
             self.assertAlmostEqual(orig_obj.param.value, obj.param.value)
         
@@ -333,7 +333,7 @@ class TestODE(unittest.TestCase):
         # Finalize ODE
         ode.finalize()
 
-        for name, obj in ode.present_ode_objects.items():
+        for name, obj in list(ode.present_ode_objects.items()):
 
             # If object in prefixed potassium components
             if ode.object_component[obj].name in pot_comps:

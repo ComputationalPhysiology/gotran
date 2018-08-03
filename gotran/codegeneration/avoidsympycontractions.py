@@ -47,7 +47,7 @@ def disable_evaluation():
     _evaluate = False
 
 def _assocop_new(cls, *args, **options):
-    args = map(sp.sympify, args)
+    args = list(map(sp.sympify, args))
     args = [a for a in args if a is not cls.identity]
 
     if not options.pop('evaluate', _evaluate):

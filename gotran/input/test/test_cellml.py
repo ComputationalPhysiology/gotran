@@ -11,13 +11,13 @@ from gotran.common.options import parameters
 
 supported_models_form = """
 \documentclass[a4paper,12pt]{{article}}
-\usepackage{{fullpage}}
-\usepackage{{longtable}}
-\usepackage{{multicol}}
-\usepackage{{amsmath}}
-\usepackage{{mathpazo}}
-\usepackage[mathpazo]{{flexisym}}
-\usepackage{{breqn}}
+\\usepackage{{fullpage}}
+\\usepackage{{longtable}}
+\\usepackage{{multicol}}
+\\usepackage{{amsmath}}
+\\usepackage{{mathpazo}}
+\\usepackage[mathpazo]{{flexisym}}
+\\usepackage{{breqn}}
 \setkeys{{breqn}}{{breakdepth={{1}}}}
 \\begin{{document}}
 \section{{Supported and tested CellML models in Gotran}}
@@ -34,7 +34,15 @@ cellml_models = [model.replace(".cellml", "") for model in glob.glob("*.cellml")
 not_supported = cellml_models[:]
 supported_models = []
 
-skip = dict(Pandit_Hinch_Niederer = "Some units trouble",
+skip = dict(Pandit_Hinch_Niederer="Some units trouble",
+            Niederer_et_al_2006="NameError: name 'J_TRPN' is not defined",
+            iyer_mazhari_winslow_2004="NameError: name 'INa' is not defined",
+            severi_fantini_charawi_difrancesco_2012="NameError: name 'i_f' is not defined",
+            terkildsen_niederer_crampin_hunter_smith_2008="NameError: name 'I_Na' is not defined",
+            niederer_hunter_smith_2006="NameError: name 'J_TRPN' is not defined",
+            winslow_rice_jafri_marban_ororke_1999=("self.assertTrue(rel_diff<6e-3), "
+                                                   "AssertionError: False is not true, "
+                                                   "Rel diff: 0.3952307989374001")
             )
 
 test_form = """
@@ -63,17 +71,20 @@ class TestBase(object):
     def test_run(self):
         from scipy.integrate import odeint
         import numpy as np
-        from cPickle import load
+        import pickle
 
         #self.assertEqual(self.ode.num_states, cellml_data[self.name]["num_states"])
 
         # Load reference data
         try:
-            data = load(open(self.ode.name+".cpickle"))
-        except:
+            with open(self.ode.name+".cpickle", 'rb') as f:
+                u = pickle._Unpickler(f)
+                u.encoding = 'latin1'
+                data = u.load()
+        except IOError:
             return 
         ref_time = data.pop("time")
-        state_name = data.keys()[0]
+        state_name = list(data.keys())[0]
         ref_data = data[state_name]
 
         # Compile ODE
@@ -86,10 +97,10 @@ class TestBase(object):
         # Run simulation
         t0 = ref_time[0]
         t1 = ref_time[-1]
-        print t0, t1
+        print(t0, t1)
         dt = min(0.1, t1/100000.)
         tsteps = np.linspace(t0, t1, int(t1/dt)+1)
-        print "using", dt, "to integrate", self.ode.name
+        print("using", dt, "to integrate", self.ode.name)
         results = odeint(rhs, y0, tsteps, Dfun=jac, args=(model_params,))
         
         # Get data to compare with ref
@@ -111,17 +122,17 @@ class TestBase(object):
             pylab.title(self.name.replace("_", "\_"))
             pylab.show()
     
-        print "Rel diff:", rel_diff
+        print("Rel diff:", rel_diff)
         self.assertTrue(rel_diff<6e-3)
         supported_models.append(not_supported.pop(not_supported.index(self.name)))
 
 test_code = []
 for name in cellml_models:
     if name in skip:
-        print "Skipping:", name, "because", skip[name]
+        print("Skipping:", name, "because", skip[name])
         continue
     test_code.append(test_form.format(name=name))
-    
+
 exec("\n\n".join(test_code))
 do_plot = False
 

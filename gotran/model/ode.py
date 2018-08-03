@@ -20,6 +20,7 @@ __all__ = ["ODE"]
 # System imports
 from collections import defaultdict
 import weakref
+from functools import cmp_to_key
 
 from sympy.core.function import AppliedUndef
 
@@ -46,7 +47,7 @@ class ODE(ODEComponent):
         A namespace which will be filled with declared ODE symbols
     """
     def __new__(cls, *args, **kwargs):
-        self = object.__new__(cls, *args, **kwargs)
+        self = object.__new__(cls)
 
         return self
 
@@ -226,7 +227,7 @@ class ODE(ODEComponent):
                         subs[obj.sym] = added.add_parameter(new_name, obj.param)
 
             # Add child components
-            for child in comp.children.values():
+            for child in list(comp.children.values()):
                 added_child = added.add_component(child.name)
 
                 # Get corresponding component in present ODE
@@ -294,7 +295,7 @@ class ODE(ODEComponent):
                         elif isinstance(obj, StateSolution):
                             subs[obj.sym] = added.add_state_solution(\
                                 state, new_expr)
-                            print repr(obj), obj.sym
+                            print(repr(obj), obj.sym)
                         else:
                             error("Should not reach here...")
 
@@ -475,8 +476,8 @@ class ODE(ODEComponent):
         # Use Python code generator to indent outputted code
         # Write to file
         from gotran.codegeneration.codegenerators import PythonCodeGenerator
-        open(basename+".ode", "w").write("\n".join(\
-            PythonCodeGenerator.indent_and_split_lines(lines)))
+        with open(basename+".ode", "w") as f:
+            f.write("\n".join(PythonCodeGenerator.indent_and_split_lines(lines)))
 
     def register_ode_object(self, obj, comp, dependent=None):
         """
@@ -751,7 +752,7 @@ class ODE(ODEComponent):
             # Remove the added component
             components.remove(comp)
 
-            for child in comp.children.values():
+            for child in list(comp.children.values()):
                 add_comp_and_children(child, components, added)
 
         # Add component recursivly
@@ -869,12 +870,13 @@ class ODE(ODEComponent):
 
             # Sort state expressions wrt stringified state names
             def_list += [sympycode(expr.expr) for expr in sorted(\
-                self.state_expressions, cmp=lambda o0, o1: cmp(\
-                    str(o0.state), str(o1.state)))]
+                self.state_expressions, key=cmp_to_key(lambda o0, o1:
+                                                       cmp(str(o0.state),
+                                                           str(o1.state))))]
 
             
         h = hashlib.sha1()
-        h.update(";".join(def_list))
+        h.update(";".join(def_list).encode('utf-8'))
         return h.hexdigest()
 
     def _replace_object(self, old_obj, replaced_obj, replace_dicts):

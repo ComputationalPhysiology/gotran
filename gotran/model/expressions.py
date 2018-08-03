@@ -126,8 +126,9 @@ class Expression(ODEValueObject):
         super(Expression, self).__init__(name, expr, dependent)
 
         # Collect dependent symbols
-        dependent = tuple(sorted(symbols_from_expr(expr), \
-                        cmp=lambda a,b:cmp(sympycode(a), sympycode(b))))
+        dependent = tuple(sorted(symbols_from_expr(expr),
+                                 key=cmp_to_key(lambda a, b: cmp(sympycode(a),
+                                                                 sympycode(b)))))
 
         if dependent:
             self._sym = self._param.sym(*dependent)

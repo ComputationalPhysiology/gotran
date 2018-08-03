@@ -20,6 +20,7 @@ __all__ = ["ODEComponent"]
 # System imports
 from collections import OrderedDict, defaultdict
 import weakref
+from functools import partial
 
 from sympy.core.function import AppliedUndef
 
@@ -478,7 +479,7 @@ class ODEComponent(ODEObject):
         """
         Return a list of all intermediates
         """
-        return [obj for obj in iter_objects(self, False, False, False, \
+        return [obj for obj in iter_objects(self, False, False, False,
                                             Intermediate)]
 
     @property
@@ -486,7 +487,7 @@ class ODEComponent(ODEObject):
         """
         Return a list of state expressions
         """
-        return sorted((obj for obj in iter_objects(self, False, False, \
+        return sorted((obj for obj in iter_objects(self, False, False,
                                                    False, StateExpression)))
 
     @property
@@ -579,7 +580,7 @@ class ODEComponent(ODEObject):
         True if the component and all its children are locally complete
         """
         return self.is_locally_complete and all(child.is_complete for child \
-                                                in self.children.values())
+                                                in list(self.children.values()))
 
     @property
     def is_locally_complete(self):
@@ -945,7 +946,7 @@ class ODEComponent(ODEObject):
                 states[used_states.find(0)]))
 
         # Check rate symetry
-        for (ind_from, ind_to), times in rate_check.items():
+        for (ind_from, ind_to), times in list(rate_check.items()):
             if times != 2:
                 error("Only one rate between the states {0} and {1} was "\
                       "registered, expected two.".format(\

@@ -22,7 +22,7 @@ import time
 import os
 import numpy
 
-from cPickle import Unpickler, Pickler
+from pickle import Unpickler, Pickler
 from os.path import isdir, join
 
 # gotran imports
@@ -67,9 +67,9 @@ def compare_dicts(p1, p2):
     assert(isinstance(p2, dict))
     try:
         ret = p1 == p2
-    except ValueError, e:
+    except ValueError as e:
         ret = True
-        for key, value in p1.iteritems():
+        for key, value in p1.items():
             if isinstance(value, numpy.ndarray):
                 ret = ret and (value == p2[key]).all()
             elif isinstance(value, dict):
@@ -96,7 +96,7 @@ def load(basename, latest_timestamp=False, collect=False):
     check_arg(basename, str, 0)
 
     if latest_timestamp and collect:
-        raise TypeError, "'collect' and 'latest_timestamp' cannot both be True"
+        raise TypeError("'collect' and 'latest_timestamp' cannot both be True")
     
     # If not collect just return the data froma single data file
     if not collect:
@@ -125,8 +125,8 @@ def merge_data_dicts(data0, data1):
     "Merge data from data1 into data0"
 
     def recursively_merge_data(data0, data1):
-        for (key, values), org_values in zip(data1.iteritems(),\
-                                             data0.values()):
+        for (key, values), org_values in zip(iter(data1.items()),\
+                                             list(data0.values())):
             if isinstance(values, dict):
                 data0[key] = recursively_merge_data(org_values, values)
             elif isinstance(values, list):
@@ -138,7 +138,7 @@ def merge_data_dicts(data0, data1):
                 data0[key] = org_values
         return data0
     
-    for (key, values), org_values in zip(data1.iteritems(), data0.values()):
+    for (key, values), org_values in zip(iter(data1.items()), list(data0.values())):
         if key == "params":
             continue
         
@@ -150,14 +150,14 @@ def load_single_data(basename, latest_timestamp):
     if latest_timestamp:
         filenames = get_data_filenames(basename)
         if not filenames:
-            raise IOError, "No files with timestamp for basename: "\
-                  "'%s' excist"%basename
+            raise IOError("No files with timestamp for basename: "\
+                  "'%s' excist"%basename)
         basename = filenames[-1]
         
     filename = basename if ".cpickle" in basename else basename+".cpickle"
     
     if not os.path.isfile(filename):
-        raise IOError, "No file with basename: '%s' excists"%basename
+        raise IOError("No file with basename: '%s' excists"%basename)
         
     
     info("Loading data from: %s", filename)

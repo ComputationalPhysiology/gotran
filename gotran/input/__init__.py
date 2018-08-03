@@ -15,11 +15,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-import cellml
+from . import cellml
 
-from cellml import *
+from .cellml import *
 
-__all__ = [_name for _name in globals().keys() if _name[0] != "_"]
-
-del _name
-
+__all__ = [_name for _name in list(globals().keys()) if _name[0] != "_"]

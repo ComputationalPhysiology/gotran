@@ -15,12 +15,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, re
-import urllib
+import re
+import urllib.request, urllib.parse, urllib.error
 from xml.etree import ElementTree
+from functools import cmp_to_key
 
 from collections import OrderedDict, deque, defaultdict
 from gotran.common import info, warning, error, check_arg, begin_log, end_log
+from gotran.model.odeobjects import cmp
 
 from modelparameters.codegeneration import _all_keywords
 from modelparameters.parameterdict import *
@@ -82,14 +84,14 @@ class Component(object):
         self.state_variables = OrderedDict((state, variables.pop(state, None))\
                                            for state in state_variables)
 
-        for state, info in self.state_variables.items():
+        for state, info in list(self.state_variables.items()):
             self.variable_info[state] = info
             self.variable_info["type"] = "state_variable"
         
         self.parameters = OrderedDict((name, info) for name, info in \
-                                      variables.items() if info["init"] is not None)
+                                      list(variables.items()) if info["init"] is not None)
 
-        for param, info in self.parameters.items():
+        for param, info in list(self.parameters.items()):
             self.variable_info[param] = info
             self.variable_info["type"] = "parameter"
 
@@ -215,7 +217,7 @@ class Component(object):
         # Update parameters
         self.parameters = OrderedDict((newname if name == oldname else \
                                        name, value) for name, value in \
-                                      self.parameters.items())
+                                      list(self.parameters.items()))
 
         # Update equations
         for eqn in self.equations:
@@ -241,14 +243,14 @@ class Component(object):
         # Update parameters
         self.state_variables = OrderedDict((newname if name == oldname \
                             else name, value) for name, value in \
-                            self.state_variables.items())
+                            list(self.state_variables.items()))
 
         oldder = self.derivatives[oldname]
         newder = oldder.replace(oldname, newname)
         self.derivatives = OrderedDict((newname if name == oldname else name, \
                                         newder if value == oldder else value) \
                                        for name, value in \
-                                       self.derivatives.items())
+                                       list(self.derivatives.items()))
         # Update equations
         for eqn in self.equations:
             while oldname in eqn.expr:
@@ -341,15 +343,16 @@ class CellMLParser(object):
 
         # Open file or url
         try:
-            fp = open(model_source, "r")
+            with open(model_source, "r") as fp:
+                self.cellml = ElementTree.parse(fp).getroot()
         except IOError:
             try:
-                fp = urllib.urlopen(model_source)
+                fp = urllib.request.urlopen(model_source)
+                self.cellml = ElementTree.parse(fp).getroot()
             except:
                 error("ERROR: Unable to open " + model_source)
 
-        self.model_source = model_source
-        self.cellml = ElementTree.parse(fp).getroot()
+        self.model_source = model_source        
         self.name = self.cellml.attrib['name']
         begin_log("Parsing CellML model: {0}".format(self.name))
         self.mathmlparser = MathMLBaseParser(self._params.use_sympy_integers)
@@ -366,19 +369,22 @@ class CellMLParser(object):
         """
         namespace = "{http://cellml.org/tmp-documentation}"
         article = self.cellml.getiterator(namespace+"article")
-        if not article:
+
+        try:
+            article = next(article)
+        except StopIteration:
             return ""
 
-        article = article[0]
-
-        # Get title
-        if article.getiterator(namespace+"articleinfo") and \
-               article.getiterator(namespace+"articleinfo")[0].\
-               getiterator(namespace+"title"):
-            title = article.getiterator(namespace+"articleinfo")[0].\
-                    getiterator(namespace+"title")[0].text
-        else:
+        try:
+            articleinfo = next(article.getiterator(namespace+"articleinfo"))
+        except StopIteration:
             title = ""
+        else:
+            # Get title
+            if articleinfo and articleinfo.getiterator(namespace+"title"):
+                title = next(articleinfo.getiterator(namespace+"title")).text
+            else:
+                title = ""
 
         # Get model structure comments
         for child in article.getchildren():
@@ -432,7 +438,7 @@ class CellMLParser(object):
         unit_map = si_unit_map.copy()
 
         # Extend unit_map
-        for cellml_pref, pref in prefix_map.items():
+        for cellml_pref, pref in list(prefix_map.items()):
             if cellml_pref:
                 unit_map[cellml_pref+"molar"] = pref+"M"
                 collected_units[cellml_pref+"molar"] = {pref+"M": (pref+"M", "1")}
@@ -469,7 +475,7 @@ class CellMLParser(object):
                     if prefix:
                         warning("Skipping prefix of unit '{0}'".format(cellml_unit))
                     for name, (fullnam, part_exponent) in \
-                            collected_units[cellml_unit].items():
+                            list(collected_units[cellml_unit].items()):
                         new_exponent = float(part_exponent) * float(exponent)
 
                         if new_exponent % 1.0 == 0.0:
@@ -501,7 +507,7 @@ class CellMLParser(object):
                         
                 collected_units[unit_name] = collected_parts
                 unit_map[unit_name] = "*".join(fullname for fullname, exp \
-                                               in collected_parts.values())
+                                               in list(collected_parts.values()))
            
         # Store unit map
         self.units_map = unit_map
@@ -521,7 +527,7 @@ class CellMLParser(object):
         """
         
         # Check for duplication of states
-        for name in comp.state_variables.keys():
+        for name in list(comp.state_variables.keys()):
             der_name = "d{0}_dt".format(name)
             if name in self._params.change_state_names:
                 newname = name + "_" + comp.name.split("_")[0]
@@ -600,7 +606,7 @@ class CellMLParser(object):
             collected_states[name] = comp
 
         # Check parameters
-        for name in comp.parameters.keys():
+        for name in list(comp.parameters.keys()):
 
             # Check parameter name vs collected state names
             if name in collected_states:
@@ -797,7 +803,7 @@ class CellMLParser(object):
                 components[comp.name] = comp
 
         # Extract states, parameters and equations
-        for comp in components.values():
+        for comp in list(components.values()):
 
             self.check_and_register_component_variables(\
                 comp, collected_states, collected_parameters, \
@@ -865,9 +871,9 @@ class CellMLParser(object):
         #derivatives = []
 
         # Get variables that are used outside the component
-        variables_used_in_connections = self.new_variable_connections.get(\
-            comp_name, dict()).keys() + self.same_variable_connections.get(\
-            comp_name, dict()).keys()
+        variables_used_in_connections = list(self.new_variable_connections.get(\
+            comp_name, dict()).keys()) + list(self.same_variable_connections.get(\
+            comp_name, dict()).keys())
                 
         # Get variable and initial values
         for var in self.get_iterator("variable", comp):
@@ -985,7 +991,7 @@ class CellMLParser(object):
         
         # Gather zero dependent equations
         for comp in circular_components:
-            for dep_comp, equations in comp.dependencies.items():
+            for dep_comp, equations in list(comp.dependencies.items()):
                 for equation in equations:
                     if not equation.dependent_equations and equation.name \
                            in comp.used_variables:
@@ -995,7 +1001,7 @@ class CellMLParser(object):
         # Check for one dependency if that is the zero one
         one_dep_zero_dep = defaultdict(set)
         for comp in circular_components:
-            for dep_comp, equations in comp.dependencies.items():
+            for dep_comp, equations in list(comp.dependencies.items()):
                 for equation in equations:
                     if len(equation.dependent_equations) == 1 and \
                            equation.name in comp.used_variables and \
@@ -1028,7 +1034,7 @@ class CellMLParser(object):
         # Build graph
         for comp in components:
             [G.add_edge(dep.name, comp.name, key=equation.name)
-             for dep, equations in comp.dependencies.items() \
+             for dep, equations in list(comp.dependencies.items()) \
              for equation in equations]
 
         # collecte edges that breaks cycles
@@ -1081,7 +1087,7 @@ class CellMLParser(object):
                     # Go through the collected valid breakers and pick the one
                     # with least edges first
                     for j, local_edges in enumerate(sorted(\
-                        local_breakers, lambda o0, o1: cmp(len(o0), len(o1)))):
+                        local_breakers, key=cmp_to_key(lambda o0, o1: cmp(len(o0), len(o1))))):
 
                         # If the removed edge is in the local edges
                         if edge_remove in local_edges:
@@ -1128,7 +1134,7 @@ class CellMLParser(object):
 
             # Transfer used_in to new component
             new_dependent_componets = OrderedDict()
-            for dep_comp, equations in old_comp.used_in.items():
+            for dep_comp, equations in list(old_comp.used_in.items()):
                 assert equations
 
                 if eq not in equations or dep_comp == ode_comp:
@@ -1175,7 +1181,7 @@ class CellMLParser(object):
             message = "To avoid circular dependency the following equations "\
                       "has been moved:"
             
-        except Exception, e:
+        except Exception as e:
             warning("Topological sort failed: " + str(e))
             message = "In a try to avoid circular dependency the following equations "\
                       "has been moved:"
@@ -1186,7 +1192,7 @@ class CellMLParser(object):
 
         warning(message)
         
-        for eq, old_comp in removed_equations.items():
+        for eq, old_comp in list(removed_equations.items()):
             warning("{0} : from {1} to {2} component".format(\
                 eq.name, old_comp.name, ode_comp.name))
 
@@ -1203,7 +1209,7 @@ class CellMLParser(object):
             # Build graph
             for comp in components:
                 [G.add_edge(dep.name, comp.name, key=equation.name)
-                 for dep, equations in comp.dependencies.items() \
+                 for dep, equations in list(comp.dependencies.items()) \
                  for equation in equations]
 
             try:
@@ -1214,7 +1220,7 @@ class CellMLParser(object):
                 
                 # components.sort(lambda n0, n1: cmp(sorted_components.index(n0.name), \
                 #                                    sorted_components.index(n1.name)))
-            except Exception, e:
+            except Exception as e:
                 warning("Topological sort failed a second time: " + str(e))
             
         return components
@@ -1247,7 +1253,7 @@ class CellMLParser(object):
                 encapsulations, dummy = self.get_parents("encapsulation")
 
             # Add any encapsulated components to the target list
-            for target, new_target_name in targets.items():
+            for target, new_target_name in list(targets.items()):
                 if target in encapsulations:
                     for child in encapsulations[target]["children"]:
                         targets[child] = child.replace(\
@@ -1256,7 +1262,7 @@ class CellMLParser(object):
             target_parents = dict()
 
             # Update all_parents
-            for comp_name, parent_name in all_parents.items():
+            for comp_name, parent_name in list(all_parents.items()):
                 if parent_name not in targets:
                     continue
                 target_parents[targets[comp_name]] = targets[parent_name]
@@ -1283,8 +1289,8 @@ class CellMLParser(object):
             
 
         # Add parent information
-        all_component_names = components.keys()
-        for name, comp in components.items():
+        all_component_names = list(components.keys())
+        for name, comp in list(components.items()):
 
             if targets:
                 parent_name = target_parents.get(name)
@@ -1307,17 +1313,17 @@ class CellMLParser(object):
 
         # If we only extract a sub set of component we do not sort
         if targets:
-            return components.values()
+            return list(components.values())
 
         # Before dependencies are checked we change names according to
         # variable mappings in the original CellML file
         if self.new_variable_connections:
             begin_log("\nRenaming variables through connections")
             
-        for comp, variables in self.new_variable_connections.items():
+        for comp, variables in list(self.new_variable_connections.items()):
 
             # Iterate over old and new names
-            for oldname, newnames in variables.items():
+            for oldname, newnames in list(variables.items()):
 
                 # Check that the direction of the connection is correct
                 # If no variable info is registered for this comp or its
@@ -1369,7 +1375,7 @@ class CellMLParser(object):
                             components[comp].children for other_comp in old_name_used):
 
                         # Get new name
-                        newname = newnames.keys()[0]
+                        newname = list(newnames.keys())[0]
 
                         # If oldname in component
                         if components[comp].variable_info.get(oldname) is not None:
@@ -1394,14 +1400,14 @@ class CellMLParser(object):
             end_log()
         
         # Add dependencies and sort the components accordingly
-        return self.sort_components(components.values())
+        return self.sort_components(list(components.values()))
         
     def parse_connections(self):
         new_variable_names = dict()
         same_variable_names = dict()
         
         for con in self.get_iterator("connection"):
-            con_map = self.get_iterator("map_components", con)[0]
+            con_map = next(self.get_iterator("map_components", con))
             comp1 = con_map.attrib["component_1"]
             comp2 = con_map.attrib["component_2"]
 
@@ -1463,7 +1469,7 @@ class CellMLParser(object):
             # If only 1 state it might be included in the name
             state_name = ""
             if len(comp.state_variables) == 1:
-                state_name = comp.state_variables.keys()[0]
+                state_name = list(comp.state_variables.keys())[0]
                 if state_name in comp.name:
                     new_name = state_name.join(part.replace("_", " ") \
                                 for part in comp.name.split(state_name))
@@ -1498,7 +1504,7 @@ class CellMLParser(object):
             if comp.state_variables:
                 declaration_lines.append("")
                 declaration_lines.append("states({0},".format(comp_name))
-                for name, info in comp.state_variables.items():
+                for name, info in list(comp.state_variables.items()):
                     if info["unit"] != "1":
                         declaration_lines.append("       {0} = ScalarParam({1}"\
                                 ", unit=\"{2}\"),".format(name, float(info["init"]), info["unit"]))
@@ -1511,7 +1517,7 @@ class CellMLParser(object):
             if comp.parameters:
                 declaration_lines.append("")
                 declaration_lines.append("parameters({0},".format(comp_name))
-                for name, info in comp.parameters.items():
+                for name, info in list(comp.parameters.items()):
                     if info["unit"] != "1":
                         declaration_lines.append("           {0} = ScalarParam({1}"\
                                 ", unit=\"{2}\"),".format(name, float(info["init"]), info["unit"]))

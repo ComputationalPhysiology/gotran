@@ -24,7 +24,7 @@ class adict(dict):
         dict.__init__(self, **kwargs)
         
     def __getstate__(self):
-        return self.__dict__.items()
+        return list(self.__dict__.items())
     
     def __setstate__(self, items):
         for key, val in items:
@@ -67,7 +67,7 @@ class odict(dict):
         return self._keys
 
     def __iter__(self):
-        return self.iterkeys()
+        return iter(self.keys())
 
     def iterkeys(self):
         for key in self._keys:

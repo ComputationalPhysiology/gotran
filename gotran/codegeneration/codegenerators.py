@@ -36,6 +36,7 @@ from gotran.model.expressions import Expression, Intermediate, \
 from gotran.codegeneration.codecomponent import CodeComponent
 from gotran.codegeneration.algorithmcomponents import *
 from gotran.codegeneration.solvercomponents import *
+from functools import reduce
 
 __all__ = ["PythonCodeGenerator", "CCodeGenerator", "CppCodeGenerator", \
            "MatlabCodeGenerator", "class_name", "CUDACodeGenerator"]
@@ -204,7 +205,7 @@ class BaseCodeGenerator(object):
                 params=self.params.code))
 
         # Add code for solvers
-        for solver, solver_params in self.params.solvers.items():
+        for solver, solver_params in list(self.params.solvers.items()):
             if solver_params.generate:
                 kwargs = solver_params.copy(to_dict=True)
                 kwargs.pop("generate")
@@ -868,7 +869,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
 
         check_arg(ode, ODE)
         name = class_name(ode.name)
-        code_list = self.code_dict(ode, monitored=monitored, indent=1).values()
+        code_list = list(self.code_dict(ode, monitored=monitored, indent=1).values())
 
         self.params.class_code = class_code_param
         return  """
@@ -884,7 +885,7 @@ class {0}:
         self.params.class_code = False
 
         check_arg(ode, ODE)
-        code_list = self.code_dict(ode, monitored).values()
+        code_list = list(self.code_dict(ode, monitored).values())
         self.params.class_code = class_code_param
 
         return  """# Gotran generated code for the  "{0}" model
@@ -1338,7 +1339,7 @@ class CCodeGenerator(BaseCodeGenerator):
         return  """// Gotran generated C/C++ code for the "{0}" model
 
 {1}
-""".format(ode.name, "\n\n".join(self.code_dict(ode, monitored=monitored).values()))
+""".format(ode.name, "\n\n".join(list(self.code_dict(ode, monitored=monitored).values())))
 
 class CppCodeGenerator(CCodeGenerator):
 
@@ -1364,7 +1365,7 @@ public:
 
 }};
 """.format(ode.name, class_name(ode.name, monitored), "\n\n".join(\
-                         self.code_dict(ode, indent=2).values()))
+                         list(self.code_dict(ode, indent=2).values())))
 
 class CUDACodeGenerator(CCodeGenerator):
     # Class attributes
@@ -1709,8 +1710,8 @@ class CUDACodeGenerator(CCodeGenerator):
 
     def module_code(self, ode, monitored=None):
 
-        code_list = self.code_dict(ode, monitored=monitored, \
-                                   include_index_map=False).values()
+        code_list = list(self.code_dict(ode, monitored=monitored, \
+                                   include_index_map=False).values())
         code_list.append(self.field_states_getter_code(ode))
         code_list.append(self.field_states_setter_code(ode))
         code_list.append(self.field_parameters_setter_code(ode))

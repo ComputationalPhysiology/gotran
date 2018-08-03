@@ -1,7 +1,7 @@
 """test for odecomponent module"""
 
 # Imports for evaluation of generated code
-from __future__ import division
+
 import numpy as np
 import math
 
@@ -68,8 +68,8 @@ rhs_ref_values = rhs(states_values, 0.0, parameter_values)
 jac_ref_values = compute_jacobian(states_values, 0.0, parameter_values)
 
 if debug:
-    print "REF RHS:", rhs_ref_values
-    print "REF JAC:", jac_ref_values
+    print("REF RHS:", rhs_ref_values)
+    print("REF JAC:", jac_ref_values)
 
 test_map = {}
 
@@ -94,7 +94,7 @@ def function_closure(body_repr, body_optimize, param_repr, \
         body_in_arg:     {9}""".format(\
             body_repr, body_optimize, state_repr, param_repr, use_cse, \
             float_precision, states_name, parameters_name, body_array_name, body_in_arg)
-        print "\nTesting code generation with parameters: " + test_name
+        print("\nTesting code generation with parameters: " + test_name)
 
         gen_params = parameters["generation"].copy()
 
@@ -117,7 +117,7 @@ def function_closure(body_repr, body_optimize, param_repr, \
         codegen = PythonCodeGenerator(gen_params)
         rhs_comp = rhs_expressions(ode, params=code_params)
         rhs_code = codegen.function_code(rhs_comp)
-        exec rhs_code in globals(), locals()
+        exec(rhs_code, globals(), locals())
 
         # DEBUG
         if debug:
@@ -142,7 +142,7 @@ def function_closure(body_repr, body_optimize, param_repr, \
 
         # DEBUG
         if debug:
-            print "rhs norm:", rhs_norm
+            print("rhs norm:", rhs_norm)
 
         eps = 1e-8 if float_precision == "double" else 1e-6
         self.assertTrue(rhs_norm<eps)
@@ -163,7 +163,7 @@ def function_closure(body_repr, body_optimize, param_repr, \
 
             open("jac_code_{0}.py".format(test_name), "w").write(jac_code)
 
-        exec jac_code in globals(), locals()
+        exec(jac_code, globals(), locals())
 
         args = [states_values, 0.0]
         if param_repr != "numerals":
@@ -177,7 +177,7 @@ def function_closure(body_repr, body_optimize, param_repr, \
         jac_norm = np.sqrt(np.sum(jac_ref_values-jac_values)**2)
 
         if debug:
-            print "jac norm:", jac_norm
+            print("jac norm:", jac_norm)
             #print "JAC", jac_values
 
         eps = 1e-8 if float_precision == "double" else 1e-3
@@ -277,7 +277,7 @@ for param_name, state_name, body_name in [["PARAMETERS", "STATES", "ALGEBRAIC"],
     
 
 # Populate the test class with methods
-for test_name, test_function in test_map.items():
+for test_name, test_function in list(test_map.items()):
     setattr(TestCodeComponent, test_name, test_function)
         
 if __name__ == "__main__":

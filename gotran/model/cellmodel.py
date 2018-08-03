@@ -240,8 +240,8 @@ class CellModel(ODE):
                 unit_dep_map[dep]=unit
                        
             # Substitute again 
-            for k, v in unit_dep_map.items():
-                for k1, v1 in unit_dep_map.items():
+            for k, v in list(unit_dep_map.items()):
+                for k1, v1 in list(unit_dep_map.items()):
                     k = k.subs(k1, v1)
                 expr = expr.subs(k, v)
                 
@@ -258,13 +258,13 @@ class CellModel(ODE):
                     unit_exprs.append(unit_+exp)
                     
             
-            for k, v in expr.as_powers_dict().items():
+            for k, v in list(expr.as_powers_dict().items()):
 
                 # If term consist of multiple term, choose one of them
                 if k.is_Add:
                     k = k.as_coeff_add()[1][0]
             
-                    for k1, v1 in k.as_powers_dict().items():
+                    for k1, v1 in list(k.as_powers_dict().items()):
                         add_unit(k1, v1)
                     
                 else:
@@ -642,7 +642,7 @@ class CellModel(ODE):
 
 
             module = imp.new_module("simulation")
-            exec code in module.__dict__
+            exec(code, module.__dict__)
 
             ode = module.ODESim()
             from cellmodels.odesolver import ODESolver
@@ -655,7 +655,7 @@ class CellModel(ODE):
 
             if atol: options["atol"] = atol * np.ones(len(states))
 
-            for k, v in kwargs.iteritems():
+            for k, v in kwargs.items():
                 if v and k in options: options[k] = v
 
 

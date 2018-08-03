@@ -139,7 +139,7 @@ class MathMLBaseParser(object):
         # If use special method to parse
         if hasattr(self, "_parse_" + op):
             return getattr(self, "_parse_" + op)(root, parent)
-        elif op in self._operators.keys():
+        elif op in list(self._operators.keys()):
             # Build the equation string
             eq  = []
             
@@ -240,7 +240,7 @@ class MathMLBaseParser(object):
     
     def _parse_cn(self, var, parent):
         value = var.text.strip()
-        if "type" in var.keys() and var.get("type") == "e-notation":
+        if "type" in list(var.keys()) and var.get("type") == "e-notation":
             # Get rid of potential float repr
             exponent = "e" + str(int(var.getchildren()[0].tail.strip()))
         else:

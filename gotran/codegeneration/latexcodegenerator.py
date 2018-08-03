@@ -30,7 +30,7 @@ from modelparameters.parameterdict import ParameterDict
 
 # Other imports
 import string
-from StringIO import StringIO
+from io import StringIO
 import sympy
 import tokenize
 
@@ -547,7 +547,7 @@ class LatexCodeGenerator(object):
         # Some values are treated as special cases by sympy.sympify.
         # Return these as they are.
         if isinstance(expr, str) and expr in \
-                filter(lambda x: len(x) == 1, dir(sympy)):
+                [x for x in dir(sympy) if len(x) == 1]:
             return expr
         return mp_latex(sympy.sympify(expr), **self.print_settings)
 

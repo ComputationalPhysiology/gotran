@@ -23,22 +23,22 @@ import modelparameters.codegeneration
 import modelparameters.sympytools
 
 # Import gotran modules
-import common
-import model
+from . import common
+from . import model
 #import algorithms
-import codegeneration
-import input
-import solver
+from . import codegeneration
+from . import input
+from . import solver
 
 # Import classes and routines from gotran modules
-from common import DEBUG, INFO, WARNING, ERROR, CRITICAL, \
+from .common import DEBUG, INFO, WARNING, ERROR, CRITICAL, \
      info, debug, warning, error, set_log_level, list_timings, \
      GotranException, parameters
-from model import *
+from .model import *
 #from algorithms import *
-from codegeneration import *
-from input import *
-from solver import *
+from .codegeneration import *
+from .input import *
+from .solver import *
 
 # Model parameters
 from modelparameters.parameters import ScalarParam
@@ -51,4 +51,4 @@ globals().update(_sp_namespace)
 globals().update(dict(eye=_sp.eye, diag=_sp.diag, Matrix=_sp.Matrix, zeros=_sp.zeros))
     
 # Assign the __all__ attribute
-__all__ = [name for name in globals().keys() if name[:1] != "_"]
+__all__ = [name for name in list(globals().keys()) if name[:1] != "_"]

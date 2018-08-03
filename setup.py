@@ -11,7 +11,7 @@ import sys
 
 # Version number
 major = 3
-minor = 0
+minor = 1
 
 scripts = glob.glob("scripts/*")
 
@@ -78,16 +78,6 @@ setup(name = "Gotran",
       packages = ["gotran", "gotran.common", "gotran.model",
                   "gotran.algorithms", "gotran.codegeneration",
                   "gotran.input", "gotran.solver"],
-      install_requires = ["modelparameters>=0.1", "sympy==0.7.6.1",
-                          "instant>=2016.1"],
-      dependency_links = ["https://bitbucket.org/finsberg/modelparameters/"\
-                          "get/master.tar.gz#egg=modelparameters-0.1",
-                          "https://bitbucket.org/fenics-project/instant/"\
-                          "downloads/instant-2016.1.0.tar.gz"\
-                          "#egg=instant-2016.1"],
-      extras_require = {
-          "gotranrun":  ["scipy>=0.11"],
-          },
       
       scripts = scripts,
       cmdclass    = {'test': run_tests,

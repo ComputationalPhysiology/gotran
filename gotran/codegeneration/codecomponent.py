@@ -96,7 +96,7 @@ class CodeComponent(ODEComponent):
         # Turn off magic attributes, see ODEComponent.__setattr__
         # method
         self._allow_magic_attributes = False
-        for result_name, result_expressions in results.items():
+        for result_name, result_expressions in list(results.items()):
             check_kwarg(result_expressions, result_name, list, \
                         itemtypes=(Expression, Comment))
 
@@ -120,7 +120,7 @@ class CodeComponent(ODEComponent):
         else:
             self.param_state_replace_dict = {}
 
-        self.results = results.keys()
+        self.results = list(results.keys())
         
         # Recreate body expressions based on the given result_expressions
         if results:
@@ -216,7 +216,7 @@ class CodeComponent(ODEComponent):
         if no base names give all indexed objects are returned
         """
         if not basenames:
-            basenames = self.shapes.keys()
+            basenames = list(self.shapes.keys())
         return [obj for obj in self.ode_objects if isinstance(\
             obj, IndexedObject) and obj.basename in basenames]
 
@@ -291,13 +291,13 @@ class CodeComponent(ODEComponent):
                 self.shapes["field_"+param_name] = (len(field_parameters),)
             param_state_replace_dict.update((param.sym, indexed.sym) \
                                             for param, indexed in \
-                                            param_state_map["parameters"].items())
+                                            list(param_state_map["parameters"].items()))
 
         if state_repr == "array":
             self.shapes[state_name] = (self.root.num_full_states,)
             param_state_replace_dict.update((state.sym, indexed.sym) \
                                             for state, indexed in \
-                                            param_state_map["states"].items())
+                                            list(param_state_map["states"].items()))
 
         param_state_replace_dict[self.root._time.sym] = sp.Symbol(time_name)
         param_state_replace_dict[self.root._dt.sym] = sp.Symbol(dt_name)
@@ -313,7 +313,7 @@ class CodeComponent(ODEComponent):
         """
 
         # Store results
-        self.results = results.keys()
+        self.results = list(results.keys())
 
         if not results:
             return {}, []
@@ -327,11 +327,11 @@ class CodeComponent(ODEComponent):
     def _expanded_result_expressions(self, **results):
 
         # Extract all result expressions
-        orig_result_expressions = sum(results.values(), [])
+        orig_result_expressions = sum(list(results.values()), [])
         
         # A map between result expression and result name
         result_names = dict((result_expr, result_name) for \
-                            result_name, result_exprs in results.items() \
+                            result_name, result_exprs in list(results.items()) \
                             for result_expr in result_exprs)
 
         # The expanded result expressions
@@ -339,7 +339,7 @@ class CodeComponent(ODEComponent):
                                  for obj in orig_result_expressions]
 
         # Set shape for result expressions
-        for result_name, result_expressions in results.items():
+        for result_name, result_expressions in list(results.items()):
             if result_name not in self.shapes:
                 self.shapes[result_name] = (len(result_expressions),)
 
@@ -451,7 +451,7 @@ class CodeComponent(ODEComponent):
         body_expressions.append(self.ode_objects[-1])
         
         # Register the common sub expressions as Intermediates
-        for cse_sym, expr in cse_exprs.items():
+        for cse_sym, expr in list(cse_exprs.items()):
 
             #print cse_sym, expr
         
@@ -518,7 +518,7 @@ class CodeComponent(ODEComponent):
         timer = Timer("Compute dependencies for {0}".format(self.name))
 
         # Extract all result expressions
-        result_expressions = sum(results.values(), [])
+        result_expressions = sum(list(results.values()), [])
         
         # Check passed expressions
         ode_expr_deps = self.root.expression_dependencies
@@ -583,17 +583,17 @@ class CodeComponent(ODEComponent):
         if not (results or body_expressions):
             return 
             
-        for result_name, result_expressions in results.items():
+        for result_name, result_expressions in list(results.items()):
             check_kwarg(result_expressions, result_name, list, \
                         context=CodeComponent._recreate_body, \
                         itemtypes=(Expression, Comment))
 
         # Extract all result expressions
-        result_expressions = sum(results.values(), [])
+        result_expressions = sum(list(results.values()), [])
 
         # A map between result expression and result name
         result_names = dict((result_expr, result_name) for \
-                            result_name, result_exprs in results.items() \
+                            result_name, result_exprs in list(results.items()) \
                             for result_expr in result_exprs)
 
         timer = Timer("Recreate body expressions for {0}".format(self.name))
@@ -606,11 +606,11 @@ class CodeComponent(ODEComponent):
         # present dependencies so any updates done in these dictionaries does not
         # affect the original dicts
         object_used_in = defaultdict(set)
-        for expr, used in self.root.object_used_in.items():
+        for expr, used in list(self.root.object_used_in.items()):
             object_used_in[expr].update(used)
 
         expression_dependencies = defaultdict(set)
-        for expr, deps in self.root.expression_dependencies.items():
+        for expr, deps in list(self.root.expression_dependencies.items()):
             expression_dependencies[expr].update(deps)
         
         # Get body parameters
@@ -920,7 +920,7 @@ class CodeComponent(ODEComponent):
                 self.shapes.pop(body_name)
 
         # Store the shape of the added result expressions
-        for result_name, result_expressions in results.items():
+        for result_name, result_expressions in list(results.items()):
             if result_name not in self.shapes:
                 self.shapes[result_name] = (len(result_expressions),)
 

@@ -1,0 +1,7 @@
+sympy===0.7.6.1
+numpy>=1.5
+scipy>=0.11
+networkx
+six
+https://bitbucket.org/fenics-project/instant/downloads/instant-2016.2.0.tar.gz#egg=instant-2016.1
+https://bitbucket.org/finsberg/modelparameters/downloads/modelparameters-0.2.tar.gz#egg=modelparameters-0.2

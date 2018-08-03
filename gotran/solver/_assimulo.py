@@ -76,8 +76,8 @@ class AssimuloSolver(Solver):
         maxh = self._options.pop("maxh", 5e-4)
         self._options["maxh"] = maxh
             
-        self._solver.options.update( (k,v) for k,v in self._options.iteritems() \
-                                     if k in self._solver.options.keys())
+        self._solver.options.update( (k,v) for k,v in self._options.items() \
+                                     if k in list(self._solver.options.keys()))
 
     def _eval_monitored(self, time, res, params, values):
         self.module.monitor(time, res, params, values)

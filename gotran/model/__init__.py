@@ -15,23 +15,22 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-import odeobjects
-import expressions
-import odecomponent
-import utils
-import ode
-import cellmodel
-import loadmodel
+from . import odeobjects
+from . import expressions
+from . import odecomponent
+from . import utils
+from . import ode
+from . import cellmodel
+from . import loadmodel
  
 
 # gotran imports
-from odeobjects import *
-from odecomponent import *
-from expressions import *
-from ode import *
-from cellmodel import *
-from loadmodel import *
+from .odeobjects import *
+from .odecomponent import *
+from .expressions import *
+from .ode import *
+from .cellmodel import *
+from .loadmodel import *
 
-__all__ = [_name for _name in globals().keys() if _name[0] != "_"]
+__all__ = [_name for _name in list(globals().keys()) if _name[0] != "_"]
 
-del _name

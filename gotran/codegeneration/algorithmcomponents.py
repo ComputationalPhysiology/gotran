@@ -614,14 +614,14 @@ class FactorizedJacobianComponent(CodeComponent):
                     name = sympycode(jac_orig[i,j])
                     jac[i,j] = sp.Symbol(name, real=True, imaginary=False, commutative=True,
                                          hermitian=True, complex=True)
-                    print jac[i,j]
+                    print(jac[i,j])
         p = []
 
         self.shapes[jacobian_name] = (n,n)
         def add_intermediate_if_changed(jac, jac_ij, i, j):
             # If item has changed 
             if jac_ij != jac[i,j]:
-                print "jac",i,j, jac_ij
+                print("jac",i,j, jac_ij)
                 jac[i,j] = self.add_indexed_expression(jacobian_name, (i, j), jac_ij)
 
         # Do the factorization
@@ -665,7 +665,7 @@ class FactorizedJacobianComponent(CodeComponent):
             if pivot != j: # row must be swapped
                 jac.row_swap(pivot,j)
                 p.append([pivot,j])
-                print "Pivoting!!"
+                print("Pivoting!!")
 
             # Scale with diagonal
             if not jac[j,j]:
@@ -716,7 +716,7 @@ class ForwardBackwardSubstitutionComponent(CodeComponent):
         """
         timer = Timer("Computing forward backward substituion component")
         check_arg(factorized, FactorizedJacobianComponent)
-        jacobian_name = factorized.shapes.keys()[0]
+        jacobian_name = list(factorized.shapes.keys())[0]
         additional_indexed_arguments = factorized.additional_arguments + \
                                        [residual_name]
         descr = "Symbolically forward backward substitute linear system "\
@@ -743,7 +743,7 @@ class ForwardBackwardSubstitutionComponent(CodeComponent):
                     name = sympycode(jac_orig[i,j])
                     jac[i,j] = sp.Symbol(name, real=True, imaginary=False, commutative=True,
                                          hermitian=True, complex=True)
-                    print jac[i,j]
+                    print(jac[i,j])
 
         self.shapes[jacobian_name] = (n,n)
         self.shapes[residual_name] = (n,)

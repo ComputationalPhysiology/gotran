@@ -25,6 +25,7 @@ from modelparameters.utils import check_arg, scalars
 from gotran.model.ode import ODE
 from gotran.common.dicts import odict
 from collections import OrderedDict
+from functools import reduce
 
 def _iszero(x):
     """Returns True if x is zero."""
@@ -80,7 +81,7 @@ def _LU_solve(AA, rhs):
         for j in range(n):
             nnz += not _iszero(A[i,j])
 
-    print "Num non zeros in jacobian:", nnz
+    print("Num non zeros in jacobian:", nnz)
 
     # A map between old symbols and new. The values in this dict corresponds to
     # where an old symbol is used. If the length of the value is 1 it is only
@@ -161,9 +162,9 @@ def _LU_solve(AA, rhs):
         for j in range(n):
             nnz += not _iszero(A[i,j])
 
-    print "Num non zeros in factorized jacobian:", nnz
-    print "Num non-zero operations while factorizing matrix:", new_count
-    print "Num zero operations while factorizing matrix:", zero_operations
+    print("Num non zeros in factorized jacobian:", nnz)
+    print("Num non-zero operations while factorizing matrix:", new_count)
+    print("Num zero operations while factorizing matrix:", zero_operations)
     factorizing_nnz_operations = new_count 
     zero_operations = 0
 
@@ -205,8 +206,8 @@ def _LU_solve(AA, rhs):
             #b.row(i, lambda x,k: x - b[j,k]*A[i,j])
         b.row(i, lambda x,k: x / A[i,i])
     
-    print "Num zero operations while forward/backward substituting matrix:", zero_operations
-    print "Num non-zero operations while factorizing matrix:", new_count - factorizing_nnz_operations 
+    print("Num zero operations while forward/backward substituting matrix:", zero_operations)
+    print("Num non-zero operations while factorizing matrix:", new_count - factorizing_nnz_operations) 
 
     return b, new_old, old_new
 

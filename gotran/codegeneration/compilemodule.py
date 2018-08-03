@@ -329,9 +329,9 @@ def compile_module(ode, language="C", monitored=None,
 
     # Create unique module name for this application run
     modulename = "gotran_python_module_{0}_{1}".format(\
-        class_name(ode.name), hashlib.sha1(\
+        class_name(ode.name), hashlib.sha1(str(\
             ode.signature() + str(monitored) + repr(params) + \
-            gotran.__version__ + instant.__version__).hexdigest())
+            gotran.__version__ + instant.__version__).encode('utf-8')).hexdigest())
     
     # Check cache
     python_module = instant.import_module(modulename)
@@ -396,9 +396,9 @@ def compile_extension_module(ode, monitored, params,
 
     # Create unique module name for this application run
     modulename = "gotran_compiled_module_{0}_{1}".format(\
-        class_name(ode.name), hashlib.sha1(\
+        class_name(ode.name), hashlib.sha1(str(\
             ode.signature() + str(monitored) + repr(params) + \
-            gotran.__version__ + instant.__version__).hexdigest())
+            gotran.__version__ + instant.__version__).encode('utf-8')).hexdigest())
     
     # Check cache
     compiled_module = instant.import_module(modulename)
@@ -452,12 +452,12 @@ def compile_extension_module(ode, monitored, params,
     cgen = CCodeGenerator(params)
     
     pcode = "\n\n".join(\
-        pgen.code_dict(ode, monitored=monitored).values())
+        list(pgen.code_dict(ode, monitored=monitored).values()))
     
-    ccode = "\n\n".join(cgen.code_dict(ode,
+    ccode = "\n\n".join(list(cgen.code_dict(ode,
                         monitored=monitored,
                         include_init=False,
-                        include_index_map=False).values())
+                        include_index_map=False).values()))
     
     # push_log_level(INFO)
     info("Calling GOTRAN just-in-time (JIT) compiler, this may take some "\

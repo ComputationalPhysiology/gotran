@@ -43,7 +43,7 @@ def test_aslak(eps_value = 1e-1, method = "cvode"):
         # t, results = solver.solve(t1, ncp_list=tsteps)
         
     tend = time.clock()
-    print("Elapsed time: {}".format(tend-t0))
+    print(("Elapsed time: {}".format(tend-t0)))
 
 
     U = results.T[0]
@@ -60,10 +60,10 @@ def run_aslak():
 
     print("Test aslak")
     for method in ["scipy", "lsodar", "cvode"]:
-        print("\nMethod:{}".format(method))
+        print(("\nMethod:{}".format(method)))
         fig, ax = plt.subplots()
         for r in range(0,5):
-            print("Epsilon=1e-{}".format(r))
+            print(("Epsilon=1e-{}".format(r)))
             ts, err = test_aslak(10**-r, method)
             ax.semilogy(ts, err, label = r"$\varepsilon = 10^{{{}}}$".format(-r))
    
@@ -98,7 +98,7 @@ def test_paci(method="scipy"):
     # elif method in ["cvode", "lsodar"]:
         # t, results = solver.solve(t1, ncp_list=tsteps)
     t1 = time.clock()
-    print("Elapsed time: {}".format(t1-t0))
+    print(("Elapsed time: {}".format(t1-t0)))
 
     # monitor = solver.monitor(t, results)
 

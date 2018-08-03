@@ -16,7 +16,7 @@
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
 __all__ = ["ODEObject", "Comment", "ODEValueObject", "Parameter", "State", \
-           "SingleODEObjects", "Time", "Dt", "IndexedObject"]
+           "SingleODEObjects", "Time", "Dt", "IndexedObject", "cmp_to_key", "cmp"]
 
 # System imports
 import numpy as np
@@ -27,9 +27,15 @@ import types
 from modelparameters.sympytools import sp
 from modelparameters.codegeneration import sympycode, latex
 from modelparameters.parameters import *
+from modelparameters.parameterdict import cmp_to_key
 
 from gotran.common import error, check_arg, scalars, debug, DEBUG, \
      get_log_level, Timer, parameters
+from functools import reduce, cmp_to_key
+
+
+def cmp(a, b):
+    return (a > b) - (a < b)
 
 class ODEObject(object):
     """
@@ -52,7 +58,7 @@ class ODEObject(object):
 
         
         check_arg(name, str, 0, ODEObject)
-        check_arg(dependent, (types.NoneType, ODEObject))
+        check_arg(dependent, (type(None), ODEObject))
         self._name = self._check_name(name)
 
         # Unique identifyer
@@ -73,6 +79,36 @@ class ODEObject(object):
         if not isinstance(other, ODEObject):
             return -1
         return cmp(self._count, other._count)
+
+    def __lt__(self, other):
+        if not isinstance(other, ODEObject):
+            return False
+        return cmp(self._count, other._count) < 0
+
+    def __gt__(self, other):
+        if not isinstance(other, ODEObject):
+            return False
+        return cmp(self._count, other._count) > 0
+
+    def __eq__(self, other):
+        if not isinstance(other, ODEObject):
+            return False
+        return cmp(self._count, other._count) == 0
+
+    def __le__(self, other):
+        if not isinstance(other, ODEObject):
+            return False
+        return cmp(self._count, other._count) <= 0
+
+    def __ge__(self, other):
+        if not isinstance(other, ODEObject):
+            return False
+        return cmp(self._count, other._count) >= 0
+
+    def __ne__(self, other):
+        if not isinstance(other, ODEObject):
+            return False
+        return cmp(self._count, other._count) != 0
 
     def __repr__(self):
         """

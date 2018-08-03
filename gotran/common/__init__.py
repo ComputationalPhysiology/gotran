@@ -35,6 +35,4 @@ from gotran.common.options import *
 # Set initial log level to INFO
 set_log_level(INFO)
 
-__all__ = [_name for _name in globals().keys() if _name[0] != "_"]
-
-del _name
+__all__ = [_name for _name in list(globals().keys()) if _name[0] != "_"]

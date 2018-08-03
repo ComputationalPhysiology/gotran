@@ -62,7 +62,7 @@ def get_model_as_python_module(model):
     model.rename(name)
 
     module = imp.new_module("simulation")
-    exec code in module.__dict__
+    exec(code, module.__dict__)
     return module.ODESim()
 
 class IntermediateDispatcher(dict):
@@ -151,7 +151,7 @@ class IntermediateDispatcher(dict):
 
     def update(self, other):
         check_arg(other, dict)
-        for name, value in other.items():
+        for name, value in list(other.items()):
             dict.__setitem__(self, name, value)
 
 def _init_namespace(ode, load_arguments, namespace):
@@ -204,10 +204,13 @@ def exec_ode(ode_str, name, **arguments):
     _init_namespace(ode, arguments, intermediate_dispatcher)
 
     # Write str to file
-    open("_tmp_gotrand.ode", "w").write(ode_str)
+    with open("_tmp_gotrand.ode", "w") as f:
+        f.write(ode_str)
     
-    # Execute file and collect 
-    execfile("_tmp_gotrand.ode", intermediate_dispatcher)
+    # Execute file and collect
+    with open("_tmp_gotrand.ode") as f:
+        exec(compile(f.read(), "_tmp_gotrand.ode", 'exec'),
+             intermediate_dispatcher)
     os.unlink("_tmp_gotrand.ode")
 
     # Finalize ODE
@@ -283,7 +286,7 @@ def _load(filename, name, **arguments):
     
     
     # If a Param is provided turn it into its value
-    for key, value in arguments.items():
+    for key, value in list(arguments.items()):
         if isinstance(value, Param):
             arguments[key] = value.getvalue()
 
@@ -314,7 +317,9 @@ def _load(filename, name, **arguments):
     _init_namespace(ode, arguments, intermediate_dispatcher)
 
     # Execute file and collect
-    execfile(filename, intermediate_dispatcher)
+    with open(filename, 'r') as f:
+        exec(compile(f.read(), filename, 'exec'),
+             intermediate_dispatcher)
 
     # Finalize ODE
     ode.finalize()
@@ -505,7 +510,7 @@ def _namespace_binder(namespace, ode, load_arguments):
     
         # Update the namespace
         ns = {}
-        for key, value in kwargs.items():
+        for key, value in list(kwargs.items()):
             if not isinstance(value, (float, int, str, Param)):
                 error("expected only 'float', 'int', 'str' or 'Param', as model_arguments, "\
                       "got: '{}' for '{}'".format(type(value).__name__, key))

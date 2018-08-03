@@ -1,6 +1,6 @@
 """ Tools for doing common subexpression elimination.
 """
-from __future__ import print_function, division
+
 
 import difflib
 
@@ -61,7 +61,7 @@ def reps_toposort(r):
         for c2, (k2, v2) in enumerate(r):
             if k1 in v2.free_symbols:
                 E.append((c1, c2))
-    return [r[i] for i in topological_sort((range(len(r)), E))]
+    return [r[i] for i in topological_sort((list(range(len(r))), E))]
 
 
 def cse_separate(r, e):
@@ -222,8 +222,8 @@ def opt_cse(exprs, order='canonical'):
             funcs = sorted(funcs, key=lambda x: len(x.args))
 
         func_args = [set(e.args) for e in funcs]
-        for i in xrange(len(func_args)):
-            for j in xrange(i + 1, len(func_args)):
+        for i in range(len(func_args)):
+            for j in range(i + 1, len(func_args)):
                 com_args = func_args[i].intersection(func_args[j])
                 if len(com_args) > 1:
                     com_func = Func(*com_args)
@@ -242,7 +242,7 @@ def opt_cse(exprs, order='canonical'):
                     opt_subs[funcs[j]] = Func(Func(*diff_j), com_func,
                                               evaluate=False)
 
-                    for k in xrange(j + 1, len(func_args)):
+                    for k in range(j + 1, len(func_args)):
                         if not com_args.difference(func_args[k]):
                             diff_k = func_args[k].difference(com_args)
                             func_args[k] = diff_k | set([com_func])

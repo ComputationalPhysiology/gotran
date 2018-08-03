@@ -35,7 +35,7 @@ from gotran.model.ode import ODE
 from gotran.model.odecomponents import ODEComponent, Comment
 from gotran.common import check_arg, check_kwarg, info
 
-from sympy_cse import cse
+from .sympy_cse import cse
 
 _jacobian_pattern = re.compile("_([0-9]+)")
 
@@ -249,7 +249,7 @@ class ODERepresentation(object):
 
         ode = self.ode
 
-        for name, obj in ode.monitored_intermediates.items():
+        for name, obj in list(ode.monitored_intermediates.items()):
             for sym in iter_symbol_params_from_expr(obj.expanded_expr):
 
                 if ode.has_state(sym):
@@ -262,7 +262,7 @@ class ODERepresentation(object):
         
         self._cse_monitored_subs, self._cse_monitored_expr = \
                     cse([self.subs(obj.expanded_expr) \
-                        for obj in ode.monitored_intermediates.values()], \
+                        for obj in list(ode.monitored_intermediates.values())], \
                            symbols=sp.numbered_symbols("cse_monitored_"), \
                            optimizations=[])
 
@@ -391,7 +391,7 @@ class ODERepresentation(object):
         # information
         self._cse_jacobian_subs, self._cse_jacobian_expr = \
                 cse([self.subs(expr) \
-                        for expr in self._jacobian_expr.values()], \
+                        for expr in list(self._jacobian_expr.values())], \
                        symbols=sp.numbered_symbols("cse_jacobian_"), \
                        optimizations=[])
         
@@ -437,7 +437,7 @@ class ODERepresentation(object):
             for j in range(n):
                 nnz += not _iszero(A[i,j])
         
-        print "Num non zeros in jacobian:", nnz, nnz*1.0/n2*100, "%"
+        print("Num non zeros in jacobian:", nnz, nnz*1.0/n2*100, "%")
         
         # A map between old symbols and new. The values in this dict corresponds to
         # where an old symbol is used. If the length of the value is 1 it is only
@@ -504,7 +504,7 @@ class ODERepresentation(object):
             if pivot != j: # row must be swapped
                 A.row_swap(pivot,j)
                 p.append([pivot,j])
-                print "Pivoting!!"
+                print("Pivoting!!")
                 
             scale = 1 / A[j,j]
             for i in range(j+1, n):
@@ -537,11 +537,11 @@ class ODERepresentation(object):
 
         total_op = new_count+zero_operations
         if total_op != 0:
-            print "Num non zeros in factorized jacobian:", nnz, int(nnz*1.0/n2*100), "%"
-            print "Num non-zero operations while factorizing matrix:", \
-                  new_count, new_count*1.0/total_op*100, "%"
-            print "Num zero operations while factorizing matrix:", \
-                  zero_operations, int(zero_operations*1.0/total_op*100), "%"
+            print("Num non zeros in factorized jacobian:", nnz, int(nnz*1.0/n2*100), "%")
+            print("Num non-zero operations while factorizing matrix:", \
+                  new_count, new_count*1.0/total_op*100, "%")
+            print("Num zero operations while factorizing matrix:", \
+                  zero_operations, int(zero_operations*1.0/total_op*100), "%")
         factorizing_nnz_operations = new_count 
         
         self._jacobian_factorization_operations = operations
@@ -614,9 +614,9 @@ class ODERepresentation(object):
 
         total_count = zero_operations + new_count*1.0
         if total_count != 0:
-            print "Num operations while forward/backward substituting matrix:"
-            print "Zero operations:", zero_operations, int(100*zero_operations/total_count), "%"
-            print "Non-zero operations:", new_count, int(100*new_count/total_count), "%"
+            print("Num operations while forward/backward substituting matrix:")
+            print("Zero operations:", zero_operations, int(100*zero_operations/total_count), "%")
+            print("Non-zero operations:", new_count, int(100*new_count/total_count), "%")
 
         self._jacobian_fb_substitution_operations = operations
 
@@ -646,7 +646,7 @@ class ODERepresentation(object):
         info("Calculating common sub expressions for linearized ODE. May take some time...")
         self._cse_linearized_subs, self._cse_linearized_derivative_expr = \
                                    cse([self.subs(expr) \
-                                        for expr in self._linearized_exprs.values()], \
+                                        for expr in list(self._linearized_exprs.values())], \
                                        symbols=sp.numbered_symbols("cse_linear_"), \
                                        optimizations=[])
 
@@ -860,13 +860,13 @@ class ODERepresentation(object):
         if self.optimization.use_cse:
             
             for ((name, expr), cse_expr) in zip(\
-                self._jacobian_expr.items(), \
+                list(self._jacobian_expr.items()), \
                 self._cse_jacobian_expr):
-                yield map(int, re.findall(_jacobian_pattern, str(name))), cse_expr
+                yield list(map(int, re.findall(_jacobian_pattern, str(name)))), cse_expr
         else:
 
-            for name, expr in self._jacobian_expr.items():
-                yield map(int, re.findall(_jacobian_pattern, str(name))), self.subs(expr)
+            for name, expr in list(self._jacobian_expr.items()):
+                yield list(map(int, re.findall(_jacobian_pattern, str(name)))), self.subs(expr)
             
     def iter_jacobian_action_body(self):
         """
@@ -954,7 +954,7 @@ class ODERepresentation(object):
 
         else:
             self._compute_linearized_dy()
-            for idx, expr in self._linearized_exprs.items():
+            for idx, expr in list(self._linearized_exprs.items()):
                 yield idx, expr
             
     def iter_componentwise_dy(self):
