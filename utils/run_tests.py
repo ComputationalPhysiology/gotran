@@ -19,9 +19,9 @@ root_dir = os.path.abspath(os.path.curdir)
 for dirpath, dirnames, filenames in os.walk("gotran"):
     if os.path.basename(dirpath) == "test":
         
-        print ""
-        print "Running tests in: %s" % dirpath
-        print "-"*79
+        print("")
+        print("Running tests in: %s" % dirpath)
+        print("-"*79)
         for test in filenames:
             if not re.findall("test_(\w+).py", test):
                 continue
@@ -33,11 +33,11 @@ for dirpath, dirnames, filenames in os.walk("gotran"):
                 failed.append(output)
 
             os.chdir(root_dir)
-print
-print "-"*79
-print "Ran %d tests in %.3fs" % (num_tests, timing)
+print()
+print("-"*79)
+print("Ran %d tests in %.3fs" % (num_tests, timing))
 if failed:
     for output in failed:
-        print output
+        print(output)
 
 sys.exit(len(failed))

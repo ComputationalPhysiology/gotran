@@ -32,13 +32,13 @@ for dirpath, dirnames, filenames in os.walk(os.path.curdir):
 
 if remove:
     message = "Found %d files that will be removed:"%len(remove)
-    print message
-    print "-"*len(message)
+    print(message)
+    print("-"*len(message))
     for filename in remove:
-        print "  removing:", filename
+        print("  removing:", filename)
         os.unlink(filename)
 else:
-    print "\nNo temp files removed"
+    print("\nNo temp files removed")
 
 remove_dirs = ["build", "Gotran.egg-info", "doc/_build", "dist"]
 removed_dirs = []
@@ -50,12 +50,12 @@ for remove_dir in remove_dirs:
 if removed_dirs:
     message = "\nFound {} director{} that will be removed.".format(\
         len(removed_dirs), "y" if len(removed_dirs)==1 else "ies")
-    print message
-    print "-"*len(message)
+    print(message)
+    print("-"*len(message))
     for remove_dir in removed_dirs:
-        print "  removing: '{}'".format(remove_dir)
+        print("  removing: '{}'".format(remove_dir))
 else:
-    print "\nNo temp dirs removed"
+    print("\nNo temp dirs removed")
     
 remove = []
 
@@ -67,11 +67,11 @@ for dirpath, dirnames, filenames in os.walk(os.path.join(os.path.curdir, "demo")
 
 if remove:
     message = "\nFound %d demo data/log directories:"%len(remove)
-    print message
-    print "-"*len(message)
+    print(message)
+    print("-"*len(message))
     for datadir in remove:
-        print "  removing:", datadir
+        print("  removing:", datadir)
         shutil.rmtree(datadir)
 else:
-    print "\nNo data or log directories removed\n"
+    print("\nNo data or log directories removed\n")
     

@@ -49,9 +49,9 @@ for f in list_python_files():
         else:
             code_lines+=1
 
-print "### Gotran2 code statistics ###"
-print "Code lines:      ", code_lines
-print "Meta data lines: ", meta_data
-print "Docstring lines: ", docstrings
-print "Blank lines:     ", blank_lines
-print "Comment lines:   ", comment_lines
+print("### Gotran2 code statistics ###")
+print("Code lines:      ", code_lines)
+print("Meta data lines: ", meta_data)
+print("Docstring lines: ", docstrings)
+print("Blank lines:     ", blank_lines)
+print("Comment lines:   ", comment_lines)

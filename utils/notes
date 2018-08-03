@@ -28,9 +28,9 @@ for f in list_python_files():
     
     display = "In file: '%s':"%f
     if todos:
-        print ""
-        print display
-        print "-"*len(display)
+        print("")
+        print(display)
+        print("-"*len(display))
         for num in sorted(todos.keys()):
-            print "%04d: %s"%(num+1, todos[num][:-1])
+            print("%04d: %s"%(num+1, todos[num][:-1]))
 
