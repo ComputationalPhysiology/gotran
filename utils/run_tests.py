@@ -23,12 +23,16 @@ for dirpath, dirnames, filenames in os.walk("gotran"):
         print("Running tests in: %s" % dirpath)
         print("-"*79)
         for test in filenames:
+
+            
             if not re.findall("test_(\w+).py", test):
+                continue
+            if test.endswith('bak'):
                 continue
             os.chdir(os.path.join(root_dir, dirpath))
             fail, output = get_status_output("python %s" % test)
-            num_tests += int(re.findall("Ran (\d+) tests", output)[0])
-            timing += float(re.findall("tests in ([\d\.]+)s", output)[0])
+            num_tests += int(re.findall("Ran (\d+) tests", str(output))[0])
+            timing += float(re.findall("tests in ([\d\.]+)s", str(output))[0])
             if fail:
                 failed.append(output)
 
