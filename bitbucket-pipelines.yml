@@ -8,8 +8,8 @@ image: python:3.6
 pipelines:
   default:
     - step:
-        caches:
-          - pip
+        # caches:
+          # - pip
         script: # Modify the commands below to build your repository.
           - pip install -r requirements.txt
           - pip install -U tox
