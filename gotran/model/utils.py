@@ -167,6 +167,9 @@ class iter_objects(object):
     def __iter__(self):
         return self
 
+    def next(self):
+        return self.__next__()
+
 def ode_objects(comp, *types):
     """
     Return a list of ode objects
@@ -192,6 +195,7 @@ def ode_components(comp, include_self=True):
         The list will include the passed component if True
     """
     comps = [obj for obj in iter_objects(comp, True, True)]
+    
     if not include_self:
         comps.remove(comp)
 

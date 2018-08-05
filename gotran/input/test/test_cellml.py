@@ -78,9 +78,12 @@ class TestBase(object):
         # Load reference data
         try:
             with open(self.ode.name+".cpickle", 'rb') as f:
-                u = pickle._Unpickler(f)
-                u.encoding = 'latin1'
-                data = u.load()
+                try:
+                    data = pickle.load(f)
+                except:
+                    u = pickle._Unpickler(f)
+                    u.encoding = 'latin1'
+                    data = u.load()
         except IOError:
             return 
         ref_time = data.pop("time")

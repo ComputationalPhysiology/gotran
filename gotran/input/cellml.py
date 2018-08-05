@@ -16,6 +16,8 @@
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
 import re
+from future.standard_library import install_aliases
+install_aliases()
 import urllib.request, urllib.parse, urllib.error
 from xml.etree import ElementTree
 from functools import cmp_to_key
@@ -371,20 +373,17 @@ class CellMLParser(object):
         article = self.cellml.getiterator(namespace+"article")
 
         try:
-            article = next(article)
-        except StopIteration:
+            article = list(article)[0]
+        except IndexError:
             return ""
 
-        try:
-            articleinfo = next(article.getiterator(namespace+"articleinfo"))
-        except StopIteration:
-            title = ""
+        articleinfo = list(article.getiterator(namespace+"articleinfo"))[0]
+
+        # Get title
+        if articleinfo and articleinfo.getiterator(namespace+"title"):
+            title = list(articleinfo.getiterator(namespace+"title"))[0].text
         else:
-            # Get title
-            if articleinfo and articleinfo.getiterator(namespace+"title"):
-                title = next(articleinfo.getiterator(namespace+"title")).text
-            else:
-                title = ""
+            title = ""
 
         # Get model structure comments
         for child in article.getchildren():
@@ -1407,7 +1406,7 @@ class CellMLParser(object):
         same_variable_names = dict()
         
         for con in self.get_iterator("connection"):
-            con_map = next(self.get_iterator("map_components", con))
+            con_map = list(self.get_iterator("map_components", con))[0]
             comp1 = con_map.attrib["component_1"]
             comp2 = con_map.attrib["component_2"]
 
