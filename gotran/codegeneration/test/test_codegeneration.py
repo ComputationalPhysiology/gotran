@@ -1,7 +1,7 @@
 """test for odecomponent module"""
 
 # Imports for evaluation of generated code
-
+from __future__ import division
 import numpy as np
 import math
 
@@ -119,7 +119,6 @@ def function_closure(body_repr, body_optimize, param_repr, \
         rhs_comp = rhs_expressions(ode, params=code_params)
         rhs_code = codegen.function_code(rhs_comp)
 
-        # exec(rhs_code, globals(), locals())
         rhs_namespace = {}
         exec(rhs_code, rhs_namespace)
         
@@ -171,7 +170,7 @@ def function_closure(body_repr, body_optimize, param_repr, \
 
         jac_namespace = {}
         exec(jac_code, jac_namespace)
-
+        
         args = [states_values, 0.0]
         if param_repr != "numerals":
             args.append(parameter_values)
