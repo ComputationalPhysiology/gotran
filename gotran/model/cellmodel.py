@@ -103,7 +103,7 @@ class CellModel(ODE):
         if arg in _all_cellmodels:
             return _all_cellmodels[arg]
         
-        return object.__new__(cls, *args, **kwargs)
+        return object.__new__(cls)
         
         
         

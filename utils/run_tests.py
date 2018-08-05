@@ -28,7 +28,9 @@ for dirpath, dirnames, filenames in os.walk("gotran"):
             if not re.findall("test_(\w+).py", test):
                 continue
             if test.endswith('bak'):
+                # Do not include backup files
                 continue
+
             os.chdir(os.path.join(root_dir, dirpath))
             fail, output = get_status_output("python %s" % test)
             num_tests += int(re.findall("Ran (\d+) tests", str(output))[0])
