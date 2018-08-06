@@ -3,7 +3,7 @@
 # Only use spaces to indent your .yml configuration.
 # -----
 # You can specify a custom docker image from Docker Hub as your build environment.
-image: finsberg/python-swig
+image: finsberg/finsberg/py27py36-sundials:latest
 
 pipelines:
   default:
@@ -11,8 +11,9 @@ pipelines:
         caches:
           - pip
         script: # Modify the commands below to build your repository.
+          - source py2.7venv/bin/activate
           - pip install -r requirements.txt
-          - pip install -U tox
-          - pip --version
-          - tox --version
-          - tox
+          - python utils/run_tests.py
+          - source venv/bin/activate
+          - pip install -r requirements.txt
+          - python utils/run_tests.py
