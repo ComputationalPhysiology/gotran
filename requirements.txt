@@ -4,5 +4,5 @@ scipy>=0.11
 networkx
 six
 future
-https://bitbucket.org/fenics-project/instant/downloads/instant-2016.1.0.tar.gz#egg=instant-2016.1.0
-https://bitbucket.org/finsberg/modelparameters/downloads/modelparameters-0.2.tar.gz#egg=modelparameters-0.2
+https://bitbucket.org/fenics-project/instant/downloads/instant-2016.1.0.tar.gz
+https://bitbucket.org/finsberg/modelparameters/downloads/modelparameters-0.2.tar.gz

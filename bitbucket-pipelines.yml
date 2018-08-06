@@ -11,10 +11,11 @@ pipelines:
         caches:
           - pip
         script: # Modify the commands below to build your repository.
-          - source /app/py2.7venv/bin/activate
+          - source /app/py27venv/bin/activate
           - pip install -r requirements.txt
           - pip install . --upgrade
           - python utils/run_tests.py
+          - instant-clean
           - source /app/venv/bin/activate
           - pip install -r requirements.txt
           - pip install . --upgrade
