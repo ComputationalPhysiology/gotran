@@ -1,9 +1,10 @@
-sympy===0.7.6.1
+sympy<=0.7.7
 numpy>=1.5
 scipy>=0.11
 matplotlib
 networkx
 six
 future
-https://bitbucket.org/fenics-project/instant/downloads/instant-2016.1.0.tar.gz
-https://bitbucket.org/finsberg/modelparameters/downloads/modelparameters-0.2.tar.gz
+modelparameters
+instant
+

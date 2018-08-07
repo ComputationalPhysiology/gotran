@@ -11,7 +11,7 @@ import sys
 
 # Version number
 major = 3
-minor = 1
+minor = 4
 
 scripts = glob.glob("scripts/*")
 
@@ -68,7 +68,7 @@ class run_tests(Command):
         import os
         os.system("python utils/run_tests.py")
 
-setup(name = "Gotran",
+setup(name = "gotran",
       version = "{0}.{1}".format(major, minor),
       description = """
       A declarative language describing ordinary differential equations.
@@ -78,7 +78,15 @@ setup(name = "Gotran",
       packages = ["gotran", "gotran.common", "gotran.model",
                   "gotran.algorithms", "gotran.codegeneration",
                   "gotran.input", "gotran.solver"],
-      
+      install_requires=["sympy<=0.7.7",
+                        "numpy",
+                        "scipy",
+                        "matplotlib",
+                        "networkx",
+                        "six",
+                        "future",
+                        "modelparameters",
+                        "instant"],
       scripts = scripts,
       cmdclass    = {'test': run_tests,
                      'clean': clean,
