@@ -15,8 +15,10 @@ pipelines:
           - pip install -r requirements.txt
           - pip install . --upgrade
           - python utils/run_tests.py
+          - python scripts/test/test_scripts.py
           - instant-clean
           - source /app/venv/bin/activate
           - pip install -r requirements.txt
           - pip install . --upgrade
           - python utils/run_tests.py
+          - python scripts/test/test_scripts.py
