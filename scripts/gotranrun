@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 from __future__ import division
+
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __date__ = "2013-03-13 -- 2015-06-24"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__  = "GNU LGPL Version 3.0 or later"
-
 from modelparameters.codegeneration import latex
 try:
     from scipy.optimize import root
@@ -158,8 +157,8 @@ def main(filename, params):
 
         if result.success:
             y0 = result.x
-            print "Found stead state:", ", ".join("{0}: {1:e}".format(\
-                state.name, value) for value, state in zip(y0, ode.full_states))
+            print("Found stead state:", ", ".join("{0}: {1:e}".format(\
+                state.name, value) for value, state in zip(y0, ode.full_states)))
         else:
             warning(result.message)
 
@@ -169,7 +168,7 @@ def main(filename, params):
     if params.solver == "scipy":
         try:
             from scipy.integrate import odeint
-        except Exception, e:
+        except Exception as e:
             error("Problem importing scipy.integrate.odeint. {}".format(e))
         results = odeint(rhs, y0, tsteps, Dfun=jac, args=(model_params,))
 
@@ -303,7 +302,7 @@ if __name__ == "__main__":
         )
 
     solver = OptionParam("scipy", ["scipy"]+\
-                         parameters.generation.solvers.keys(),
+                         list(parameters.generation.solvers.keys()),
                          description="The solver that will be used to "\
                          "integrate the ODE.")
     

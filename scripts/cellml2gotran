@@ -82,7 +82,7 @@ if __name__ == "__main__":
             param[name] = getattr(options, name)
     
     if len(args) != 1:
-        print args
+        print(args)
         raise ValueError("Expected 1 and only one CellML file.")
 
     cellml = CellMLParser(args[0], param)

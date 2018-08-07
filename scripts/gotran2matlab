@@ -26,7 +26,7 @@ def main(filename, params):
     else:
         monitored = None
 
-    for function_name, code in gen.code_dict(ode, monitored).items():
+    for function_name, code in list(gen.code_dict(ode, monitored).items()):
         open("{0}_{1}.m".format(ode.name, function_name), "w").write(code)
     
     info("  done.")

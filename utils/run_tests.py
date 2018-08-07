@@ -30,7 +30,6 @@ for dirpath, dirnames, filenames in os.walk("gotran"):
 
             os.chdir(os.path.join(root_dir, dirpath))
             fail, output = get_status_output("python %s" % test)
-            print(output)
             num_tests += int(re.findall("Ran (\d+) tests", str(output))[0])
             timing += float(re.findall("tests in ([\d\.]+)s", str(output))[0])
             if fail:

@@ -56,7 +56,7 @@ if __name__ == "__main__":
                                "headers needed to compile moudle is "\
                                "included."),\
         output = Param("", description="Specify output file name"),\
-        **dict((name, param) for name, param in generation_params.items() \
+        **dict((name, param) for name, param in list(generation_params.items()) \
         if name not in ["class_code"]))
     params.parse_args(usage="usage: %prog FILE [options]")#sys.argv[2:])
     
