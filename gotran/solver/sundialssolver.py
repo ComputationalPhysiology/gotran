@@ -7,10 +7,10 @@ pip install assimulo
 """
 # Assimulo imports
 try:
-    from assimulo.solvers import CVode, LSODAR, IDA, Radau5ODE
+    from assimulo.solvers import CVode
     from assimulo.problem import Explicit_Problem
     has_assimulo = True
-except:
+except ImportError as ex:
     has_assimulo = False
 
 # Local imports
@@ -56,13 +56,6 @@ class AssimuloSolver(Solver):
         # Create the solver
         if self._method == "cvode":
             self._solver = CVode(self._problem)
-        elif self._method == "ida":
-            self._solver = IDA(self._problem)
-        elif self._method == "radau5ode":
-            self._solver = Radau5ODE(self._problem)
-        else:
-            self._solver =  LSODAR(self._problem)
-
 
         # Parse parameters to rhs
         self._solver.sw = self._model_params.tolist()
@@ -100,15 +93,9 @@ class AssimuloSolver(Solver):
     @staticmethod
     def list_solver_options(method):
     
-        if method == "lsodar":
-            return _LSODAR.default_options()
-        elif method == "cvode":
+        if method == "cvode":
             return _CVode.default_options()
-        elif method == "ida":
-            return _IDA.default_options()
-        elif method == "radau5ode":
-            return _Radau5ODE.default_options()
-
+        
     def _solve(self, tsteps, *args, **kwargs):
         """
         Solve the problem
@@ -125,63 +112,6 @@ class AssimuloSolver(Solver):
         return t,y
     
 if has_assimulo:
-    class _Radau5ODE:
-        @staticmethod
-        def default_options():
-            d = {'backward': False,
-                 'clock_step': False,
-                 'display_progress': True,
-                 'fac1': 0.2,
-                 'fac2': 8.0,
-                 'fnewt': 0.0,
-                 'inith': 0.01,
-                 'maxh': 10.0,
-                 'maxsteps': 100000,
-                 'newt': 7,
-                 'num_threads': 1,
-                 'quot1': 1.0,
-                 'quot2': 1.2,
-                 'report_continuously': False,
-                 'rtol': 1e-06,
-                 'safe': 0.9,
-                 'store_event_points': True,
-                 'thet': 0.001,
-                 'time_limit': 0,
-                 'usejac': False,
-                 'verbosity': 30}
-            return d
-
-    class _IDA:
-        @staticmethod
-        def default_options():
-            d = {'backward': False,
-                 'clock_step': False,
-                 'display_progress': True,
-                 'dqrhomax': 0.0,
-                 'dqtype': 'CENTERED',
-                 'external_event_detection': False,
-                 'inith': 0.0,
-                 'linear_solver': 'DENSE',
-                 'lsoff': False,
-                 'maxcorS': 3,
-                 'maxh': 0.0,
-                 'maxord': 5,
-                 'maxsteps': 10000,
-                 'num_threads': 1,
-                 'pbar': [],
-                 'report_continuously': False,
-                 'rtol': 1e-06,
-                 'sensmethod': 'STAGGERED',
-                 'store_event_points': True,
-                 'suppress_alg': False,
-                 'suppress_sens': False,
-                 'time_limit': 0,
-                 'tout1': 0.0001,
-                 'usejac': False,
-                 'usesens': False,
-                 'verbosity': 30}
-
-            return d
 
     class _CVode:
         @staticmethod
@@ -224,27 +154,6 @@ if has_assimulo:
             d.pop("atol")
             return d
 
-    class _LSODAR(LSODAR):
-        @staticmethod
-        def default_options():
-            d = {'atol': np.array([]),
-                 'backward': False,
-                 'clock_step': False,
-                 'display_progress': True,
-                 'maxh': 0.0,
-                 'maxordn': 12,
-                 'maxords': 5,
-                 'maxsteps': 100000,
-                 'num_threads': 1,
-                 'report_continuously': False,
-                 'rkstarter': 1,
-                 'rtol': 1e-06,
-                 'store_event_points': True,
-                 'time_limit': 0,
-                 'usejac': False,
-                 'verbosity': 30}
-            d.pop("atol")
-            return d
 
 
 additional_declarations = r"""
