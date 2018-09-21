@@ -58,7 +58,7 @@ def function_closure(method):
     return test
 
 
-for method in ["scipy", "lsodar", "cvode"]:
+for method in ["scipy", "cvode"]:
     setattr(TestSolver, "test_"+method, function_closure(method))
 
 

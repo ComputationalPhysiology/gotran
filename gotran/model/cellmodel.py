@@ -46,12 +46,13 @@ def get_parameter_list_from_string(string, lst, case_insesitive=True):
         The string that should be in the name
     lst : array with parameters
         List containing the candidates for parameters
-    case_insesitive: bool
+        case_insesitive: bool
         If True, include parameter as long as the letters coincide
         and do not care about case
 
     Returns
     -------
+    
     parlist : lst
         A sublist of lst containing the parameter that has a name
         containing the given string
@@ -71,20 +72,28 @@ class CellModel(ODE):
     You can either initialize an empty CellModel similar to
     an ODE
 
-    .. Example::
-
-        cell =  CellModel("MyCell")
-
     (Maybe if we can create a library of th cellmodels
     then it the string matched that of the library we return
-    the model in the library, e.g cell = CellModel("Noble_1962") ?? )
+    the model in the library, e.g `cell = CellModel("Noble_1962")`` ?? )
     Or you can initialize the cell using an existing ODE
+    If you have an ODE and want to have a cell, then save the
+    ODE to an *.ode file and load it using `load_cell`` (in stead of
+    `load_ode``)
 
-    If you have an ODE and want to have a cell, then save the 
-    ODE to an *.ode file and load it using 'load_cell' (in stead of
-    'load_ode')
+    Example
+    -------
 
-    .. Example::
+    .. code-block::python
+    
+    
+        cell =  CellModel("MyCell")
+
+
+    Example
+    -------
+
+    .. code-block::python
+
 
         # Save current ODE
         ode.save(filename)
@@ -93,7 +102,9 @@ class CellModel(ODE):
         from loadmodel import load_cell
         cell = load_cell(filename)
 
+
     """
+    
     def __new__(cls, *args, **kwargs):
         """
         Create a CellModel instance.
@@ -104,9 +115,6 @@ class CellModel(ODE):
             return _all_cellmodels[arg]
         
         return object.__new__(cls)
-        
-        
-        
         
     def __init__(self, name_, ns=None):
         """
@@ -501,8 +509,8 @@ class CellModel(ODE):
         Simulate the ODE to :math:`t_{\mathrm{end}}`
         with the given number points 
 
-        Aguments
-        --------
+        Arguments
+        ---------
 
         t_end : scalar
             The end time

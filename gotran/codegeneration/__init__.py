@@ -21,6 +21,7 @@ from . import compilemodule
 from . import latexcodegenerator
 from . import codecomponent
 from . import algorithmcomponents
+from . import oderepresentation
 from . import solvercomponents
 
 # Import classes and routines from gotran modules
@@ -31,6 +32,7 @@ from .codegenerators import *
 from .latexcodegenerator import *
 from .latexcodegenerator import _default_latex_params
 from .compilemodule import compile_module
+# from .oderepresentation import *
 
 
 # Assign the __all__ attribute

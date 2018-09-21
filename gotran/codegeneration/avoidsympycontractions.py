@@ -129,7 +129,7 @@ def _pow_new(cls, b, e, evaluate=True):
 
 # Overload new method with none evaluating one
 # FIXME: Need to look at inheritance
-_AssocOp.__new__ = types.MethodType(_cacheit(_assocop_new), None, _ManagedProperties)
-_Pow.__new__ = types.MethodType(_cacheit(_pow_new), None, _ManagedProperties)
-_function.Function.__new__ = types.MethodType(_cacheit(_function_new), None, _ManagedProperties)
+# _AssocOp.__new__ = types.MethodType(_cacheit(_assocop_new), None, _ManagedProperties)
+# _Pow.__new__ = types.MethodType(_cacheit(_pow_new), None, _ManagedProperties)
+# _function.Function.__new__ = types.MethodType(_cacheit(_function_new), None, _ManagedProperties)
 

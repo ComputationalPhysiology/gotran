@@ -32,7 +32,7 @@ _current_sympy_version = _V(sp.__version__)
 
 # Local gotran imports
 from gotran.model.ode import ODE
-from gotran.model.odecomponents import ODEComponent, Comment
+from gotran.model.odecomponent import ODEComponent, Comment
 from gotran.common import check_arg, check_kwarg, info
 
 from .sympy_cse import cse
@@ -145,8 +145,8 @@ class ODERepresentation(object):
         """
         Create an ODERepresentation
 
-        Arguments:
-        ----------
+        Arguments
+        ---------
         ode : ODE
             The ode to be represented
         name : str (optional)

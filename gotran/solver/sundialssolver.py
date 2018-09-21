@@ -2,42 +2,44 @@
 To use install assimulo which is a python wrapper of
 the sundials solvers
 
-pip install assimulo
+conda install assimulo
 
 """
 # Assimulo imports
 try:
     from assimulo.solvers import CVode
     from assimulo.problem import Explicit_Problem
-    has_assimulo = True
+    has_sundials = True
 except ImportError as ex:
-    has_assimulo = False
+    has_sundials = False
+from .odesolver import Solver
 
 # Local imports
-from .utils import *
+__all__ = ["SundialsSolver", "has_sundials", "SundialsNotInstalled"]
 
-__all__ = ["AssimuloSolver", "has_assimulo"]
+class SundialsNotInstalled(Exception):pass
 
 
-class AssimuloSolver(Solver):
+class SundialsSolver(Solver):
     
     def __init__(self, ode, method = "cvode", **options):
 
         # Check imports
-        msg = ("Chosen backend is assimulo, but assimulo is "+
-               "not installed")
-        assert has_assimulo, msg
-
-        # Check method
-        msg = ("Method {} is not a sundials method. ".format(method)+\
-               "Possible methods are {}".format(sundials_methods))
-        assert method in sundials_methods, msg
-        self._method = method
+        if not has_sundials:
+            msg = ("Chosen backend is sundials, but sundials is "+
+                   "not installed")
+            raise SundialsNotInstalled(msg)
+        
+        # # Check method
+        # msg = ("Method {} is not a sundials method. ".format(method)+\
+        #        "Possible methods are {}".format(sundials_methods))
+        # assert method in sundials_methods, msg
+        # self._method = method
 
         self._options = options
         
 
-        Solver.__init__(self, ode, arguments="tsp",
+        Solver.__init__(self, ode, #arguments="tsp",
                         additional_declarations=additional_declarations,
                         jacobian_declaration_template=jacobian_declaration_template,
                         **options)
@@ -54,8 +56,8 @@ class AssimuloSolver(Solver):
             self._options['usejac'] = True
         
         # Create the solver
-        if self._method == "cvode":
-            self._solver = CVode(self._problem)
+        # if self._method == "cvode":
+        self._solver = CVode(self._problem)
 
         # Parse parameters to rhs
         self._solver.sw = self._model_params.tolist()
@@ -91,10 +93,10 @@ class AssimuloSolver(Solver):
         return self.solver.options
         
     @staticmethod
-    def list_solver_options(method):
+    def list_solver_options():
     
-        if method == "cvode":
-            return _CVode.default_options()
+        # if method == "cvode":
+        return _CVode.default_options()
         
     def _solve(self, tsteps, *args, **kwargs):
         """
@@ -111,7 +113,7 @@ class AssimuloSolver(Solver):
 
         return t,y
     
-if has_assimulo:
+if has_sundials:
 
     class _CVode:
         @staticmethod

@@ -41,8 +41,8 @@ def ode_primitives(expr, time):
     """
     Return all ODE primitives
 
-    Arguments:
-    ----------
+    Arguments
+    ---------
     expr : sympy expressio
         A sympy expression of ode symbols
     time : sympy Symbol

@@ -39,8 +39,8 @@ class ODE(ODEComponent):
     """
     Root ODEComponent
 
-    Arguments:
-    ----------
+    Arguments
+    ---------
     name : str
         The name of the ODE
     ns : dict (optional)
@@ -145,8 +145,8 @@ class ODE(ODEComponent):
         """
         Import a Model into the present Model
 
-        Argument
-        --------
+        Arguments
+        ---------
         ode : str, ODE
             The ode which should be added. If ode is a str an
             ODE stored in that file will be loaded. If it is an ODE it will be
@@ -671,8 +671,8 @@ class ODE(ODEComponent):
 
         Returns an ODE including the components
 
-        Argument
-        --------
+        Arguments
+        ---------
         name : str
             The name of the created ODE
         components : str

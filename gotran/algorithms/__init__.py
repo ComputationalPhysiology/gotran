@@ -22,4 +22,4 @@ from gotran.algorithms.symbolicnewtonsolution import *
 
 __all__ = [_name for _name in list(globals().keys()) if _name[0] != "_"]
 
-del _name
+# del _name

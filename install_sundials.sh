@@ -32,3 +32,4 @@ if [[ $2 == "" ]]; then
 
     # python setup.py install --sundials-home=$SUNDIALS_DIR --blas-home=$BLAS_DIR --lapack-home=$LAPACK_DIR --superlu-home=$SUPERLU --prefix=$INSTALL_PREFIX --sundials-with-superlu 1
     python setup.py install --sundials-home=$SUNDIALS_DIR --prefix=$INSTALL_PREFIX
+fi

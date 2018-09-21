@@ -1,15 +1,14 @@
 import warnings
 from copy import deepcopy
+import numpy as np
 try:
     import scipy.integrate as spi
     has_scipy = True
 except:
     has_scipy = False
 
-
-
-# Local imports
-from .utils import *
+from gotran.common import warning
+from .odesolver import Solver
 
 __all__ = ["ScipySolver", "has_scipy"]
 
@@ -30,6 +29,13 @@ class ScipySolver(Solver):
     def get_options(self):
         return self._options
 
+    # @staticmethod
+    # def list_solver_options():
+    #     return {'atol': 1e-6,
+    #             'max_step': np.inf,
+    #             'rtol': 1e-6}
+
+    # These are the old ones
     @staticmethod
     def list_solver_options():
         return {'atol': None,
@@ -82,12 +88,24 @@ class ScipySolver(Solver):
 
                 # Allways catch warnings (not only the first)
                 warnings.simplefilter("always")
-                
+
+                fun=lambda y, t: self._rhs(t, y, self._model_params)
                 # Solve ode
-                results = spi.odeint(self._rhs, self._y0,
+                results = spi.odeint(fun, self._y0,
                                      tsteps, Dfun=self._jac,
-                                     args=(self._model_params,),
                                      **options)
+                t, y = tsteps, results
+                
+                
+                # fun=lambda t, y: self._rhs(t, y, self._model_params)
+                # results = spi.solve_ivp(fun=fun,
+                #                         y0=self._y0,
+                #                         t_span=[tsteps[0], tsteps[-1]],
+                #                         method='BDF', #'BDF', 'LSODA' 'Radau'
+                #                         t_eval=tsteps,
+                #                         jac=self._jac,
+                #                         **options)
+                # t, y = results.t, results.y
 
             # Check if we caught any warnings 
             converged = len(caught_warnings) == 0
@@ -106,4 +124,4 @@ class ScipySolver(Solver):
                     raise ODESolverError(msg)
             
             
-        return tsteps, results
+        return t, y
