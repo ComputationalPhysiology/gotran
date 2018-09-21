@@ -20,8 +20,8 @@ import sys
 # -- Project information -----------------------------------------------------
 
 project = 'gotran'
-copyright = '2018, Henrik'
-author = 'Henrik'
+copyright = '2018, Johan Hake, Henrik Finsberg'
+author = 'Joahan Hake, Henrik Finsberg'
 
 # The short X.Y version
 version = ''
@@ -29,7 +29,7 @@ version = ''
 release = '1.0'
 
 
-import unittest.mock as mock
+# import unittest.mock as mock
 
 # MOCK_MODULES = ['sympy', 'sympy.core', 'sympy.core.function', 'sympy.printing', 'sympy.printing.ccode', 'sympy.printing.latex', 'sympy.printing.precedence', 'sympy.__version__']
 # for mod_name in MOCK_MODULES:
@@ -54,7 +54,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     # 'numpydoc',
-    'sphinx.ext.graphviz', 
+    # 'sphinx.ext.graphviz', 
 ]
 
 # Add any paths that contain templates here, relative to this directory.
