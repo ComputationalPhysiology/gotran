@@ -1,0 +1,3 @@
+[submodule "doc/build/html"]
+	path = doc/build/html
+	url = git@bitbucket.org:finsberg/docs.gotran.git
