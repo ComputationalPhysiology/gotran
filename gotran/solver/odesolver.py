@@ -1,4 +1,5 @@
 # Global imports
+import signal
 import numpy as np
 
 
@@ -16,11 +17,35 @@ goss_methods = ["RKF32"]
 
 methods = ["scipy"] + gotran_methods + sundials_methods + goss_methods
 
-
 class ODESolverError(Exception):pass
+
+
+def timeout(timeout_seconds):
+    def decorate(function):
+        message = "Timeout (%s sec) elapsed for solve %s" % (timeout_seconds, function.__name__)
+
+       
+
+        def new_f(*args, **kwargs):
+            old = signal.signal(signal.SIGALRM, handler)
+            
+            try:
+                function_result = function(*args, **kwargs)
+            finally:
+                signal.signal(signal.SIGALRM, old)
+            signal.alarm(0)
+            return function_result
+
+        new_f.func_name = function.func_name
+        return new_f
+
+    return decorate
 
 class Solver(object):
     def __init__(self, ode, **options):
+
+        # Set 1000 seconds as max
+        self.max_solve_time = options.get('max_solve_time', 1000)
 
         # Get names of monitoed expression
         self._monitored = []
@@ -56,9 +81,28 @@ class Solver(object):
         self._model_params = np.array(self._ode.parameter_values(), dtype='float64')
 
     def solve(self, *args, **kwargs):
+        """
+        Solver ODE. See docs for the different solvers
+        for solver specific arguments.
+        """
 
+        print(1)
         self.update_model_parameter()
-        return self._solve(*args, **kwargs)
+        print(2)
+        def handler(signum, frame):
+            raise TimeoutError(('Time to solve ODE has exceeded '
+                                  'the max solving time'))
+        print(3)
+        old = signal.signal(signal.SIGALRM, handler)
+        print(4)
+        signal.alarm(self.max_solve_time)
+        try:
+            print('Solving with max solve time = {}'.format(self.max_solve_time))
+            ret = self._solve(*args, **kwargs)
+        finally:
+            signal.signal(signal.SIGALRM, old)
+        signal.alarm(0)
+        return ret
         
     @property
     def module(self):

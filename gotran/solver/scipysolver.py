@@ -8,7 +8,7 @@ except:
     has_scipy = False
 
 from gotran.common import warning
-from .odesolver import Solver
+from .odesolver import Solver, ODESolverError
 
 __all__ = ["ScipySolver", "has_scipy"]
 
@@ -22,9 +22,8 @@ class ScipySolver(Solver):
         Solver.__init__(self, ode, **options)
 
         self._options =  ScipySolver.list_solver_options()
-        self._options.update( (k,v) for k,v in options.items() \
+        self._options.update((k,v) for k,v in options.items() \
                               if k in list(self._options.keys()))
-
 
     def get_options(self):
         return self._options
@@ -42,7 +41,7 @@ class ScipySolver(Solver):
                 'col_deriv': 0,
                 'full_output': 0,
                 'h0': 0.0,
-                'hmax': 1e-3,
+                'hmax': 0.0,
                 'hmin': 0.0,
                 'ixpr': 0,
                 'ml': None,
@@ -55,7 +54,7 @@ class ScipySolver(Solver):
                 'rtol': None,
                 'tcrit': None}
         
-    def _solve(self, tsteps, attempts = 3):
+    def _solve(self, tsteps, attempts=3):
         """
         Solve ode using scipy.integrade.odeint
 
@@ -122,6 +121,5 @@ class ScipySolver(Solver):
 
                 if w.category == spi.odepack.ODEintWarning:
                     raise ODESolverError(msg)
-            
-            
+
         return t, y

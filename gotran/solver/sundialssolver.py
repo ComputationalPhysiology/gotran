@@ -12,7 +12,7 @@ try:
     has_sundials = True
 except ImportError as ex:
     has_sundials = False
-from .odesolver import Solver
+from .odesolver import Solver, ODESolverError
 
 # Local imports
 __all__ = ["SundialsSolver", "has_sundials", "SundialsNotInstalled"]

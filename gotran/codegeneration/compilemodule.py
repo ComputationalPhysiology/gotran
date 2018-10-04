@@ -295,7 +295,7 @@ def compile_module(ode, language="C", monitored=None,
         The gotran ode
     language : str (optional)
         The language of the generated code
-        Defaults : 'C' \xe2\x88\x88 ['C', 'Python'] 
+        Defaults : 'C' ['C', 'Python'] 
     monitored : list
         A list of names of intermediates of the ODE. Code for monitoring
         the intermediates will be generated.

@@ -34,6 +34,59 @@ _all_cellmodels = {}
 # Holder for current CellModel
 _current_cellmodel = None
 
+def stimulation_protocal(stim_params):
+    """
+    Return stimulation protocal given a dictionary of stimuluation
+    parameters
+    """
+
+    if stim_params:
+        amplitude =  get_parameter_list_from_string("amp", stim_params)[0]
+        duration = get_parameter_list_from_string("dur", stim_params)[0]
+
+        period = get_parameter_list_from_string("period", stim_params)
+        frequency = get_parameter_list_from_string("frequency", stim_params)
+        if period: period = period[0]    
+        if frequency: frequency=frequency[0]
+
+        start = get_parameter_list_from_string("start", stim_params)[0]
+        end = get_parameter_list_from_string("end", stim_params)[0]
+    else:
+        amplitude = Parameter("amplidude", 0)
+        duration = Parameter("duration", 0)
+        period = Parameter("period", 500)
+        start = Parameter("start", 0)
+        end = Parameter("end", 1000)
+        frequency=None
+
+
+
+    if not period and frequency:
+        # Let the period be the reciprocal of the frequency
+        unit = Unit(frequency.unit)
+        period = Parameter("period", ScalarParam(60/frequency.value,
+                                                 unit=unit.reciprocal))
+    if not frequency and period:
+        unit = Unit(period.unit)
+        frequency = Parameter("frequency", ScalarParam(60/period.value,
+                                                       unit=unit.reciprocal))
+
+    class StimDict(dict):
+        def set(self, key, value):
+            self[key].update(value)
+            if key == "period":
+                self["frequency"].update(60.0/value)
+            elif key == "frequency":
+                self["period"].update(60.0/value)
+
+
+    return StimDict(amplitude=amplitude,
+                    duration=duration,
+                    period=period,
+                    frequency=frequency,
+                    start=start,
+                    end=end)
+
 def get_parameter_list_from_string(string, lst, case_insesitive=True):
     """
     Return a list with parameters in the given list
@@ -364,52 +417,7 @@ class CellModel(ODE):
 
         stim_params = self.stimulation_parameters
 
-        if stim_params:
-            amplitude =  get_parameter_list_from_string("amp", stim_params)[0]
-            duration = get_parameter_list_from_string("dur", stim_params)[0]
-            
-            period = get_parameter_list_from_string("period", stim_params)
-            frequency = get_parameter_list_from_string("frequency", stim_params)
-            if period: period = period[0]    
-            if frequency: frequency=frequency[0]
-            
-            start = get_parameter_list_from_string("start", stim_params)[0]
-            end = get_parameter_list_from_string("end", stim_params)[0]
-        else:
-            amplitude = Parameter("amplidude", 0)
-            duration = Parameter("duration", 0)
-            period = Parameter("period", 500)
-            start = Parameter("start", 0)
-            end = Parameter("end", 1000)
-            frequency=None
-
-
-
-        if not period and frequency:
-            # Let the period be the reciprocal of the frequency
-            unit = Unit(frequency.unit)
-            period = Parameter("period", ScalarParam(60/frequency.value,
-                                                     unit=unit.reciprocal))
-        if not frequency and period:
-            unit = Unit(period.unit)
-            frequency = Parameter("frequency", ScalarParam(60/period.value,
-                                                           unit=unit.reciprocal))
-
-        class StimDict(dict):
-            def set(self, key, value):
-                self[key].update(value)
-                if key == "period":
-                    self["frequency"].update(60.0/value)
-                elif key == "frequency":
-                    self["period"].update(60.0/value)
-            
-            
-        return StimDict(amplitude=amplitude,
-                        duration=duration,
-                        period=period,
-                        frequency=frequency,
-                        start=start,
-                        end=end)
+        return stimulation_protocal(self.stimulation_parameters)
 
     @property
     def currents(self):

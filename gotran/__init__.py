@@ -47,8 +47,8 @@ from modelparameters.sympytools import sp_namespace as _sp_namespace
 from modelparameters.sympytools import sp as _sp
 
 # Add sympy namespace to globals
-globals().update(_sp_namespace)
-globals().update(dict(eye=_sp.eye, diag=_sp.diag, Matrix=_sp.Matrix, zeros=_sp.zeros))
+# globals().update(_sp_namespace)
+# globals().update(dict(eye=_sp.eye, diag=_sp.diag, Matrix=_sp.Matrix, zeros=_sp.zeros))
     
 # Assign the __all__ attribute
 __all__ = [name for name in list(globals().keys()) if name[:1] != "_"]
