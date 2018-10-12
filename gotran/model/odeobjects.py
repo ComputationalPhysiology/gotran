@@ -56,7 +56,7 @@ class ODEObject(object):
             fractional count based on the count of the dependent object
         """
 
-        
+
         check_arg(name, str, 0, ODEObject)
         check_arg(dependent, (type(None), ODEObject))
         self._name = self._check_name(name)
@@ -71,7 +71,7 @@ class ODEObject(object):
             # FIXME: Do not hardcode the fractional increase
             self._count = dependent._count + \
                           ODEObject.__dependent_counts[dependent._count] * 0.00001
-            
+
     def __hash__(self):
         return id(self)
 
@@ -171,10 +171,10 @@ class ODEObject(object):
         else:
             self._count = ODEObject.__count
             ODEObject.__count += 1
-            
+
         debug("Change count of {0} from {1} to {2}".format(\
             self.name, old_count, self._count))
-    
+
 class Comment(ODEObject):
     """
     A Comment. To keep track of user comments in an ODE
@@ -279,7 +279,7 @@ class ODEValueObject(ODEObject):
 
     def update(self, value):
         self._param.update(value)
-    
+
     @value.setter
     def value(self, value):
         self._param.setvalue(value)
@@ -291,7 +291,7 @@ class ODEValueObject(ODEObject):
     @property
     def unit(self):
         return self._param.unit
-    
+
     @property
     def param(self):
         return self._param
@@ -312,6 +312,43 @@ class ODEValueObject(ODEObject):
         unit_str = latex_unit(self.param.unit)
         return "${0}{1}$".format(latex(value), "\\;{0}".format(unit_str) \
                                  if unit_str else "")
+
+    def __truediv__(self, other):
+        # Python 3
+        return self.param.__truediv__(other)
+
+    def __rtruediv__(self, other):
+        # Python 3
+        return self.param.__rtruediv__(other)
+
+    def __div__(self, other):
+        # Python 2
+        return self.param.__div__(other)
+
+    def __rdiv__(self, other):
+        # Python 2
+        return self.param.__rdiv__(other)
+
+    def __mul__(self, other):
+        return self.param.__mul__(other)
+
+    def __rmul__(self, other):
+        return self.param.__rmul__(other)
+
+    def __add__(self, other):
+        return self.param.__add__(other)
+
+    def __radd__(self, other):
+        return self.param.__radd__(other)
+
+    def __sub__(self, other):
+        return self.param.__sub__(other)
+
+    def __rsub__(self, other):
+        return self.param.__rsub__(other)
+
+    def __pow__(self, other):
+        return self.param.__pow__(other)
 
 class State(ODEValueObject):
     """
@@ -374,6 +411,8 @@ class State(ODEValueObject):
     def is_solved(self):
         return self._is_solved
 
+
+
 class Parameter(ODEValueObject):
     """
     class for a Parameter
@@ -396,49 +435,6 @@ class Parameter(ODEValueObject):
         # Call super class
         super(Parameter, self).__init__(name, init)
 
-    
-    def _get_binary_operands(self, x):
-        
-        # Check what type x is
-        if type(x) in scalars:
-            return (self.value, float(x))
-        else:
-            # Only allow for Parameter class
-            # TODO: allow for other types of objects
-            # in the modelparameter repo
-            check_arg(x, Parameter)
-
-            # TODO: Implement functionality for unit
-            # conversion
-            msg = ("Addition not implemented for "+
-                   "parameters with different units")
-            assert x.param.unit == self.param.unit, msg
-        
-            return (self.value,  x.value)
-
-            
-    def __add__(self, x):
-        """
-        Method wrapper for addition
-        """
-        x1,x2 = self._get_binary_operands(x)
-        return x1 + x2
-    
-    def __radd__(self, x):
-        """
-        Method wrapper for addition
-        """
-        return self.__add__(x)
-    
-    def __mul__(self, x):
-        """
-        Method wrapper fro multiplication
-        """
-        x1,x2 = self._get_binary_operands(x)
-        return x1 * x2
-
-    def __rmul__(self, x):
-        return self.__mul__(x)
 
     init = ODEValueObject.value
 
@@ -452,7 +448,7 @@ class IndexedObject(ODEObject):
         Return the default parameters for formating the array
         """
         return parameters.generation.code.array.copy()
-    
+
     def __init__(self, basename, indices, shape=None, array_params=None, \
                  add_offset="", dependent=None):
         """
@@ -463,7 +459,7 @@ class IndexedObject(ODEObject):
         basename : str
             The basename of the multi index Expression
         indices : tuple of ints
-            The indices 
+            The indices
         shape : tuple (optional)
             A tuple with the shape of the indexed object
         array_params : dict
@@ -476,7 +472,7 @@ class IndexedObject(ODEObject):
         """
 
         array_params = array_params or {}
-        
+
         check_arg(basename, str)
         indices = tuplewrap(indices)
         check_arg(indices, tuple, itemtypes=int)
@@ -485,7 +481,7 @@ class IndexedObject(ODEObject):
         # Get index format and index offset from global parameters
         self._array_params = self.default_parameters()
         self._array_params.update(array_params)
-        
+
         index_format = self._array_params.index_format
         index_offset = self._array_params.index_offset
         flatten = self._array_params.flatten
@@ -584,12 +580,12 @@ class Time(ODEValueObject):
         Update unit. For example if time has unit
         seconds in stead of milliseconds
         """
-      
+
         if unit in ["ms", "s"]:
             self._param = ScalarParam(0.0, unit=unit, name=self._name)
         else:
             info("Unknow time unit {}".format(unit))
-        
+
 
 class Dt(ODEValueObject):
     """

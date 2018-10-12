@@ -24,11 +24,11 @@ def timeout(timeout_seconds):
     def decorate(function):
         message = "Timeout (%s sec) elapsed for solve %s" % (timeout_seconds, function.__name__)
 
-       
+
 
         def new_f(*args, **kwargs):
             old = signal.signal(signal.SIGALRM, handler)
-            
+
             try:
                 function_result = function(*args, **kwargs)
             finally:
@@ -66,12 +66,12 @@ class Solver(object):
 
         # Initial conditions for the states
         self._y0 = self.module.init_state_values()
-    
+
         # The model parameters
         self._model_params = self.module.init_parameter_values()
 
         self._ode = ode
-        
+
 
     def update_model_parameter(self):
         """
@@ -86,31 +86,28 @@ class Solver(object):
         for solver specific arguments.
         """
 
-        print(1)
         self.update_model_parameter()
-        print(2)
-        def handler(signum, frame):
-            raise TimeoutError(('Time to solve ODE has exceeded '
-                                  'the max solving time'))
-        print(3)
-        old = signal.signal(signal.SIGALRM, handler)
-        print(4)
-        signal.alarm(self.max_solve_time)
-        try:
-            print('Solving with max solve time = {}'.format(self.max_solve_time))
-            ret = self._solve(*args, **kwargs)
-        finally:
-            signal.signal(signal.SIGALRM, old)
-        signal.alarm(0)
+
+        # def handler(signum, frame):
+        #     raise TimeoutError(('Time to solve ODE has exceeded '
+        #                         'the max solving time'))
+        # old = signal.signal(signal.SIGALRM, handler)
+        # signal.alarm(self.max_solve_time)
+        # try:
+        #     print('Solving with max solve time = {}'.format(self.max_solve_time))
+        ret = self._solve(*args, **kwargs)
+        # finally:
+        #     signal.signal(signal.SIGALRM, old)
+        # signal.alarm(0)
         return ret
-        
+
     @property
     def module(self):
         return self._module
 
     def monitor_indices(self, *monitored):
         return self.module.monitor_indices(*monitored)
-    
+
     @property
     def monitor_names(self):
         return self._monitored
@@ -121,12 +118,12 @@ class Solver(object):
     @property
     def state_names(self):
         return self._state_names
-    
+
     def monitor(self, tsteps, results):
         """
         Get monitored values
         """
-                
+
 
         monitored_results = np.zeros((len(tsteps),
                                     len(self.monitor_names)),
@@ -135,19 +132,19 @@ class Solver(object):
                                         dtype=np.float_)
 
         for ind, (time, res) in enumerate(zip(tsteps, results)):
-        
+
             self._eval_monitored(time, res, self._model_params,
                                 monitored_get_values)
             monitored_results[ind,:] = monitored_get_values
-                                   
-            
+
+
         return monitored_results
 
     def _eval_monitored(self, time, res, params, values):
         self.module.monitor(res, time,  params, values)
-        
 
-    
+
+
 def check_method(method):
     msg = "Unknown method {1}, possible method are {0}".format(method, methods)
     assert(method in methods), msg
@@ -155,9 +152,9 @@ def check_method(method):
 
 def generate_module(ode, monitored, **options):
     """
-    Generate a module to 
+    Generate a module to
     """
-    
+
     from gotran.codegeneration.compilemodule import compile_module
     from gotran.common.options import parameters
     # Copy of default parameters
@@ -169,7 +166,7 @@ def generate_module(ode, monitored, **options):
 
     generation.code.default_arguments \
         = options.pop("arguments", "tsp")
-           
+
     generation.functions.rhs.generate = True
     generation.functions.jacobian.generate \
         = options.pop("generate_jacobian", False)
@@ -181,7 +178,7 @@ def generate_module(ode, monitored, **options):
         = options.pop("additional_declarations", None)
     jacobian_declaration_template \
         =options.pop("jacobian_declaration_template", None)
-                        
+
 
 
     module = compile_module(ode, language,monitored,generation,
@@ -190,7 +187,7 @@ def generate_module(ode, monitored, **options):
 
     return module
 
-        
+
 
 # Local imports
 from .sundialssolver import SundialsSolver, SundialsNotInstalled
@@ -200,13 +197,13 @@ from .scipysolver import ScipySolver
 def ODESolver(ode, method="scipy", **options):
      """
     A generic ODE solver for solving problem of the types on the form,
-        
+
     .. math::
-    
+
         \dot{y} = f(t,y), \quad y(t_0) = y_0.
-            
+
     Here one need to specific the backend which is either Scipy or Assimulo.
-    
+
     *Arguments*
 
     ode : gotran.ODE or gotran.CellModel
@@ -217,7 +214,7 @@ def ODESolver(ode, method="scipy", **options):
     options : dict:
        Options for the solver, see `list_solver_options`
     """
-     
+
      check_method(method)
 
      if method == "scipy":
@@ -228,7 +225,7 @@ def ODESolver(ode, method="scipy", **options):
           except:
                print("Could not import Sundials solvers. Use Scipy ODE solver instead")
                return ScipySolver(ode)
-               
+
      elif method in gotran_methods:
          raise NotImplementedError
      elif method in goss_methods:

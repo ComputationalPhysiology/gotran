@@ -34,6 +34,7 @@ _all_cellmodels = {}
 # Holder for current CellModel
 _current_cellmodel = None
 
+
 def stimulation_protocal(stim_params):
     """
     Return stimulation protocal given a dictionary of stimuluation
@@ -41,44 +42,41 @@ def stimulation_protocal(stim_params):
     """
 
     if stim_params:
-        amplitude =  get_parameter_list_from_string("amp", stim_params)[0]
+        amplitude = get_parameter_list_from_string("amp", stim_params)[0]
         duration = get_parameter_list_from_string("dur", stim_params)[0]
 
         period = get_parameter_list_from_string("period", stim_params)
         frequency = get_parameter_list_from_string("frequency", stim_params)
-        if period: period = period[0]    
-        if frequency: frequency=frequency[0]
+        if period:
+            period = period[0]
+        if frequency:
+            frequency = frequency[0]
 
         start = get_parameter_list_from_string("start", stim_params)[0]
         end = get_parameter_list_from_string("end", stim_params)[0]
     else:
-        amplitude = Parameter("amplidude", 0)
-        duration = Parameter("duration", 0)
-        period = Parameter("period", 500)
-        start = Parameter("start", 0)
-        end = Parameter("end", 1000)
-        frequency=None
-
-
+        amplitude = Parameter("amplidude", ScalarParam(value=0))
+        duration = Parameter("duration", ScalarParam(value=0))
+        period = Parameter("period", ScalarParam(value=500, unit="ms"))
+        start = Parameter("start", ScalarParam(value=0))
+        end = Parameter("end", ScalarParam(value=30000, unit="ms"))
+        frequency = None
 
     if not period and frequency:
         # Let the period be the reciprocal of the frequency
-        unit = Unit(frequency.unit)
-        period = Parameter("period", ScalarParam(60/frequency.value,
-                                                 unit=unit.reciprocal))
+        period_param = 60.0 / frequency
+        period = Parameter("period", period_param)
     if not frequency and period:
-        unit = Unit(period.unit)
-        frequency = Parameter("frequency", ScalarParam(60/period.value,
-                                                       unit=unit.reciprocal))
+        frequency_param = 60.0 / period
+        frequency = Parameter("frequency", frequency_param)
 
     class StimDict(dict):
         def set(self, key, value):
             self[key].update(value)
             if key == "period":
-                self["frequency"].update(60.0/value)
+                self["frequency"].update(60.0 / value)
             elif key == "frequency":
-                self["period"].update(60.0/value)
-
+                self["period"].update(60.0 / value)
 
     return StimDict(amplitude=amplitude,
                     duration=duration,
@@ -86,6 +84,7 @@ def stimulation_protocal(stim_params):
                     frequency=frequency,
                     start=start,
                     end=end)
+
 
 def get_parameter_list_from_string(string, lst, case_insesitive=True):
     """
@@ -105,18 +104,18 @@ def get_parameter_list_from_string(string, lst, case_insesitive=True):
 
     Returns
     -------
-    
+
     parlist : lst
         A sublist of lst containing the parameter that has a name
         containing the given string
-    
+
     """
     if case_insesitive:
         return [p for p in lst if string.lower() in p.name.lower()]
 
     else:
         return [p for p in lst if string in p.name]
-    
+
 
 class CellModel(ODE):
     """
@@ -137,8 +136,7 @@ class CellModel(ODE):
     -------
 
     .. code-block::python
-    
-    
+
         cell =  CellModel("MyCell")
 
 
@@ -157,7 +155,7 @@ class CellModel(ODE):
 
 
     """
-    
+
     def __new__(cls, *args, **kwargs):
         """
         Create a CellModel instance.
@@ -166,9 +164,9 @@ class CellModel(ODE):
         arg = args[0]
         if arg in _all_cellmodels:
             return _all_cellmodels[arg]
-        
+
         return object.__new__(cls)
-        
+
     def __init__(self, name_, ns=None):
         """
         Initialize a CellModel
@@ -179,31 +177,23 @@ class CellModel(ODE):
         name = name_
 
         super(CellModel, self).__init__(name, ns)
-        
-
         # Do not reinitialized object if it already excists
         if name in _all_cellmodels:
             return
 
         # Initialize attributes
         self.name = name
-        
+
         self._initialize_cell_model()
-        
+
         # Store instance for future lookups
         _all_cellmodels[name] = self
-        
-        
 
     def _initialize_cell_model(self):
         # Set current CellModel
         global _current_cellmodel
         _current_cellmodel = self
-
-        
         # Perhaps more here later
-        
-        
 
     @property
     def parameter_symbols(self):
@@ -215,14 +205,13 @@ class CellModel(ODE):
 
     def parameter_values(self):
         return [s.value for s in self.parameters]
-    
+
     @property
     def state_symbols(self):
         return [s.name for s in self.states]
 
     def state_values(self):
         return [s.value for s in self.states]
-
 
     def intermediate_unit(self, name, unit_type="si", return_factor=False):
         """
@@ -243,8 +232,7 @@ class CellModel(ODE):
             Unit of the expression for the intermediate
 
         """
-        
-        
+
         def get_intermediate_unit(name, unit_type):
             check_arginlist(name, self.intermediate_symbols)
             intermediate = self.intermediates[self.intermediate_symbols.index(name)]
@@ -252,23 +240,23 @@ class CellModel(ODE):
             factor = 1.0
             # Extract expression
             expr = intermediate.expr.copy()
-          
+
             if isinstance(expr, sp.Piecewise):
                 expr = expr.args[0][0]
 
-            
+
             expr = expr.replace(sp.log, lambda t : 1)
             expr = expr.replace(sp.exp, lambda t : 1)
             expr = expr.replace(sp.zoo, lambda : 1)
-            
+
             unit_dep_map = {}
-            
-            
+
+
             for dep in sp_tools.symbols_from_expr(expr):
 
-                
+
                 dep_str = str(dep).rsplit("(")[0]
-                              
+
                 if dep_str in self.parameter_symbols:
                     p = self.get_parameter(str(dep))
                     unit = p.unit
@@ -285,9 +273,9 @@ class CellModel(ODE):
                 else:
                     # Parmaterer not found (most likely the time variable)
                     continue
-                    
 
-               
+
+
                 expr1 = expr.subs(dep, unit)
                 if expr1 == 0:
                     # We got some cancellation because of the previous substitutioin
@@ -297,37 +285,37 @@ class CellModel(ODE):
                 else:
                     expr = expr1
 
-            
+
                 unit_dep_map[dep]=unit
-                       
-            # Substitute again 
+
+            # Substitute again
             for k, v in list(unit_dep_map.items()):
                 for k1, v1 in list(unit_dep_map.items()):
                     k = k.subs(k1, v1)
                 expr = expr.subs(k, v)
-                
+
             # Fix fractions and remove possible numbers
             unit_exprs = []
 
-           
+
             def add_unit(k,v):
-                if not k.is_Number and v.as_numer_denom()[1] == 1: 
+                if not k.is_Number and v.as_numer_denom()[1] == 1:
 
                     exp = "**{}".format(str(v)) if v != 1 else ""
                     unit_ = str(k)
-                    
+
                     unit_exprs.append(unit_+exp)
-                    
-            
+
+
             for k, v in list(expr.as_powers_dict().items()):
 
                 # If term consist of multiple term, choose one of them
                 if k.is_Add:
                     k = k.as_coeff_add()[1][0]
-            
+
                     for k1, v1 in list(k.as_powers_dict().items()):
                         add_unit(k1, v1)
-                    
+
                 else:
                     add_unit(k, v)
 
@@ -337,7 +325,7 @@ class CellModel(ODE):
 
             # Check if this is a sum and use only one term
             unit_expr = unit_expr.split(" + ")[0].split(" - ")[0]
-     
+
             # Strip away any numbers but collect the factor
             subunits = "^".join(unit_expr.split("**")).split("*")
             new_subunits = []
@@ -347,11 +335,11 @@ class CellModel(ODE):
                 except: return False
                 else: return True
 
-    
+
             for u in subunits:
                 if not isfloat(u):
                     new_subunits.append(u)
-                
+
 
             # Join new expression
             unit_expr = "**".join("*".join(new_subunits).split("^"))
@@ -371,7 +359,7 @@ class CellModel(ODE):
                 retunit = unit.unit
 
             return retunit, factor
-            
+
         unit_, factor_ = get_intermediate_unit(name, unit_type)
 
         if return_factor:
@@ -390,7 +378,7 @@ class CellModel(ODE):
             List of times
         current : array
             List with residual current
-        
+
         """
         from scipy.interpolate import UnivariateSpline
         self._residual_current = UnivariateSpline(t, current, s= 0)
@@ -401,13 +389,13 @@ class CellModel(ODE):
             return np.zeros_like(t)
 
         return self._residual_current(t)
-        
-       
+
+
 
     @property
     def intermediate_symbols(self):
         return [i.name for i in self.intermediates]
-        
+
     @property
     def stimulation_parameters(self):
         return get_parameter_list_from_string("stim", self.parameters)
@@ -422,10 +410,10 @@ class CellModel(ODE):
     @property
     def currents(self):
         """
-        Return a list of the currents used in the 
+        Return a list of the currents used in the
         computation of the membrane potential.
         Note that intermediate currents (not involved in
-        th computation of the membrane potential) 
+        th computation of the membrane potential)
         are not retured
         """
 
@@ -440,37 +428,37 @@ class CellModel(ODE):
         Arguments
         ---------
         dt : float
-            Time increment in the same time unit 
+            Time increment in the same time unit
             as the model
         extra : float
             Add some extra time (in ms) to prolonge the
             the time. Default 60 ms
-            
+
         """
 
         # Get stimulation parameters
         stim_params = self.stimulation_protocol
-    
+
         # Get duration of one beat
         if stim_params["period"]:
             period = stim_params["period"].value
         else:
             period = 60.0/stim_params["frequency"].value
-            
+
         # Get duration of simulus
         duration = stim_params["duration"].value
 
-        
+
         factor = 1e-3 if stim_params["duration"].param.unit == "s" else 1.0
         # Include additional 60 ms before stimulation
         extra_ = factor * extra
         beattime = int((period+duration+extra_) / float(dt)) + 1
-        
+
         return beattime
 
     def get_time_steps(self, nbeats=1, t1=None, dt=1.0, t0 = 0.0):
         """
-        Get list with time steps given the number 
+        Get list with time steps given the number
         of beats and time increment
 
         Arguments
@@ -478,10 +466,9 @@ class CellModel(ODE):
         nbeats : int
             Nuber of beats (Default:1)
         dt : float
-            Time increament between two time steps. (Default:1.0)
-            Note that you need to think about the time unit. 
-            If time unit is `ms` then dt = 1.0 is probably OK, but
-            if time unit is `s` then dt should probably be lower
+            Time increament between two time steps in ms. (Default:1.0)
+            Note that you can provide `dt` as a Parameter with unit different
+            from ms.
         t1 : float
             End time. If not provided then end time will determined from
             the number of beats
@@ -489,33 +476,29 @@ class CellModel(ODE):
             Start time (Default: 0.0)
 
         """
-
+        if isinstance(dt, scalars):
+            dt = ScalarParam(dt, unit='ms')
         # Get stimulation prototocal
         stim_params = self.stimulation_protocol
-        
-        
         # We let the period of the frequency
         # define the lenght of each beat
-        if stim_params["period"]:
-            period = stim_params["period"].value
-        else:
-            period = 60.0/stim_params["frequency"].value
-               
+        period = stim_params["period"]
+
         if t1 is None:
             # Use the stimultation protocol to determine the end time
             t1 = t0 + nbeats * period
 
         # Estimate number of steps
-        nsteps = int(t1/float(dt))+1
-        tsteps = np.linspace(t0, t1, nsteps)
+        nsteps = t1 / dt + 1
+        tsteps = np.linspace(param2value(t0),
+                             param2value(t1),
+                             param2value(nsteps.value))
         return tsteps
-        
-                
 
     def simulate(self, **kwargs):
         """
         Simulate the ODE to :math:`t_{\mathrm{end}}`
-        with the given number points 
+        with the given number points
 
         Arguments
         ---------
@@ -526,7 +509,7 @@ class CellModel(ODE):
             Number of beats based on stimulus protocol
         npts : int
             Number of communication points used in the solver
-        
+
         """
 
         # Parameters for time
@@ -544,7 +527,7 @@ class CellModel(ODE):
         # Solver meothd
         method = kwargs.pop("solver_method", "RKF32")
         # Residual current
-        update_residual_current = kwargs.pop("residual_current", False)        
+        update_residual_current = kwargs.pop("residual_current", False)
         # Return only the final beat (if simulating multiple beats)
         return_final_beat = kwargs.pop("return_final_beat", False)
         # Return monitored values
@@ -559,7 +542,7 @@ class CellModel(ODE):
             period = stim_params["period"].value
         else:
             period = 60.0/stim_params["frequency"].value
-               
+
         if t_end is None:
             # Use the stimultation protocol to determine the end time
             t0 =  stim_params["start"]
@@ -585,7 +568,7 @@ class CellModel(ODE):
         if backend == "goss":
 
             import goss
-            
+
 
             msg = ("Solver method has to be one of "+
                    "{}, got {}".format(goss.goss_solvers, method))
@@ -598,55 +581,52 @@ class CellModel(ODE):
             solver = getattr(goss, method)(module)
             x0 = module.init_state_values()
             t = 0.0
-            
+
             ys = np.zeros((nsteps, module.num_states()))
             if return_monitored:
                 monitored = np.zeros((nsteps, module.num_monitored()))
                 monitor = np.zeros(module.num_monitored())
             ts = np.zeros(nsteps)
-          
+
             for step in range(nsteps):
 
                 if update_residual_current:
-                    
+
                     module.set_parameter("i_res_amp", float(self.residual_current(t)))
-                    # from IPython import embed; embed()
-                    # exit()
-                    # print t
                     # solver = getattr(goss, method)(module)
                     # print float(self.residual_current(t))
 
                 if return_monitored:
                     module.eval_monitored(x0, t, monitor)
                     monitored[step,:] = monitor
-             
-                
+
+
 
                 # print t
                 solver.forward(x0, t, dt)
-             
+
                 ys[step,:] = x0
                 ts[step] = t
                 t += dt
 
-           
+
             ret = [ts, ys]
 
             if return_monitored:
                 ret.append(monitored)
-           
+
 
         else:
             from gotran.codegeneration.codegenerators import PythonCodeGenerator
             from gotran.common.options import parameters
             import imp
 
-    
+
             params = parameters.generation.copy()
             params.functions.rhs.function_name="__call__"
-            params.code.default_arguments="tsp" 
+            params.code.default_arguments="tsp"
             params.class_code=1
-   
+
 
             monitored = [expr.name for expr in self.intermediates + self.state_expressions]
             gen = PythonCodeGenerator(params)
@@ -685,10 +665,10 @@ class CellModel(ODE):
 
             ret[0] = ret[0][start_idx:end_idx]
             ret[1] = ret[1][start_idx:end_idx]
-            
+
         return ret
-    
-        
+
+
     def get_component(self, name):
         """
         Get the component with the given name
@@ -712,7 +692,7 @@ class CellModel(ODE):
         idx = self.component_names.index(name)
         # Return the component
         return self.components[idx]
-        
+
     def get_parameter(self, name):
         """
         Get the parameter with the given name
@@ -819,13 +799,13 @@ class CellModel(ODE):
             Name of the parmaeter
         value : scalar, ScalarParam
             The new value of the parameter. Note that
-            if the parameter is of type `ScalarParam` 
+            if the parameter is of type `ScalarParam`
             while the provided value is a scalar then the value
             will be updated while keeping the unit
 
         """
         check_arg(value, scalars + (ScalarParam,), 1, Parameter)
-        
+
         par = self.get_parameter(name)
         if isinstance(value, ScalarParam):
             par._param = value
@@ -842,11 +822,10 @@ class CellModel(ODE):
 
 # Construct a default CellModel
 # _current_cellmodel = CellModel("Default")
-        
+
 def gccm():
     """
     Return the current CellModel
     """
     assert(isinstance(_current_cellmodel, CellModel))
     return _current_cellmodel
-    
