@@ -18,9 +18,16 @@ Gotran:
 
   - can load models from external ODE desciption files such as CellML
 
+## Documentation
+
+Documentation can be found here: <https://finsberg.github.io/docs.gotran/>
+
+## Source code
 
 Source code can be found at <https://bitbucket.org/finsberg/gotran>
-See the [installation instructions](INSTALL.md) for details on how to install Gotran.
+See the [installation instructions](INSTALL.md) for details on how to
+install Gotran.
+
 
 ## License
 
