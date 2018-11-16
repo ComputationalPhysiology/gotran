@@ -5,10 +5,12 @@ the sundials solvers
 conda install assimulo
 
 """
+from .utils import suppress_stdout_stderr
 # Assimulo imports
 try:
-    from assimulo.solvers import CVode
-    from assimulo.problem import Explicit_Problem
+    with suppress_stdout_stderr():
+        from assimulo.solvers import CVode
+        from assimulo.problem import Explicit_Problem
     has_sundials = True
 except ImportError as ex:
     has_sundials = False
@@ -16,6 +18,7 @@ from .odesolver import Solver, ODESolverError
 
 # Local imports
 __all__ = ["SundialsSolver", "has_sundials", "SundialsNotInstalled"]
+
 
 class SundialsNotInstalled(Exception):pass
 
