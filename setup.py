@@ -24,7 +24,7 @@ requirements = ["sympy<=0.7.7",
                 "future",
                 "modelparameters",
                 "instant"]
-dependency_links = ['githttps://finsberg@bitbucket.org/finsberg/modelparameters.git#egg=modelparameters']
+dependency_links = ['git+https://finsberg@bitbucket.org/finsberg/modelparameters.git#egg=modelparameters']
 
 if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
     # In the Windows command prompt we can't execute Python scripts
