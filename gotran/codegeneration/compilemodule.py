@@ -30,7 +30,7 @@ from gotran.model.ode import ODE
 from gotran.model.loadmodel import load_ode
 from gotran.common.options import parameters
 from gotran.codegeneration.codegenerators import PythonCodeGenerator, \
-     CCodeGenerator, class_name
+     CCodeGenerator, class_name, DOLFINCodeGenerator
 from gotran.codegeneration.algorithmcomponents import rhs_expressions, \
      monitored_expressions, jacobian_expressions
 
@@ -67,7 +67,7 @@ import_array();
   if ( PyArray_SIZE(xa) != {num_states} )
     SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
                                   "{num_states}, for the {rhs_name} argument.");
-  
+
   $1 = (double *)PyArray_DATA(xa);
 }}
 
@@ -89,7 +89,7 @@ import_array();
   if ( PyArray_SIZE(xa) != {num_states} )
     SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
                               "{num_states}, for the {states_name} argument.");
-  
+
   $1 = (double *)PyArray_DATA(xa);
 }}
 
@@ -111,7 +111,7 @@ import_array();
   if ( PyArray_SIZE(xa) != {num_states} )
     SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
                               "{num_states}, for the {states_name} argument.");
-  
+
   $1 = (double *)PyArray_DATA(xa);
 }}
 
@@ -133,9 +133,9 @@ import_array();
   if ( PyArray_SIZE(xa) != {num_parameters} )
     SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
              "{num_parameters}, for the {parameters_name} argument.");
-  
+
   $1 = (double *)PyArray_DATA(xa);
-  
+
 }}
 
 // The typecheck
@@ -156,9 +156,9 @@ def {rhs_function_name}({args},{rhs_name} = None):
 
     Arguments:
     ----------
-{args_doc}    
+{args_doc}
     {rhs_name} : np.ndarray (optional)
-        The computed result 
+        The computed result
     '''
     import numpy as np
     if {rhs_name} is None:
@@ -198,7 +198,7 @@ jacobian_declaration_template_ = """
   if ( PyArray_SIZE(xa) != {num_states}*{num_states} )
     SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
                                   "{num_states}*{num_states}, for the {jac_name} argument.");
-  
+
   $1 = (double *)PyArray_DATA(xa);
 }}
 
@@ -209,9 +209,9 @@ def {jacobian_function_name}({args}, {jac_name}=None):
 
     Arguments:
     ----------
-{args_doc}    
+{args_doc}
     {jac_name} : np.ndarray (optional)
-        The computed result 
+        The computed result
     '''
     import numpy as np
     if {jac_name} is None:
@@ -223,7 +223,7 @@ def {jacobian_function_name}({args}, {jac_name}=None):
     else:
         # Flatten Matrix
         {jac_name}.shape = ({num_states}*{num_states},)
-    
+
     _{jacobian_function_name}({args}, {jac_name})
     {jac_name}.shape = ({num_states},{num_states})
     return {jac_name}
@@ -251,9 +251,9 @@ monitor_declaration_template = """
   if ( PyArray_SIZE(xa) != {num_monitored} )
     SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
              "{num_monitored}, for the {monitored_name} argument.");
-  
+
   $1 = (double *)PyArray_DATA(xa);
-  
+
 }}
 
 %pythoncode%{{
@@ -263,9 +263,9 @@ def {monitored_function_name}({args}, {monitored_name}=None):
 
     Arguments:
     ----------
-{args_doc}    
+{args_doc}
     {monitored_name} : np.ndarray (optional)
-        The computed result 
+        The computed result
     '''
     import numpy as np
     if {monitored_name} is None:
@@ -274,7 +274,7 @@ def {monitored_function_name}({args}, {monitored_name}=None):
         raise TypeError(\"expected a NumPy array.\")
     elif len({monitored_name}) != {num_monitored}:
         raise ValueError(\"expected a numpy array of size: {num_monitored}\")
-    
+
     _{monitored_function_name}({args}, {monitored_name})
     return {monitored_name}
 %}}
@@ -288,37 +288,37 @@ def compile_module(ode, language="C", monitored=None,
                    jacobian_declaration_template=None):
     """
     JIT compile an ode
-    
+
     Arguments:
     ----------
     ode : ODE, str
         The gotran ode
     language : str (optional)
         The language of the generated code
-        Defaults : 'C' ['C', 'Python'] 
+        Defaults : 'C' ['C', 'Python']
     monitored : list
         A list of names of intermediates of the ODE. Code for monitoring
         the intermediates will be generated.
     generation_params : dict
         Parameters controling the code generation
     """
-    
+
     monitored = monitored or []
     generation_params = generation_params or {}
 
     check_arg(ode, (ODE, str))
-    
+
     if isinstance(ode, str):
         ode = load_ode(ode)
-    
+
     check_kwarg(language, "language", str)
 
     language = language.capitalize()
-    valid_languages = ["C", "Python"]
+    valid_languages = ["C", "Python", 'Dolfin']
     if language not in valid_languages:
         value_error("Expected one of {0} for the language kwarg.".format(\
             ", ".join("'{0}'".format(lang) for lang in valid_languages)))
-        
+
     params = parameters.generation.copy()
     params.update(generation_params)
 
@@ -328,18 +328,22 @@ def compile_module(ode, language="C", monitored=None,
                                         jacobian_declaration_template)
 
     # Create unique module name for this application run
-    modulename = "gotran_python_module_{0}_{1}".format(\
+    modulename = "gotran_{0}_module_{1}_{2}".format(\
+        language.lower(),
         class_name(ode.name), hashlib.sha1(str(\
             ode.signature() + str(monitored) + repr(params) + \
             gotran.__version__ + instant.__version__).encode('utf-8')).hexdigest())
-    
+
     # Check cache
     python_module = instant.import_module(modulename)
     if python_module:
         return getattr(python_module, class_name(ode.name))()
 
     # No module in cache generate python version
-    pgen = PythonCodeGenerator(params)
+    if language == 'Dolfin':
+        pgen = DOLFINCodeGenerator(params)
+    else:
+        pgen = PythonCodeGenerator(params)
 
     # Generate class code, execute it and collect namespace
     code = "from __future__ import division\nimport numpy as np\nimport math" + pgen.class_code(ode, monitored=monitored)
@@ -356,7 +360,7 @@ def compile_module(ode, language="C", monitored=None,
         instant.write_file("__init__.py", code)
         module_path = instant.copy_to_cache(\
             module_path, instant.get_default_cache_dir(), modulename)
-    
+
     finally:
         # Always get back to original directory.
         os.chdir(original_path)
@@ -370,7 +374,7 @@ def compile_extension_module(ode, monitored, params,
     """
     Compile an extension module, based on the C code from the ode
     """
-    
+
     # Add function prototype
     args=[]
     args_doc=[]
@@ -399,7 +403,7 @@ def compile_extension_module(ode, monitored, params,
         class_name(ode.name), hashlib.sha1(str(\
             ode.signature() + str(monitored) + repr(params) + \
             gotran.__version__ + instant.__version__).encode('utf-8')).hexdigest())
-    
+
     # Check cache
     compiled_module = instant.import_module(modulename)
 
@@ -429,7 +433,7 @@ def compile_extension_module(ode, monitored, params,
         jacobian_declaration_template = jacobian_declaration_template_ if \
                                         jacobian_declaration_template is None \
                                         else jacobian_declaration_template
-        
+
         jacobian_declaration = jacobian_declaration_template.format(\
             num_states = ode.num_full_states,
             args=args,
@@ -447,18 +451,18 @@ def compile_extension_module(ode, monitored, params,
             monitored_name=params.functions.monitored.result_name,
             monitored_function_name=params.functions.monitored.function_name,
             )
-    
+
     pgen = PythonCodeGenerator(python_params)
     cgen = CCodeGenerator(params)
-    
+
     pcode = "\n\n".join(\
         list(pgen.code_dict(ode, monitored=monitored).values()))
-    
+
     ccode = "\n\n".join(list(cgen.code_dict(ode,
                         monitored=monitored,
                         include_init=False,
                         include_index_map=False).values()))
-    
+
     # push_log_level(INFO)
     info("Calling GOTRAN just-in-time (JIT) compiler, this may take some "\
          "time...")

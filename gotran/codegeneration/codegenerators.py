@@ -24,7 +24,7 @@ import numpy as np
 # Model parameters imports
 from modelparameters.parameterdict import *
 from modelparameters.codegeneration import ccode, cppcode, pythoncode, \
-     sympycode, matlabcode
+     sympycode, matlabcode, juliacode
 
 # Gotran imports
 from gotran.common import check_arg, check_kwarg, error, warning
@@ -213,9 +213,11 @@ class BaseCodeGenerator(object):
                 comps.append(eval(solver+"_solver")(\
                     ode, **kwargs))
 
+
         # Create code snippest of all
         code.update((comp.function_name, \
                      self.function_code(comp, indent=indent)) for comp in comps)
+
 
         if functions.componentwise_rhs_evaluation.generate:
             snippet = self.componentwise_code(ode, indent=indent)
@@ -2093,3 +2095,781 @@ class MatlabCodeGenerator(BaseCodeGenerator):
             "", "M", "The mass matrix of the {0} ODE".format(ode.name))
 
         return "\n".join(self.indent_and_split_lines(body_lines))
+
+
+class DOLFINCodeGenerator(PythonCodeGenerator):
+    """
+    Class for generating a DOLFIN compatible declarations of an ODE from
+    a gotran file
+    """
+
+    @staticmethod
+    def default_parameters():
+        default_params = parameters.generation.code.copy()
+        state_repr = dict.__getitem__(default_params.states, "representation")
+        param_repr = dict.__getitem__(default_params.parameters, "representation")
+        return ParameterDict(state_repr=state_repr,
+                             param_repr=param_repr)
+
+    def __init__(self, code_params=None):
+        """
+        Instantiate the class
+
+        Arguments:
+        ----------
+        code_params : dict
+            Parameters controling the code generation
+        """
+        code_params = code_params or {}
+        check_kwarg(code_params, "code_params", dict)
+
+        params = DOLFINCodeGenerator.default_parameters()
+        params.update(code_params)
+
+        # Get a whole set of gotran code parameters and update with dolfin
+        # specific options
+        generation_params = parameters.generation.copy()
+        generation_params.code.default_arguments = \
+                            "st" if params.param_repr == "numerals" else "stp"
+        generation_params.code.time.name = "time"
+
+        generation_params.code.array.index_format = "[]"
+        generation_params.code.array.index_offset = 0
+
+        generation_params.code.parameters.representation = params.param_repr
+
+        generation_params.code.states.representation = params.state_repr
+        generation_params.code.states.array_name = "states"
+
+        generation_params.code.body.array_name = "body"
+        generation_params.code.body.representation = "named"
+
+        # Init base class
+        super(DOLFINCodeGenerator, self).__init__(ns="ufl")
+
+        # Store attributes (over load default PythonCode parameters)
+        self.params = generation_params
+
+
+    def _init_arguments(self, comp, default_arguments=None):
+
+        check_arg(comp, CodeComponent)
+        params = self.params.code
+        default_arguments = default_arguments or params.default_arguments
+
+        # Check if comp defines used_states if not use the root components
+        # full_states attribute
+        # FIXME: No need for full_states here...
+        states = comp.root.full_states
+        parameters = comp.root.parameters
+
+        num_states = comp.root.num_full_states
+        num_parameters = comp.root.num_parameters
+
+        # Start building body
+        body_lines = ["# Imports", "import ufl", "import dolfin"]
+
+        if "s" in default_arguments and states:
+
+            states_name = params.states.array_name
+            body_lines.append("")
+            body_lines.append("# Assign states")
+            body_lines.append("assert(isinstance({0}, dolfin.Function))"\
+                              .format(states_name))
+            body_lines.append("assert(states.function_space().depth() == 1)")
+            body_lines.append("assert(states.function_space().num_sub_spaces() "\
+                              "== {0})".format(num_states))
+
+            # Generate state assign code
+            if params.states.representation == "named":
+
+                body_lines.append(", ".join(state.name for state in states) + \
+                                  " = dolfin.split({0})".format(states_name))
+
+        # Add parameters code if not numerals
+        if "p" in default_arguments and params.parameters.representation \
+               in ["named", "array"]:
+
+            parameters_name = params.parameters.array_name
+            body_lines.append("")
+            body_lines.append("# Assign parameters")
+            body_lines.append("assert(isinstance({0}, (dolfin.Function, "\
+                              "dolfin.Constant)))".format(parameters_name))
+            body_lines.append("if isinstance({0}, dolfin.Function):".format(\
+                parameters_name))
+            if_closure = []
+            if_closure.append("assert({0}.function_space().depth() == 1)"\
+                              .format(parameters_name))
+            if_closure.append("assert({0}.function_space().num_sub_spaces() "\
+                              "== {1})".format(parameters_name, num_parameters))
+            body_lines.append(if_closure)
+            body_lines.append("else:")
+            body_lines.append(["assert({0}.value_size() == {1})".format(\
+                parameters_name, num_parameters)])
+
+            # Generate parameters assign code
+            if params.parameters.representation == "named":
+
+                body_lines.append(", ".join(param.name for param in \
+                parameters) + " = dolfin.split({0})".format(parameters_name))
+
+        # If initilizing results
+        if comp.results:
+            body_lines.append("")
+            body_lines.append("# Init return args")
+
+        for result_name in comp.results:
+            shape = comp.shapes[result_name]
+            if len(shape) > 1:
+                error("expected only result expression with rank 1")
+
+            body_lines.append("{0} = [ufl.zero()]*{1}".format(\
+                result_name, shape[0]))
+
+        return body_lines
+
+    def function_code(self, comp, indent=0, include_signature=True):
+
+        check_arg(comp, CodeComponent)
+        check_kwarg(indent, "indent", int)
+
+        body_lines = self._init_arguments(comp)
+
+        # Iterate over any body needed to define the dy
+        for expr in comp.body_expressions:
+            if isinstance(expr, Comment):
+                body_lines.append("")
+                body_lines.append("# " + str(expr))
+            else:
+                body_lines.append(self.to_code(expr.expr, expr.name))
+
+        if comp.results:
+            body_lines.append("")
+            body_lines.append("# Return results")
+            body_lines.append("return {0}".format(", ".join(\
+                ("{0}[0]" if comp.shapes[result_name][0] == 1 \
+                 else "dolfin.as_vector({0})").format(result_name) \
+                 for result_name in comp.results)))
+
+        if include_signature:
+
+            # Add function prototype
+            body_lines = self.wrap_body_with_function_prototype(\
+                body_lines, comp.function_name, \
+                self.args(comp), \
+                comp.description, self.decorators())
+
+        return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
+
+    def init_states_code(self, ode, indent=0):
+        """
+        Generate code for setting initial condition
+        """
+
+        # Start building body
+        states = ode.full_states
+        body_lines = ["# Imports", "import dolfin",\
+                      "", "# Init values"]
+        body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
+            state.name, state.init) for state in states)))
+        body_lines.append("init_values = [{0}]".format(", ".join(\
+            "{0}".format(state.init) for state in states)))
+        body_lines.append("")
+
+        range_check = "lambda value : value {minop} {minvalue} and "\
+                      "value {maxop} {maxvalue}"
+
+        body_lines.append("")
+        body_lines.append("inf = float(\"inf\")")
+        body_lines.append("")
+        body_lines.append("# State indices and limit checker")
+
+        body_lines.append("state_ind = dict({0})".format(\
+            ", ".join("{0}=({1}, {2}, {3!r})".format(\
+                state.param.name, i, range_check.format(\
+                    **state.param._range.range_formats), \
+                state.param._range._not_in_str)\
+                for i, state in enumerate(states))))
+        body_lines.append("")
+
+        body_lines.append("for state_name, value in values.items():")
+        body_lines.append(\
+            ["if state_name not in state_ind:",
+             ["raise ValueError(\"{{0}} is not a state.\".format(state_name))"],
+             "ind, range_check, not_in_format = state_ind[state_name]",
+             "if not range_check(value):",
+             ["raise ValueError(\"While setting \'{0}\' {1}\".format("\
+              "state_name, not_in_format % str(value)))"],
+             "", "# Assign value",
+             "init_values[ind] = value"])
+
+        body_lines.append("return dolfin.Constant(tuple(init_values))")
+
+        # Add function prototype
+        init_function = self.wrap_body_with_function_prototype(\
+            body_lines, "init_state_values", "**values", "Init values")
+
+        return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
+
+    def init_parameters_code(self, ode, indent=0):
+        """
+        Generate code for setting parameters
+        """
+
+        parameters = ode.parameters
+
+        # Start building body
+        body_lines = ["# Imports", "import dolfin",\
+                      "", "# Param values"]
+        body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
+            param.name, param.init) for param in parameters)))
+        body_lines.append("param_values = [{0}]"\
+                          .format(", ".join("{0}".format(param.init) \
+                                            for param in parameters)))
+        body_lines.append("")
+
+        range_check = "lambda value : value {minop} {minvalue} and "\
+                      "value {maxop} {maxvalue}"
+        body_lines.append("# Parameter indices and limit checker")
+
+        body_lines.append("parameter_ind = dict({0})".format(\
+            ", ".join("{0}=({1}, {2}, {3!r})".format(\
+                parameter.param.name, i, range_check.format(\
+                    **parameter.param._range.range_formats), \
+                parameter.param._range._not_in_str)\
+                for i, parameter in enumerate(parameters))))
+        body_lines.append("")
+
+        body_lines.append("for param_name, value in values.items():")
+        body_lines.append(\
+            ["if param_name not in parameter_ind:",
+             ["raise ValueError(\"{{0}} is not a parameter.\".format(param_name))"],
+             "ind, range_check, not_in_format = parameter_ind[param_name]",
+             "if not range_check(value):",
+             ["raise ValueError(\"While setting \'{0}\' {1}\".format("\
+              "param_name, not_in_format % str(value)))"],
+             "", "# Assign value",
+             "init_values[ind] = value"])
+
+        body_lines.append("return dolfin.Constant(tuple(param_values))")
+
+        # Add function prototype
+        function = self.wrap_body_with_function_prototype(\
+            body_lines, "init_parameter_values", \
+            "**values", "Parameter values")
+
+        return "\n".join(self.indent_and_split_lines(function, indent=indent))
+
+
+class JuliaCodeGenerator(BaseCodeGenerator):
+    """
+    A Julia Code generator
+    """
+
+    # Class attributes
+    language = "Julia"
+    line_ending = ""
+    closure_start = ""
+    closure_end = "end"
+    line_cont = ""
+    comment = "#"
+    index = lambda x, i : "[{0}]".format(i)
+    indent = 4
+    indent_str = " "
+    to_code = lambda self, expr, name : juliacode(expr, name)
+
+    @staticmethod
+    def default_parameters():
+        # Start out with a copy of the global parameters
+        params = parameters.generation.copy()
+        params.code.default_arguments = "spt"
+        params.code.array.index_offset = 1
+        # from IPython import embed; embed()
+        # exit()
+        params.functions.rhs['result_name'] = 'dy'
+        params.code.states['array_name'] = 'y'
+
+        return params
+
+    def args(self, comp):
+        """
+        Build argument str
+        """
+
+        params = self.params.code
+        default_arguments = params.default_arguments \
+                            if comp.use_default_arguments else ""
+
+        additional_arguments = comp.additional_arguments[:]
+
+        skip_result = []
+        ret_args = []
+
+        # Add the results first
+        for result_name in comp.results:
+            if result_name not in skip_result:
+                ret_args.append(result_name)
+
+        for arg in default_arguments:
+            if arg == "s":
+                if params.states.array_name in comp.results:
+                    skip_result.append(params.states.array_name)
+                ret_args.append(params.states.array_name)
+
+            elif arg == "t":
+                if params.time.name in comp.results:
+                    skip_result.append(params.time.name)
+                ret_args.append(params.time.name)
+                if "dt" in additional_arguments:
+                    additional_arguments.remove("dt")
+                    ret_args.append(params.dt.name)
+
+            elif arg == "p" and params.parameters.representation != \
+                     "numerals":
+                if params.parameters.array_name in comp.results:
+                    skip_result.append(params.parameters.array_name)
+                ret_args.append(params.parameters.array_name)
+
+        ret_args.extend(additional_arguments)
+
+        # Arguments with default (None) values
+        if params.body.in_signature and params.body.representation != "named":
+            ret_args.append("{0}=nothing".format(params.body.array_name))
+
+
+
+        return ", ".join(ret_args)
+
+
+    @staticmethod
+    def wrap_body_with_function_prototype(body_lines, name, args, \
+                                          comment=""):
+        """
+        Wrap a passed body of lines with a function prototype
+        """
+        check_arg(body_lines, list)
+        check_arg(name, str)
+        check_arg(args, str)
+        check_arg(comment, (str, list))
+
+        prototype = []
+
+        prototype.append("function {0}({1})".format(name, args))
+        body = []
+
+        # Wrap comment if any
+        if comment:
+            body.append("\"\"\"")
+            if isinstance(comment, list):
+                body.extend(comment)
+            else:
+                body.append(comment)
+            body.append("\"\"\"")
+
+        # Extend the body with body lines
+        body.extend(body_lines)
+
+        # Append body to prototyp
+        prototype.append(body)
+        return prototype
+
+    def _init_arguments(self, comp):
+
+        check_arg(comp, CodeComponent)
+        params = self.params.code
+
+        default_arguments = params.default_arguments \
+                            if comp.use_default_arguments else ""
+
+        # Check if comp defines used_states if not use the root components
+        # full_states attribute
+        # FIXME: No need for full_states here...
+        used_states = comp.used_states if hasattr(comp, "used_states") else \
+                      comp.root.full_states
+
+        used_parameters = comp.used_parameters if hasattr(comp, "used_parameters") else \
+                          comp.root.parameters
+
+        num_states = comp.root.num_full_states
+        num_parameters = comp.root.num_parameters
+
+        # Start building body
+        body_lines = []
+        if "s" in default_arguments and used_states:
+
+            states_name = params.states.array_name
+            body_lines.append("")
+            body_lines.append("# Assign states")
+            body_lines.append("@assert length({0}) == {1}".format(states_name, \
+                                                               num_states))
+            # Generate state assign code
+            if params.states.representation == "named":
+
+                # If all states are used
+                if len(used_states) == len(comp.root.full_states):
+                    body_lines.append(", ".join(\
+                        state.name for i, state in enumerate(comp.root.full_states)) + \
+                                      " = " + states_name)
+
+                # If only a limited number of states are used
+                else:
+                    body_lines.append("; ".join(\
+                        "{0}={1}[{2}]".format(state.name, states_name, ind) \
+                        for ind, state in enumerate(comp.root.full_states) \
+                        if state in used_states))
+
+        # Add parameters code if not numerals
+        if "p" in default_arguments and \
+               params.parameters.representation in ["named", "array"] and \
+               used_parameters:
+
+            parameters_name = params.parameters.array_name
+            body_lines.append("")
+            body_lines.append("# Assign parameters")
+            body_lines.append("@assert length({0}) == {1}".format(\
+                        parameters_name, num_parameters))
+
+            # Generate parameters assign code
+            if params.parameters.representation == "named":
+
+                # If all parameters are used
+                if len(used_parameters) == len(comp.root.parameters):
+                    body_lines.append(", ".join(\
+                        param.name for i, param in enumerate(used_parameters)) + \
+                                      " = " + parameters_name)
+
+                # If only a limited number of states are used
+                else:
+                    body_lines.append("; ".join(\
+                        "{0}={1}[{2}]".format(param.name, parameters_name, ind) \
+                        for ind, param in enumerate(comp.root.parameters, start=1) \
+                        if param in used_parameters))
+
+        # If using an array for the body variables
+        if params.body.representation != "named" and \
+               params.body.array_name in comp.shapes:
+
+            body_name = params.body.array_name
+            body_lines.append("")
+            body_lines.append("# Body array {0}".format(body_name))
+
+            # If passing the body argument to the method
+            if  params.body.in_signature:
+                body_lines.append("if {0} == nothing".format(body_name))
+                body_lines.append(["{0} = zeros({1})".format(\
+                    body_name, comp.shapes[body_name])])
+                # body_lines.append("else".format(body_name))
+                # body_lines.append(["assert isinstance({0}, np.ndarray) and "\
+                #                    "{1}.shape=={2}".format(\
+                #             body_name, body_name, comp.shapes[body_name])])
+                body_lines.append("@assert size({0}) == {1}".format(\
+                    body_name, comp.shapes[body_name]))
+            else:
+                body_lines.append("{0} = zeros({1})".format(\
+                    body_name, comp.shapes[body_name]))
+
+        # If initelizing results
+        if comp.results:
+
+            results = comp.results[:]
+
+            if params.states.array_name in results:
+                results.remove(params.states.array_name)
+            if params.time.name in results:
+                results.remove(params.time.name)
+            if params.parameters.array_name in results:
+                results.remove(params.parameters.array_name)
+
+            if results:
+                body_lines.append("")
+                body_lines.append("# Init return args")
+
+            for result_name in results:
+                shape = comp.shapes[result_name]
+                if len(shape) > 1:
+                    if params.array.flatten:
+                        shape = (reduce(lambda a, b: a * b, shape, 1), )
+
+                body_lines.append("if {0} == nothing".format(result_name))
+                body_lines.append(["{0} = zeros({1})".format(\
+                    result_name, shape)])
+                # body_lines.append("else".format(result_name))
+                # body_lines.append(["assert isinstance({0}, np.ndarray) and "\
+                # "{1}.shape == {2}".format(result_name, result_name, shape)])
+                body_lines.append("@assert size({0}) == {1}".format(
+                    result_name, shape))
+
+        return body_lines
+
+    def function_code(self, comp, indent=0, include_signature=True):
+        """
+        Generate code for a single function given by a CodeComponent
+        """
+
+        check_arg(comp, CodeComponent)
+        check_kwarg(indent, "indent", int)
+
+        body_lines = []
+
+        body_lines += self._init_arguments(comp)
+
+        # Iterate over any body needed to define the dy
+        for expr in comp.body_expressions:
+            if isinstance(expr, Comment):
+                body_lines.append("")
+                body_lines.append("# " + str(expr))
+            else:
+                body_lines.append(self.to_code(expr.expr, expr.name))
+
+        if comp.results:
+            body_lines.append("")
+            body_lines.append("# Return results")
+            body_lines.append("return {0}".format(", ".join(\
+                result_name if len(comp.shapes[result_name])>=1 and \
+                comp.shapes[result_name][0]>1 else result_name+"[0]" \
+                for result_name in comp.results)))
+
+        if include_signature:
+
+            # Add function prototype
+            body_lines = self.wrap_body_with_function_prototype(\
+                body_lines, comp.function_name, self.args(comp), \
+                comp.description)
+
+        return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
+
+    def init_states_code(self, ode, indent=0):
+        """
+        Generate code for setting initial condition
+        """
+
+        check_arg(ode, ODE)
+
+        # Get all full states
+        states = ode.full_states
+
+        # Start building body
+        body_lines = ["kwargs = Dict(kwargs)", "# Init values"]
+        body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
+            state.name, state.init) for state in states)))
+        body_lines.append("init_values = Vector([{0}])"\
+                          .format(", ".join("{0}".format(state.init) \
+                    for state in states)))
+        body_lines.append("")
+
+        body_lines.append("# State indices and limit checker")
+
+        body_lines.append("state_ind = Dict({0})".format(\
+            ", ".join(":{0} => {1}".format(state.param.name, i) \
+                      for i, state in enumerate(states, start=1))))
+        body_lines.append("")
+
+        body_lines.append("for key in keys(kwargs)")
+        body_lines.append(
+            ["if haskey(state_ind, key)",
+             ["ind = state_ind[key]",
+              "init_values[ind] = kwargs[key]"]])
+
+        body_lines.append("")
+        body_lines.append("return init_values")
+
+        # Add function prototype
+        init_function = self.wrap_body_with_function_prototype(\
+            body_lines, "init_state_values", "; kwargs...", \
+            "Initialize state values")
+
+        return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
+
+    def init_parameters_code(self, ode, indent=0):
+        """
+        Generate code for setting parameters
+        """
+
+        check_arg(ode, ODE)
+
+        # Get all parameters
+        parameters = ode.parameters
+
+        # Start building body
+        body_lines = ["kwargs = Dict(kwargs)",
+                      "# Param values"]
+        body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
+            param.name, param.init) for param in parameters)))
+        body_lines.append("init_values = Vector([{0}])"\
+                          .format(", ".join("{0}".format(param.init) \
+                    for param in parameters)))
+        body_lines.append("")
+
+        body_lines.append("# Parameter indices and limit checker")
+
+        body_lines.append("param_ind = Dict({0})".format(\
+            ", ".join(":{0} => {1}".format(state.param.name, i)\
+                for i, state in enumerate(parameters, start=1))))
+        body_lines.append("")
+
+        body_lines.append("for key in keys(kwargs)")
+        body_lines.append(
+            ["if haskey(param_ind, key)",
+             ["ind = param_ind[key]",
+              "init_values[ind] = kwargs[key]"]])
+
+        body_lines.append("")
+        body_lines.append("return init_values")
+
+        # Add function prototype
+        function = self.wrap_body_with_function_prototype(\
+            body_lines, "init_parameter_values", \
+            "; kwargs...", "Initialize parameter values")
+
+        return "\n".join(self.indent_and_split_lines(function, indent=indent))
+
+    def state_name_to_index_code(self, ode, indent=0):
+        """
+        Return code for index handling for states
+        """
+        check_arg(ode, ODE)
+        states = ode.full_states
+
+        body_lines = []
+
+        body_lines.append("state_inds = Dict({0})".format(\
+            ", ".join(":{0} => {1}".format(state.param.name, i)\
+                for i, state in enumerate(states, start=1))))
+
+        body_lines.append("")
+        body_lines.append("for state in states")
+        body_lines.append(\
+            ["if state in state_inds",
+             ["return state_inds[state]"]])
+        # body_lines.append("end")
+        body_lines.append('error("Index not found")')
+
+        # Add function prototype
+        function = self.wrap_body_with_function_prototype(\
+            body_lines, "state_indices", \
+            "states...", "State indices")
+
+        return "\n".join(self.indent_and_split_lines(function, indent=indent))
+
+    def param_name_to_index_code(self, ode, indent=0):
+        """
+        Return code for index handling for parameters
+        """
+
+        check_arg(ode, ODE)
+
+        parameters = ode.parameters
+
+        body_lines = []
+        body_lines.append("param_inds = Dict({0})".format(\
+            ", ".join(":{0} => {1}".format(param.param.name, i)\
+                for i, param in enumerate(parameters, start=1))))
+
+        body_lines.append("")
+        body_lines.append("for param in params")
+        body_lines.append(\
+            ["if param in param_inds",
+             ["return param_inds[param]"]])
+        # body_lines.append("end")
+        body_lines.append('error("Index not found")')
+
+        # Add function prototype
+        function = self.wrap_body_with_function_prototype(\
+            body_lines, "parameter_indices", \
+            "params...", "Parameter indices")
+
+        return "\n".join(self.indent_and_split_lines(function, indent=indent))
+
+    def monitor_name_to_index_code(self, ode, monitored, indent=0):
+        """
+        Return code for index handling for monitored
+        """
+        check_arg(ode, ODE)
+
+        for expr_str in monitored:
+            obj = ode.present_ode_objects.get(expr_str)
+            if not isinstance(obj, Expression):
+                error("{0} is not an intermediate or state expression in "\
+                      "the {1} ODE".format(expr_str, ode))
+
+        body_lines = []
+
+        body_lines.append("monitor_inds = Dict({0})".format(\
+            ", ".join(":{0} => {1}".format(monitor, i)\
+                for i, monitor in enumerate(monitored, start=1))))
+
+
+        body_lines.append("")
+        body_lines.append("for monitor in monitored")
+        body_lines.append(\
+            ["if monitor in monitor_inds",
+             ["return monitor_inds[monitor]"]])
+        # body_lines.append("end")
+        body_lines.append('error("Index not found")')
+
+        # Add function prototype
+        function = self.wrap_body_with_function_prototype(\
+            body_lines, "monitor_indices", \
+            "monitored...", "Monitor indices")
+
+        return "\n".join(self.indent_and_split_lines(function, indent=indent))
+
+    def componentwise_code(self, ode, indent=0, include_signature=True, \
+                           return_body_lines=False):
+        warning("Generation of componentwise_rhs_evaluation code is not "
+                "yet implemented for Python backend.")
+
+#     def mass_matrix(self, ode, indent=0):
+#         check_arg(ode, ODE)
+#         body_lines = ["", "import numpy as np",
+#                       "M = np.eye({0})".format(ode.num_full_states)]
+#
+#         for ind, expr in enumerate(ode.state_expressions):
+#             if isinstance(expr, AlgebraicExpression):
+#                 body_lines.append("M[{0},{0}] = 0".format(ind))
+#
+#         body_lines.append("")
+#         body_lines.append("return M")
+#
+#         body_lines = self.wrap_body_with_function_prototype(\
+#             body_lines, "mass_matrix", "", \
+#             "The mass matrix of the {0} ODE".format(ode.name))
+#
+#         return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
+#
+#     def class_code(self, ode, monitored=None):
+#         """
+#         Generate class code
+#         """
+#
+#         # Force class code param to be True
+#         class_code_param = self.params.class_code
+#         self.params.class_code = True
+#
+#         check_arg(ode, ODE)
+#         name = class_name(ode.name)
+#         code_list = list(self.code_dict(ode, monitored=monitored, indent=1).values())
+#
+#         self.params.class_code = class_code_param
+#         return  """
+# class {0}:
+#
+# {1}
+# """.format(name, "\n\n".join(code_list))
+
+    def module_code(self, ode, monitored=None):
+
+        # self.params.functions.rhs['result_name'] = 'dy'
+
+        # Force class code param to be False
+        class_code_param = self.params.class_code
+        self.params.class_code = False
+
+        check_arg(ode, ODE)
+        code_list = list(self.code_dict(ode, monitored).values())
+        self.params.class_code = class_code_param
+
+        return  """# Gotran generated code for the  "{0}" model
+
+{1}
+""".format(ode.name, "\n\n".join(code_list))
