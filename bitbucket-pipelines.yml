@@ -8,11 +8,11 @@ image: finsberg/py27py36-sundials:latest
 pipelines:
   default:
     - step:
-        #caches:
-        #  - pip
+        caches:
+          - pip
         script: # Modify the commands below to build your repository.
           - source /app/py27venv/bin/activate
-          - pip install -r requirements.txt
+          - pip install -r requirements.txt --upgrade
           - pip install . --upgrade
           - python utils/run_tests.py
           - python utils/test_scripts.py
