@@ -15,6 +15,17 @@ minor = 4
 
 scripts = glob.glob("scripts/*")
 
+requirements = ["sympy<=0.7.7",
+                "numpy",
+                "scipy",
+                "matplotlib",
+                "networkx",
+                "six",
+                "future",
+                "modelparameters",
+                "instant"]
+dependency_links = ['githttps://finsberg@bitbucket.org/finsberg/modelparameters.git#egg=modelparameters']
+
 if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
     # In the Windows command prompt we can't execute Python scripts
     # without a .py extension. A solution is to create batch files
@@ -78,18 +89,11 @@ setup(name = "gotran",
       packages = ["gotran", "gotran.common", "gotran.model",
                   "gotran.algorithms", "gotran.codegeneration",
                   "gotran.input", "gotran.solver"],
-      install_requires=["sympy<=0.7.7",
-                        "numpy",
-                        "scipy",
-                        "matplotlib",
-                        "networkx",
-                        "six",
-                        "future",
-                        "modelparameters",
-                        "instant"],
+      install_requires=requirements,
+      dependency_links=dependency_links,
       scripts = scripts,
       cmdclass    = {'test': run_tests,
                      'clean': clean,
                      },
-        
+
       )
