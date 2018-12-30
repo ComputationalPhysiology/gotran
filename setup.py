@@ -24,7 +24,7 @@ requirements = ["sympy<=0.7.7",
                 "future",
                 "modelparameters",
                 "instant"]
-dependency_links = ['git+https://finsberg@bitbucket.org/finsberg/modelparameters.git#egg=modelparameters']
+dependency_links = ['git+https://bitbucket.org/finsberg/modelparameters.git#egg=modelparameters']
 
 if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
     # In the Windows command prompt we can't execute Python scripts
@@ -91,6 +91,7 @@ setup(name = "gotran",
                   "gotran.input", "gotran.solver"],
       install_requires=requirements,
       dependency_links=dependency_links,
+      setup_requires=["sympy<=0.7.7"]
       scripts = scripts,
       cmdclass    = {'test': run_tests,
                      'clean': clean,
