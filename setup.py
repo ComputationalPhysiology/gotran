@@ -91,7 +91,7 @@ setup(name = "gotran",
                   "gotran.input", "gotran.solver"],
       install_requires=requirements,
       dependency_links=dependency_links,
-      setup_requires=["sympy<=0.7.7"]
+      setup_requires=["sympy<=0.7.7"],
       scripts = scripts,
       cmdclass    = {'test': run_tests,
                      'clean': clean,
