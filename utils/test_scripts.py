@@ -14,6 +14,8 @@ num_tests = 0
 
 cmd2file = {'gotran2py': ['tentusscher_2004_mcell_updated.py'],
             'gotran2c': ['tentusscher_2004_mcell_updated.h'],
+            'gotran2dolfin': ['tentusscher_2004_mcell_updated.py'],
+            'gotran2julia': ['tentusscher_2004_mcell_updated.jl'],
             'gotran2cpp': ['tentusscher_2004_mcell_updated.h'],
             'gotran2cuda': ['tentusscher_2004_mcell_updated.cu'],
             'gotran2latex': ['tentusscher_2004_mcell_updated.tex'],
@@ -25,6 +27,7 @@ cmd2file = {'gotran2py': ['tentusscher_2004_mcell_updated.py'],
             'cellml2gotran': ['tentusscher_2004_mcell.ode']}
 commands = ['gotranrun', 'gotranprobe', 'gotran2c', 'gotran2cpp',
             'gotran2cuda', 'gotran2latex', 'gotran2matlab',
+            'gotran2dolfin', 'gotran2julia',
             'gotran2py', 'cellml2gotran']
 
 all_output = []
@@ -69,4 +72,3 @@ else:
     print('All tests passed')
 
 os.chdir(root_dir)
- 
