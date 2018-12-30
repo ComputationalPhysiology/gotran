@@ -26,7 +26,6 @@ from gotran.model.odeobjects import *
 
 from modelparameters.parameters import *
 import modelparameters.sympytools as sp_tools
-from modelparameters.units import Unit
 
 # Holder for all cellmodels
 _all_cellmodels = {}
