@@ -11,9 +11,9 @@ pipelines:
         caches:
           - pip
         script: # Modify the commands below to build your repository.
-          - instant-clean
           - source /app/venv/bin/activate
           - pip install -r requirements.txt
           - pip install . --upgrade
+          - instant-clean
           - python utils/run_tests.py
           - python utils/test_scripts.py
