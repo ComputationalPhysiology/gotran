@@ -37,7 +37,7 @@ from gotran.model.utils import *
 
 class ODEComponent(ODEObject):
     """
-    Base class for all ODE components. 
+    Base class for all ODE components.
     """
     def __init__(self, name, parent):
         """
@@ -48,14 +48,14 @@ class ODEComponent(ODEObject):
         name : str
             The name of the component. This str serves as the unique
             identifier of the Component.
-        parent : ODEComponent
+        parent : gotran.ODEComponent
             The parent component of this ODEComponent
         """
 
         # Turn off magic attributes (see __setattr__ method) during
         # construction
         self._allow_magic_attributes = False
-        
+
         check_arg(name, str, 0, ODEComponent)
         check_arg(parent, ODEComponent, 1, ODEComponent)
 
@@ -84,7 +84,7 @@ class ODEComponent(ODEObject):
         self._is_finalized = False
         self._is_finalizing = False
 
-        # Turn on magic attributes (see __setattr__ method) 
+        # Turn on magic attributes (see __setattr__ method)
         self._allow_magic_attributes = True
 
     @property
@@ -144,7 +144,7 @@ class ODEComponent(ODEObject):
         ---------
         comment : str
             The comment
-        dependent : ODEObject
+        dependent : gotran.ODEObject
             If given the count of this comment will follow as a
             fractional count based on the count of the dependent object
         """
@@ -160,7 +160,7 @@ class ODEComponent(ODEObject):
         ---------
         name : str
             The name of the state variable
-        init : scalar, ScalarParam
+        init : scalar, modelparameters.ScalarParam
             The initial value of the state
         """
         timer = Timer("Add states")
@@ -208,7 +208,7 @@ class ODEComponent(ODEObject):
         ---------
         name : str
             The name of the parameter
-        init : scalar, ScalarParam
+        init : scalar, modelparameters.ScalarParam
             The initial value of the parameter
         """
         timer = Timer("Add parameters")
@@ -270,11 +270,11 @@ class ODEComponent(ODEObject):
 
         Arguments
         ---------
-        state : State, AppliedUndef
+        state : gotran.State, AppliedUndef
             The State that is solved
         expr : sympy.Basic
             The expression that determines the state
-        dependent : ODEObject
+        dependent : gotran.ODEObject
             If given the count of this expression will follow as a
             fractional count based on the count of the dependent object
         solve_flags : dict
@@ -317,11 +317,11 @@ class ODEComponent(ODEObject):
 
         Arguments
         ---------
-        state : State, AppliedUndef
+        state : gotran.State, AppliedUndef
             The State that is solved
         expr : sympy.Basic
             The expression that determines the state
-        dependent : ODEObject
+        dependent : gotran.ODEObject
             If given the count of this expression will follow as a
             fractional count based on the count of the dependent object
         """
@@ -340,7 +340,7 @@ class ODEComponent(ODEObject):
         obj = StateSolution(state, expr, dependent)
 
         self._register_component_object(obj)
-        
+
     def add_intermediate(self, name, expr, dependent=None):
         """
         Register an intermediate math expression
@@ -351,7 +351,7 @@ class ODEComponent(ODEObject):
             The name of the expression
         expr : sympy.Basic, scalar
             The expression
-        dependent : ODEObject
+        dependent : gotran.ODEObject
             If given the count of this expression will follow as a
             fractional count based on the count of the dependent object
         """
@@ -370,13 +370,13 @@ class ODEComponent(ODEObject):
 
         Arguments
         ---------
-        der_expr : Expression, State, sympy.AppliedUndef
+        der_expr : gotran.Expression, gotran.State, sympy.AppliedUndef
             The Expression or State which is differentiated
-        dep_var : State, Time, Expression, sympy.AppliedUndef, sympy.Symbol
+        dep_var : gotran.State, gotran.Time, gotran.Expression, sympy.AppliedUndef, sympy.Symbol
             The dependent variable
         expr : sympy.Basic
             The expression which the differetiation should be equal
-        dependent : ODEObject
+        dependent : gotran.ODEObject
             If given the count of this expression will follow as a
             fractional count based on the count of the dependent object
         """
@@ -417,11 +417,11 @@ class ODEComponent(ODEObject):
 
         Arguments
         ---------
-        state : State
+        state : gotran.State
             The State which the algebraic expression should determine
         expr : sympy.Basic
             The expression that should equal 0
-        dependent : ODEObject
+        dependent : gotran.ODEObject
             If given the count of this expression will follow as a
             fractional count based on the count of the dependent object
         """
@@ -464,7 +464,7 @@ class ODEComponent(ODEObject):
         Return a sympy column vector with all full states
         """
         states = self.full_states
-        
+
         return sp.Matrix(len(states), 1, lambda i, j: states[i].sym)
 
     @property
@@ -524,7 +524,7 @@ class ODEComponent(ODEObject):
     @property
     def is_finalized(self):
         return self._is_finalized
-    
+
     @property
     def num_states(self):
         """
@@ -591,7 +591,7 @@ class ODEComponent(ODEObject):
         num_local_states = sum(1 for obj in self.ode_objects \
                                if isinstance(obj, State) and not obj.is_solved)
 
-        return num_local_states == len(self._local_state_expressions) 
+        return num_local_states == len(self._local_state_expressions)
 
     def __setattr__(self, name, value):
         """
@@ -617,7 +617,7 @@ class ODEComponent(ODEObject):
 
         # Check for special expressions
         expr, TYPE = special_expression(name, self.root)
-        
+
         if TYPE == INTERMEDIATE:
             self.add_intermediate(name, value)
 
@@ -632,7 +632,7 @@ class ODEComponent(ODEObject):
             # register an intermediate
             if expr_obj is None or var_obj is None:
                 self.add_intermediate(name, value)
-                
+
             else:
                 self.add_derivative(expr_obj, var_obj, value)
 
@@ -649,7 +649,7 @@ class ODEComponent(ODEObject):
                 self.add_intermediate(name, value)
             else:
                 self.add_algebraic(var_obj, value)
-            
+
     def __call__(self, name):
         """
         Return a child component, if the component does not excist, create
@@ -662,13 +662,13 @@ class ODEComponent(ODEObject):
             comp = self.root
         else:
             comp = self.children.get(name)
-            
+
         if comp is None:
             comp = self.add_component(name)
             debug("Adding '{0}' component to {1}".format(name, self))
         else:
             self.root._present_component = comp.name
-            
+
         return comp
 
     def _expect_state(self, state, allow_state_solution=False,
@@ -708,12 +708,12 @@ class ODEComponent(ODEObject):
         """
         Register an ODEObject to the component
         """
-        
+
         if self._is_finalized:
             error("Cannot add {0} {1} to component {2} it is "\
                   "already finalized.".format(\
                       obj.__class__.__name__, obj, self))
-        
+
         self._check_reserved_wordings(obj)
 
         # Register the object in the root ODE,
@@ -727,7 +727,7 @@ class ODEComponent(ODEObject):
                 error("A component cannot have both state expressions "\
                       "(derivative and algebraic expressions) and rate "\
                       "expressions.")
-            
+
             if obj.state in self._local_state_expressions:
                 error("A StateExpression for state {0} is already registered "\
                       "in this component.")
@@ -745,7 +745,7 @@ class ODEComponent(ODEObject):
         # later on.
         if isinstance(obj, (State, Parameter, IndexedObject, Expression)):
 
-            # If indexed expression or object register the basename as a dict 
+            # If indexed expression or object register the basename as a dict
             if isinstance(obj, (IndexedExpression, IndexedObject)):
                 if obj.basename in self.__dict__ and isinstance(\
                     self.__dict__[obj.basename], dict):
@@ -773,7 +773,7 @@ class ODEComponent(ODEObject):
         #           and not isinstance(obj, Derivatives):
         #        error("The pattern d{{name}}_dt is reserved for derivatives. "
         #              "However {0} is not a Derivative.".format(obj.name))
-        #    
+        #
         #    if re.search(_algebraic_name_template, obj.name) \
         #           and not isinstance(obj, AlgebraicExpression):
         #        error("The pattern {alg_{{name}}_0 is reserved for algebraic "\
@@ -812,7 +812,7 @@ class ODEComponent(ODEObject):
 
         # Get all states associated with this Markov model
         local_states = self.states
-        
+
         # Check index arguments
         #for list_of_states in states:
         #    print list_of_states, local_states
@@ -849,12 +849,12 @@ class ODEComponent(ODEObject):
         if self.state_expressions:
             error("A component cannot have both state expressions (derivative "\
                   "and algebraic expressions) and rate expressions.")
-        
+
         check_arg(expr, scalars + (sp.Basic,), 2, \
                   ODEComponent._add_single_rate)
 
         expr = sp.sympify(expr)
-        
+
         to_state = self._expect_state(to_state, allow_state_solution=True,
                                       only_local_states=True)
         from_state = self._expect_state(from_state, allow_state_solution=True,
@@ -899,7 +899,7 @@ class ODEComponent(ODEObject):
         if not self.is_locally_complete:
             error("Cannot finalize component '{0}'. It is "\
                   "not complete.".format(self))
-            
+
         self._is_finalizing = False
         self._is_finalized = True
 
@@ -920,17 +920,17 @@ class ODEComponent(ODEObject):
 
             # Get the states
             to_state, from_state = rate.states
-            
+
             # Add to derivatives of the two states
             derivatives[from_state] -= rate.sym*from_state.sym
             derivatives[to_state] += rate.sym*from_state.sym
-            
+
             if isinstance(from_state, StateSolution):
                 from_state = from_state.state
 
             if isinstance(to_state, StateSolution):
                 to_state = to_state.state
-            
+
             # Register rate
             ind_from = states.index(from_state)
             ind_to = states.index(to_state)
@@ -954,9 +954,9 @@ class ODEComponent(ODEObject):
 
         # Add derivatives
         for state in states:
-            
+
             # Skip solved states
             if not isinstance(state, State) or state.is_solved:
                 continue
-            
+
             self.add_derivative(state, state.time.sym, derivatives[state])

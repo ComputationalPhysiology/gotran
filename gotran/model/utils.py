@@ -43,16 +43,16 @@ def ode_primitives(expr, time):
 
     Arguments
     ---------
-    expr : sympy expressio
+    expr : sympy.expression
         A sympy expression of ode symbols
-    time : sympy Symbol
+    time : sympy.Symbol
         A Symbol representing time in the ODE
     """
     symbols = set()
     pt = preorder_traversal(expr)
-    
+
     for node in pt:
-        
+
         # Collect AppliedUndefs which are functions of time
         if isinstance(node, AppliedUndef) and len(node.args) == 1 and \
                node.args[0] == time:
@@ -98,16 +98,16 @@ class iter_objects(object):
 
     Arguments
     ---------
-    comp : ODEComponent
+    comp : gotran.ODEComponent
         The root ODEComponent of the iteration
     reverse : bool
         If True the iteration is done from the last component added
-    types : ODEObject types (optional)
+    types : gotran.ODEObject types (optional)
         Only iterate over particular types
 
     Yields
     ------
-    ode_object : ODEObject
+    ode_object : gotran.ODEObject
         All ODEObjects of a component
     """
     def __init__(self, comp, return_comp=True, only_return_comp=False,
@@ -176,9 +176,9 @@ def ode_objects(comp, *types):
 
     Arguments
     ---------
-    comp : ODEComponent
+    comp : gotran.ODEComponent
         The root ODEComponent of the list
-    types : ODEObject types (optional)
+    types : gotran.ODEObject types (optional)
         Only include objects of type given in types
     """
     return [obj for obj in iter_objects(comp, False, False, False, *types)]
@@ -189,13 +189,13 @@ def ode_components(comp, include_self=True):
 
     Arguments
     ---------
-    comp : ODEComponent
+    comp : gotran.ODEComponent
         The root ODEComponent of the list
     return_self : bool (optional)
         The list will include the passed component if True
     """
     comps = [obj for obj in iter_objects(comp, True, True)]
-    
+
     if not include_self:
         comps.remove(comp)
 
@@ -319,7 +319,7 @@ class RateDict(OrderedDict):
             in the row and the second the states in the column of the Matrix
         expr : sympy.Basic, scalar, sympy.MatrixBase
             A sympy.Basic and scalars is expected for a single rate between
-            two states. 
+            two states.
             A sympy.Matrix is expected if several rate expressions are given,
             see explaination in for states argument for how the columns and
             rows are interpreted.
@@ -338,6 +338,6 @@ class RateDict(OrderedDict):
 
     def _register_single_rate(self, to_state, from_state, expr_sym):
         """
-        Actually setting an item 
+        Actually setting an item
         """
         OrderedDict.__setitem__(self, (to_state, from_state), expr_sym)

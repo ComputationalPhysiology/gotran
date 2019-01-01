@@ -147,7 +147,7 @@ class ODE(ODEComponent):
 
         Arguments
         ---------
-        ode : str, ODE
+        ode : str, gotran.ODE
             The ode which should be added. If ode is a str an
             ODE stored in that file will be loaded. If it is an ODE it will be
             added directly to the present ODE.
@@ -274,7 +274,7 @@ class ODE(ODEComponent):
                                                    subs[states[1].sym], \
                                                    new_expr)
                             continue
-                        
+
                     # If no prefix we just add the expression by using setattr
                     # magic
                     if prefix == "":
@@ -874,7 +874,7 @@ class ODE(ODEComponent):
                                                        cmp(str(o0.state),
                                                            str(o1.state))))]
 
-            
+
         h = hashlib.sha1()
         h.update(";".join(def_list).encode('utf-8'))
         return h.hexdigest()

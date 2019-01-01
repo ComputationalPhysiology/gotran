@@ -1575,8 +1575,8 @@ def cellml2ode(model_source, **options):
     """
     Convert a CellML model into an ode
 
-    Arguments:
-    ----------
+    Arguments
+    ---------
     model_source: str
         Path or url to CellML file
     options : dict

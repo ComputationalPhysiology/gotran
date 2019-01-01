@@ -43,17 +43,17 @@ class CodeComponent(ODEComponent):
     """
     A wrapper class around an ODE. Its primary purpose is to help
     generate code.
-    
+
     The class alows extraction and manipulation of the ODE expressions.
     """
 
     @staticmethod
     def default_parameters():
         """
-        Return the default parameters for code generation 
+        Return the default parameters for code generation
         """
         return parameters.generation.code.copy()
-    
+
     def __init__(self, name, ode, function_name, description, params=None,
                  use_default_arguments=True, additional_arguments=None,
                  **results):
@@ -65,7 +65,7 @@ class CodeComponent(ODEComponent):
         name : str
             The name of the component. This str serves as the unique
             identifier of the Component.
-        ode : ODE
+        ode : gotran.ODE
             The parent component which need to be a ODE
         function_name : str
             The name of the generated function
@@ -108,7 +108,7 @@ class CodeComponent(ODEComponent):
         # Store function name and description
         self.function_name = function_name
         self.description = description
-        
+
         # Shapes for any indexed expressions or objects
         self.shapes = OrderedDict()
 
@@ -122,7 +122,7 @@ class CodeComponent(ODEComponent):
             self.param_state_replace_dict = {}
 
         self.results = list(results.keys())
-        
+
         # Recreate body expressions based on the given result_expressions
         if results:
             results, body_expressions = self._body_from_results(**results)
@@ -134,7 +134,7 @@ class CodeComponent(ODEComponent):
         # Store for later usage
         self.use_default_arguments = use_default_arguments
         self.additional_arguments = additional_arguments
-            
+
     def add_indexed_expression(self, basename, indices, expr, add_offset=False,
                                dependent=None):
         """
@@ -150,7 +150,7 @@ class CodeComponent(ODEComponent):
             The expression.
         add_offset : bool
             Add offset to indices
-        dependent : ODEObject
+        dependent : gotran.ODEObject
             If given the count of this expression will follow as a
             fractional count based on the count of the dependent object
         """
@@ -210,7 +210,7 @@ class CodeComponent(ODEComponent):
 
         # Return the sympy version of the object
         return obj.sym
-        
+
     def indexed_objects(self, *basenames):
         """
         Return a list of all indexed objects with the given basename,
@@ -224,9 +224,9 @@ class CodeComponent(ODEComponent):
     def _init_param_state_replace_dict(self):
         """
         Create a parameter state replace dict based on the values in the
-        global parameters 
+        global parameters
         """
-        
+
         param_state_replace_dict = {}
 
         array_params = self._params["array"]
@@ -246,7 +246,7 @@ class CodeComponent(ODEComponent):
             if not isinstance(self.root.present_ode_objects[param], Parameter):
                 error("Field parameter '{0}' is not a parameter in the "\
                       "'{1}'".format(param, oself.root))
-        
+
         state_repr = self._params["states"]["representation"]
         state_name = self._params["states"]["array_name"]
         state_offset = self._params["states"]["add_offset"]
@@ -278,10 +278,10 @@ class CodeComponent(ODEComponent):
                 index = ind
                 shape = (self.num_parameters,)
                 offset = param_offset
-                
+
             parameters[param] = IndexedObject(basename, index, \
                                               shape, array_params, offset)
-                
+
         # If not having named parameters
         if param_repr == "numerals":
             param_state_replace_dict.update((param.sym, param.init) for \
@@ -329,7 +329,7 @@ class CodeComponent(ODEComponent):
 
         # Extract all result expressions
         orig_result_expressions = sum(list(results.values()), [])
-        
+
         # A map between result expression and result name
         result_names = dict((result_expr, result_name) for \
                             result_name, result_exprs in list(results.items()) \
@@ -350,12 +350,12 @@ class CodeComponent(ODEComponent):
 
         orig_result_expressions, result_names, expanded_result_exprs = \
                                  self._expanded_result_expressions(**results)
-        
+
         body_expressions = []
         new_results = defaultdict(list)
 
     def _body_from_cse(self, **results):
-        
+
         timer = Timer("Compute common sub expressions for {0}".format(self.name))
 
         orig_result_expressions, result_names, expanded_result_exprs = \
@@ -388,7 +388,7 @@ class CodeComponent(ODEComponent):
         # Create maps between cse_expr and result expressions trying
         # to optimized the code by weaving in the result expressions
         # in between the cse_expr
-        
+
         # A map between result expr and name and indices so we can
         # construct IndexedExpressions
         result_expr_map = defaultdict(list)
@@ -403,13 +403,13 @@ class CodeComponent(ODEComponent):
 
         # Result expressions that does not contain any cse_sym
         result_expr_without_cse_syms = []
-        
+
         # A map between cse_sym and its substitutes
         cse_subs = {}
-        
+
         for ind, (orig_result_expr, result_expr) in \
                 enumerate(zip(orig_result_expressions, cse_result_exprs)):
-            
+
             # Collect information so that we can recreate the result
             # expression from
             result_expr_map[result_expr].append((\
@@ -438,7 +438,7 @@ class CodeComponent(ODEComponent):
 
         #print ""
         #print "LAST cse_syms:", last_cse_expr_used_in_result_expr.keys()
-        
+
         cse_cnt = 0
         atoms = [state.sym for state in self.root.full_states]
         atoms.extend(param.sym for param in self.root.parameters)
@@ -450,12 +450,12 @@ class CodeComponent(ODEComponent):
         self.add_comment("Common sub expressions for the body and the "\
                          "result expressions")
         body_expressions.append(self.ode_objects[-1])
-        
+
         # Register the common sub expressions as Intermediates
         for cse_sym, expr in list(cse_exprs.items()):
 
             #print cse_sym, expr
-        
+
             # If the expression is just one of the atoms of the ODE we
             # skip the cse expressions but add a subs for the atom We
             # also skip Relationals and Piecewise as the type checking
@@ -489,7 +489,7 @@ class CodeComponent(ODEComponent):
                         # Replace pure state and param expressions
                         #print cse_subs, result_expr
                         exp_expr = result_expr.xreplace(cse_subs)
-                    
+
                         sym = self.add_indexed_expression(\
                             result_name, indices, exp_expr, add_offset=state_offset)
 
@@ -513,14 +513,14 @@ class CodeComponent(ODEComponent):
         self.used_parameters = sorted(used_parameters)
 
         return new_results, body_expressions
-        
+
     def _body_from_dependencies(self, **results):
-        
+
         timer = Timer("Compute dependencies for {0}".format(self.name))
 
         # Extract all result expressions
         result_expressions = sum(list(results.values()), [])
-        
+
         # Check passed expressions
         ode_expr_deps = self.root.expression_dependencies
         exprs = set(result_expressions)
@@ -533,7 +533,7 @@ class CodeComponent(ODEComponent):
         for expr in result_expressions:
             check_arg(expr, (Expression, Comment), \
                       context=CodeComponent._body_from_results)
-            
+
             if isinstance(expr, Comment):
                 continue
 
@@ -570,7 +570,7 @@ class CodeComponent(ODEComponent):
     def _recreate_body(self, body_expressions, **results):
         """
         Create body expressions based on the given result_expressions
-        
+
         In this method are all expressions replaced with something that should
         be used to generate code. The parameters in:
 
@@ -578,12 +578,12 @@ class CodeComponent(ODEComponent):
 
         decides how parameters, states, body expressions and indexed expressions
         are represented.
-        
+
         """
 
         if not (results or body_expressions):
-            return 
-            
+            return
+
         for result_name, result_expressions in list(results.items()):
             check_kwarg(result_expressions, result_name, list, \
                         context=CodeComponent._recreate_body, \
@@ -598,7 +598,7 @@ class CodeComponent(ODEComponent):
                             for result_expr in result_exprs)
 
         timer = Timer("Recreate body expressions for {0}".format(self.name))
-        
+
         # Initialize the replace_dictionaries
         replace_dict = self.param_state_replace_dict
         der_replace_dict = {}
@@ -613,7 +613,7 @@ class CodeComponent(ODEComponent):
         expression_dependencies = defaultdict(set)
         for expr, deps in list(self.root.expression_dependencies.items()):
             expression_dependencies[expr].update(deps)
-        
+
         # Get body parameters
         body_repr = self._params["body"]["representation"]
         optimize_exprs = self._params["body"]["optimize_exprs"]
@@ -643,7 +643,7 @@ class CodeComponent(ODEComponent):
 
         def store_expressions(expr, new_expr):
             "Help function to store new expressions"
-            
+
             timer = Timer("Store expression while recreating body of {}".format(\
                 self.name))
 
@@ -666,7 +666,7 @@ class CodeComponent(ODEComponent):
                     if dep in expression_dependencies:
                         expression_dependencies[dep].remove(expr)
                         expression_dependencies[dep].add(new_expr)
-                    
+
                 object_used_in[new_expr] = object_used_in.pop(expr)
 
             if expr in expression_dependencies:
@@ -685,11 +685,11 @@ class CodeComponent(ODEComponent):
 
             assert(isinstance(expr, Expression))
 
-            # 2) Check for expression optimzations 
+            # 2) Check for expression optimzations
             if not (optimize_exprs == "none" or expr in result_expressions):
 
                 timer_opt = Timer("Handle expression optimization for {0}".format(self.name))
-                
+
                 # If expr is just a number we exchange the expression with the
                 # number
                 if "numerals" in optimize_exprs and \
@@ -718,7 +718,7 @@ class CodeComponent(ODEComponent):
                         der_replace_dict[expr.sym] = sympy_expr
                     else:
                         replace_dict[expr.sym] = sympy_expr
-                        
+
                     # Get exchanged repr
                     if isinstance(expr.expr, (sp.Symbol, AppliedUndef)):
                         name = sympycode(expr.expr)
@@ -749,12 +749,12 @@ class CodeComponent(ODEComponent):
                             if used_expr in body_expressions:
                                 index_available_at[used_expr].append(ind)
                                 break
-                            
+
                     # Update information about this expr beeing used
                     for dep in object_used_in[expr]:
                         expression_dependencies[dep].remove(expr)
                         expression_dependencies[dep].add(dep_expr)
-                    
+
                     object_used_in.pop(expr)
                     continue
 
@@ -769,7 +769,7 @@ class CodeComponent(ODEComponent):
 
                 # Check if any indices are available at this expression ind
                 available_indices.extend(index_available_at[expr])
-                    
+
             # Store a map of old name this will preserve the ordering of
             # expressions with the same name, similar to how this is treated in
             # the actuall ODE.
@@ -780,10 +780,10 @@ class CodeComponent(ODEComponent):
             if expr in result_expressions:
 
                 timer_result = Timer("Handle result expressions for {0}".format(self.name))
-                
+
                 # Get the result name
                 result_name = result_names[expr]
-                
+
                 # If the expression is an IndexedExpression with the same basename
                 # as the result name we just recreate it
                 if isinstance(expr, IndexedExpression) and \
@@ -794,7 +794,7 @@ class CodeComponent(ODEComponent):
 
                 # Not an indexed expression
                 else:
-                    
+
                     # Get index based on the original ordering
                     index = (result_expressions.index(expr),)
 
@@ -818,17 +818,17 @@ class CodeComponent(ODEComponent):
                 store_expressions(expr, new_expr)
 
                 del timer_result
-                    
+
             # 4) Handle indexed expression
             # All indexed expressions are just kept but recreated with updated
             # sympy expressions
             elif isinstance(expr, IndexedExpression):
 
                 timer_indexed = Timer("Handle indexed expressions for {0}".format(self.name))
-                
+
                 new_expr = recreate_expression(expr, der_replace_dict, \
                                                replace_dict)
-                
+
                 # Store the expressions
                 store_expressions(expr, new_expr)
 
@@ -836,12 +836,12 @@ class CodeComponent(ODEComponent):
 
             # 5) If replacing all body exressions with an indexed expression
             elif "array" in body_repr:
-                
+
                 timer_body = Timer("Handle body expressions for {0}".format(self.name))
 
                 # 5a) If we reuse array indices
                 if "reused" in body_repr:
-                    
+
                     if available_indices:
                         ind = available_indices.popleft()
                     else:
@@ -855,7 +855,7 @@ class CodeComponent(ODEComponent):
                             break
                     else:
                         warning("SHOULD NOT COME HERE!")
-                        
+
                 # 5b) No reuse of array indices. Here each index corresponds to
                 #     a distinct body expression
                 else:
@@ -864,7 +864,7 @@ class CodeComponent(ODEComponent):
 
                     # Increase body_ind
                     body_ind += 1
-                    
+
                 # Create the IndexedExpression
                 new_expr = IndexedExpression(body_name, ind, expr.expr.\
                                              xreplace(der_replace_dict).\
@@ -877,12 +877,12 @@ class CodeComponent(ODEComponent):
 
                 # Copy counter from old expression so they sort properly
                 new_expr._recount(expr._count)
-                
+
                 # Store the expressions
                 store_expressions(expr, new_expr)
 
                 del timer_body
-                
+
             # 6) If the expression is just and ordinary body expression and we
             #    are using named representation of body
             else:
@@ -899,7 +899,7 @@ class CodeComponent(ODEComponent):
                 else:
                     new_expr = recreate_expression(expr, der_replace_dict, \
                                                    replace_dict)
-                
+
                 del timer_expr
 
                 # Store the expressions
@@ -926,4 +926,3 @@ class CodeComponent(ODEComponent):
                 self.shapes[result_name] = (len(result_expressions),)
 
         return new_body_expressions
-        

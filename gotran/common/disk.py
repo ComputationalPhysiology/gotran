@@ -41,10 +41,10 @@ def save(basename, **data):
     @type basename : str
     @param basename : The name of the file to save the data in, .cpickle
     will be appended to the file name if not provided
-    @param **data : The actuall data to be saved. 
+    @param data : The actuall data to be saved.
 
     """
-    
+
     check_arg(basename, str, 0)
 
     # If zero data size just return
@@ -52,9 +52,9 @@ def save(basename, **data):
         return
 
     filename = basename if ".cpickle" in basename else basename+".cpickle"
-    
+
     f = open(filename,'w')
-    
+
     p = Pickler(f)
 
     # Dump the dictionary kwarg
@@ -81,7 +81,7 @@ def compare_dicts(p1, p2):
 def load(basename, latest_timestamp=False, collect=False):
     """
     Load data using cPickle
-    
+
     @type basename : str
     @param basename : The name of the file where the data will be loaded from,
     '.cpickle' will be appended to the file name if not provided
@@ -92,22 +92,22 @@ def load(basename, latest_timestamp=False, collect=False):
     @param collect : If True collect all data with the same basename and
     the same parameters
     """
-    
+
     check_arg(basename, str, 0)
 
     if latest_timestamp and collect:
         raise TypeError("'collect' and 'latest_timestamp' cannot both be True")
-    
+
     # If not collect just return the data froma single data file
     if not collect:
         return load_single_data(basename, latest_timestamp)
 
     filenames = get_data_filenames(basename)
-    
+
     # No filenames with timestamp. Try to return data file without timestamp
     if not filenames:
         return load_single_data(basename, False)
-    
+
     # Start with the latest filename and load the data and collect them if
     # the data have the same parameter
     data = load_single_data(filenames.pop(-1), False)
@@ -120,7 +120,7 @@ def load(basename, latest_timestamp=False, collect=False):
         merge_data_dicts(data, local_data)
 
     return data
-        
+
 def merge_data_dicts(data0, data1):
     "Merge data from data1 into data0"
 
@@ -137,13 +137,13 @@ def merge_data_dicts(data0, data1):
                     org_values.extend(values)
                 data0[key] = org_values
         return data0
-    
+
     for (key, values), org_values in zip(iter(data1.items()), list(data0.values())):
         if key == "params":
             continue
-        
+
         data0[key] = recursively_merge_data(values, org_values)
-        
+
 def load_single_data(basename, latest_timestamp):
     "Helper function for load"
 
@@ -153,16 +153,16 @@ def load_single_data(basename, latest_timestamp):
             raise IOError("No files with timestamp for basename: "\
                   "'%s' excist"%basename)
         basename = filenames[-1]
-        
+
     filename = basename if ".cpickle" in basename else basename+".cpickle"
-    
+
     if not os.path.isfile(filename):
         raise IOError("No file with basename: '%s' excists"%basename)
-        
-    
+
+
     info("Loading data from: %s", filename)
     f = open(filename,'r')
-    
+
     return Unpickler(f).load()
 
 def get_data_filenames(basename):
@@ -172,15 +172,13 @@ def get_data_filenames(basename):
                basename.replace(".cpickle", "")
     pattern = re.compile("%s-[0-9]+\.[0-9]+\.[0-9]+-[0-9]+"\
                          "\.[0-9]+\.[0-9]+.cpickle"%basename)
-    
+
     filenames = [filename for filename in \
                  glob.glob("%s*.cpickle"%basename) \
                  if re.search(pattern, filename)]
-    
+
     if not filenames:
         return []
-    
+
     filenames.sort()
     return filenames
-
-

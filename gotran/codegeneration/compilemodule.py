@@ -154,8 +154,8 @@ def {rhs_function_name}({args},{rhs_name} = None):
     '''
     Evaluates the right hand side of the model
 
-    Arguments:
-    ----------
+    Arguments
+    ---------
 {args_doc}
     {rhs_name} : np.ndarray (optional)
         The computed result
@@ -207,8 +207,8 @@ def {jacobian_function_name}({args}, {jac_name}=None):
     '''
     Evaluates the jacobian of the model
 
-    Arguments:
-    ----------
+    Arguments
+    ---------
 {args_doc}
     {jac_name} : np.ndarray (optional)
         The computed result
@@ -261,8 +261,8 @@ def {monitored_function_name}({args}, {monitored_name}=None):
     '''
     Evaluates any monitored intermediates of the model
 
-    Arguments:
-    ----------
+    Arguments
+    ---------
 {args_doc}
     {monitored_name} : np.ndarray (optional)
         The computed result
@@ -289,9 +289,9 @@ def compile_module(ode, language="C", monitored=None,
     """
     JIT compile an ode
 
-    Arguments:
-    ----------
-    ode : ODE, str
+    Arguments
+    ---------
+    ode : gotran.ODE, str
         The gotran ode
     language : str (optional)
         The language of the generated code

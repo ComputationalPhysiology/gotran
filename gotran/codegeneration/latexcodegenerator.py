@@ -34,6 +34,8 @@ from io import StringIO
 import sympy
 import tokenize
 
+__all__ = ["LatexCodeGenerator"]
+
 # Latex templates
 _global_opts = """\\setkeys{{breqn}}{{breakdepth={{1}}}}
 {GLOBALOPTS}"""
@@ -353,7 +355,7 @@ class LatexCodeGenerator(object):
 
             if not body:
                 continue
-            
+
             format_label = self.format_component_label(comp.name)
             label_id = comp.name.replace(' ', '_')
             format_body = ""

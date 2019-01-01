@@ -39,7 +39,8 @@ from gotran.codegeneration.solvercomponents import *
 from functools import reduce
 
 __all__ = ["PythonCodeGenerator", "CCodeGenerator", "CppCodeGenerator", \
-           "MatlabCodeGenerator", "class_name", "CUDACodeGenerator"]
+           "MatlabCodeGenerator", "class_name", "CUDACodeGenerator",
+           "JuliaCodeGenerator"]
 
 def class_name(name):
     check_arg(name, str)
@@ -92,7 +93,7 @@ class BaseCodeGenerator(object):
 
         Arguments
         ---------
-        ode : ODE
+        ode : gotran.ODE
             The ODE for which code will be generated
         monitored : list
             A list of name of monitored intermediates for which evaluation

@@ -119,17 +119,15 @@ def get_parameter_list_from_string(string, lst, case_insesitive=True):
 class CellModel(ODE):
     """
     Basic class for storing information of a cell model
-
     You can either initialize an empty CellModel similar to
-    an ODE
-
+    an ODE.
     (Maybe if we can create a library of th cellmodels
     then it the string matched that of the library we return
-    the model in the library, e.g `cell = CellModel("Noble_1962")`` ?? )
+    the model in the library, e.g `cell = CellModel("Noble_1962")`)
     Or you can initialize the cell using an existing ODE
     If you have an ODE and want to have a cell, then save the
-    ODE to an *.ode file and load it using `load_cell`` (in stead of
-    `load_ode``)
+    ODE to an .ode file and load it using `load_cell` (in stead of
+    `load_ode`)
 
     Example
     -------
@@ -144,14 +142,12 @@ class CellModel(ODE):
 
     .. code-block::python
 
-
         # Save current ODE
         ode.save(filename)
 
         # Load cell
         from loadmodel import load_cell
         cell = load_cell(filename)
-
 
     """
 
@@ -680,7 +676,7 @@ class CellModel(ODE):
 
         Returns
         -------
-        par : ODECompoenent
+        par : gotran.ODECompoenent
             The component
 
         """
@@ -704,7 +700,7 @@ class CellModel(ODE):
 
         Returns
         -------
-        par : Parameter
+        par : gotran.Parameter
             The parameter
 
         """
@@ -727,7 +723,7 @@ class CellModel(ODE):
 
         Returns
         -------
-        par : Parameter
+        par : gotran.Parameter
             The state
 
         """
@@ -750,7 +746,7 @@ class CellModel(ODE):
 
         Returns
         -------
-        par : Parameter
+        par : gotran.Parameter
             The parameter
 
         """
@@ -774,7 +770,7 @@ class CellModel(ODE):
 
         Returns
         -------
-        par : Parameter
+        par : gotran.Parameter
             The parameter
 
         """
@@ -796,7 +792,7 @@ class CellModel(ODE):
 
         name : str
             Name of the parmaeter
-        value : scalar, ScalarParam
+        value : scalar, gotran.ScalarParam
             The new value of the parameter. Note that
             if the parameter is of type `ScalarParam`
             while the provided value is a scalar then the value

@@ -45,7 +45,7 @@ def explicit_euler_solver(ode, function_name="forward_explicit_euler", \
 
     Arguments
     ---------
-    ode : ODE
+    ode : gotran.ODE
         The ODE for which the jacobian expressions should be computed
     function_name : str
         The name of the function which should be generated
@@ -64,7 +64,7 @@ def rush_larsen_solver(ode, function_name="forward_rush_larsen", \
 
     Arguments
     ---------
-    ode : ODE
+    ode : gotran.ODE
         The ODE for which the jacobian expressions should be computed
     function_name : str
         The name of the function which should be generated
@@ -85,7 +85,7 @@ def generalized_rush_larsen_solver(ode, function_name="forward_generalized_rush_
 
     Arguments
     ---------
-    ode : ODE
+    ode : gotran.ODE
         The ODE for which the jacobian expressions should be computed
     function_name : str
         The name of the function which should be generated
@@ -109,7 +109,7 @@ def simplified_implicit_euler_solver(\
 
     Arguments
     ---------
-    ode : ODE
+    ode : gotran.ODE
         The ODE for which the jacobian expressions should be computed
     function_name : str
         The name of the function which should be generated
@@ -143,7 +143,7 @@ class ExplicitEuler(CodeComponent):
 
         Arguments
         ---------
-        ode : ODE
+        ode : gotran.ODE
             The parent component of this ODEComponent
         function_name : str
             The name of the function which should be generated
@@ -204,7 +204,7 @@ class RushLarsen(CodeComponent):
 
         Arguments
         ---------
-        ode : ODE
+        ode : gotran.ODE
             The parent component of this ODEComponent
         function_name : str
             The name of the function which should be generated
@@ -304,7 +304,7 @@ class RushLarsenOneStep(CodeComponent):
 
         Arguments
         ---------
-        ode : ODE
+        ode : gotran.ODE
             The parent component of this ODEComponent
         function_name : str
             The name of the function which should be generated
@@ -390,7 +390,7 @@ class GeneralizedRushLarsen(CodeComponent):
 
         Arguments
         ---------
-        ode : ODE
+        ode : gotran.ODE
             The parent component of this ODEComponent
         function_name : str
             The name of the function which should be generated
@@ -437,7 +437,7 @@ class GeneralizedRushLarsen(CodeComponent):
                     result_name, (i,), expr.state.sym+dt*expr.sym, \
                     offset_str, dependent=dependent)
                 continue
-            
+
             linearized = self.add_intermediate(\
                 expr.name+"_linearized", expr_diff, dependent=dependent)
 
@@ -467,7 +467,7 @@ class SimplifiedImplicitEuler(CodeComponent):
 
         Arguments
         ---------
-        ode : ODE
+        ode : gotran.ODE
             The parent component of this ODEComponent
         function_name : str
             The name of the function which should be generated
@@ -530,4 +530,3 @@ class SimplifiedImplicitEuler(CodeComponent):
         results, body_expressions = self._body_from_results(**results)
         self.body_expressions = self._recreate_body(\
             body_expressions, **results)
-

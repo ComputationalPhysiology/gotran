@@ -27,7 +27,11 @@ from sympy.core.add import Add as _Add
 from sympy.core.cache import cacheit as _cacheit
 from sympy.core import function as _function
 from sympy.core.assumptions import ManagedProperties as _ManagedProperties
-import sympy.mpmath.libmp as _mlib
+try:
+    import sympy.mpmath.libmp as _mlib
+except ImportError as ex:
+    print(ex)
+    
 import types
 
 _evaluate = False
@@ -38,7 +42,7 @@ def enable_evaluation():
     """
     global _evaluate
     _evaluate = True
-    
+
 def disable_evaluation():
     """
     Disable Add, Mul and Pow contractions
@@ -122,7 +126,7 @@ def _pow_new(cls, b, e, evaluate=True):
             obj = b._eval_power(e)
             if obj is not None:
                 return obj
-    
+
     obj = _Expr.__new__(cls, b, e)
     obj.is_commutative = (b.is_commutative and e.is_commutative)
     return obj
@@ -132,4 +136,3 @@ def _pow_new(cls, b, e, evaluate=True):
 # _AssocOp.__new__ = types.MethodType(_cacheit(_assocop_new), None, _ManagedProperties)
 # _Pow.__new__ = types.MethodType(_cacheit(_pow_new), None, _ManagedProperties)
 # _function.Function.__new__ = types.MethodType(_cacheit(_function_new), None, _ManagedProperties)
-

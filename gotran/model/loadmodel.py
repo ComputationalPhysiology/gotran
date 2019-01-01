@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ["load_ode", "exec_ode", "load_cell", "get_model_as_python_module"]
+__all__ = ["load_ode", "exec_ode", "load_cell"]
 
 # System imports
 import inspect
@@ -39,37 +39,12 @@ from gotran.model.cellmodel import CellModel
 _for_template = re.compile("\A[ ]*for[ ]+.*in[ ]+:[ ]*\Z")
 _no_intermediate_template = re.compile(".*# NO INTERMEDIATE.*")
 
-def get_model_as_python_module(model):
-    from gotran.common.options import parameters
-    from gotran.codegeneration.codegenerators import PythonCodeGenerator
-    
-
-    import imp
-
-    
-    params = parameters.generation.copy()
-    params.functions.rhs.function_name="__call__"
-    params.code.default_arguments="tsp" 
-    params.class_code=1
-    
-
-    monitored = [expr.name for expr in model.intermediates + model.state_expressions]
-    gen = PythonCodeGenerator(params)
-    
-    name = model.name
-    model.rename("ODESim")
-    code = gen.class_code(model, monitored)
-    model.rename(name)
-
-    module = imp.new_module("simulation")
-    exec(code, module.__dict__)
-    return module.ODESim()
 
 class IntermediateDispatcher(dict):
     """
     Dispatch intermediates to ODE attributes
     """
-    
+
     def __init__(self, ode=None):
         """
         Initalize with an ode
@@ -79,13 +54,12 @@ class IntermediateDispatcher(dict):
         else:
             self._ode = None
 
-
     @property
     def ode(self):
 
         if self._ode == None:
             error("ode attr is not set")
-        
+
         return self._ode()
 
     @ode.setter
@@ -102,7 +76,7 @@ class IntermediateDispatcher(dict):
         # Set the attr of the ODE
         # If a scalar or a sympy number or it is a sympy.Basic consisting of
         # sp.Symbols
-       
+
         if isinstance(value, scalars) or isinstance(value, sp.Number) or \
                (isinstance(value, sp.Basic) and symbols_from_expr(value)):
 
@@ -122,7 +96,7 @@ class IntermediateDispatcher(dict):
                     prev +=1
             except :
                 code = ""
-            
+
             # Check if the line includes a for statement
             # Here we strip op potiential code comments after the main for
             # statement.
@@ -130,18 +104,18 @@ class IntermediateDispatcher(dict):
                    re.search(_no_intermediate_template, code):
 
                 debug("Not registering '{0}' as an intermediate.".format(name))
-                
+
                 # If so just add the value to the namespace without
                 # registering the intermediate
                 dict.__setitem__(self, name, value)
-                
+
             else:
 
                 del timer
-                
+
                 # Add obj to the present component
                 sym = setattr(self.ode.present_component, name, value)
-        
+
         else:
             debug("Not registering '{0}' as an intermediate.".format(name))
 
@@ -158,7 +132,7 @@ def _init_namespace(ode, load_arguments, namespace):
     """
     Create namespace and populate it
     """
-    
+
     namespace.update(sp_namespace)
 
     # Add Sympy matrix related stuff
@@ -185,7 +159,7 @@ def exec_ode(ode_str, name, **arguments):
     ---------
     ode_str : str
         The ode as a str
-    name : str 
+    name : str
         The name of ODE
     arguments : dict (optional)
         Optional arguments which can control loading of model
@@ -206,7 +180,7 @@ def exec_ode(ode_str, name, **arguments):
     # Write str to file
     with open("_tmp_gotrand.ode", "w") as f:
         f.write(ode_str)
-    
+
     # Execute file and collect
     with open("_tmp_gotrand.ode") as f:
         exec(compile(f.read(), "_tmp_gotrand.ode", 'exec'),
@@ -215,11 +189,11 @@ def exec_ode(ode_str, name, **arguments):
 
     # Finalize ODE
     ode.finalize()
-    
+
     # Check for completeness
     if not ode.is_complete:
         warning("ODE mode '{0}' is not complete.".format(ode.name))
-    
+
     info("Loaded ODE model '{0}' with:".format(ode.name))
     for what in ["full_states", "parameters"]:
         num = getattr(ode, "num_{0}".format(what))
@@ -242,7 +216,7 @@ def load_ode(filename, name=None, **arguments):
     arguments : dict (optional)
         Optional arguments which can control loading of model
     """
-    
+
     arguments["class_type"] = "ode"
     return _load(filename, name, **arguments)
 
@@ -274,7 +248,7 @@ def _load(filename, name, **arguments):
     if (not os.path.isfile(filename)):
         error("Could not find '{0}'".format(filename))
 
-   
+
     # Copy file temporary to current directory
     basename = os.path.basename(filename)
     copyfile = False
@@ -283,8 +257,8 @@ def _load(filename, name, **arguments):
         filename = basename
         name = filename[:-4]
         copyfile=True
-    
-    
+
+
     # If a Param is provided turn it into its value
     for key, value in list(arguments.items()):
         if isinstance(value, Param):
@@ -299,10 +273,10 @@ def _load(filename, name, **arguments):
 
     # Dict to collect namespace
     intermediate_dispatcher = IntermediateDispatcher()
-    
+
 
     # Create an ODE which will be populated with data when ode file is loaded
-    
+
     if class_type == "ode":
         ode = ODE(name, intermediate_dispatcher)
     else:
@@ -312,7 +286,7 @@ def _load(filename, name, **arguments):
 
     debug("Loading {}".format(ode.name))
 
-    
+
     # Create namespace which the ode file will be executed in
     _init_namespace(ode, arguments, intermediate_dispatcher)
 
@@ -323,18 +297,18 @@ def _load(filename, name, **arguments):
 
     # Finalize ODE
     ode.finalize()
-    
+
     # Check for completeness
     if not ode.is_complete:
         warning("ODE model '{0}' is not complete.".format(ode.name))
-    
+
     info("Loaded ODE model '{0}' with:".format(ode.name))
     for what in ["full_states", "parameters"]:
         num = getattr(ode, "num_{0}".format(what))
         info("{0}: {1}".format(("Num "+what.replace("_", \
                                                     " ")).rjust(20), num))
     if copyfile: os.unlink(filename)
-    
+
     return ode
 
 
@@ -355,18 +329,18 @@ def load_cell(filename, name=None, **arguments):
         Optional arguments which can control loading of model
     """
     arguments["class_type"] = "cell"
-    
+
     cell =_load(filename, name, **arguments)
     cell._initialize_cell_model()
     return cell
-    
+
 
 def _namespace_binder(namespace, ode, load_arguments):
     """
     Add functions all bound to current ode, namespace and arguments
     """
-    
-    
+
+
     def comment(comment):
         """
         Add a comment to the present ODE component
@@ -376,12 +350,12 @@ def _namespace_binder(namespace, ode, load_arguments):
         comment : str
             The comment
         """
-        
+
         comp = ode().present_component
-            
+
         # Add the comment
         comp.add_comment(comment)
-        
+
     def subode(subode, prefix="", components=None):
         """
         Load an ODE and add it to the present ODE (deprecated)
@@ -432,24 +406,24 @@ def _namespace_binder(namespace, ode, load_arguments):
         if args and isinstance(args[0], str):
             comp._time.update_unit(args[0])
             comp._dt.update_unit(args[0])
-        
+
 
     def states(*args, **kwargs):
         """
         Add a number of states to the current component or to the
         chosed component
         """
-      
+
         # If comp string is passed we get the component
         if args and isinstance(args[0], str):
             comp = ode()
             args = deque(args)
-            
+
             while args and isinstance(args[0], str):
                 comp = comp(args.popleft())
         else:
             comp = ode().present_component
-            
+
         # Update the rates name so it points to the present components
         # rates dictionary
         namespace["rates"] = comp.rates
@@ -457,8 +431,8 @@ def _namespace_binder(namespace, ode, load_arguments):
         # Add the states
         comp.add_states(*args, **kwargs)
 
-        
-    
+
+
     def parameters(*args, **kwargs):
         """
         Add a number of parameters to the current ODE or to the chosed component
@@ -467,57 +441,57 @@ def _namespace_binder(namespace, ode, load_arguments):
         if args and isinstance(args[0], str):
             comp = ode()
             args = deque(args)
-            
+
             while args and isinstance(args[0], str):
                 comp = comp(args.popleft())
         else:
             comp = ode().present_component
-            
+
         # Update the rates name so it points to the present components
         # rates dictionary
         namespace["rates"] = comp.rates
 
         # Add the parameters and update namespace
         comp.add_parameters(*args, **kwargs)
-        
+
     def model_arguments(**kwargs):
         """
         Defines arguments that can be altered while the ODE is loaded
-        
+
         Example
         -------
-        
+
         In gotran model file:
-    
+
           >>> ...
           >>> model_arguments(include_Na=True)
           >>> if include_Na:
           >>>     states(Na=1.0)
           >>> ...
-    
+
         When the model gets loaded
-        
+
           >>> ...
           >>> load_ode("model", include_Na=False)
           >>> ...
-          
+
         """
-    
+
         # Check the passed load arguments
         for key in load_arguments:
             if key not in kwargs:
                 error("Name '{0}' is not a model_argument.".format(key))
-    
+
         # Update the namespace
         ns = {}
         for key, value in list(kwargs.items()):
             if not isinstance(value, (float, int, str, Param)):
                 error("expected only 'float', 'int', 'str' or 'Param', as model_arguments, "\
                       "got: '{}' for '{}'".format(type(value).__name__, key))
-                
+
             if key not in load_arguments:
                 ns[key] = value.getvalue() if isinstance(value, Param) else value
-                    
+
             else:
                 # Try to cast the passed load_arguments with the orginal type
                 if isinstance(value, Param):
@@ -530,10 +504,10 @@ def _namespace_binder(namespace, ode, load_arguments):
 
                     # Assign actual value of Param
                     ns[key] = value.getvalue()
-                    
+
                 else:
                     ns[key] = type(value)(load_arguments[key])
-        
+
         namespace.update(ns)
 
     def component(*args):
@@ -545,13 +519,13 @@ def _namespace_binder(namespace, ode, load_arguments):
         return expressions(*args)
 
     def expressions(*args):
-    
+
         check_arg(args, tuple, 0, itemtypes=str)
-        
+
         comp = ode()
 
         args = deque(args)
-            
+
         while args:
             comp = comp(args.popleft())
 
@@ -576,4 +550,3 @@ def _namespace_binder(namespace, ode, load_arguments):
         comment=comment
         )
                      )
-                    
