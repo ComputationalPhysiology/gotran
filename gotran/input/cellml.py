@@ -382,26 +382,26 @@ class CellMLParser(object):
         Parse the documentation of the article
         """
         namespace = "{http://cellml.org/tmp-documentation}"
-        article = self.cellml.getiterator(namespace+"article")
+        article = self.cellml.iter(namespace+"article")
 
         try:
             article = list(article)[0]
         except IndexError:
             return ""
 
-        articleinfo = list(article.getiterator(namespace+"articleinfo"))[0]
+        articleinfo = list(article.iter(namespace+"articleinfo"))[0]
 
         # Get title
-        if articleinfo and articleinfo.getiterator(namespace+"title"):
-            title = list(articleinfo.getiterator(namespace+"title"))[0].text
+        if articleinfo and articleinfo.iter(namespace+"title"):
+            title = list(articleinfo.iter(namespace+"title"))[0].text
         else:
             title = ""
 
         # Get model structure comments
-        for child in article.getchildren():
+        for child in list(article):
             if child.attrib.get("id") == "sec_structure":
                 content = []
-                for par in child.getiterator(namespace+"para"):
+                for par in child.iter(namespace+"para"):
                     # Get lines
                     splitted_line = deque(("".join(text.strip() \
                                         for text in par.itertext())).\
@@ -464,7 +464,7 @@ class CellMLParser(object):
                 continue
 
             collected_parts = OrderedDict()
-            for unit in units.getchildren():
+            for unit in list(units):
                 if unit.attrib.get("multiplier"):
                     warning("skipping multiplier in unit {0}".format(units.attrib["name"]))
                 if unit.attrib.get("multiplier"):
@@ -529,7 +529,7 @@ class CellMLParser(object):
         """
 
         item = item if item is not None else self.cellml
-        return item.getiterator(self.cellml_namespace+name)
+        return item.iter(self.cellml_namespace+name)
 
     def check_and_register_component_variables(\
         self, comp, collected_states, collected_parameters, collected_equations):
@@ -834,9 +834,9 @@ class CellMLParser(object):
             for encap in elements:
                 name = encap.attrib["component"]
                 all_parents[name] = parent
-                if encap.getchildren():
+                if list(encap):
                     nested_children = get_encapsulation(\
-                        encap.getchildren(), all_parents, name)
+                        list(encap), all_parents, name)
                     children[name] = dict(children=nested_children, \
                                           parent=parent)
                 else:
@@ -847,7 +847,7 @@ class CellMLParser(object):
         encapsulations = dict()
         all_parents = dict()
         for group in self.get_iterator("group", element):
-            children = group.getchildren()
+            children = list(group)
 
             if children and children[0].attrib.get("relationship") == \
                    grouping:
@@ -909,9 +909,9 @@ class CellMLParser(object):
                 )
 
         # Get equations
-        for math in comp.getiterator(\
+        for math in comp.iter(\
             "{http://www.w3.org/1998/Math/MathML}math"):
-            for eq in math.getchildren():
+            for eq in list(math):
                 equation_list, state_variable, derivative, \
                         used_variables = self.mathmlparser.parse(eq)
 
@@ -1285,7 +1285,7 @@ class CellMLParser(object):
 
             # Only parse selected and non-empty components
             if (targets and comp_name not in targets) or \
-                   len(comp.getchildren()) == 0:
+               len(list(comp)) == 0:
                 continue
 
             # If targets provides a name mapping give the component a new name
@@ -1363,9 +1363,6 @@ class CellMLParser(object):
                         if oldname in child.variable_info:
                             var_info = child.variable_info[oldname]
                             break
-
-                #print comp, oldname
-                #print var_info
 
                 # If variable is not intended out
                 if not (var_info.get("public_interface")=="out" or \

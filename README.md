@@ -24,9 +24,7 @@ Documentation can be found here: <https://finsberg.github.io/docs.gotran/>
 
 ## Source code
 
-Source code can be found at <https://bitbucket.org/finsberg/gotran>
-See the [installation instructions](INSTALL.md) for details on how to
-install Gotran.
+Source code can be found at <https://bitbucket.org/finsberg/gotran>.
 
 
 ## License

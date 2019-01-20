@@ -133,7 +133,7 @@ class MathMLBaseParser(object):
 
         # If the tag i "apply" pick the operator and continue parsing
         if op == "apply":
-            children = root.getchildren()
+            children = list(root)
             op = self._gettag(children[0])
             root = children[1:]
         # If use special method to parse
@@ -158,11 +158,8 @@ class MathMLBaseParser(object):
 
                     # If an unary minus is infront of a plus we always use parenthesize
                     if self._gettag(root[0]) == "apply" and \
-                           self._gettag(root[0].getchildren()[0]) in ["plus", "minus"]:
-
+                       self._gettag(list(root[0])[0]) in ["plus", "minus"]:
                         use_parent = True
-
-                        
 
                     eq += ["-"]
                                         
@@ -177,6 +174,7 @@ class MathMLBaseParser(object):
                       [")"]*use_parent
                 return eq
             else:
+                
                 # Binary operator
                 eq += ["("] * use_parent + self._parse_subtree(root[0], op)
                 for operand in root[1:]:
@@ -242,7 +240,7 @@ class MathMLBaseParser(object):
         value = var.text.strip()
         if "type" in list(var.keys()) and var.get("type") == "e-notation":
             # Get rid of potential float repr
-            exponent = "e" + str(int(var.getchildren()[0].tail.strip()))
+            exponent = "e" + str(int(list(var)[0].tail.strip()))
         else:
             exponent = ""
         value += exponent
@@ -296,14 +294,14 @@ class MathMLBaseParser(object):
             
     def _parse_piecewise(self, cases, parent=None):
         if len(cases) == 2:
-            piece_children = cases[0].getchildren()
+            piece_children = list(cases[0])
             cond  = self._parse_subtree(piece_children[1], "piecewise")
             true  = self._parse_subtree(piece_children[0])
-            false = self._parse_subtree(cases[1].getchildren()[0])
+            false = self._parse_subtree(list(cases[1])[0])
             return ["Conditional", "("] + cond + [", "] + true + [", "] + \
                    false + [")"]
         else:
-            piece_children = cases[0].getchildren()
+            piece_children = list(cases[0])
             cond  = self._parse_subtree(piece_children[1], "piecewise")
             true  = self._parse_subtree(piece_children[0])
             return ["Conditional", "("] + cond + [", "] + true + [", "] + \

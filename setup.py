@@ -11,11 +11,11 @@ import sys
 
 # Version number
 major = 2019
-minor = 0.0
+minor = 1.0
 
 scripts = glob.glob("scripts/*")
 
-requirements = ["sympy<=0.7.7",
+requirements = ["sympy<=1.1.1",
                 "numpy",
                 "scipy",
                 "matplotlib",
@@ -24,7 +24,6 @@ requirements = ["sympy<=0.7.7",
                 "future",
                 "modelparameters",
                 "instant"]
-dependency_links = ['git+https://bitbucket.org/finsberg/modelparameters.git#egg=modelparameters']
 
 if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
     # In the Windows command prompt we can't execute Python scripts
@@ -79,19 +78,21 @@ class run_tests(Command):
         import os
         os.system("python utils/run_tests.py")
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+        
 setup(name = "gotran",
       version = "{0}.{1}".format(major, minor),
-      description = """
-      A declarative language describing ordinary differential equations.
-      """,
-      author = "Henrik Finsberg",
+      description = "A declarative language describing ordinary differential equations.",
+      long_description=long_description,
+      long_description_content_type="text/markdown",
+      url="https://bitbucket.org/finsberg/gotran",
+      author = "Johan Hake and Henrik Finsberg",
       author_email = "henriknf@simula.no",
       packages = ["gotran", "gotran.common", "gotran.model",
                   "gotran.algorithms", "gotran.codegeneration",
                   "gotran.input", "gotran.solver"],
       install_requires=requirements,
-      dependency_links=dependency_links,
-      setup_requires=["sympy<=0.7.7"],
       scripts = scripts,
       cmdclass    = {'test': run_tests,
                      'clean': clean,
