@@ -27,7 +27,7 @@ def main(filename, params):
         output = filename.replace(".ode", "")+".cu"
 
     info("")
-    info("Generating C code for the {0} ode...".format(ode.name))
+    info("Generating CUDA code for the {0} ode...".format(ode.name))
     code = gen.module_code(ode)
     info("  done.")
     with open(output, "w") as f:
@@ -36,7 +36,7 @@ def main(filename, params):
             f.write("#include <string.h>\n")
 
         f.write(code)
-    
+
     if params.list_timings:
         list_timings()
 
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     from modelparameters.parameterdict import *
 
     generation_params=CUDACodeGenerator.default_parameters()
-    
+
     params = ParameterDict(\
         list_timings = Param(False, description="If true timings for reading "\
                              "and evaluating the model is listed."),
@@ -56,12 +56,12 @@ if __name__ == "__main__":
         **dict((name, param) for name, param in list(generation_params.items()) \
         if name not in ["class_code"]))
     params.parse_args(usage="usage: %prog FILE [options]")#sys.argv[2:])
-    
+
     if len(sys.argv) < 2:
         raise RuntimeError("Expected a single gotran file argument")
 
     if not os.path.isfile(sys.argv[1]):
         raise IOError("Expected the argument to be a file")
-	 
+
     file_name = sys.argv[1]
     main(file_name, params)
