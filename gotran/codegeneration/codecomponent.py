@@ -161,12 +161,12 @@ class CodeComponent(ODEComponent):
 
         # Check that provided indices fit with the registered shape
         if len(self.shapes[basename]) > len(indices):
-            error("Shape missmatch between indices {0} and registered "\
+            error("Shape mismatch between indices {0} and registered "\
                   "shape for {1}{2}".format(indices, basename, self.shapes[basename]))
 
         for dim, (index, shape_ind) in enumerate(zip(indices, self.shapes[basename])):
             if index >= shape_ind:
-                error("Indices must be smaller or equal to the shape. Missmatch "\
+                error("Indices must be smaller or equal to the shape. Mismatch "\
                       "in dim {0}: {1}>={2}".format(dim+1, index, shape_ind))
 
         # Create the indexed expression
@@ -195,12 +195,12 @@ class CodeComponent(ODEComponent):
 
         # Check that provided indices fit with the registered shape
         if len(self.shapes[basename]) > len(indices):
-            error("Shape missmatch between indices {0} and registered "\
+            error("Shape mismatch between indices {0} and registered "\
                   "shape for {1}{2}".format(indices, basename, self.shapes[basename]))
 
         for dim, (index, shape_ind) in enumerate(zip(indices, self.shapes[basename])):
             if index >= shape_ind:
-                error("Indices must be smaller or equal to the shape. Missmatch "\
+                error("Indices must be smaller or equal to the shape. Mismatch "\
                       "in dim {0}: {1}>={2}".format(dim+1, index, shape_ind))
 
         # Create IndexedObject
