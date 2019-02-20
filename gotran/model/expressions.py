@@ -468,7 +468,7 @@ class IndexedExpression(IndexedObject, Expression):
     associated with it
     """
     def __init__(self, basename, indices, expr, shape=None, \
-                 array_params=None, add_offset="", dependent=None):
+                 array_params=None, add_offset="", dependent=None, enum=None):
         """
         Create an IndexedExpression with an associated basename used in code
         generation.
@@ -490,10 +490,12 @@ class IndexedExpression(IndexedObject, Expression):
         dependent : ODEObject
             If given the count of this IndexedExpression will follow as a
             fractional count based on the count of the dependent object
+        enum : str
+            String that can be used for enumeration
         """
         
         IndexedObject.__init__(self, basename, indices, shape, array_params, \
-                               add_offset, dependent)
+                               add_offset, dependent, enum)
         Expression.__init__(self, self.name, expr, dependent)
 
 # Tuple with Derivative types, for type checking

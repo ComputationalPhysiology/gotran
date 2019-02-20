@@ -450,7 +450,7 @@ class IndexedObject(ODEObject):
         return parameters.generation.code.array.copy()
 
     def __init__(self, basename, indices, shape=None, array_params=None, \
-                 add_offset="", dependent=None):
+                 add_offset="", dependent=None, enum=None):
         """
         Create an IndexedExpression with an associated basename
 
@@ -481,6 +481,7 @@ class IndexedObject(ODEObject):
         # Get index format and index offset from global parameters
         self._array_params = self.default_parameters()
         self._array_params.update(array_params)
+        self._enum = enum
 
         index_format = self._array_params.index_format
         index_offset = self._array_params.index_offset
@@ -536,6 +537,10 @@ class IndexedObject(ODEObject):
     @property
     def indices(self):
         return self._indices
+
+    @property
+    def enum(self):
+        return self._enum
 
     @property
     def sym(self):

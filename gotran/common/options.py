@@ -110,6 +110,9 @@ parameters = ParameterDict(
                                 "optimized using SymPy common sub expression "\
                                 "extraction."),
 
+                use_enum = Param(False, description="If true use enumeration"\
+                                 "data types instead of indexing."),
+                
                 in_signature = Param(False, description="If true the body argument "\
                                      "will be included in the signature."),
 

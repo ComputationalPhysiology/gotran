@@ -153,6 +153,8 @@ class BaseCodeGenerator(object):
                 result_name=functions.rhs.result_name,
                 params=self.params.code))
 
+        a = self.function_code(comps[0])
+
         # Code for any monitored intermediates
         if monitored and functions.monitored.generate:
             if include_index_map:
@@ -1318,7 +1320,10 @@ class CCodeGenerator(BaseCodeGenerator):
                 body_lines.append("// " + str(expr))
                 continue
             elif isinstance(expr, IndexedExpression):
-                name = "{0}".format(self.obj_name(expr))
+                if params['body']['use_enum']:
+                    name = "{0}[{1}]".format(expr.basename, expr.enum)
+                else:
+                    name = "{0}".format(self.obj_name(expr))
             elif expr.name in duplicates:
                 if expr.name not in declared_duplicates:
                     name = "{0} {1}".format(self.float_type, \
@@ -2436,8 +2441,6 @@ class JuliaCodeGenerator(BaseCodeGenerator):
         params = parameters.generation.copy()
         params.code.default_arguments = "spt"
         params.code.array.index_offset = 1
-        # from IPython import embed; embed()
-        # exit()
         params.functions.rhs['result_name'] = 'dy'
         params.code.states['array_name'] = 'y'
 

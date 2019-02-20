@@ -122,7 +122,6 @@ class CodeComponent(ODEComponent):
             self.param_state_replace_dict = {}
 
         self.results = list(results.keys())
-
         # Recreate body expressions based on the given result_expressions
         if results:
             results, body_expressions = self._body_from_results(**results)
@@ -156,7 +155,6 @@ class CodeComponent(ODEComponent):
         """
         # Create an IndexedExpression in the present component
         timer = Timer("Add indexed expression")
-
         indices = tuplewrap(indices)
 
         # Check that provided indices fit with the registered shape
@@ -245,7 +243,7 @@ class CodeComponent(ODEComponent):
         for param in field_parameters:
             if not isinstance(self.root.present_ode_objects[param], Parameter):
                 error("Field parameter '{0}' is not a parameter in the "\
-                      "'{1}'".format(param, oself.root))
+                      "'{1}'".format(param, self.root))
 
         state_repr = self._params["states"]["representation"]
         state_name = self._params["states"]["array_name"]
@@ -797,7 +795,6 @@ class CodeComponent(ODEComponent):
 
                     # Get index based on the original ordering
                     index = (result_expressions.index(expr),)
-
                     # Create the IndexedExpression
                     # NOTE: First replace any derivative expression replaces, then state and
                     # NOTE: params
@@ -805,7 +802,8 @@ class CodeComponent(ODEComponent):
                                                  xreplace(der_replace_dict).\
                                                  xreplace(replace_dict), \
                                                  (len(results[result_name]), ),
-                                                 array_params=self._params.array)
+                                                 array_params=self._params.array,
+                                                 enum=expr.name)
 
                     if new_expr.basename not in self.indexed_map:
                         self.indexed_map[new_expr.basename] = OrderedDict()
@@ -869,7 +867,8 @@ class CodeComponent(ODEComponent):
                 new_expr = IndexedExpression(body_name, ind, expr.expr.\
                                              xreplace(der_replace_dict).\
                                              xreplace(replace_dict),
-                                             array_params=self._params.array)
+                                             array_params=self._params.array,
+                                             enum=expr.name)
 
                 if body_name not in self.indexed_map:
                     self.indexed_map[body_name] = OrderedDict()
