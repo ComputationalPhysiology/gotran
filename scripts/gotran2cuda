@@ -9,7 +9,7 @@ from gotran.common import error, list_timings, info
 
 def main(filename, params):
     """
-    Create a c header file from a gotran model
+    Create a CUDA file from a gotran model
     """
 
     # Load Gotran model
