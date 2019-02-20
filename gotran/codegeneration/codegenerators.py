@@ -153,8 +153,6 @@ class BaseCodeGenerator(object):
                 result_name=functions.rhs.result_name,
                 params=self.params.code))
 
-        a = self.function_code(comps[0])
-
         # Code for any monitored intermediates
         if monitored and functions.monitored.generate:
             if include_index_map:
