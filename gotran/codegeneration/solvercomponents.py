@@ -163,7 +163,7 @@ class ExplicitEuler(CodeComponent):
                                             additional_arguments=["dt"])
 
         # Recount the expressions if representation of states are "array" as
-        # then the method is not full explcit
+        # then the method is not full explicit
         recount = self._params.states.representation != "array"
 
         # Gather state expressions and states
