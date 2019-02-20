@@ -1497,28 +1497,16 @@ class CUDACodeGenerator(CCodeGenerator):
 
         return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
 
+
     def init_parameters_code(self, ode, indent=0):
         """
         Generate code for setting parameters
         """
 
-        body_lines = []
-
-        array_name = self.params.code.parameters.array_name
-
-        # Main body
-        float_str = "" if self.params.code.float_precision == "double" else "f"
-        body_lines.extend(["{0}[{1}] = {2}{3}; // {4}".format(
-            array_name, i, float_str, param.init, param.name)
-                           for i, param in enumerate(ode.parameters)])
-
-        # Add function prototype
-        init_function = self.wrap_body_with_function_prototype(
-            body_lines, "init_parameters_values", "{0} *{1}".format(\
-                self.float_type, array_name),
-            comment="Default parameter values", kernel=False)
-
-        return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
+        # FIXME: Parameters should be stored in a __constant__ array.
+        # We could have a function to initialise that array.
+        # For now, just initialise the arrays in host memory.
+        return CCodeGenerator.init_parameters_code(self, ode, indent)
 
     def init_field_parameters_code(self, ode, indent=0):
         """
