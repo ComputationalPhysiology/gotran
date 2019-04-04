@@ -27,12 +27,14 @@ from modelparameters.codegeneration import ccode, cppcode, pythoncode, \
      sympycode, matlabcode, juliacode
 
 # Gotran imports
+import gotran.model.odeobjects
 from gotran.common import check_arg, check_kwarg, error, warning
 from gotran.common.options import parameters
 from gotran.model.ode import ODE
 from gotran.model.odeobjects import Comment, ODEObject
 from gotran.model.expressions import Expression, Intermediate, \
-     IndexedExpression, AlgebraicExpression
+     IndexedExpression, StateIndexedExpression, ParameterIndexedExpression, \
+     AlgebraicExpression
 from gotran.codegeneration.codecomponent import CodeComponent
 from gotran.codegeneration.algorithmcomponents import *
 from gotran.codegeneration.solvercomponents import *
@@ -1317,9 +1319,20 @@ class CCodeGenerator(BaseCodeGenerator):
                 body_lines.append("")
                 body_lines.append("// " + str(expr))
                 continue
-            elif isinstance(expr, IndexedExpression):
+            elif isinstance(expr, IndexedExpression) \
+                or isinstance(expr, StateIndexedExpression)\
+                or isinstance(expr, ParameterIndexedExpression):
                 if params['body']['use_enum']:
-                    name = "{0}[{1}]".format(expr.basename, expr.enum)
+
+                    if isinstance(expr, StateIndexedExpression):
+                        name = "{0}[{1}]".format(expr.basename,
+                                                 self._state_enum_val(expr.state))
+                    elif isinstance(expr, ParameterIndexedExpression):
+                        name = "{0}[{1}]".format(expr.basename,
+                                                 self._parameter_enum_val(expr.parameter))
+                    else:
+                        print((expr.basename, expr.enum))
+                        name = "{0}[{1}]".format(expr.basename, expr.enum)
                 else:
                     name = "{0}".format(self.obj_name(expr))
             elif expr.name in duplicates:

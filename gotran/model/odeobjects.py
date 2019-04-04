@@ -16,7 +16,8 @@
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
 __all__ = ["ODEObject", "Comment", "ODEValueObject", "Parameter", "State", \
-           "SingleODEObjects", "Time", "Dt", "IndexedObject", "cmp_to_key", "cmp"]
+           "SingleODEObjects", "Time", "Dt", "IndexedObject",
+           "StateIndexedObject", "ParameterIndexedObject", "cmp_to_key", "cmp"]
 
 # System imports
 import numpy as np
@@ -507,12 +508,12 @@ class IndexedObject(ODEObject):
         else:
             index_format = index_format[0]+"{0}"+index_format[1]
 
-        # If flatten indices
         orig_indices = indices
+        # If flatten indices
         if flatten and len(indices)>1:
             indices = (sum(reduce(lambda i, j: i*j, shape[i+1:],1)*\
-                           (index+index_offset) for i, index in \
-                           enumerate(indices)),)
+                        (index+index_offset) for i, index in \
+                        enumerate(indices)),)
         else:
             indices = tuple(index+index_offset for index in indices)
 
@@ -549,6 +550,68 @@ class IndexedObject(ODEObject):
     @property
     def shape(self):
         return self._shape
+
+class StateIndexedObject(IndexedObject):
+    def __init__(self, basename, indices, state, shape=None, array_params=None, \
+                    add_offset="", dependent=None):
+            """
+            Create an IndexedExpression with an associated basename
+
+            Arguments
+            ---------
+            basename : str
+                The basename of the multi index Expression
+            indices : tuple of ints
+                The indices
+            state : State
+                The state corresponding to the index
+            shape : tuple (optional)
+                A tuple with the shape of the indexed object
+            array_params : dict
+                Parameters to create the array name for the indexed object
+            add_offset : bool, str
+                If True a fixed offset is added to the indices
+            dependent : ODEObject
+                If given the count of this IndexedObject will follow as a
+                fractional count based on the count of the dependent object
+            """
+            super(StateIndexedObject, self).__init__(basename, indices, shape,
+                array_params, add_offset, dependent)
+            self._state = state
+    @property
+    def state(self):
+        return self._state
+
+class ParameterIndexedObject(IndexedObject):
+    def __init__(self, basename, indices, parameter, shape=None, array_params=None, \
+                    add_offset="", dependent=None):
+            """
+            Create an IndexedExpression with an associated basename
+
+            Arguments
+            ---------
+            basename : str
+                The basename of the multi index Expression
+            indices : tuple of ints
+                The indices
+            parameter : Parameter
+                The state corresponding to the index
+            shape : tuple (optional)
+                A tuple with the shape of the indexed object
+            array_params : dict
+                Parameters to create the array name for the indexed object
+            add_offset : bool, str
+                If True a fixed offset is added to the indices
+            dependent : ODEObject
+                If given the count of this IndexedObject will follow as a
+                fractional count based on the count of the dependent object
+            """
+            super(ParameterIndexedObject, self).__init__(basename, indices, shape,
+                array_params, add_offset, dependent)
+            self._parameter = parameter
+    @property
+    def parameter(self):
+        return self._parameter
 
 class Argument(ODEValueObject):
     """
