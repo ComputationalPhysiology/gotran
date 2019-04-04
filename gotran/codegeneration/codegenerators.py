@@ -1331,7 +1331,8 @@ class CCodeGenerator(BaseCodeGenerator):
                         name = "{0}[{1}]".format(expr.basename,
                                                  self._parameter_enum_val(expr.parameter))
                     else:
-                        print((expr.basename, expr.enum))
+                        warning("Cannot enumerate expression {0} of type {1}".
+                                 format(expr.basename, type(expr)))
                         name = "{0}[{1}]".format(expr.basename, expr.enum)
                 else:
                     name = "{0}".format(self.obj_name(expr))
