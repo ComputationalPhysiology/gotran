@@ -27,12 +27,14 @@ from modelparameters.codegeneration import ccode, cppcode, pythoncode, \
      sympycode, matlabcode, juliacode
 
 # Gotran imports
+import gotran.model.odeobjects
 from gotran.common import check_arg, check_kwarg, error, warning
 from gotran.common.options import parameters
 from gotran.model.ode import ODE
 from gotran.model.odeobjects import Comment, ODEObject
 from gotran.model.expressions import Expression, Intermediate, \
-     IndexedExpression, AlgebraicExpression
+     IndexedExpression, StateIndexedExpression, ParameterIndexedExpression, \
+     AlgebraicExpression
 from gotran.codegeneration.codecomponent import CodeComponent
 from gotran.codegeneration.algorithmcomponents import *
 from gotran.codegeneration.solvercomponents import *
@@ -83,8 +85,17 @@ class BaseCodeGenerator(object):
         # Start out with a copy of the global parameters
         return parameters.generation.copy()
 
+    def states_enum_code(self, ode, indent=0):
+        msg = "{0} does not implement enum based indexing".format(self.__class__.__name__)
+        raise NotImplementedError(msg)
+
+    def parameters_enum_code(self, ode, indent=0):
+        msg = "{0} does not implement enum based indexing".format(self.__class__.__name__)
+        raise NotImplementedError(msg)
+
     def code_dict(self, ode,
                   monitored=None,
+                  include_enum=True,
                   include_init=True,
                   include_index_map=True,
                   indent=0):
@@ -114,6 +125,16 @@ class BaseCodeGenerator(object):
         functions = self.params.functions
 
         code = OrderedDict()
+
+        # If generate enum for states and parameters
+        if include_enum:
+            # Ensure that this does not break for languages without enums
+            # TODO: Do this in a cleaner way than catching an exception
+            try:
+                code["states_enum"] = self.states_enum_code(ode, indent)
+                code["parameters_enum"] = self.parameters_enum_code(ode, indent)
+            except NotImplementedError as e:
+                pass
 
         # If generate init code
         if include_init:
@@ -267,7 +288,7 @@ class BaseCodeGenerator(object):
                                      cls.closure_start)
 
                 ret_lines = cls.indent_and_split_lines(\
-                    line, indent+1, ret_lines)
+                    line, indent+1, ret_lines, no_line_ending=no_line_ending)
 
                 # Add closure if any
                 if cls.closure_end:
@@ -1011,6 +1032,15 @@ class CCodeGenerator(BaseCodeGenerator):
         prototype.append(body_lines)
         return prototype
 
+    @classmethod
+    def _state_enum_val(cls, state):
+        # TODO: Check that state.name is valid suffix to an identifier in C
+        return "STATE_{0}".format(state.name)
+
+    @classmethod
+    def _parameter_enum_val(cls, parameter):
+        # TODO: Check that parameter.name is valid suffix to an identifier in C
+        return "PARAM_{0}".format(parameter.name)
 
     def _init_arguments(self, comp):
 
@@ -1064,7 +1094,8 @@ class CCodeGenerator(BaseCodeGenerator):
                 for i, state in enumerate(full_states):
                     if state not in used_states:
                         continue
-                    add_obj(state, i, states_name, state_offset)
+                    #add_obj(state, i, states_name, state_offset)
+                    add_obj(state, self._state_enum_val(state), states_name, state_offset)
 
         # Add parameters code if not numerals
         if "p" in default_arguments and \
@@ -1083,7 +1114,8 @@ class CCodeGenerator(BaseCodeGenerator):
                     if param not in used_parameters or \
                            param in field_parameters:
                         continue
-                    add_obj(param, i, parameters_name, parameter_offset)
+                    #add_obj(param, i, parameters_name, parameter_offset)
+                    add_obj(param, self._parameter_enum_val(param), parameters_name, parameter_offset)
 
                 field_parameters_name = params.parameters.field_array_name
                 for i, param in enumerate(field_parameters):
@@ -1105,6 +1137,30 @@ class CCodeGenerator(BaseCodeGenerator):
 
         return body_lines
 
+    def states_enum_code(self, ode, indent=0):
+        """
+        Generate enum for state variables
+        """
+        indent_str = self.indent * " "
+        member_lines = ["{0}{1},".format(indent_str, self._state_enum_val(state)) for state in ode.states]
+        enum = ["enum state {"]
+        enum.extend(member_lines)
+        enum.append("{0}{1},".format(indent_str, "NUM_STATES"))
+        enum.append("};")
+        return "\n".join(enum)
+
+    def parameters_enum_code(self, ode, indent=0):
+        """
+        Generate enum for model parameters
+        """
+        indent_str = self.indent * " "
+        member_lines = ["{0}{1},".format(indent_str, self._parameter_enum_val(parameter)) for parameter in ode.parameters]
+        enum = ["enum parameter {"]
+        enum.extend(member_lines)
+        enum.append("{0}{1},".format(indent_str, "NUM_PARAMS"))
+        enum.append("};")
+        return "\n".join(enum)
+
     def init_states_code(self, ode, indent=0):
         """
         Generate code for setting initial condition
@@ -1114,9 +1170,14 @@ class CCodeGenerator(BaseCodeGenerator):
         offset = "{0}_offset + ".format(states_name) \
                  if self.params.code.states.add_offset else ""
         float_str = "" if self.params.code.float_precision == "double" else "f"
-        body_lines = ["{0}[{1}{2}] = {3}{4}; // {5}".format(\
-            states_name, offset, i, state.init, float_str, state.name) \
-                      for i, state in enumerate(ode.full_states)]
+        enum_based_indexing = True # FIXME: Make this an option the user can control
+        body_lines = []
+
+        for i, state in enumerate(ode.full_states):
+            index = self._state_enum_val(state) if enum_based_indexing else i
+            line = "{0}[{1}{2}] = {3}{4}; // {5}".format(\
+                states_name, offset, index, state.init, float_str, state.name)
+            body_lines.append(line)
 
         # Add function prototype
         init_function = self.wrap_body_with_function_prototype(\
@@ -1134,10 +1195,14 @@ class CCodeGenerator(BaseCodeGenerator):
         offset = "{0}_offset + ".format(parameter_name) \
                  if self.params.code.parameters.add_offset else ""
         float_str = "" if self.params.code.float_precision == "double" else "f"
+        enum_based_indexing = True # FIXME: Make this an option the user can control
         body_lines = []
-        body_lines = ["{0}[{1}{2}] = {3}{4}; // {5}".format(\
-            parameter_name, offset, i, param.init, float_str, param.name) \
-                      for i, param in enumerate(ode.parameters)]
+
+        for i, param in enumerate(ode.parameters):
+            index = self._parameter_enum_val(param) if enum_based_indexing else i
+            line = "{0}[{1}{2}] = {3}{4}; // {5}".format(\
+                parameter_name, offset, index, param.init, float_str, param.name)
+            body_lines.append(line)
 
         # Add function prototype
         init_function = self.wrap_body_with_function_prototype(\
@@ -1254,8 +1319,23 @@ class CCodeGenerator(BaseCodeGenerator):
                 body_lines.append("")
                 body_lines.append("// " + str(expr))
                 continue
-            elif isinstance(expr, IndexedExpression):
-                name = "{0}".format(self.obj_name(expr))
+            elif isinstance(expr, IndexedExpression) \
+                or isinstance(expr, StateIndexedExpression)\
+                or isinstance(expr, ParameterIndexedExpression):
+                if params['body']['use_enum']:
+
+                    if isinstance(expr, StateIndexedExpression):
+                        name = "{0}[{1}]".format(expr.basename,
+                                                 self._state_enum_val(expr.state))
+                    elif isinstance(expr, ParameterIndexedExpression):
+                        name = "{0}[{1}]".format(expr.basename,
+                                                 self._parameter_enum_val(expr.parameter))
+                    else:
+                        warning("Cannot enumerate expression {0} of type {1}".
+                                 format(expr.basename, type(expr)))
+                        name = "{0}[{1}]".format(expr.basename, expr.enum)
+                else:
+                    name = "{0}".format(self.obj_name(expr))
             elif expr.name in duplicates:
                 if expr.name not in declared_duplicates:
                     name = "{0} {1}".format(self.float_type, \
@@ -2373,8 +2453,6 @@ class JuliaCodeGenerator(BaseCodeGenerator):
         params = parameters.generation.copy()
         params.code.default_arguments = "spt"
         params.code.array.index_offset = 1
-        # from IPython import embed; embed()
-        # exit()
         params.functions.rhs['result_name'] = 'dy'
         params.code.states['array_name'] = 'y'
 

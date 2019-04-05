@@ -30,7 +30,8 @@ from modelparameters.codegeneration import sympycode
 # Local imports
 from gotran.common import error, info, debug, check_arg, check_kwarg, \
      scalars, Timer, warning, tuplewrap, parameters
-from gotran.model.odeobjects import State, Parameter, IndexedObject, Comment, cmp
+from gotran.model.odeobjects import State, Parameter, IndexedObject, \
+     StateIndexedObject, ParameterIndexedObject, Comment, cmp
 from gotran.model.expressions import *
 from gotran.model.odecomponent import ODEComponent
 from gotran.model.ode import ODE
@@ -122,7 +123,6 @@ class CodeComponent(ODEComponent):
             self.param_state_replace_dict = {}
 
         self.results = list(results.keys())
-
         # Recreate body expressions based on the given result_expressions
         if results:
             results, body_expressions = self._body_from_results(**results)
@@ -136,7 +136,7 @@ class CodeComponent(ODEComponent):
         self.additional_arguments = additional_arguments
 
     def add_indexed_expression(self, basename, indices, expr, add_offset=False,
-                               dependent=None):
+                               dependent=None, enum=None):
         """
         Add an indexed expression using a basename and the indices
 
@@ -156,7 +156,6 @@ class CodeComponent(ODEComponent):
         """
         # Create an IndexedExpression in the present component
         timer = Timer("Add indexed expression")
-
         indices = tuplewrap(indices)
 
         # Check that provided indices fit with the registered shape
@@ -170,8 +169,20 @@ class CodeComponent(ODEComponent):
                       "in dim {0}: {1}>={2}".format(dim+1, index, shape_ind))
 
         # Create the indexed expression
-        expr = IndexedExpression(basename, indices, expr, self.shapes[basename], \
+        if enum is None:
+            expr = IndexedExpression(basename, indices, expr, self.shapes[basename], \
+                                 self._params.array, add_offset, dependent, enum=enum)
+        elif isinstance(enum, State):
+            state = enum
+            expr = StateIndexedExpression(basename, indices, expr, state, self.shapes[basename], \
                                  self._params.array, add_offset, dependent)
+        elif isinstance(enum, Parameter):
+            parameter = enum
+            expr = ParameterIndexedExpression(basename, indices, expr, parameter, \
+                                              self.shapes[basename], \
+                                              self._params.array, add_offset, dependent)
+        else:
+            error("enum must be State or Parameter. Was {0}".format(type(enum)))
         self._register_component_object(expr, dependent)
 
         return expr.sym
@@ -245,7 +256,7 @@ class CodeComponent(ODEComponent):
         for param in field_parameters:
             if not isinstance(self.root.present_ode_objects[param], Parameter):
                 error("Field parameter '{0}' is not a parameter in the "\
-                      "'{1}'".format(param, oself.root))
+                      "'{1}'".format(param, self.root))
 
         state_repr = self._params["states"]["representation"]
         state_name = self._params["states"]["array_name"]
@@ -261,7 +272,7 @@ class CodeComponent(ODEComponent):
         # Add states
         states = param_state_map["states"]
         for ind, state in enumerate(self.root.full_states):
-            states[state] = IndexedObject(state_name, ind, \
+            states[state] = StateIndexedObject(state_name, ind, state,\
                             (self.root.num_full_states,), array_params, state_offset)
 
         # Add parameters
@@ -279,7 +290,7 @@ class CodeComponent(ODEComponent):
                 shape = (self.num_parameters,)
                 offset = param_offset
 
-            parameters[param] = IndexedObject(basename, index, \
+            parameters[param] = ParameterIndexedObject(basename, index, param,\
                                               shape, array_params, offset)
 
         # If not having named parameters
@@ -685,7 +696,7 @@ class CodeComponent(ODEComponent):
 
             assert(isinstance(expr, Expression))
 
-            # 2) Check for expression optimzations
+            # 2) Check for expression optimizations
             if not (optimize_exprs == "none" or expr in result_expressions):
 
                 timer_opt = Timer("Handle expression optimization for {0}".format(self.name))
@@ -772,7 +783,7 @@ class CodeComponent(ODEComponent):
 
             # Store a map of old name this will preserve the ordering of
             # expressions with the same name, similar to how this is treated in
-            # the actuall ODE.
+            # the actual ODE.
             present_ode_objects[expr.name] = expr
             old_present_ode_objects[expr.name] = expr
 
@@ -786,8 +797,10 @@ class CodeComponent(ODEComponent):
 
                 # If the expression is an IndexedExpression with the same basename
                 # as the result name we just recreate it
-                if isinstance(expr, IndexedExpression) and \
-                       result_name == expr.basename:
+                if (isinstance(expr, IndexedExpression) \
+                        or isinstance(expr, StateIndexedExpression) \
+                        or isinstance(expr, ParameterIndexedExpression)) \
+                    and result_name == expr.basename:
 
                     new_expr = recreate_expression(expr, der_replace_dict, \
                                                    replace_dict)
@@ -797,11 +810,18 @@ class CodeComponent(ODEComponent):
 
                     # Get index based on the original ordering
                     index = (result_expressions.index(expr),)
-
                     # Create the IndexedExpression
                     # NOTE: First replace any derivative expression replaces, then state and
                     # NOTE: params
-                    new_expr = IndexedExpression(result_name, index, expr.expr.\
+                    if isinstance(expr, StateDerivative):
+                        new_expr = StateIndexedExpression(result_name, index, expr.expr.\
+                                                 xreplace(der_replace_dict).\
+                                                 xreplace(replace_dict), \
+                                                 expr.state,
+                                                 (len(results[result_name]), ),
+                                                 array_params=self._params.array)
+                    else:
+                        new_expr = IndexedExpression(result_name, index, expr.expr.\
                                                  xreplace(der_replace_dict).\
                                                  xreplace(replace_dict), \
                                                  (len(results[result_name]), ),
@@ -869,7 +889,8 @@ class CodeComponent(ODEComponent):
                 new_expr = IndexedExpression(body_name, ind, expr.expr.\
                                              xreplace(der_replace_dict).\
                                              xreplace(replace_dict),
-                                             array_params=self._params.array)
+                                             array_params=self._params.array,
+                                             enum=expr.name)
 
                 if body_name not in self.indexed_map:
                     self.indexed_map[body_name] = OrderedDict()
@@ -883,12 +904,11 @@ class CodeComponent(ODEComponent):
 
                 del timer_body
 
-            # 6) If the expression is just and ordinary body expression and we
+            # 6) If the expression is just an ordinary body expression and we
             #    are using named representation of body
             else:
 
                 timer_expr = Timer("Handle expressions for {0}".format(self.name))
-
                 # If the expression is a state derivative we need to add a
                 # replacement for the Derivative symbol
                 if isinstance(expr, StateDerivative):

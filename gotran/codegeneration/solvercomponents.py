@@ -184,7 +184,7 @@ class ExplicitEuler(CodeComponent):
             dependent = expr if recount else None
             self.add_indexed_expression(result_name, (i,), \
                                         expr.state.sym+dt*expr.sym, offset_str, \
-                                        dependent=dependent)
+                                        dependent=dependent, enum=expr.state)
 
         # Call recreate body with the solver expressions as the result
         # expressions
@@ -273,14 +273,14 @@ class RushLarsen(CodeComponent):
                     result_name, (i,), expr.state.sym+Conditional(\
                         abs(linearized)>delta, expr.sym/linearized*\
                         (sp.exp(linearized*dt)-1.0), dt*expr.sym), \
-                    offset_str, dependent=dependent)
+                    offset_str, dependent=dependent, enum=expr.state)
 
             else:
 
                 # Explicit Euler step
                 self.add_indexed_expression(result_name, (i,), \
                                             expr.state.sym+dt*expr.sym, offset_str, \
-                                            dependent=dependent)
+                                            dependent=dependent, enum=expr.state)
 
         if might_take_time:
             info(" done")
@@ -363,14 +363,15 @@ class RushLarsenOneStep(CodeComponent):
                 # Solve "exact" using exp
                 self.add_indexed_expression(\
                     result_name, (i,), prev+expr.sym/linearized*\
-                    (sp.exp(linearized*dt)-1.0), offset_str, dependent=dependent)
+                    (sp.exp(linearized*dt)-1.0), offset_str, dependent=dependent,
+                    enum=expr.state)
 
             else:
 
                 # Explicit Euler step
                 self.add_indexed_expression(result_name, (i,), \
                                             prev+dt*expr.sym, offset_str, \
-                                            dependent=dependent)
+                                            dependent=dependent, enum=expr.state)
 
         # Call recreate body with the solver expressions as the result
         # expressions
@@ -435,18 +436,19 @@ class GeneralizedRushLarsen(CodeComponent):
             if expr_diff.is_zero:
                 self.add_indexed_expression(\
                     result_name, (i,), expr.state.sym+dt*expr.sym, \
-                    offset_str, dependent=dependent)
+                    offset_str, dependent=dependent, enum=expr.state)
                 continue
 
             linearized = self.add_intermediate(\
-                expr.name+"_linearized", expr_diff, dependent=dependent)
+                expr.name+"_linearized", expr_diff, dependent=dependent,
+                enum=expr.state)
 
             # Solve "exact" using exp
             self.add_indexed_expression(\
                 result_name, (i,), expr.state.sym+Conditional(\
                     abs(linearized)>delta, expr.sym/linearized*\
                     (sp.exp(linearized*dt)-1.0), dt*expr.sym), \
-                offset_str, dependent=dependent)
+                offset_str, dependent=dependent, enum=expr.state)
 
         # Call recreate body with the solver expressions as the result
         # expressions
@@ -522,7 +524,8 @@ class SimplifiedImplicitEuler(CodeComponent):
 
             # Add simplified single Implicit Euler step
             self.add_indexed_expression(result_name, (i,), \
-                expr.state.sym+dt*expr.sym/(1-dt*diag_jac), offset_str)
+                expr.state.sym+dt*expr.sym/(1-dt*diag_jac), offset_str,
+                enum=expr.state)
 
         # Call recreate body with the solver expressions as the result
         # expressions

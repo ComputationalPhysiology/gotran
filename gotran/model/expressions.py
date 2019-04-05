@@ -18,7 +18,8 @@
 __all__ = ["Expression", "DerivativeExpression", "AlgebraicExpression", \
            "StateExpression", "StateSolution", "RateExpression", \
            "Intermediate", "StateDerivative", "Derivatives", \
-           "IndexedExpression", "recreate_expression"]
+           "IndexedExpression", "StateIndexedExpression", \
+           "ParameterIndexedExpression", "recreate_expression"]
 
 # ModelParameters imports
 from modelparameters.parameters import SlaveParam
@@ -40,7 +41,7 @@ def recreate_expression(expr, *replace_dicts, **kwargs):
     if not replace_type in ["xreplace", "subs"]:
         error("Valid alternatives for replace_type is: 'xreplace', "\
               "'subs' got {0}".format(replace_type))
-    
+
     # First do the replacements
     sympyexpr = expr.expr
     for replace_dict in replace_dicts:
@@ -63,7 +64,15 @@ def recreate_expression(expr, *replace_dicts, **kwargs):
     elif isinstance(expr, IndexedExpression):
         new_expr = IndexedExpression(expr.basename, expr.indices, \
                                      sympyexpr, expr.shape, expr._array_params,
-                                     expr._offset_str)
+                                     expr._offset_str, enum=expr.enum)
+    elif isinstance(expr, StateIndexedExpression):
+        new_expr = StateIndexedExpression(expr.basename, expr.indices, \
+                                          sympyexpr, expr.state, expr.shape, \
+                                          expr._array_params, expr._offset_str)
+    elif isinstance(expr, ParameterIndexedExpression):
+        new_expr = ParameterIndexedExpression(expr.basename, expr.indices, \
+                                          sympyexpr, expr.state, expr.parameter, \
+                                          expr._array_params, expr._offset_str)
     else:
         error("Should not reach here")
 
@@ -185,13 +194,13 @@ class Expression(ODEValueObject):
         """
         Return a pretty latex representation of the Expression object
         """
-        
+
         return "${0} = {1}$".format(self._repr_latex_name(),
                                     self._repr_latex_expr())
 
     def _repr_latex_expr(self):
         return latex(self.expr)
-    
+
     def _repr_latex_name(self):
         return "{0}".format(latex(self.name))
 
@@ -240,7 +249,7 @@ class StateSolution(Intermediate):
         # Flag solved state
         state._is_solved = True
         self._state = state
-        
+
     @property
     def state(self):
         return self._state
@@ -309,7 +318,7 @@ class DerivativeExpression(Intermediate):
     def _repr_latex_name(self):
         return "\\frac{{d{0}}}{{d{1}}}".format(latex(self._der_expr.name),
                                                latex(self._dep_var.name))
-        
+
 class RateExpression(Intermediate):
     """
     A sub class of Expression holding single rates
@@ -338,7 +347,7 @@ class RateExpression(Intermediate):
         between
         """
         return self._to_state, self._from_state
-    
+
 class StateExpression(Expression):
     """
     An expression which determines a State.
@@ -365,7 +374,7 @@ class StateExpression(Expression):
 
         super(StateExpression, self).__init__(name, expr, dependent)
         self._state = state
-        
+
     @property
     def state(self):
         return self._state
@@ -395,7 +404,7 @@ class StateDerivative(StateExpression):
             If given the count of this StateDerivative will follow as a
             fractional count based on the count of the dependent object
         """
-        
+
         check_arg(state, State, 0, StateDerivative)
         sym = sp.Derivative(state.sym, state.time.sym)
         sym._assumptions["real"] = True
@@ -403,7 +412,7 @@ class StateDerivative(StateExpression):
         sym._assumptions["commutative"] = True
         sym._assumptions["hermitian"] = True
         sym._assumptions["complex"] = True
-        
+
         # Call base class constructor
         super(StateDerivative, self).__init__(sympycode(sym), state, expr, \
                                               dependent)
@@ -468,7 +477,7 @@ class IndexedExpression(IndexedObject, Expression):
     associated with it
     """
     def __init__(self, basename, indices, expr, shape=None, \
-                 array_params=None, add_offset="", dependent=None):
+                 array_params=None, add_offset="", dependent=None, enum=None):
         """
         Create an IndexedExpression with an associated basename used in code
         generation.
@@ -478,7 +487,7 @@ class IndexedExpression(IndexedObject, Expression):
         basename : str
             The basename of the multi index Expression
         indices : tuple of ints
-            The indices 
+            The indices
         expr : sympy.Basic
             The expression
         shape : tuple (optional)
@@ -490,10 +499,84 @@ class IndexedExpression(IndexedObject, Expression):
         dependent : ODEObject
             If given the count of this IndexedExpression will follow as a
             fractional count based on the count of the dependent object
+        enum : str
+            String that can be used for enumeration
         """
-        
         IndexedObject.__init__(self, basename, indices, shape, array_params, \
-                               add_offset, dependent)
+                               add_offset, dependent, enum)
+        Expression.__init__(self, self.name, expr, dependent)
+
+class StateIndexedExpression(StateIndexedObject, Expression):
+    """
+    An expression which represents an expression with a fixed state index
+    associated with it
+    """
+    def __init__(self, basename, indices, expr, state, shape=None, \
+                 array_params=None, add_offset="", dependent=None):
+        """
+        Create an IndexedExpression with an associated basename used in code
+        generation.
+
+        Arguments
+        ---------
+        basename : str
+            The basename of the multi index Expression
+        indices : tuple of ints
+            The indices
+        expr : sympy.Basic
+            The expression
+        state : State
+            The state the expression index corresponds to. Used for enumeration.
+        shape : tuple (optional)
+            A tuple with the shape of the indexed expression
+        array_params : dict
+            Parameters to create the array name for the indexed object
+        add_offset : bool, str
+            If True a fixed offset is added to the indices
+        dependent : ODEObject
+            If given the count of this IndexedExpression will follow as a
+            fractional count based on the count of the dependent object
+
+        """
+
+        StateIndexedObject.__init__(self, basename, indices, state, shape, \
+                                    array_params, add_offset, dependent)
+        Expression.__init__(self, self.name, expr, dependent)
+
+class ParameterIndexedExpression(ParameterIndexedObject, Expression):
+    """
+    An expression which represents an expression with a fixed state index
+    associated with it
+    """
+    def __init__(self, basename, indices, expr, parameter, shape=None, \
+                 array_params=None, add_offset="", dependent=None):
+        """
+        Create an IndexedExpression with an associated basename used in code
+        generation.
+
+        Arguments
+        ---------
+        basename : str
+            The basename of the multi index Expression
+        indices : tuple of ints
+            The indices
+        expr : sympy.Basic
+            The expression
+        parameter : Parameter
+            The parameter the expression index corresponds to. Used for enumeration.
+        shape : tuple (optional)
+            A tuple with the shape of the indexed expression
+        array_params : dict
+            Parameters to create the array name for the indexed object
+        add_offset : bool, str
+            If True a fixed offset is added to the indices
+        dependent : ODEObject
+            If given the count of this IndexedExpression will follow as a
+            fractional count based on the count of the dependent object
+        """
+
+        ParameterIndexedObject.__init__(self, basename, indices, parameter, shape, \
+                                    array_params, add_offset, dependent)
         Expression.__init__(self, self.name, expr, dependent)
 
 # Tuple with Derivative types, for type checking
