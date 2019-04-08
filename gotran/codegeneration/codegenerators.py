@@ -1094,8 +1094,11 @@ class CCodeGenerator(BaseCodeGenerator):
                 for i, state in enumerate(full_states):
                     if state not in used_states:
                         continue
-                    #add_obj(state, i, states_name, state_offset)
-                    add_obj(state, self._state_enum_val(state), states_name, state_offset)
+
+                    if params['body']['use_enum']:
+                        add_obj(state, self._state_enum_val(state), states_name, state_offset)
+                    else:
+                        add_obj(state, i, states_name, state_offset)
 
         # Add parameters code if not numerals
         if "p" in default_arguments and \
@@ -1114,8 +1117,12 @@ class CCodeGenerator(BaseCodeGenerator):
                     if param not in used_parameters or \
                            param in field_parameters:
                         continue
-                    #add_obj(param, i, parameters_name, parameter_offset)
-                    add_obj(param, self._parameter_enum_val(param), parameters_name, parameter_offset)
+
+                    if params['body']['use_enum']:
+                        add_obj(param, self._parameter_enum_val(param), parameters_name, parameter_offset)
+                    else:
+                        add_obj(param, i, parameters_name, parameter_offset)
+                    
 
                 field_parameters_name = params.parameters.field_array_name
                 for i, param in enumerate(field_parameters):
