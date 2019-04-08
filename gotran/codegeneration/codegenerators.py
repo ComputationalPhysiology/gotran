@@ -95,7 +95,6 @@ class BaseCodeGenerator(object):
 
     def code_dict(self, ode,
                   monitored=None,
-                  include_enum=True,
                   include_init=True,
                   include_index_map=True,
                   indent=0):
@@ -127,7 +126,7 @@ class BaseCodeGenerator(object):
         code = OrderedDict()
 
         # If generate enum for states and parameters
-        if include_enum:
+        if self.params.code['body']['use_enum']:
             # Ensure that this does not break for languages without enums
             # TODO: Do this in a cleaner way than catching an exception
             try:
@@ -1094,8 +1093,11 @@ class CCodeGenerator(BaseCodeGenerator):
                 for i, state in enumerate(full_states):
                     if state not in used_states:
                         continue
-                    #add_obj(state, i, states_name, state_offset)
-                    add_obj(state, self._state_enum_val(state), states_name, state_offset)
+
+                    if params['body']['use_enum']:
+                        add_obj(state, self._state_enum_val(state), states_name, state_offset)
+                    else:
+                        add_obj(state, i, states_name, state_offset)
 
         # Add parameters code if not numerals
         if "p" in default_arguments and \
@@ -1114,8 +1116,12 @@ class CCodeGenerator(BaseCodeGenerator):
                     if param not in used_parameters or \
                            param in field_parameters:
                         continue
-                    #add_obj(param, i, parameters_name, parameter_offset)
-                    add_obj(param, self._parameter_enum_val(param), parameters_name, parameter_offset)
+
+                    if params['body']['use_enum']:
+                        add_obj(param, self._parameter_enum_val(param), parameters_name, parameter_offset)
+                    else:
+                        add_obj(param, i, parameters_name, parameter_offset)
+                    
 
                 field_parameters_name = params.parameters.field_array_name
                 for i, param in enumerate(field_parameters):
@@ -1170,7 +1176,8 @@ class CCodeGenerator(BaseCodeGenerator):
         offset = "{0}_offset + ".format(states_name) \
                  if self.params.code.states.add_offset else ""
         float_str = "" if self.params.code.float_precision == "double" else "f"
-        enum_based_indexing = True # FIXME: Make this an option the user can control
+
+        enum_based_indexing = self.params.code['body']['use_enum']
         body_lines = []
 
         for i, state in enumerate(ode.full_states):
@@ -1195,7 +1202,7 @@ class CCodeGenerator(BaseCodeGenerator):
         offset = "{0}_offset + ".format(parameter_name) \
                  if self.params.code.parameters.add_offset else ""
         float_str = "" if self.params.code.float_precision == "double" else "f"
-        enum_based_indexing = True # FIXME: Make this an option the user can control
+        enum_based_indexing = self.params.code['body']['use_enum']
         body_lines = []
 
         for i, param in enumerate(ode.parameters):

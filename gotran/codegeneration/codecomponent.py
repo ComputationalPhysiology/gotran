@@ -171,7 +171,7 @@ class CodeComponent(ODEComponent):
         # Create the indexed expression
         if enum is None:
             expr = IndexedExpression(basename, indices, expr, self.shapes[basename], \
-                                 self._params.array, add_offset, dependent, enum=enum)
+                                     self._params.array, add_offset, dependent, enum=enum)
         elif isinstance(enum, State):
             state = enum
             expr = StateIndexedExpression(basename, indices, expr, state, self.shapes[basename], \
