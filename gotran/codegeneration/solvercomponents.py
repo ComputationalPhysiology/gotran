@@ -440,8 +440,7 @@ class GeneralizedRushLarsen(CodeComponent):
                 continue
 
             linearized = self.add_intermediate(\
-                expr.name+"_linearized", expr_diff, dependent=dependent,
-                enum=expr.state)
+                expr.name+"_linearized", expr_diff, dependent=dependent)
 
             # Solve "exact" using exp
             self.add_indexed_expression(\

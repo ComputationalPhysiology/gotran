@@ -162,7 +162,7 @@ def main(filename, params):
         else:
             warning(result.message)
 
-    tsteps = np.linspace(t0, t1, t1/dt+1)
+    tsteps = np.linspace(t0, t1, int(t1/dt) + 1)
 
     # What solver should we use
     if params.solver == "scipy":
