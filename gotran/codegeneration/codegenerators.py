@@ -1453,6 +1453,7 @@ public:
 class CUDACodeGenerator(CCodeGenerator):
     # Class attributes
     language = "CUDA"
+    indent = 4
 
     def __init__(self, params=None):
         super(CUDACodeGenerator, self).__init__(params)
