@@ -1460,11 +1460,22 @@ public:
 class CUDACodeGenerator(CCodeGenerator):
     # Class attributes
     language = "CUDA"
+    indent = 4
+
+    def __init__(self, params=None):
+        super(CUDACodeGenerator, self).__init__(params)
+        if not self.params.code.body.use_enum:
+            error("code.body.use_enum cannot be disabled for CUDA")
+        if self.params.code.states.representation == "array":
+            error("array representation of states is unsupported for CUDA")
+        if self.params.code.parameters.representation == "array":
+            error("array representation of parameters is unsupported for CUDA")
 
     @staticmethod
     def default_parameters():
         # Start out with a copy of the global parameters
         params = parameters.generation.copy()
+        params.code.body.use_enum = True
         params.code.states.add_offset = True
         params.code.states.array_name = "d_states"
         params.code.parameters.add_field_offset = True
@@ -1492,6 +1503,105 @@ class CUDACodeGenerator(CCodeGenerator):
         return CCodeGenerator.wrap_body_with_function_prototype(\
             body_lines, name, args, return_type, comment, const)
 
+    def _init_arguments(self, comp):
+        check_arg(comp, CodeComponent)
+        params = self.params.code
+        default_arguments = params.default_arguments \
+                            if comp.use_default_arguments else ""
+
+        field_parameters = params["parameters"]["field_parameters"]
+
+        # If empty
+        # FIXME: Get rid of this by introducing a ListParam type in modelparameters
+        if len(field_parameters) == 1 and field_parameters[0] == "":
+            field_parameters = []
+
+        #state_offset = params["states"]["add_offset"]
+        parameter_offset = params["parameters"]["add_offset"]
+        field_parameter_offset = params["parameters"]["add_field_offset"]
+
+        # Check if comp defines used_states if not use the root components
+        # full_states attribute
+        # FIXME: No need for full_states here...
+        full_states = comp.root.full_states
+        used_states = comp.used_states if hasattr(comp, "used_states") else \
+                      full_states
+
+        used_parameters = comp.used_parameters if hasattr(comp, "used_parameters") else \
+                          comp.root.parameters
+        all_parameters = comp.root.parameters
+
+        field_parameters = [param for param in all_parameters \
+                            if param.name in field_parameters]
+
+        # Start building body
+        body_lines = []
+        def add_state_obj(state, enum_val, array_name):
+            index_str = "n_nodes * {0} + thread_ind".format(enum_val)
+            body_lines.append("const {0} {1} = {2}[{3}]".format(\
+                self.float_type, state.name, array_name, index_str))
+        def add_obj(obj, i, array_name, add_offset=False):
+            offset = "{0}_offset + ".format(array_name) if add_offset else ""
+            body_lines.append("const {0} {1} = {2}[{3}{4}]".format(\
+                self.float_type, self.obj_name(obj), array_name, offset, i))
+
+        if "s" in default_arguments and used_states:
+
+            # Generate state assign code
+            if params.states.representation == "named":
+
+                states_name = params.states.array_name
+                body_lines.append("")
+                body_lines.append("// Assign states")
+
+                # If all states are used
+                for i, state in enumerate(full_states):
+                    if state not in used_states:
+                        continue
+                    #add_obj(state, i, states_name, state_offset)
+                    #add_obj(state, self._state_enum_val(state), states_name, state_offset)
+                    add_state_obj(state, self._state_enum_val(state), states_name)
+
+        # Add parameters code if not numerals
+        if "p" in default_arguments and \
+               params.parameters.representation in ["named", "array"] and \
+               used_parameters:
+
+            # Generate parameters assign code
+            if params.parameters.representation == "named":
+
+                parameters_name = params.parameters.array_name
+                body_lines.append("")
+                body_lines.append("// Assign parameters")
+
+                # If all states are used
+                for i, param in enumerate(all_parameters):
+                    if param not in used_parameters or \
+                           param in field_parameters:
+                        continue
+                    #add_obj(param, i, parameters_name, parameter_offset)
+                    add_obj(param, self._parameter_enum_val(param), parameters_name, parameter_offset)
+
+                field_parameters_name = params.parameters.field_array_name
+                for i, param in enumerate(field_parameters):
+                    if param not in used_parameters:
+                        continue
+                    add_obj(param, i, field_parameters_name,
+                            field_parameter_offset)
+
+        # If using an array for the body variables and b is not passed as argument
+        if params.body.representation != "named" and \
+               not params.body.in_signature and \
+               params.body.array_name in comp.shapes:
+
+            body_name = params.body.array_name
+            body_lines.append("")
+            body_lines.append("// Body array {0}".format(body_name))
+            body_lines.append("{0} {1}[{2}]".format(self.float_type, body_name, \
+                                                    comp.shapes[body_name][0]))
+
+        return body_lines
+
     def init_states_code(self, ode, indent=0):
         """
         Generate code for setting initial condition
@@ -1503,19 +1613,19 @@ class CUDACodeGenerator(CCodeGenerator):
         n_nodes = self.params.code.n_nodes
         if n_nodes > 0:
             body_lines.append(
-                "if (thread_ind >= {0}) return; "
-                "// number of nodes exceeded".format(n_nodes))
-        body_lines.append("const int {0}_offset = thread_ind*{1}".format(\
-            array_name, ode.num_full_states))
+                "if (thread_ind >= n_nodes) return; "
+                "// number of nodes exceeded")
+        #body_lines.append("const int {0}_offset = thread_ind*{1}".format(\
+        #    array_name, ode.num_full_states))
 
         # Main body
-        body_lines.extend("{0}[{0}_offset+{1}] = {2}{3}; // {4}".format(
-                              array_name, i, state.init, float_str, state.name)
+        body_lines.extend("{0}[n_nodes * {1} + thread_ind] = {2}{3}; // {4}".format(
+                              array_name, self._state_enum_val(state), state.init, float_str, state.name)
                           for i, state in enumerate(ode.full_states))
 
         # Add function prototype
         init_function = self.wrap_body_with_function_prototype(
-            body_lines, "init_state_values", "{0} *{1}".format(\
+            body_lines, "init_state_values", "{0} *{1}, const unsigned int n_nodes".format(\
                 self.float_type, array_name),
             comment="Init state values", kernel=True)
 
@@ -1730,9 +1840,6 @@ class CUDACodeGenerator(CCodeGenerator):
         body_lines.append(
             "if (thread_ind >= n_nodes) return; "
             "// number of nodes exceeded")
-        body_lines.append(
-            "const int {0}_offset = thread_ind*{1}".format(\
-                states_name, comp.root.num_full_states))
 
         if len(field_parameters) > 0:
             body_lines.append("const int {0}_offset = thread_ind*{1}".format(
@@ -1759,8 +1866,25 @@ class CUDACodeGenerator(CCodeGenerator):
                 body_lines.append("")
                 body_lines.append("// " + str(expr))
                 continue
-            elif isinstance(expr, IndexedExpression):
-                name = "{0}".format(self.obj_name(expr))
+            elif isinstance(expr, IndexedExpression) \
+                or isinstance(expr, StateIndexedExpression)\
+                or isinstance(expr, ParameterIndexedExpression):
+
+                if params['body']['use_enum']:
+                    if isinstance(expr, StateIndexedExpression):
+                        state_enum = self._state_enum_val(expr.state)
+                        index_str = "{0} * {1} + {2}".format("n_nodes", state_enum, "thread_ind")
+                        name = "{0}[{1}]".format(expr.basename, index_str)
+                        #name = "{0}[{1}]".format(expr.basename,self._state_enum_val(expr.state))
+                    elif isinstance(expr, ParameterIndexedExpression):
+                        name = "{0}[{1}]".format(expr.basename,
+                                                 self._parameter_enum_val(expr.parameter))
+                    else:
+                        warning("Cannot enumerate expression {0} of type {1}".
+                                 format(expr.basename, type(expr)))
+                        name = "{0}[{1}]".format(expr.basename, expr.enum)
+                else:
+                    name = "{0}".format(self.obj_name(expr))
             elif expr.name in duplicates:
                 if expr.name not in declared_duplicates:
                     name = "{0} {1}".format(self.float_type, \
