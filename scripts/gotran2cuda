@@ -21,8 +21,8 @@ def main(filename, params):
     output = params.output
 
     if output:
-        if not(len(output)>3 and output[-3:] == ".cu"):
-            output += ".h"
+        if not output.endswith(".cu"):
+            output += ".cu"
     else:
         output = filename.replace(".ode", "")+".cu"
 
