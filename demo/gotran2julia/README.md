@@ -13,8 +13,8 @@ gotran2julia tentusscher_panfilov_2006_M_cell.ode
 
 This will create a new file called
 `tentusscher_panfilov_2006_M_cell.jl` which contains the relevant
-functions. In `demo.jl` we illustrtee with the use a package called
-[DifferentialEqautions](http://docs.juliadiffeq.org/latest/) to solve
+functions. In `demo.jl` we illustrate with the use a package called
+[DifferentialEqautions](http://docs.juliadiffeq.org/latest/), how to solve
 the ODE.
 
 
@@ -22,6 +22,9 @@ To run the demo type
 ```
 julia demo.jl
 ```
+
+A file called `results_julia.png` will be save in this directory with
+a plot of the membrane potential and the Kr current.
 
 
 Note that by typing 
