@@ -1777,7 +1777,6 @@ class CUDACodeGenerator(CCodeGenerator):
             return body_lines
 
         if include_signature:
-
             # Add function prototype
             body_lines = self.wrap_body_with_function_prototype(\
                 body_lines, comp.function_name, self.args(comp) + ', const unsigned int n_nodes',
@@ -2628,14 +2627,10 @@ class JuliaCodeGenerator(BaseCodeGenerator):
             body_lines.append("# Body array {0}".format(body_name))
 
             # If passing the body argument to the method
-            if  params.body.in_signature:
+            if params.body.in_signature:
                 body_lines.append("if {0} == nothing".format(body_name))
                 body_lines.append(["{0} = zeros({1})".format(\
                     body_name, comp.shapes[body_name])])
-                # body_lines.append("else".format(body_name))
-                # body_lines.append(["assert isinstance({0}, np.ndarray) and "\
-                #                    "{1}.shape=={2}".format(\
-                #             body_name, body_name, comp.shapes[body_name])])
                 body_lines.append("@assert size({0}) == {1}".format(\
                     body_name, comp.shapes[body_name]))
             else:
@@ -2733,8 +2728,11 @@ class JuliaCodeGenerator(BaseCodeGenerator):
 
         body_lines.append("# State indices and limit checker")
 
+        # body_lines.append("state_ind = Dict({0})".format(\
+        #     ", ".join(":{0} => {1}".format(state.param.name, i) \
+        #               for i, state in enumerate(states, start=1))))
         body_lines.append("state_ind = Dict({0})".format(\
-            ", ".join(":{0} => {1}".format(state.param.name, i) \
+            ", ".join('"{0}" => {1}'.format(state.param.name, i) \
                       for i, state in enumerate(states, start=1))))
         body_lines.append("")
 
@@ -2777,7 +2775,7 @@ class JuliaCodeGenerator(BaseCodeGenerator):
         body_lines.append("# Parameter indices and limit checker")
 
         body_lines.append("param_ind = Dict({0})".format(\
-            ", ".join(":{0} => {1}".format(state.param.name, i)\
+            ", ".join('"{0}" => {1}'.format(state.param.name, i)\
                 for i, state in enumerate(parameters, start=1))))
         body_lines.append("")
 
@@ -2807,16 +2805,16 @@ class JuliaCodeGenerator(BaseCodeGenerator):
         body_lines = []
 
         body_lines.append("state_inds = Dict({0})".format(\
-            ", ".join(":{0} => {1}".format(state.param.name, i)\
+            ", ".join('"{0}" => {1}'.format(state.param.name, i)\
                 for i, state in enumerate(states, start=1))))
 
         body_lines.append("")
         body_lines.append("for state in states")
         body_lines.append(\
-            ["if state in state_inds",
+            ["if haskey(state_inds, state)",
              ["return state_inds[state]"]])
         # body_lines.append("end")
-        body_lines.append('error("Index not found")')
+        body_lines.append('return state_inds')
 
         # Add function prototype
         function = self.wrap_body_with_function_prototype(\
@@ -2836,16 +2834,16 @@ class JuliaCodeGenerator(BaseCodeGenerator):
 
         body_lines = []
         body_lines.append("param_inds = Dict({0})".format(\
-            ", ".join(":{0} => {1}".format(param.param.name, i)\
+            ", ".join('"{0}" => {1}'.format(param.param.name, i)\
                 for i, param in enumerate(parameters, start=1))))
 
         body_lines.append("")
         body_lines.append("for param in params")
         body_lines.append(\
-            ["if param in param_inds",
+            ["if haskey(param_inds, param)",
              ["return param_inds[param]"]])
         # body_lines.append("end")
-        body_lines.append('error("Index not found")')
+        body_lines.append('return param_inds')
 
         # Add function prototype
         function = self.wrap_body_with_function_prototype(\
@@ -2869,17 +2867,17 @@ class JuliaCodeGenerator(BaseCodeGenerator):
         body_lines = []
 
         body_lines.append("monitor_inds = Dict({0})".format(\
-            ", ".join(":{0} => {1}".format(monitor, i)\
+            ", ".join('"{0}" => {1}'.format(monitor, i)\
                 for i, monitor in enumerate(monitored, start=1))))
 
 
         body_lines.append("")
         body_lines.append("for monitor in monitored")
         body_lines.append(\
-            ["if monitor in monitor_inds",
+            ["if haskey(monitor_inds, monitor)",
              ["return monitor_inds[monitor]"]])
         # body_lines.append("end")
-        body_lines.append('error("Index not found")')
+        body_lines.append('return monitor_inds')
 
         # Add function prototype
         function = self.wrap_body_with_function_prototype(\
@@ -2891,45 +2889,7 @@ class JuliaCodeGenerator(BaseCodeGenerator):
     def componentwise_code(self, ode, indent=0, include_signature=True, \
                            return_body_lines=False):
         warning("Generation of componentwise_rhs_evaluation code is not "
-                "yet implemented for Python backend.")
-
-#     def mass_matrix(self, ode, indent=0):
-#         check_arg(ode, ODE)
-#         body_lines = ["", "import numpy as np",
-#                       "M = np.eye({0})".format(ode.num_full_states)]
-#
-#         for ind, expr in enumerate(ode.state_expressions):
-#             if isinstance(expr, AlgebraicExpression):
-#                 body_lines.append("M[{0},{0}] = 0".format(ind))
-#
-#         body_lines.append("")
-#         body_lines.append("return M")
-#
-#         body_lines = self.wrap_body_with_function_prototype(\
-#             body_lines, "mass_matrix", "", \
-#             "The mass matrix of the {0} ODE".format(ode.name))
-#
-#         return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
-#
-#     def class_code(self, ode, monitored=None):
-#         """
-#         Generate class code
-#         """
-#
-#         # Force class code param to be True
-#         class_code_param = self.params.class_code
-#         self.params.class_code = True
-#
-#         check_arg(ode, ODE)
-#         name = class_name(ode.name)
-#         code_list = list(self.code_dict(ode, monitored=monitored, indent=1).values())
-#
-#         self.params.class_code = class_code_param
-#         return  """
-# class {0}:
-#
-# {1}
-# """.format(name, "\n\n".join(code_list))
+                "yet implemented for Julia backend.")
 
     def module_code(self, ode, monitored=None):
 

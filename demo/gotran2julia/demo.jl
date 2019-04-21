@@ -20,7 +20,7 @@ using Plots
 p1 = plot(sol,vars=(V_idx), title="State V")
 
 # Monitored values
-monitored = zeros((90, length(sol.t)))
+monitored = zeros((length(monitor_indices()), length(sol.t)))
 for i = 1:length(sol.t)
     monitored[:, i] = monitor(monitored[:, i], sol.u[i], parameters, sol.t[i])
 end
@@ -31,7 +31,3 @@ p2 = plot(sol.t, i_Kr, title="iKr")
 
 plot(p1, p2)
 png("results_julia")
-
-#plot(sol,linewidth=5,title="Solution to the linear ODE with a thick line",
-#     xaxis="Time (t)",yaxis="u(t) (in μm)",label="My Thick Line!") # legend=false
-#plot!(sol.t, t->0.5*exp(1.01t),lw=3,ls=:dash,label="True Solution!")
