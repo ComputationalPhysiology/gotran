@@ -1121,7 +1121,7 @@ class CCodeGenerator(BaseCodeGenerator):
                         add_obj(param, self._parameter_enum_val(param), parameters_name, parameter_offset)
                     else:
                         add_obj(param, i, parameters_name, parameter_offset)
-                    
+
 
                 field_parameters_name = params.parameters.field_array_name
                 for i, param in enumerate(field_parameters):
@@ -2601,12 +2601,6 @@ class JuliaCodeGenerator(BaseCodeGenerator):
 
         skip_result = []
         ret_args = []
-
-        # Add the results first
-        for result_name in comp.results:
-            if result_name not in skip_result:
-                ret_args.append(result_name)
-
         for arg in default_arguments:
             if arg == "s":
                 if params.states.array_name in comp.results:
@@ -2633,7 +2627,9 @@ class JuliaCodeGenerator(BaseCodeGenerator):
         if params.body.in_signature and params.body.representation != "named":
             ret_args.append("{0}=nothing".format(params.body.array_name))
 
-
+        for result_name in comp.results:
+            if result_name not in skip_result:
+                ret_args.append("{0}=None".format(result_name))
 
         return ", ".join(ret_args)
 
