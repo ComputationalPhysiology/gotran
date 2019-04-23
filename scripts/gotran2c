@@ -9,7 +9,7 @@ from gotran.common import error, list_timings, Timer, info
 
 def main(filename, params):
     """
-    Create a c header file from a gotran model
+    Create a C header file from a gotran model
     """
     timer = Timer("Generate C code from {}".format(filename))
 
@@ -22,7 +22,7 @@ def main(filename, params):
     output = params.output
 
     if output:
-        if not(len(output)>2 and output[-2:] == ".h"):
+        if not (output.endswith(".c") or output.endswith(".h")):
             output += ".h"
     else:
         output = filename.replace(".ode", "")+".h"
@@ -39,7 +39,7 @@ def main(filename, params):
         f.write(code)
 
     del timer
-    
+
     if params.list_timings:
         list_timings()
 
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     from modelparameters.parameterdict import *
 
     generation_params=CCodeGenerator.default_parameters()
-    
+
     params = ParameterDict(\
         list_timings = Param(False, description="If true timings for reading "\
                              "and evaluating the model is listed."),
@@ -59,12 +59,12 @@ if __name__ == "__main__":
         **dict((name, param) for name, param in list(generation_params.items()) \
         if name not in ["class_code"]))
     params.parse_args(usage="usage: %prog FILE [options]")#sys.argv[2:])
-    
+
     if len(sys.argv) < 2:
         raise RuntimeError("Expected a single gotran file argument")
 
     if not os.path.isfile(sys.argv[1]):
         raise IOError("Expected the argument to be a file")
-	 
+
     file_name = sys.argv[1]
     main(file_name, params)
