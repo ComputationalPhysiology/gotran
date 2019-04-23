@@ -22,3 +22,4 @@ tentusscher_panfilov_2006_M_cell.h: tentusscher_panfilov_2006_M_cell.ode
 clean:
 	$(RM) $(libfile)
 	$(RM) $(executable)
+	$(RM) $(wildcard *.o)
