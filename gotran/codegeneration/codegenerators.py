@@ -2629,7 +2629,7 @@ class JuliaCodeGenerator(BaseCodeGenerator):
 
         for result_name in comp.results:
             if result_name not in skip_result:
-                ret_args.append("{0}=None".format(result_name))
+                ret_args.append("{0}=nothing".format(result_name))
 
         return ", ".join(ret_args)
 

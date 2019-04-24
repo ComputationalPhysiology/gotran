@@ -12,7 +12,8 @@ parameters = init_parameter_values()
 
 # Time steps
 tspan = (0.0,100.0)
-prob = ODEProblem(rhs,y0,tspan, parameters)
+const rhs_diffeq(dy, y, parameters, t) = rhs(y, parameters, t, dy)
+prob = ODEProblem(rhs_diffeq, y0, tspan, parameters)
 sol = solve(prob)
 
 V_idx = state_indices("V")
@@ -22,7 +23,7 @@ p1 = plot(sol,vars=(V_idx), title="State V")
 # Monitored values
 monitored = zeros((length(monitor_indices()), length(sol.t)))
 for i = 1:length(sol.t)
-    monitored[:, i] = monitor(monitored[:, i], sol.u[i], parameters, sol.t[i])
+   monitored[:, i] = monitor(sol.u[i], parameters, sol.t[i])
 end
 
 i_Kr_idx= monitor_indices("i_Kr")
