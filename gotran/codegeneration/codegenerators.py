@@ -1226,16 +1226,23 @@ class CCodeGenerator(BaseCodeGenerator):
         states = ode.full_states
 
         max_length = max(len(state.name) for state in states)
+        if self.params.code['body']['use_enum']:
 
-        body_lines = ["// State names"]
-        body_lines.append("char names[][{0}] = {{{1}}}".format(\
-            max_length+1, ", ".join("\"{0}\"".format(state.name) for state \
-                                    in states)))
-        body_lines.append("")
-        body_lines.append("int i")
-        body_lines.append("for (i=0; i<{0}; i++)".format(len(states)))
-        body_lines.append(["if (strcmp(names[i], name)==0)",\
-                           ["return i"]])
+            body_lines = []
+            for i, state in enumerate(states):
+                pre = "if" if i == 0 else "else if"
+                body_lines.append('{0} (strcmp(name, "{1}")==0)'.format(pre, state.name))
+                body_lines.append(["return STATE_{0}".format(state.name)])
+        else:
+            body_lines = ["// State names"]
+            body_lines.append("char names[][{0}] = {{{1}}}".format(\
+                max_length+1, ", ".join("\"{0}\"".format(state.name) for state \
+                                        in states)))
+            body_lines.append("")
+            body_lines.append("int i")
+            body_lines.append("for (i=0; i<{0}; i++)".format(len(states)))
+            body_lines.append(["if (strcmp(names[i], name)==0)",\
+                               ["return i"]])
         body_lines.append("return -1")
 
         # Add function prototype
@@ -1254,15 +1261,23 @@ class CCodeGenerator(BaseCodeGenerator):
 
         max_length = max(len(param.name) for param in parameters)
 
-        body_lines = ["// Parameter names"]
-        body_lines.append("char names[][{0}] = {{{1}}}".format(\
-            max_length + 1, ", ".join("\"{0}\"".format(param.name) for param \
-                                      in parameters)))
-        body_lines.append("")
-        body_lines.append("int i")
-        body_lines.append("for (i=0; i<{0}; i++)".format(len(parameters)))
-        body_lines.append(["if (strcmp(names[i], name)==0)",\
-                           ["return i"]])
+        if self.params.code['body']['use_enum']:
+
+            body_lines = []
+            for i, param in enumerate(parameters):
+                pre = "if" if i == 0 else "else if"
+                body_lines.append('{0} (strcmp(name, "{1}")==0)'.format(pre, param.name))
+                body_lines.append(["return PARAM_{0}".format(param.name)])
+        else:       
+            body_lines = ["// Parameter names"]
+            body_lines.append("char names[][{0}] = {{{1}}}".format(\
+                max_length + 1, ", ".join("\"{0}\"".format(param.name) for param \
+                                          in parameters)))
+            body_lines.append("")
+            body_lines.append("int i")
+            body_lines.append("for (i=0; i<{0}; i++)".format(len(parameters)))
+            body_lines.append(["if (strcmp(names[i], name)==0)",\
+                               ["return i"]])
         body_lines.append("return -1")
 
         # Add function prototype
