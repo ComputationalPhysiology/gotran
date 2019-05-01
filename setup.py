@@ -11,7 +11,7 @@ import sys
 
 # Version number
 major = 2019
-minor = 1.0
+minor = 2.0
 
 scripts = glob.glob("scripts/*")
 
