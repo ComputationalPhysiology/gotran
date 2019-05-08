@@ -1232,7 +1232,7 @@ class CCodeGenerator(BaseCodeGenerator):
             for i, state in enumerate(states):
                 pre = "if" if i == 0 else "else if"
                 body_lines.append('{0} (strcmp(name, "{1}")==0)'.format(pre, state.name))
-                body_lines.append(["return STATE_{0}".format(state.name)])
+                body_lines.append(["return {0}".format(self._state_enum_val(state))])
         else:
             body_lines = ["// State names"]
             body_lines.append("char names[][{0}] = {{{1}}}".format(\
@@ -1267,8 +1267,8 @@ class CCodeGenerator(BaseCodeGenerator):
             for i, param in enumerate(parameters):
                 pre = "if" if i == 0 else "else if"
                 body_lines.append('{0} (strcmp(name, "{1}")==0)'.format(pre, param.name))
-                body_lines.append(["return PARAM_{0}".format(param.name)])
-        else:       
+                body_lines.append(["return {0}".format(self._parameter_enum_val(param))])
+        else:
             body_lines = ["// Parameter names"]
             body_lines.append("char names[][{0}] = {{{1}}}".format(\
                 max_length + 1, ", ".join("\"{0}\"".format(param.name) for param \
