@@ -1927,7 +1927,7 @@ class CUDACodeGenerator(CCodeGenerator):
     def module_code(self, ode, monitored=None):
 
         code_list = list(self.code_dict(ode, monitored=monitored, \
-                                   include_index_map=False).values())
+                                   include_index_map=True).values())
         code_list.append(self.field_states_getter_code(ode))
         code_list.append(self.field_states_setter_code(ode))
         code_list.append(self.field_parameters_setter_code(ode))
