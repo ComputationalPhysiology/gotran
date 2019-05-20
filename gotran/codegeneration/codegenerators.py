@@ -1182,7 +1182,7 @@ class CCodeGenerator(BaseCodeGenerator):
 
         for i, state in enumerate(ode.full_states):
             index = self._state_enum_val(state) if enum_based_indexing else i
-            line = "{0}[{1}{2}] = {3}{4}".format(\
+            line = "{0}[{1}{2}] = {3}".format(\
                 states_name, offset, index, state.init)
             if not enum_based_indexing:
                 line += " // {0}".format(state.name)
