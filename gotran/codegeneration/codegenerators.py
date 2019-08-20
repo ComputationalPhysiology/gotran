@@ -1954,6 +1954,552 @@ class CUDACodeGenerator(CCodeGenerator):
 {1}
 """.format(ode.name, "\n\n".join(code_list))
 
+class OpenCLCodeGenerator(CCodeGenerator):
+    # Class attributes
+    language = "OpenCL"
+    indent = 4
+
+    def __init__(self, params=None):
+        super(OpenCLCodeGenerator, self).__init__(params)
+        if not self.params.code.body.use_enum:
+            error("code.body.use_enum cannot be disabled for OpenCL")
+        if self.params.code.states.representation == "array":
+            error("array representation of states is unsupported for OpenCL")
+        if self.params.code.parameters.representation == "array":
+            error("array representation of parameters is unsupported for OpenCL")
+
+    @staticmethod
+    def default_parameters():
+        # Start out with a copy of the global parameters
+        params = parameters.generation.copy()
+        params.code.body.use_enum = True
+        params.code.states.add_offset = True
+        params.code.states.array_name = "d_states"
+        params.code.parameters.add_field_offset = True
+        params.code.parameters.array_name = "d_parameters"
+        params.code.parameters.field_array_name = "d_field_parameters"
+        return params
+
+    @classmethod
+    def wrap_body_with_function_prototype(cls, body_lines, name, args,
+                                          return_type="", comment="",
+                                          const=False, kernel=False, device=False):
+        """
+        Wrap a passed body of lines with a function prototype
+        """
+        check_arg(return_type, str)
+
+        return_type = (return_type or "void")
+
+        if kernel:
+            return_type = '__kernel ' + return_type
+        #elif device:
+        #    return_type = '__device__ ' + return_type
+
+        # Call super class function wrapper
+        return CCodeGenerator.wrap_body_with_function_prototype(\
+            body_lines, name, args, return_type, comment, const)
+
+    def args(self, comp):
+        # we must override this so that we can prefix global memory arrays with __global
+        params = self.params.code
+        default_arguments = params.default_arguments \
+                            if comp.use_default_arguments else ""
+
+        additional_arguments = comp.additional_arguments[:]
+
+        skip_result = []
+        ret_args = []
+        for arg in default_arguments:
+            if arg == "s":
+                if params.states.array_name in comp.results:
+                    skip_result.append(params.states.array_name)
+                    ret_args.append("__global {0}* {1}".format(self.float_type, \
+                                                      params.states.array_name))
+                else:
+                    ret_args.append("__global const {0}* {1}".format(self.float_type, \
+                                                            params.states.array_name))
+            elif arg == "t":
+                if params.time.name in comp.results:
+                    error("Cannot have the same name for the time argument as "\
+                          "for a result argument.")
+                ret_args.append("const {0} {1}".format(self.float_type, \
+                                                       params.time.name))
+                if "dt" in additional_arguments:
+                    additional_arguments.remove("dt")
+                    ret_args.append("const {0} {1}".format(self.float_type, \
+                                                           params.dt.name))
+
+            elif arg == "p" and params.parameters.representation != \
+                     "numerals":
+                if params.parameters.array_name in comp.results:
+                    skip_result.append(params.parameters.array_name)
+                    ret_args.append("__global {0}* {1}".format(\
+                        self.float_type, params.parameters.array_name))
+                else:
+                    ret_args.append("__global const {0}* {1}".format(\
+                        self.float_type, params.parameters.array_name))
+
+                field_parameters = params["parameters"]["field_parameters"]
+
+                # If empty
+                # FIXME: Get rid of this by introducing a ListParam type in modelparameters
+                if len(field_parameters) > 1 or \
+                       (len(field_parameters)==1 and field_parameters[0] != ""):
+                    if params.parameters.field_array_name in comp.results:
+                        skip_result.append(params.parameters.field_array_name)
+                        ret_args.append("__global {0}* {1}".format(\
+                            self.float_type, params.parameters.field_array_name))
+                    else:
+                        ret_args.append("__global const {0}* {1}".format(\
+                            self.float_type, params.parameters.field_array_name))
+
+
+        ret_args.extend("{0}* {1}".format(self.float_type, arg) \
+                        for arg in additional_arguments)
+
+        if params.body.in_signature and params.body.representation != "named":
+            ret_args.append("__global {0}* {1}".format(self.float_type,
+                                              params.body.array_name))
+
+        for result_name in comp.results:
+            if result_name not in skip_result:
+                ret_args.append("__global {0}* {1}".format(self.float_type, result_name))
+
+        return ", ".join(ret_args)
+
+    def _init_arguments(self, comp):
+        check_arg(comp, CodeComponent)
+        params = self.params.code
+        default_arguments = params.default_arguments \
+                            if comp.use_default_arguments else ""
+
+        field_parameters = params["parameters"]["field_parameters"]
+
+        # If empty
+        # FIXME: Get rid of this by introducing a ListParam type in modelparameters
+        if len(field_parameters) == 1 and field_parameters[0] == "":
+            field_parameters = []
+
+        #state_offset = params["states"]["add_offset"]
+        parameter_offset = params["parameters"]["add_offset"]
+        field_parameter_offset = params["parameters"]["add_field_offset"]
+
+        # Check if comp defines used_states if not use the root components
+        # full_states attribute
+        # FIXME: No need for full_states here...
+        full_states = comp.root.full_states
+        used_states = comp.used_states if hasattr(comp, "used_states") else \
+                      full_states
+
+        used_parameters = comp.used_parameters if hasattr(comp, "used_parameters") else \
+                          comp.root.parameters
+        all_parameters = comp.root.parameters
+
+        field_parameters = [param for param in all_parameters \
+                            if param.name in field_parameters]
+
+        # Start building body
+        body_lines = []
+        def add_state_obj(state, enum_val, array_name):
+            index_str = "n_nodes * {0} + thread_ind".format(enum_val)
+            body_lines.append("const {0} {1} = {2}[{3}]".format(\
+                self.float_type, state.name, array_name, index_str))
+        def add_obj(obj, i, array_name, add_offset=False):
+            offset = "{0}_offset + ".format(array_name) if add_offset else ""
+            body_lines.append("const {0} {1} = {2}[{3}{4}]".format(\
+                self.float_type, self.obj_name(obj), array_name, offset, i))
+
+        if "s" in default_arguments and used_states:
+
+            # Generate state assign code
+            if params.states.representation == "named":
+
+                states_name = params.states.array_name
+                body_lines.append("")
+                body_lines.append("// Assign states")
+
+                # If all states are used
+                for i, state in enumerate(full_states):
+                    if state not in used_states:
+                        continue
+                    #add_obj(state, i, states_name, state_offset)
+                    #add_obj(state, self._state_enum_val(state), states_name, state_offset)
+                    add_state_obj(state, self._state_enum_val(state), states_name)
+
+        # Add parameters code if not numerals
+        if "p" in default_arguments and \
+               params.parameters.representation in ["named", "array"] and \
+               used_parameters:
+
+            # Generate parameters assign code
+            if params.parameters.representation == "named":
+
+                parameters_name = params.parameters.array_name
+                body_lines.append("")
+                body_lines.append("// Assign parameters")
+
+                # If all states are used
+                for i, param in enumerate(all_parameters):
+                    if param not in used_parameters or \
+                           param in field_parameters:
+                        continue
+                    #add_obj(param, i, parameters_name, parameter_offset)
+                    add_obj(param, self._parameter_enum_val(param), parameters_name, parameter_offset)
+
+                field_parameters_name = params.parameters.field_array_name
+                for i, param in enumerate(field_parameters):
+                    if param not in used_parameters:
+                        continue
+                    add_obj(param, i, field_parameters_name,
+                            field_parameter_offset)
+
+        # If using an array for the body variables and b is not passed as argument
+        if params.body.representation != "named" and \
+               not params.body.in_signature and \
+               params.body.array_name in comp.shapes:
+
+            body_name = params.body.array_name
+            body_lines.append("")
+            body_lines.append("// Body array {0}".format(body_name))
+            body_lines.append("{0} {1}[{2}]".format(self.float_type, body_name, \
+                                                    comp.shapes[body_name][0]))
+
+        return body_lines
+
+    def init_states_code(self, ode, indent=0):
+        """
+        Generate code for setting initial condition
+        """
+
+        array_name = self.params.code.states.array_name
+        float_str = "" if self.params.code.float_precision == "double" else "f"
+        body_lines = ["const unsigned int thread_ind = get_global_id(0)"]
+        n_nodes = self.params.code.n_nodes
+        if n_nodes > 0:
+            body_lines.append(
+                "if (thread_ind >= n_nodes) return; "
+                "// number of nodes exceeded")
+        #body_lines.append("const int {0}_offset = thread_ind*{1}".format(\
+        #    array_name, ode.num_full_states))
+
+        # Main body
+        body_lines.extend("{0}[n_nodes * {1} + thread_ind] = {2}{3}".format(
+                              array_name, self._state_enum_val(state), state.init, float_str)
+                          for i, state in enumerate(ode.full_states))
+
+        # Add function prototype
+        init_function = self.wrap_body_with_function_prototype(
+            body_lines, "init_state_values", "__global {0} *{1}, const unsigned int n_nodes".format(\
+                self.float_type, array_name),
+            comment="Init state values", kernel=True)
+
+        return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
+
+
+    def init_parameters_code(self, ode, indent=0):
+        """
+        Generate code for setting parameters
+        """
+
+        # FIXME: Parameters should be stored in a __constant__ array.
+        # We could have a function to initialise that array.
+        # For now, just initialise the arrays in host memory.
+        return CCodeGenerator.init_parameters_code(self, ode, indent)
+
+    def init_field_parameters_code(self, ode, indent=0):
+        """
+        Generate code for initialising field parameters
+        """
+
+        field_parameters = self.params.code.parameters.field_parameters
+
+        # If empty
+        # FIXME: Get rid of this by introducing a ListParam type in modelparameters
+        if len(field_parameters) == 1 and field_parameters[0] == "":
+            field_parameters = []
+
+        array_name = self.params.code.parameters.array_name
+        float_str = "" if self.params.code.float_precision == "double" else "f"
+        base_array_name = array_name[2:] if array_name[:2] == "d_" else array_name
+        field_array_name = "d_field_" + base_array_name
+
+        parameters = ode.parameters
+        parameter_names = [p.name for p in parameters]
+        field_parameter_indices = [parameter_names.index(fp)
+                                   for fp in field_parameters]
+        num_field_parameters = len(field_parameters)
+
+        body_lines = list()
+        if num_field_parameters > 0:
+            body_lines.append(
+                "const int thread_ind = blockIdx.x*blockDim.x + threadIdx.x")
+            n_nodes = self.params.code.n_nodes
+            if n_nodes > 0:
+                body_lines.append(
+                    "if (thread_ind >= {0}) return; "
+                    "// number of nodes exceeded".format(n_nodes))
+            body_lines.append(
+                "const int field_{0}_offset = thread_ind*{1}".format(
+                    base_array_name, num_field_parameters))
+
+        # Main body
+        body_lines.extend(
+            "{0}[field_{1}_offset + {2}] = {3}{4}; //{5}".format(
+                field_array_name,
+                base_array_name,
+                i,
+                parameters[field_parameter_indices[i]].init,
+                float_str,
+                field_parameter)
+            for i, field_parameter in enumerate(field_parameters))
+
+        # Add function prototype
+        init_fparam_func = self.wrap_body_with_function_prototype(
+            body_lines, "init_field_parameters",
+            "{0} *{1}".format(self.float_type, field_array_name),
+            comment="Initialize field parameters", kernel=True)
+
+        return "\n".join(self.indent_and_split_lines(init_fparam_func,
+                                                     indent=indent))
+
+    def field_parameters_setter_code(self, ode, indent=0):
+        # FIXME: Implement!
+        # This is actually not needed
+        return ""
+
+    def field_states_getter_code(self, ode, indent=0):
+        """
+        Generate code for field state getter
+        """
+
+        field_states = self.params.code.states.field_states
+
+        # If empty
+        # FIXME: Get rid of this by introducing a ListParam type in modelparameters
+        if len(field_states) == 1 and field_states[0] == "":
+            field_states = []
+
+        array_name = self.params.code.states.array_name
+        base_array_name = array_name[2:] if array_name[:2] == "d_" else array_name
+        field_array_name = "h_field_" + base_array_name
+
+        states = ode.full_states
+        # FIXME: Check that the state is really a state
+        field_states = [state for state in states if state.name in field_states]
+
+        num_field_states = len(field_states)
+        array_name = self.params.code.states.array_name
+
+        body_lines = []
+        if num_field_states > 0:
+            body_lines.append(
+                "const int thread_ind = blockIdx.x*blockDim.x + threadIdx.x")
+            n_nodes = self.params.code.n_nodes
+            if n_nodes > 0:
+                body_lines.append(
+                    "if (thread_ind >= {0}) return; "
+                    "// number of nodes exceeded".format(n_nodes))
+            body_lines.append(
+                "const int {0}_offset = thread_ind*{1}".format(
+                    base_array_name, len(states)))
+            body_lines.append(
+                "const int field_{0}_offset = thread_ind*{1}".format(\
+                    base_array_name, num_field_states))
+
+        # Main body
+        body_lines.extend(
+            "{0}[field_{2}_offset + {3}] = "\
+            "{1}[{2}_offset + {4}]; //{5}".format(\
+                field_array_name, array_name,
+                base_array_name, i, states.index(state), state.name)
+            for i, state in enumerate(field_states))
+
+        # Add function prototype
+        getter_func = self.wrap_body_with_function_prototype(
+            body_lines, "get_field_states",
+            "const {0} *{1}, {0} *{2}".format(self.float_type, \
+                                              array_name, field_array_name),
+            comment="Get field states", kernel=True)
+
+        return "\n".join(self.indent_and_split_lines(getter_func, indent=indent))
+
+    def field_states_setter_code(self, ode, indent=0):
+        """
+        Generate code for field state setter
+        """
+
+        field_states = self.params.code.states.field_states
+
+        # If empty
+        # FIXME: Get rid of this by introducing a ListParam type in modelparameters
+        if len(field_states) == 1 and field_states[0] == "":
+            field_states = []
+
+        array_name = self.params.code.states.array_name
+        base_array_name = array_name[2:] if array_name[:2] == "d_" else array_name
+        field_array_name = "h_field_" + base_array_name
+
+        states = ode.full_states
+        # FIXME: Check that the state is really a state
+        field_states = [state for state in states if state.name in field_states]
+
+        num_field_states = len(field_states)
+
+        body_lines = []
+        if num_field_states > 0:
+            body_lines.append(
+                "const int thread_ind = blockIdx.x*blockDim.x + threadIdx.x")
+            n_nodes = self.params.code.n_nodes
+            if n_nodes > 0:
+                body_lines.append(
+                    "if (thread_ind >= {0}) return; "
+                    "// number of nodes exceeded".format(n_nodes))
+            body_lines.append(
+                "const int {0}_offset = thread_ind*{1}".format(
+                    base_array_name, len(states)))
+            body_lines.append(
+                "const int field_{0}_offset = thread_ind*{1}".format(\
+                    base_array_name, num_field_states))
+
+        # Main body
+        body_lines.extend(
+            "{0}[{2}_offset + {3}] = "\
+            "{1}[field_{2}_offset + {4}]; //{5}".format(\
+                array_name, field_array_name,
+                base_array_name, states.index(state), i, state.name)
+            for i, state in enumerate(field_states))
+
+        # Add function prototype
+        setter_func = self.wrap_body_with_function_prototype(
+            body_lines, "set_field_states",
+            "const {0} *{1}, {0} *{2}".format(self.float_type, \
+                                              field_array_name, array_name),
+            comment="Set field states", kernel=True)
+
+        return "\n".join(self.indent_and_split_lines(setter_func, indent=indent))
+
+    def function_code(self, comp, indent=0, default_arguments=None, \
+                      include_signature=True, return_body_lines=False):
+
+        params = self.params.code
+        field_parameters = params.parameters.field_parameters
+
+        # If empty
+        # FIXME: Get rid of this by introducing a ListParam type in modelparameters
+        if len(field_parameters) == 1 and field_parameters[0] == "":
+            field_parameters = []
+
+        default_arguments = default_arguments or params.default_arguments
+
+        check_arg(comp, CodeComponent)
+        check_kwarg(default_arguments, "default_arguments", str)
+        check_kwarg(indent, "indent", int)
+
+        states_name = self.params.code.states.array_name
+        field_parameter_name = self.params.code.parameters.field_array_name
+
+        # Initialization
+        body_lines = [
+            "const unsigned int thread_ind = get_global_id(0)"]
+        body_lines.append(
+            "if (thread_ind >= n_nodes) return; "
+            "// number of nodes exceeded")
+
+        if len(field_parameters) > 0:
+            body_lines.append("const int {0}_offset = thread_ind*{1}".format(
+                    field_parameter_name, len(field_parameters)))
+
+        body_lines.extend(self._init_arguments(comp))
+
+        # If named body representation we need to check for duplicates
+        duplicates = set()
+        declared_duplicates = set()
+        if params.body.representation == "named":
+            collected_names = set()
+            for expr in comp.body_expressions:
+                if isinstance(expr, Expression) and \
+                       not isinstance(expr, IndexedExpression):
+                    if expr.name in collected_names:
+                        duplicates.add(expr.name)
+                    else:
+                        collected_names.add(expr.name)
+
+        # Iterate over any body needed to define the dy
+        for expr in comp.body_expressions:
+            if isinstance(expr, Comment):
+                body_lines.append("")
+                body_lines.append("// " + str(expr))
+                continue
+            elif isinstance(expr, IndexedExpression) \
+                or isinstance(expr, StateIndexedExpression)\
+                or isinstance(expr, ParameterIndexedExpression):
+
+                if params['body']['use_enum']:
+                    if isinstance(expr, StateIndexedExpression):
+                        state_enum = self._state_enum_val(expr.state)
+                        index_str = "{0} * {1} + {2}".format("n_nodes", state_enum, "thread_ind")
+                        name = "{0}[{1}]".format(expr.basename, index_str)
+                        #name = "{0}[{1}]".format(expr.basename,self._state_enum_val(expr.state))
+                    elif isinstance(expr, ParameterIndexedExpression):
+                        name = "{0}[{1}]".format(expr.basename,
+                                                 self._parameter_enum_val(expr.parameter))
+                    else:
+                        warning("Cannot enumerate expression {0} of type {1}".
+                                 format(expr.basename, type(expr)))
+                        name = "{0}[{1}]".format(expr.basename, expr.enum)
+                else:
+                    name = "{0}".format(self.obj_name(expr))
+            elif expr.name in duplicates:
+                if expr.name not in declared_duplicates:
+                    name = "{0} {1}".format(self.float_type, \
+                                            self.obj_name(expr))
+                    declared_duplicates.add(expr.name)
+                else:
+                    name = "{0}".format(self.obj_name(expr))
+            else:
+                name = "const {0} {1}".format(self.float_type, \
+                                              self.obj_name(expr))
+            body_lines.append(self.to_code(expr.expr, name))
+
+        if return_body_lines:
+            return body_lines
+
+        if include_signature:
+            # Add function prototype
+            body_lines = self.wrap_body_with_function_prototype(\
+                body_lines, comp.function_name, self.args(comp) + ', const unsigned int n_nodes',
+                "", \
+                comp.description, kernel=True)
+
+        return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
+
+    def module_code(self, ode, monitored=None):
+
+        code_list = list(self.code_dict(ode, monitored=monitored, \
+                                   include_index_map=True).values())
+        code_list.append(self.field_states_getter_code(ode))
+        code_list.append(self.field_states_setter_code(ode))
+        code_list.append(self.field_parameters_setter_code(ode))
+        return  """// Gotran generated CUDA code for the "{0}" model
+
+{1}
+""".format(ode.name, "\n\n".join(code_list))
+
+    def solver_code(self, ode, solver_type):
+        code_list = list()
+        code_list.append(self.function_code(
+            get_solver_fn(solver_type)(ode, params=self.params.code)))
+        code_list.append(self.init_states_code(ode))
+        code_list.append(self.field_states_getter_code(ode))
+        code_list.append(self.field_states_setter_code(ode))
+        code_list.append(self.init_field_parameters_code(ode))
+        code_list.append(self.field_parameters_setter_code(ode))
+        return """// Gotran generated CUDA solver code for the "{0}" model
+
+{1}
+""".format(ode.name, "\n\n".join(code_list))
+
 class MatlabCodeGenerator(BaseCodeGenerator):
     """
     A Matlab Code generator
