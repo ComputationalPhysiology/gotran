@@ -23,3 +23,5 @@ tests
 utils
 install_sundials.sh
 requirements.txt
+gotran.egg-info
+*.py[cod]
