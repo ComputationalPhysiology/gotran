@@ -1,0 +1,706 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>modelparameters.parameterdict &mdash; gotran 2019.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> gotran
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Programmers reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../gotran.html">gotran package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">gotran</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>modelparameters.parameterdict</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for modelparameters.parameterdict</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (C) 2006-2012 Johan Hake</span>
+<span class="c1">#</span>
+<span class="c1"># This file is part of ModelParameters.</span>
+<span class="c1">#</span>
+<span class="c1"># ModelParameters is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU Lesser General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1"># (at your option) any later version.</span>
+<span class="c1">#</span>
+<span class="c1"># ModelParameters is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the</span>
+<span class="c1"># GNU Lesser General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1"># You should have received a copy of the GNU Lesser General Public License</span>
+<span class="c1"># along with ModelParameters. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Contains the ParameterDict class, useful for defining</span>
+<span class="sd">recursive dictionaries of parameters and using attribute</span>
+<span class="sd">syntax for later access.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Param&quot;</span><span class="p">,</span> <span class="s2">&quot;ScalarParam&quot;</span><span class="p">,</span> <span class="s2">&quot;OptionParam&quot;</span><span class="p">,</span> <span class="s2">&quot;ConstParam&quot;</span><span class="p">,</span> <span class="s2">&quot;ArrayParam&quot;</span><span class="p">,</span> \
+           <span class="s2">&quot;SlaveParam&quot;</span><span class="p">,</span> <span class="s2">&quot;inf&quot;</span><span class="p">,</span> <span class="s2">&quot;ParameterDict&quot;</span><span class="p">]</span>
+<span class="kn">import</span> <span class="nn">six</span>
+<span class="nb">cmp</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span> <span class="o">&gt;</span> <span class="n">y</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">y</span><span class="p">)</span>
+<span class="c1"># System imports</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">.sympytools</span> <span class="k">import</span> <span class="n">sp</span>
+<span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="n">sp</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="k">def</span> <span class="nf">rjust</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">s</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">ljust</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">s</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">center</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">s</span><span class="o">.</span><span class="n">center</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+
+
+<span class="c1"># local imports</span>
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.logger</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">check_arg</span><span class="p">,</span>  <span class="n">check_kwarg</span><span class="p">,</span> <span class="n">scalars</span><span class="p">,</span> <span class="n">value_formatter</span><span class="p">,</span>\
+     <span class="n">Range</span><span class="p">,</span> <span class="n">tuplewrap</span><span class="p">,</span> <span class="n">integers</span><span class="p">,</span> <span class="n">nptypes</span><span class="p">,</span> <span class="n">inf</span><span class="p">,</span> <span class="n">VALUE_JUST</span>
+
+<span class="n">KEY_JUST</span> <span class="o">=</span> <span class="n">ljust</span>
+<span class="n">PAR_PREFIX</span> <span class="o">=</span> <span class="s2">&quot;--&quot;</span>
+<span class="n">FORMAT_CONVERTER</span> <span class="o">=</span> <span class="p">{</span><span class="nb">int</span><span class="p">:</span><span class="s2">&quot;int&quot;</span><span class="p">,</span> <span class="nb">float</span><span class="p">:</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">:</span><span class="s2">&quot;string&quot;</span><span class="p">,</span> \
+                    <span class="nb">list</span><span class="p">:</span><span class="kc">None</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">:</span><span class="kc">None</span><span class="p">,</span> <span class="nb">bool</span><span class="p">:</span><span class="s2">&quot;int&quot;</span><span class="p">}</span>
+
+<span class="k">def</span> <span class="nf">cmp_to_key</span><span class="p">(</span><span class="n">mycmp</span><span class="p">):</span>
+    <span class="s1">&#39;Convert a cmp= function into a key= function&#39;</span>
+    <span class="k">class</span> <span class="nc">K</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">obj</span> <span class="o">=</span> <span class="n">obj</span>
+        <span class="k">def</span> <span class="nf">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">mycmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span>
+        <span class="k">def</span> <span class="nf">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">mycmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">mycmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="k">def</span> <span class="nf">__le__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">mycmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">0</span>
+        <span class="k">def</span> <span class="nf">__ge__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">mycmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+        <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">mycmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="n">K</span>
+
+<span class="k">def</span> <span class="nf">_par_cmp</span><span class="p">(</span><span class="n">obj1</span><span class="p">,</span> <span class="n">obj2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Original par_cmp</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">obj1</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span>
+    <span class="k">assert</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">obj2</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span>
+    <span class="k">assert</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">obj1</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">))</span>
+    <span class="k">assert</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">obj2</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj1</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">ParameterDict</span><span class="p">)</span> <span class="ow">and</span> \
+           <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj2</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">ParameterDict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj1</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">ParameterDict</span><span class="p">)</span> <span class="ow">and</span> \
+           <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj2</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">ParameterDict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="nb">cmp</span><span class="p">(</span><span class="n">obj1</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">obj2</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="n">par_cmp</span> <span class="o">=</span> <span class="n">cmp_to_key</span><span class="p">(</span><span class="n">_par_cmp</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ParameterDict"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict">[docs]</a><span class="k">class</span> <span class="nc">ParameterDict</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A dictionary with attribute-style access,</span>
+<span class="sd">    that maps attribute access to the real dictionary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+
+        <span class="c1"># Generate a sub class of ParameterDict which sets the slots.</span>
+        <span class="c1"># This is nice so the parameters show up in IPython tab completion</span>
+        <span class="k">class</span> <span class="nc">SubParameterDict</span><span class="p">(</span><span class="n">ParameterDict</span><span class="p">):</span>
+            <span class="vm">__slots__</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">+</span><span class="p">[</span><span class="s2">&quot;_members&quot;</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="nb">dict</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="n">SubParameterDict</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize a ParameterDict</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        params : (kwargs)</span>
+<span class="sd">            A kwargs dict of Parameters of other ParameterDicts</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Init the dict with the provided parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_members</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span> <span class="o">+</span> \
+                                   <span class="nb">list</span><span class="p">(</span><span class="n">ParameterDict</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)))</span><span class="o">+</span><span class="p">[</span><span class="s2">&quot;_members&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_members</span><span class="p">:</span>
+                <span class="n">type_error</span><span class="p">(</span><span class="s2">&quot;The name of a parameter cannot be &quot;</span>\
+                           <span class="s2">&quot;an attribute of &#39;ParameterDict&#39;: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sp</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Basic</span><span class="p">)</span> <span class="ow">and</span> \
+                   <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">atom</span><span class="p">,</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">Number</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">))</span>
+                       <span class="k">for</span> <span class="n">atom</span> <span class="ow">in</span> <span class="n">value</span><span class="o">.</span><span class="n">atoms</span><span class="p">()):</span>
+                <span class="n">params</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">SlaveParam</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Param</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                    <span class="n">value</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">key</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ParameterDict</span><span class="p">):</span>
+                <span class="n">params</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_members</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+        <span class="c1"># Initialize base class</span>
+        <span class="nb">dict</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">items</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a nice representation of the ParameterDict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_data</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;ParameterDict(</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="o">%</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">=</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span>\
+            <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="n">par_cmp</span><span class="p">)))</span>
+
+    <span class="k">def</span> <span class="nf">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="n">type_error</span><span class="p">(</span><span class="s2">&quot;ParameterDict does not support item deletion&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ParameterDict.pop"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.pop">[docs]</a>    <span class="k">def</span> <span class="nf">pop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="n">type_error</span><span class="p">(</span><span class="s2">&quot;ParameterDict does not support item removal&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ParameterDict.clear"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">type_error</span><span class="p">(</span><span class="s2">&quot;ParameterDict does not support item removal&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ParameterDict.fromkeys"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.fromkeys">[docs]</a>    <span class="k">def</span> <span class="nf">fromkeys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="n">type_error</span><span class="p">(</span><span class="s2">&quot;ParameterDict does not support fromkeys&quot;</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ParameterDict</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;_members&quot;</span><span class="p">:</span>
+            <span class="nb">dict</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Check if key is a registered parameter</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">dict</span><span class="o">.</span><span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;&#39;</span><span class="si">%s</span><span class="s2">&#39; is not an item in this ParameterDict.&quot;</span> <span class="o">%</span> <span class="n">key</span><span class="p">,</span> \
+                  <span class="n">exception</span><span class="o">=</span><span class="ne">AttributeError</span><span class="p">)</span>
+
+        <span class="c1"># Get the original value, used for checks</span>
+        <span class="n">org_value</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">org_value</span><span class="p">,</span> <span class="n">ParameterDict</span><span class="p">):</span>
+            <span class="n">type_error</span><span class="p">(</span><span class="s2">&quot;cannot overwrite a ParameterDict&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Set the new value</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">org_value</span><span class="p">,</span> <span class="n">Param</span><span class="p">):</span>
+            <span class="n">org_value</span><span class="o">.</span><span class="n">setvalue</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">dict</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ParameterDict</span><span class="o">.</span><span class="fm">__getattr__</span><span class="p">)</span>
+
+        <span class="c1"># Fix for newer ipython</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;__dict__&quot;</span><span class="p">,</span> <span class="s2">&quot;__methods__&quot;</span><span class="p">,</span> <span class="s2">&quot;trait_names&quot;</span><span class="p">,</span> <span class="s2">&quot;_getAttributeNames&quot;</span><span class="p">]:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">dict</span><span class="o">.</span><span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;&#39;</span><span class="si">%s</span><span class="s2">&#39; is not an item in this ParameterDict.&quot;</span> <span class="o">%</span> <span class="n">key</span><span class="p">,</span> \
+                  <span class="n">exception</span><span class="o">=</span><span class="ne">AttributeError</span><span class="p">)</span>
+
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Param</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__getattr__</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__members__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_members</span>
+
+<div class="viewcode-block" id="ParameterDict.iterparams"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.iterparams">[docs]</a>    <span class="k">def</span> <span class="nf">iterparams</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recurse</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Iterate over all Param</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        recurse : bool (optional)</span>
+<span class="sd">            If True each encountered ParameterDict will be entered</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="n">par_cmp</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ParameterDict</span><span class="p">)</span> <span class="ow">and</span> <span class="n">recurse</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">new_value</span> <span class="ow">in</span> <span class="n">value</span><span class="o">.</span><span class="n">iterparams</span><span class="p">(</span><span class="n">recurse</span><span class="p">):</span>
+                    <span class="k">yield</span> <span class="n">new_value</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Param</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="n">value</span></div>
+
+<div class="viewcode-block" id="ParameterDict.iterparameterdicts"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.iterparameterdicts">[docs]</a>    <span class="k">def</span> <span class="nf">iterparameterdicts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Iterate over all ParameterDicts</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        recurse : bool (optional)</span>
+<span class="sd">            If True each encountered ParameterDict will also be entered</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="n">par_cmp</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ParameterDict</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="n">value</span></div>
+
+    <span class="c1"># A nice string to use &#39;\xe2\x88\x88&#39;= \in and &#39;\xe2\x88\x9e&#39;= \infty</span>
+<div class="viewcode-block" id="ParameterDict.format_data"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.format_data">[docs]</a>    <span class="k">def</span> <span class="nf">format_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Make a recursive indented pretty-print string of</span>
+<span class="sd">        self and parameter subsets.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">indent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">indent</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">max_key_length</span>   <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">max_value_length</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">max_length</span>       <span class="o">=</span> <span class="mi">15</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ParameterDict</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_key_length</span><span class="p">:</span>
+                    <span class="n">max_key_length</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">key</span><span class="p">),</span> <span class="n">max_length</span><span class="p">)</span>
+                <span class="n">value_length</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">format_width</span><span class="p">()</span> \
+                               <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Param</span><span class="p">)</span> \
+                               <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">value_length</span> <span class="o">&gt;</span> <span class="n">max_value_length</span><span class="p">:</span>
+                    <span class="n">max_value_length</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">value_length</span><span class="p">,</span> <span class="n">max_length</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="n">par_cmp</span><span class="p">):</span>
+
+            <span class="c1"># If the value is a ParameterDict</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ParameterDict</span><span class="p">):</span>
+                <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;    &quot;</span><span class="o">*</span><span class="n">indent</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> = {&quot;</span><span class="o">%</span><span class="n">key</span><span class="p">)</span>
+                <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">format_data</span><span class="p">(</span><span class="n">indent</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+                <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;    &quot;</span><span class="o">*</span><span class="n">indent</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Param</span><span class="p">):</span>
+                <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;    &quot;</span><span class="o">*</span><span class="n">indent</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> = </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span>\
+                     <span class="p">(</span><span class="n">KEY_JUST</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">max_key_length</span><span class="p">),</span> \
+                      <span class="n">value</span><span class="o">.</span><span class="n">format_data</span><span class="p">(</span><span class="n">str_length</span><span class="o">=</span><span class="n">max_value_length</span><span class="p">)))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;    &quot;</span><span class="o">*</span><span class="n">indent</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> = </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span>\
+                     <span class="p">(</span><span class="n">KEY_JUST</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">max_key_length</span><span class="p">),</span> \
+                      <span class="n">VALUE_JUST</span><span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="n">max_value_length</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ParameterDict.copy"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">to_dict</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Make a deep copy of self, including recursive copying of parameter</span>
+<span class="sd">        subsets.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        to_dict : bool (optional)</span>
+<span class="sd">            Return a dict with items representing the values of the</span>
+<span class="sd">            Parameters</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+
+            <span class="c1"># If the value is a ParameterDict</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ParameterDict</span><span class="p">):</span>
+                <span class="n">items</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">to_dict</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">to_dict</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Param</span><span class="p">):</span>
+                    <span class="n">items</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">SlaveParam</span><span class="p">):</span>
+                    <span class="n">items</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">items</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+
+        <span class="c1"># FIXME: Why is this nessesary?</span>
+        <span class="n">items</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;__builtins__&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">to_dict</span><span class="p">:</span>
+            <span class="n">ch</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="o">**</span><span class="n">items</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ch</span> <span class="o">=</span> <span class="n">ParameterDict</span><span class="p">(</span><span class="o">**</span><span class="n">items</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ch</span></div>
+
+<div class="viewcode-block" id="ParameterDict.update"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A recursive update that handles parameter subsets</span>
+<span class="sd">        correctly unlike dict.update.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ParameterDict</span><span class="o">.</span><span class="n">update</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">self_value</span>  <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="n">other_value</span> <span class="o">=</span> <span class="n">other</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">self_value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="c1"># Update my own subdict with others subdict</span>
+                <span class="n">self_value</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">other_value</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">self_value</span><span class="p">,</span> <span class="n">Param</span><span class="p">):</span>
+                <span class="c1"># Set my own value to others value</span>
+                <span class="n">self_value</span><span class="o">.</span><span class="n">setvalue</span><span class="p">(</span><span class="n">other_value</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">other_value</span></div>
+
+<div class="viewcode-block" id="ParameterDict.parse_args"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.parse_args">[docs]</a>    <span class="k">def</span> <span class="nf">parse_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">usage</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parse a list of options. use sys.argv as default</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        options : list of str (optional)</span>
+<span class="sd">            List of options. By default sys.argv[1:] is used. This argument</span>
+<span class="sd">            is mostly for debugging.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">optparse</span><span class="o">,</span> <span class="nn">sys</span>
+
+        <span class="c1"># Fixing bug for unicode help output</span>
+        <span class="k">class</span> <span class="nc">OptionParser</span><span class="p">(</span><span class="n">optparse</span><span class="o">.</span><span class="n">OptionParser</span><span class="p">):</span>
+            <span class="k">def</span> <span class="nf">print_help</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">f</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">f</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">format_help</span><span class="p">())</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">OptionParser</span><span class="p">(</span><span class="n">usage</span> <span class="o">=</span> <span class="n">usage</span> <span class="ow">or</span> <span class="s2">&quot;usage: %prog [options]&quot;</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">callback</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value_type</span><span class="p">,</span> <span class="n">sequence_type</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <span class="s2">&quot; Return a callback function that is used to parse the argument&quot;</span>
+            <span class="k">if</span> <span class="n">value_type</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]:</span>
+                <span class="k">def</span> <span class="nf">par_setter</span><span class="p">(</span><span class="n">option</span><span class="p">,</span> <span class="n">opt_str</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
+                    <span class="s2">&quot; Callback function to set the parameter from the options.&quot;</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">parent</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+                        <span class="c1">#debug(&quot;Setting parameter %s to %s&quot;%\</span>
+                        <span class="c1"># (opt_str.replace(PAR_PREFIX, &quot;&quot;), str(value)))</span>
+                    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="n">value_error</span><span class="p">(</span><span class="s2">&quot;Trying to set &#39;</span><span class="si">%s</span><span class="s2">&#39; while parsing &quot;</span>\
+                                    <span class="s2">&quot;command line, but </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">def</span> <span class="nf">par_setter</span><span class="p">(</span><span class="n">option</span><span class="p">,</span> <span class="n">opt_str</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
+                    <span class="k">assert</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span>
+                    <span class="n">done</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="n">rargs</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">rargs</span>
+                    <span class="k">while</span> <span class="n">rargs</span><span class="p">:</span>
+                        <span class="n">arg</span> <span class="o">=</span> <span class="n">rargs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+                        <span class="c1"># Stop if we hit an arg like &quot;--par&quot;, i.e, PAR_PREFIX</span>
+                        <span class="k">if</span> <span class="n">PAR_PREFIX</span> <span class="ow">in</span> <span class="n">arg</span><span class="p">:</span>
+                            <span class="k">break</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">try</span><span class="p">:</span>
+                                <span class="c1"># Convert the value</span>
+                                <span class="n">item</span> <span class="o">=</span> <span class="n">sequence_type</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+                                <span class="n">value</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                            <span class="k">except</span>  <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                                <span class="n">value_error</span><span class="p">(</span>\
+                                    <span class="s2">&quot;Could not convert </span><span class="si">%s</span><span class="s2"> to &#39;</span><span class="si">%s</span><span class="s2">&#39;, while &quot;</span>\
+                                    <span class="s2">&quot;setting parameter </span><span class="si">%s</span><span class="s2">; </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span>\
+                                    <span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">sequence_type</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span>
+                                     <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+
+                            <span class="k">del</span> <span class="n">rargs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="c1"># Changing a list to a tuple if needed</span>
+                        <span class="n">parent</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                        <span class="c1">#debug(&quot;Setting parameter %s to %s&quot;%\</span>
+                        <span class="c1">#(opt_str.replace(PAR_PREFIX, &quot;&quot;), str(value)))</span>
+                    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="n">value_error</span><span class="p">(</span><span class="s2">&quot;Trying to set &#39;</span><span class="si">%s</span><span class="s2">&#39; while parsing &quot;</span>\
+                                    <span class="s2">&quot;command line, but </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span>
+                                                              <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+
+            <span class="k">return</span> <span class="n">par_setter</span>
+
+        <span class="k">def</span> <span class="nf">add_options</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">opt_base</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">parent</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="n">par_cmp</span><span class="p">):</span>
+                <span class="n">opt_base_copy</span> <span class="o">=</span> <span class="n">opt_base</span><span class="p">[:]</span>
+                <span class="k">if</span> <span class="n">opt_base</span> <span class="o">!=</span> <span class="n">PAR_PREFIX</span><span class="p">:</span>
+                    <span class="n">opt_base_copy</span> <span class="o">+=</span> <span class="s2">&quot;.&quot;</span>
+
+                <span class="c1"># If the value is a ParameterDict</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ParameterDict</span><span class="p">):</span>
+
+                    <span class="c1"># Call the function recursively</span>
+                    <span class="n">add_options</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%s%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">opt_base_copy</span><span class="p">,</span> <span class="n">key</span><span class="p">))</span>
+                    <span class="k">continue</span>
+
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Param</span><span class="p">):</span>
+
+                    <span class="c1"># ConstParam, ArrayParam cannot be parsed, yet</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="n">ArrayParam</span><span class="p">,</span> <span class="n">ConstParam</span><span class="p">)):</span>
+                        <span class="k">continue</span>
+
+                    <span class="c1"># If the value is a Param get the value</span>
+                    <span class="n">actuall_value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
+
+                    <span class="c1"># Get description</span>
+                    <span class="n">description</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">description</span>
+
+                    <span class="c1"># Check for sequence</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">actuall_value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+                        <span class="c1"># If a default length of the list or tuple is 0,</span>
+                        <span class="c1"># assume sequence type to be int</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">actuall_value</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">sequence_type</span> <span class="o">=</span> <span class="nb">int</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="c1"># Else assume it to be equal to the first argument</span>
+                            <span class="n">sequence_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">actuall_value</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">sequence_type</span> <span class="o">=</span> <span class="kc">None</span>
+
+                    <span class="c1"># Nicely formated value</span>
+                    <span class="n">formated_value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">format_data</span><span class="p">()</span>
+
+                <span class="c1"># Check for available types</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">type</span><span class="p">(</span><span class="n">actuall_value</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">FORMAT_CONVERTER</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                    <span class="k">continue</span>
+
+                <span class="c1"># Add option with callback function</span>
+                <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">opt_base_copy</span><span class="p">,</span> <span class="n">key</span><span class="p">),</span> \
+                                  <span class="n">action</span> <span class="o">=</span> <span class="s2">&quot;callback&quot;</span><span class="p">,</span>
+                                  <span class="n">callback</span> <span class="o">=</span> <span class="n">callback</span><span class="p">(</span>\
+                                  <span class="n">parent</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">actuall_value</span><span class="p">),</span> <span class="n">sequence_type</span><span class="p">),</span>
+                                  <span class="nb">type</span> <span class="o">=</span> <span class="n">FORMAT_CONVERTER</span><span class="p">[</span><span class="nb">type</span><span class="p">(</span><span class="n">actuall_value</span><span class="p">)],</span>
+                                  <span class="n">help</span> <span class="o">=</span> <span class="s2">&quot;Default(</span><span class="si">%s</span><span class="s2">)</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">formated_value</span><span class="p">),</span>
+                                        <span class="p">(</span><span class="s2">&quot;: &quot;</span> <span class="o">+</span> <span class="n">description</span><span class="p">)</span> <span class="k">if</span> <span class="n">description</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+
+        <span class="c1"># Start recursively adding options</span>
+        <span class="n">add_options</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">PAR_PREFIX</span><span class="p">)</span>
+
+        <span class="c1"># Parse command line options</span>
+        <span class="k">if</span> <span class="n">options</span><span class="p">:</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ParameterDict.optstr"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.optstr">[docs]</a>    <span class="k">def</span> <span class="nf">optstr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a string with option set</span>
+
+<span class="sd">        An option string can be sent to a script using a parameter dict</span>
+<span class="sd">        to set its parameters from command line options</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">option_list</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">opt_base</span><span class="p">):</span>
+            <span class="n">ret_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">opt_base_copy</span> <span class="o">=</span> <span class="n">opt_base</span><span class="p">[:]</span>
+            <span class="k">if</span> <span class="n">opt_base</span> <span class="o">!=</span> <span class="n">PAR_PREFIX</span><span class="p">:</span>
+                <span class="n">opt_base_copy</span> <span class="o">+=</span> <span class="s2">&quot;.&quot;</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">parent</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="n">par_cmp</span><span class="p">):</span>
+                <span class="c1"># If the value is a ParameterDict</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ParameterDict</span><span class="p">):</span>
+                    <span class="c1"># Call the function recursively</span>
+                    <span class="n">ret_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>\
+                        <span class="n">option_list</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%s%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">opt_base_copy</span><span class="p">,</span> <span class="n">key</span><span class="p">)))</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Param</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="n">ConstParam</span><span class="p">,</span> <span class="n">SlaveParam</span><span class="p">)):</span>
+                        <span class="k">continue</span>
+                    <span class="c1"># If the value is a Param get the value</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
+
+                <span class="c1"># Check for available types</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">FORMAT_CONVERTER</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                    <span class="k">continue</span>
+
+                <span class="n">ret_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">opt_base_copy</span><span class="p">,</span> <span class="n">key</span><span class="p">))</span>
+                <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">]:</span>
+                    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                        <span class="n">ret_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="k">else</span> <span class="n">value</span>
+                    <span class="n">ret_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+
+            <span class="k">return</span> <span class="n">ret_list</span>
+
+        <span class="k">return</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">option_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">PAR_PREFIX</span><span class="p">))</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Johan Hake, Henrik Finsberg
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

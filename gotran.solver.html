@@ -1,0 +1,396 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>gotran.solver package &mdash; gotran 2019.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="gotran.model package" href="gotran.model.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> gotran
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Programmers reference:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="gotran.html">gotran package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="gotran.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="gotran.algorithms.html">gotran.algorithms package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.codegeneration.html">gotran.codegeneration package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.common.html">gotran.common package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.input.html">gotran.input package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.model.html">gotran.model package</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">gotran.solver package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-gotran.solver.odesolver">gotran.solver.odesolver module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-gotran.solver.scipysolver">gotran.solver.scipysolver module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-gotran.solver.sundialssolver">gotran.solver.sundialssolver module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-gotran.solver.utils">gotran.solver.utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-gotran.solver">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gotran.html#module-gotran">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">gotran</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="gotran.html">gotran package</a> &raquo;</li>
+        
+      <li>gotran.solver package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/gotran.solver.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="gotran-solver-package">
+<h1>gotran.solver package<a class="headerlink" href="#gotran-solver-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-gotran.solver.odesolver">
+<span id="gotran-solver-odesolver-module"></span><h2>gotran.solver.odesolver module<a class="headerlink" href="#module-gotran.solver.odesolver" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="gotran.solver.odesolver.ODESolver">
+<code class="sig-prename descclassname">gotran.solver.odesolver.</code><code class="sig-name descname">ODESolver</code><span class="sig-paren">(</span><em class="sig-param">ode</em>, <em class="sig-param">method='scipy'</em>, <em class="sig-param">**options</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/solver/odesolver.html#ODESolver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gotran.solver.odesolver.ODESolver" title="Permalink to this definition">¶</a></dt>
+<dd><p>A generic ODE solver for solving problem of the types on the form,</p>
+<div class="math notranslate nohighlight">
+\[\dot{y} = f(t,y), \quad y(t_0) = y_0.\]</div>
+<p>Here one need to specific the backend which is either Scipy or Assimulo.</p>
+<p><em>Arguments</em></p>
+<dl class="simple">
+<dt>ode<span class="classifier">gotran.ODE or gotran.CellModel</span></dt><dd><p>The ode you want to solve in a gotran object</p>
+</dd>
+<dt>method<span class="classifier">str</span></dt><dd><p>Solver method. Possible inputs are  or ‘scipy’ (Default:’sundials’)</p>
+</dd>
+<dt>options<span class="classifier">dict:</span></dt><dd><p>Options for the solver, see <cite>list_solver_options</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gotran.solver.odesolver.ODESolverError">
+<em class="property">exception </em><code class="sig-prename descclassname">gotran.solver.odesolver.</code><code class="sig-name descname">ODESolverError</code><a class="reference internal" href="_modules/gotran/solver/odesolver.html#ODESolverError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gotran.solver.odesolver.ODESolverError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="gotran.solver.odesolver.Solver">
+<em class="property">class </em><code class="sig-prename descclassname">gotran.solver.odesolver.</code><code class="sig-name descname">Solver</code><span class="sig-paren">(</span><em class="sig-param">ode</em>, <em class="sig-param">**options</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/solver/odesolver.html#Solver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gotran.solver.odesolver.Solver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="method">
+<dt id="gotran.solver.odesolver.Solver.module">
+<em class="property">property </em><code class="sig-name descname">module</code><a class="headerlink" href="#gotran.solver.odesolver.Solver.module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gotran.solver.odesolver.Solver.monitor">
+<code class="sig-name descname">monitor</code><span class="sig-paren">(</span><em class="sig-param">tsteps</em>, <em class="sig-param">results</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/solver/odesolver.html#Solver.monitor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gotran.solver.odesolver.Solver.monitor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get monitored values</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gotran.solver.odesolver.Solver.monitor_indices">
+<code class="sig-name descname">monitor_indices</code><span class="sig-paren">(</span><em class="sig-param">*monitored</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/solver/odesolver.html#Solver.monitor_indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gotran.solver.odesolver.Solver.monitor_indices" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gotran.solver.odesolver.Solver.monitor_names">
+<em class="property">property </em><code class="sig-name descname">monitor_names</code><a class="headerlink" href="#gotran.solver.odesolver.Solver.monitor_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gotran.solver.odesolver.Solver.solve">
+<code class="sig-name descname">solve</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/solver/odesolver.html#Solver.solve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gotran.solver.odesolver.Solver.solve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Solver ODE. See docs for the different solvers
+for solver specific arguments.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gotran.solver.odesolver.Solver.state_indices">
+<code class="sig-name descname">state_indices</code><span class="sig-paren">(</span><em class="sig-param">*states</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/solver/odesolver.html#Solver.state_indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gotran.solver.odesolver.Solver.state_indices" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gotran.solver.odesolver.Solver.state_names">
+<em class="property">property </em><code class="sig-name descname">state_names</code><a class="headerlink" href="#gotran.solver.odesolver.Solver.state_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gotran.solver.odesolver.Solver.update_model_parameter">
+<code class="sig-name descname">update_model_parameter</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/solver/odesolver.html#Solver.update_model_parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gotran.solver.odesolver.Solver.update_model_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update model parameters according
+to parameters in the cell model</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="gotran.solver.odesolver.check_method">
+<code class="sig-prename descclassname">gotran.solver.odesolver.</code><code class="sig-name descname">check_method</code><span class="sig-paren">(</span><em class="sig-param">method</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/solver/odesolver.html#check_method"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gotran.solver.odesolver.check_method" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="gotran.solver.odesolver.generate_module">
+<code class="sig-prename descclassname">gotran.solver.odesolver.</code><code class="sig-name descname">generate_module</code><span class="sig-paren">(</span><em class="sig-param">ode</em>, <em class="sig-param">monitored</em>, <em class="sig-param">**options</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/solver/odesolver.html#generate_module"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gotran.solver.odesolver.generate_module" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a module to</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gotran.solver.odesolver.timeout">
+<code class="sig-prename descclassname">gotran.solver.odesolver.</code><code class="sig-name descname">timeout</code><span class="sig-paren">(</span><em class="sig-param">timeout_seconds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/solver/odesolver.html#timeout"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gotran.solver.odesolver.timeout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-gotran.solver.scipysolver">
+<span id="gotran-solver-scipysolver-module"></span><h2>gotran.solver.scipysolver module<a class="headerlink" href="#module-gotran.solver.scipysolver" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="gotran.solver.scipysolver.ScipySolver">
+<em class="property">class </em><code class="sig-prename descclassname">gotran.solver.scipysolver.</code><code class="sig-name descname">ScipySolver</code><span class="sig-paren">(</span><em class="sig-param">ode</em>, <em class="sig-param">**options</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/solver/scipysolver.html#ScipySolver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gotran.solver.scipysolver.ScipySolver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gotran.solver.odesolver.Solver" title="gotran.solver.odesolver.Solver"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.solver.odesolver.Solver</span></code></a></p>
+<dl class="method">
+<dt id="gotran.solver.scipysolver.ScipySolver.get_options">
+<code class="sig-name descname">get_options</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/solver/scipysolver.html#ScipySolver.get_options"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gotran.solver.scipysolver.ScipySolver.get_options" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gotran.solver.scipysolver.ScipySolver.list_solver_options">
+<em class="property">static </em><code class="sig-name descname">list_solver_options</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/solver/scipysolver.html#ScipySolver.list_solver_options"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gotran.solver.scipysolver.ScipySolver.list_solver_options" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-gotran.solver.sundialssolver">
+<span id="gotran-solver-sundialssolver-module"></span><h2>gotran.solver.sundialssolver module<a class="headerlink" href="#module-gotran.solver.sundialssolver" title="Permalink to this headline">¶</a></h2>
+<p>To use install assimulo which is a python wrapper of
+the sundials solvers</p>
+<p>conda install assimulo</p>
+<dl class="class">
+<dt id="gotran.solver.sundialssolver.SundialsSolver">
+<em class="property">class </em><code class="sig-prename descclassname">gotran.solver.sundialssolver.</code><code class="sig-name descname">SundialsSolver</code><span class="sig-paren">(</span><em class="sig-param">ode</em>, <em class="sig-param">method='cvode'</em>, <em class="sig-param">**options</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/solver/sundialssolver.html#SundialsSolver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gotran.solver.sundialssolver.SundialsSolver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gotran.solver.odesolver.Solver" title="gotran.solver.odesolver.Solver"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.solver.odesolver.Solver</span></code></a></p>
+<dl class="method">
+<dt id="gotran.solver.sundialssolver.SundialsSolver.get_options">
+<code class="sig-name descname">get_options</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/solver/sundialssolver.html#SundialsSolver.get_options"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gotran.solver.sundialssolver.SundialsSolver.get_options" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get solver options for the current solver</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gotran.solver.sundialssolver.SundialsSolver.list_solver_options">
+<em class="property">static </em><code class="sig-name descname">list_solver_options</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/solver/sundialssolver.html#SundialsSolver.list_solver_options"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gotran.solver.sundialssolver.SundialsSolver.list_solver_options" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gotran.solver.sundialssolver.SundialsSolver.problem">
+<em class="property">property </em><code class="sig-name descname">problem</code><a class="headerlink" href="#gotran.solver.sundialssolver.SundialsSolver.problem" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gotran.solver.sundialssolver.SundialsSolver.solver">
+<em class="property">property </em><code class="sig-name descname">solver</code><a class="headerlink" href="#gotran.solver.sundialssolver.SundialsSolver.solver" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="gotran.solver.sundialssolver.SundialsNotInstalled">
+<em class="property">exception </em><code class="sig-prename descclassname">gotran.solver.sundialssolver.</code><code class="sig-name descname">SundialsNotInstalled</code><a class="reference internal" href="_modules/gotran/solver/sundialssolver.html#SundialsNotInstalled"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gotran.solver.sundialssolver.SundialsNotInstalled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></a></p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-gotran.solver.utils">
+<span id="gotran-solver-utils-module"></span><h2>gotran.solver.utils module<a class="headerlink" href="#module-gotran.solver.utils" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="gotran.solver.utils.suppress_stdout_stderr">
+<em class="property">class </em><code class="sig-prename descclassname">gotran.solver.utils.</code><code class="sig-name descname">suppress_stdout_stderr</code><a class="reference internal" href="_modules/gotran/solver/utils.html#suppress_stdout_stderr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gotran.solver.utils.suppress_stdout_stderr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>A context manager for doing a “deep suppression” of stdout and stderr in
+Python, i.e. will suppress all print, even if the print originates in a
+compiled C/Fortran sub-function.
+This will not suppress raised exceptions, since exceptions are printed
+to stderr just before a script exits, and after the context manager has
+exited (at least, I think that is why it lets exceptions through).</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-gotran.solver">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-gotran.solver" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="gotran.model.html" class="btn btn-neutral float-left" title="gotran.model package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Johan Hake, Henrik Finsberg
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
