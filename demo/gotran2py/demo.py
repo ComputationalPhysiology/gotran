@@ -9,7 +9,7 @@ y0 = model.init_state_values()
 parameters = model.init_parameter_values()
 
 # Time steps
-tsteps = np.arange(0, 100, 0.1)
+tsteps = np.arange(0, 400, 0.1)
 
 # Solve ODE
 y = odeint(model.rhs, y0, tsteps, args=(parameters,))

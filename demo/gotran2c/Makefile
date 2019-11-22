@@ -11,7 +11,7 @@ all: $(executable) $(libfile)
 $(executable): demo.o
 
 $(libfile): CFLAGS += -fPIC
-$(libfile): $(sources)
+$(libfile): $(sources) tentusscher_panfilov_2006_M_cell.h
 	$(CC) $(CFLAGS) -shared -o $@ $^
 
 # 

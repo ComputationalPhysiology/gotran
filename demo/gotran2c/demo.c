@@ -42,6 +42,15 @@ void ode_solve_rush_larsen(double* u, const double* parameters,
   }
 }
 
+int state_count()
+{
+  return NUM_STATES;
+}
+
+int parameter_count()
+{
+  return NUM_PARAMS;
+}
 
 int main(int argc, char *argv[])
 {
