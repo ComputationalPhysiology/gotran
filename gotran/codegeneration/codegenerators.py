@@ -1148,7 +1148,7 @@ class CCodeGenerator(BaseCodeGenerator):
         Generate enum for state variables
         """
         indent_str = self.indent * " "
-        member_lines = ["{0}{1},".format(indent_str, self._state_enum_val(state)) for state in ode.states]
+        member_lines = ["{0}{1},".format(indent_str, self._state_enum_val(state)) for state in ode.full_states]
         enum = ["enum state {"]
         enum.extend(member_lines)
         enum.append("{0}{1},".format(indent_str, "NUM_STATES"))
