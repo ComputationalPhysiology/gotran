@@ -14,7 +14,7 @@ void ode_solve_forward_euler(double* u, const double* parameters,
   int save_it = 1;
   int it, j;
   for (it = 1; it <= num_timesteps; it++) {
-    t = t_values[it];
+    t = t_values[it-1];
     //forward_explicit_euler(u, t, dt, parameters, celltype);
     forward_explicit_euler(u, t, dt, parameters);
     for (j=0; j < NUM_STATES; j++) {
@@ -33,7 +33,7 @@ void ode_solve_rush_larsen(double* u, const double* parameters,
   int save_it = 1;
   int it, j;
   for (it = 1; it <= num_timesteps; it++) {
-    t = t_values[it];
+    t = t_values[it-1];
     forward_rush_larsen(u, t, dt, parameters);
     for (j=0; j < NUM_STATES; j++) {
       u_values[save_it*NUM_STATES + j] = u[j];
