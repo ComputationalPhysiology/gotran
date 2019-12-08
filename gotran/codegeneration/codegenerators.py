@@ -1263,7 +1263,10 @@ class CCodeGenerator(BaseCodeGenerator):
         check_arg(ode, ODE)
         parameters = ode.parameters
 
-        max_length = max(len(param.name) for param in parameters)
+        # determine the longest parameter name
+        max_length = 1 # if there are no parameters, just use 1
+        if len(parameters) > 0:
+            max_length = max(len(param.name) for param in parameters)
 
         if self.params.code['body']['use_enum']:
 
