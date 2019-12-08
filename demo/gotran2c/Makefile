@@ -12,7 +12,7 @@ $(executable): demo.o
 
 $(libfile): CFLAGS += -fPIC
 $(libfile): $(sources) tentusscher_panfilov_2006_M_cell.h
-	$(CC) $(CFLAGS) -shared -o $@ $^
+	$(CC) $(CFLAGS) -shared -o $@ $<
 
 # 
 demo.o: tentusscher_panfilov_2006_M_cell.h
