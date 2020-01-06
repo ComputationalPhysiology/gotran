@@ -14,10 +14,9 @@ libpath = os.path.join(libdir, libname)
 assert os.path.isfile(libpath)
 libbase_model = np.ctypeslib.load_library(libname, libdir)
 
-# Need to hardcode this
-num_parameters = 70
-num_states = 19
-
+# Get number of states and parameters from the C library
+num_states = libbase_model.state_count()
+num_parameters = libbase_model.parameter_count()
 
 def init_lib():
     """
@@ -96,7 +95,7 @@ def solve(t_start, t_end, dt, num_steps=None, method='fe'):
 def main():
     
     t_start = 0.0
-    t_end = 100.0
+    t_end = 400.0
     dt = 0.001
 
     t_values, u_values = solve(

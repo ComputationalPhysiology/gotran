@@ -1148,7 +1148,7 @@ class CCodeGenerator(BaseCodeGenerator):
         Generate enum for state variables
         """
         indent_str = self.indent * " "
-        member_lines = ["{0}{1},".format(indent_str, self._state_enum_val(state)) for state in ode.states]
+        member_lines = ["{0}{1},".format(indent_str, self._state_enum_val(state)) for state in ode.full_states]
         enum = ["enum state {"]
         enum.extend(member_lines)
         enum.append("{0}{1},".format(indent_str, "NUM_STATES"))
@@ -1263,7 +1263,10 @@ class CCodeGenerator(BaseCodeGenerator):
         check_arg(ode, ODE)
         parameters = ode.parameters
 
-        max_length = max(len(param.name) for param in parameters)
+        # determine the longest parameter name
+        max_length = 1 # if there are no parameters, just use 1
+        if len(parameters) > 0:
+            max_length = max(len(param.name) for param in parameters)
 
         if self.params.code['body']['use_enum']:
 
