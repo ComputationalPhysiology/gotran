@@ -1,31 +1,29 @@
 # Gotran - General ODE TRAnslator
 
-
 Gotran:
 
-  - provides a Python interface to declare arbitrary ODEs.
+- provides a Python interface to declare arbitrary ODEs.
 
-  - provides an interface for generating CUDA/C/C++/Python/Matlab code for
-    a number of functions including the right hand side and symbolic
-    generation of a Jacobian.
+- provides an interface for generating CUDA/C/C++/OpenCL/Julia/Python/Matlab code for
+  a number of functions including the right hand side and symbolic
+  generation of a Jacobian.
 
-  - is intentionally lightweight, and could be interfaced by other
-    Python libraries needing functionalities to abstract a general
-    ODE.
+- is intentionally lightweight, and could be interfaced by other
+  Python libraries needing functionalities to abstract a general
+  ODE.
 
-  - depends on NumPy, and on SymPy. See further instructions in
-    INSTALL
+- depends on NumPy, and on SymPy. See further instructions in
+  INSTALL
 
-  - can load models from external ODE desciption files such as CellML
+- can load models from external ODE description files such as CellML
 
 ## Documentation
 
-Documentation can be found here: <https://finsberg.github.io/docs.gotran/>
+Documentation can be found here: <http://computationalphysiology.github.io/gotran/>
 
 ## Source code
 
-Source code can be found at <https://bitbucket.org/finsberg/gotran>.
-
+Source code can be found at <https://github.com/ComputationalPhysiology/gotran>.
 
 ## License
 
@@ -35,8 +33,7 @@ gotran is distributed in the hope that it will be useful, but WITHOUT ANY WARRAN
 
 You should have received a copy of the GNU Lesser General Public License along with gotran. If not, see <http://www.gnu.org/licenses/>.
 
-
 ## Contributors
+
 Gotran is developed by Johan Hake.
-The version of gotran found in this repository is maintained by Henrik Finsberg.
-Issues can be reported to <henriknf@simula.no>
+The version of gotran found in this repository is maintained by Henrik Finsberg and Kristian Hustad.

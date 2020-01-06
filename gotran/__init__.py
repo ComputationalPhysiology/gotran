@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-__version__ = "3.0"
+__version__ = "2020.0.1"
 
 import modelparameters.utils
 import modelparameters.parameterdict
@@ -25,54 +25,116 @@ import modelparameters.sympytools
 # Import gotran modules
 from . import common
 from . import model
-#import algorithms
+
+# import algorithms
 from . import codegeneration
 from . import input
 from . import solver
 
 # Import classes and routines from gotran modules
-from .common import (DEBUG, INFO, WARNING, ERROR, CRITICAL,
-                     info, debug, warning, error, set_log_level, list_timings,
-                     GotranException, parameters)
+from .common import (
+    DEBUG,
+    INFO,
+    WARNING,
+    ERROR,
+    CRITICAL,
+    info,
+    debug,
+    warning,
+    error,
+    set_log_level,
+    list_timings,
+    GotranException,
+    parameters,
+)
 
-from .model import (odeobjects, ODEObject, Comment, ODEValueObject, Parameter,
-                    State, SingleODEObjects, Time, Dt, IndexedObject,
-                    cmp_to_key, cmp, odecomponent, ODEComponent, expressions,
-                    Expression, DerivativeExpression, AlgebraicExpression,
-                    StateExpression, StateSolution, RateExpression,
-                    Intermediate, StateDerivative, Derivatives,
-                    IndexedExpression, recreate_expression, ode, ODE,
-                    cellmodel, CellModel, loadmodel, load_ode, exec_ode,
-                    load_cell)
+from .model import (
+    odeobjects,
+    ODEObject,
+    Comment,
+    ODEValueObject,
+    Parameter,
+    State,
+    SingleODEObjects,
+    Time,
+    Dt,
+    IndexedObject,
+    cmp_to_key,
+    cmp,
+    odecomponent,
+    ODEComponent,
+    expressions,
+    Expression,
+    DerivativeExpression,
+    AlgebraicExpression,
+    StateExpression,
+    StateSolution,
+    RateExpression,
+    Intermediate,
+    StateDerivative,
+    Derivatives,
+    IndexedExpression,
+    recreate_expression,
+    ode,
+    ODE,
+    cellmodel,
+    CellModel,
+    loadmodel,
+    load_ode,
+    exec_ode,
+    load_cell,
+)
 
 
-#from algorithms import *
-from .codegeneration import (codecomponent, CodeComponent, algorithmcomponents,
-           JacobianComponent, JacobianActionComponent,
-           FactorizedJacobianComponent,
-           ForwardBackwardSubstitutionComponent,
-           LinearizedDerivativeComponent,
-           CommonSubExpressionODE, componentwise_derivative,
-           linearized_derivatives, jacobian_expressions,
-           jacobian_action_expressions, factorized_jacobian_expressions,
-           forward_backward_subst_expressions,
-           diagonal_jacobian_expressions, rhs_expressions,
-           diagonal_jacobian_action_expressions,
-           monitored_expressions, solvercomponents, JacobianComponent,
-           JacobianActionComponent,
-           FactorizedJacobianComponent,
-           ForwardBackwardSubstitutionComponent,
-           LinearizedDerivativeComponent,
-           CommonSubExpressionODE, componentwise_derivative,
-           linearized_derivatives, jacobian_expressions,
-           jacobian_action_expressions, factorized_jacobian_expressions,
-           forward_backward_subst_expressions,
-           diagonal_jacobian_expressions, rhs_expressions,
-           diagonal_jacobian_action_expressions,
-           monitored_expressions, codegenerators, PythonCodeGenerator,
-           CCodeGenerator, CppCodeGenerator, MatlabCodeGenerator,
-           class_name, CUDACodeGenerator, JuliaCodeGenerator,
-           latexcodegenerator, LatexCodeGenerator)
+# from algorithms import *
+from .codegeneration import (
+    codecomponent,
+    CodeComponent,
+    algorithmcomponents,
+    JacobianComponent,
+    JacobianActionComponent,
+    FactorizedJacobianComponent,
+    ForwardBackwardSubstitutionComponent,
+    LinearizedDerivativeComponent,
+    CommonSubExpressionODE,
+    componentwise_derivative,
+    linearized_derivatives,
+    jacobian_expressions,
+    jacobian_action_expressions,
+    factorized_jacobian_expressions,
+    forward_backward_subst_expressions,
+    diagonal_jacobian_expressions,
+    rhs_expressions,
+    diagonal_jacobian_action_expressions,
+    monitored_expressions,
+    solvercomponents,
+    JacobianComponent,
+    JacobianActionComponent,
+    FactorizedJacobianComponent,
+    ForwardBackwardSubstitutionComponent,
+    LinearizedDerivativeComponent,
+    CommonSubExpressionODE,
+    componentwise_derivative,
+    linearized_derivatives,
+    jacobian_expressions,
+    jacobian_action_expressions,
+    factorized_jacobian_expressions,
+    forward_backward_subst_expressions,
+    diagonal_jacobian_expressions,
+    rhs_expressions,
+    diagonal_jacobian_action_expressions,
+    monitored_expressions,
+    codegenerators,
+    PythonCodeGenerator,
+    CCodeGenerator,
+    CppCodeGenerator,
+    MatlabCodeGenerator,
+    class_name,
+    CUDACodeGenerator,
+    JuliaCodeGenerator,
+    latexcodegenerator,
+    LatexCodeGenerator,
+)
 from .input import *
 from .solver import *
 
