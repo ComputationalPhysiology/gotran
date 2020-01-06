@@ -60,4 +60,6 @@ if __name__ == "__main__":
         raise IOError("Expected the argument to be a file")
 
     file_name = sys.argv[1]
+    info("Note: The OpenCL support in gotran is a work in progress. "
+        "The CUDA generator is recommended for NVIDIA GPUs.")
     main(file_name, params)
