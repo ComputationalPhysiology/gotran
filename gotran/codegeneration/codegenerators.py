@@ -1182,7 +1182,7 @@ class CCodeGenerator(BaseCodeGenerator):
 
         for i, state in enumerate(ode.full_states):
             index = self._state_enum_val(state) if enum_based_indexing else i
-            line = "{0}[{1}{2}] = {3}; ".format(\
+            line = "{0}[{1}{2}] = {3}".format(\
                 states_name, offset, index, state.init)
             if not enum_based_indexing:
                 line += " // {0}".format(state.name)
@@ -1209,7 +1209,7 @@ class CCodeGenerator(BaseCodeGenerator):
 
         for i, param in enumerate(ode.parameters):
             index = self._parameter_enum_val(param) if enum_based_indexing else i
-            line = "{0}[{1}{2}] = {3}{4}; ".format(\
+            line = "{0}[{1}{2}] = {3}{4}".format(\
                 parameter_name, offset, index, param.init, float_str)
             if not enum_based_indexing:
                 line += " // {0}".format(param.name)
@@ -1641,7 +1641,7 @@ class CUDACodeGenerator(CCodeGenerator):
         #    array_name, ode.num_full_states))
 
         # Main body
-        body_lines.extend("{0}[n_nodes * {1} + thread_ind] = {2}{3}; ".format(
+        body_lines.extend("{0}[n_nodes * {1} + thread_ind] = {2}{3}".format(
                               array_name, self._state_enum_val(state), state.init, float_str)
                           for i, state in enumerate(ode.full_states))
 
