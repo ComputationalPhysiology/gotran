@@ -652,7 +652,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
 
         return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
 
-    def init_states_code(self, ode, indent=0):
+    def init_states_code(self, ode, indent=0, perform_range_check=False):
         """
         Generate code for setting initial condition
         """
@@ -663,9 +663,10 @@ class PythonCodeGenerator(BaseCodeGenerator):
         states = ode.full_states
 
         # Start building body
-        body_lines = ["# Imports", "import numpy as np",\
-                      "from modelparameters.utils import Range",\
-                      "", "# Init values"]
+        body_lines = ["# Imports", "import numpy as np"]
+        if perform_range_check:
+            body_lines.append("from modelparameters.utils import Range")
+        body_lines += ["", "# Init values"]
         body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
             state.name, state.init) for state in states)))
         body_lines.append("init_values = np.array([{0}], dtype=np.{1})"\
@@ -677,25 +678,39 @@ class PythonCodeGenerator(BaseCodeGenerator):
                       "value {maxop} {maxvalue}"
         body_lines.append("# State indices and limit checker")
 
-        body_lines.append("state_ind = dict([{0}])".format(\
-            ", ".join("(\"{0}\",({1}, {2}))".format(\
-                state.param.name, i, repr(state.param._range))\
-                      for i, state in enumerate(states))))
+        if perform_range_check:
+            body_lines.append("state_ind = dict([{0}])".format(\
+                ", ".join("(\"{0}\",({1}, {2}))".format(\
+                    state.param.name, i, repr(state.param._range))\
+                        for i, state in enumerate(states))))
+        else:
+            body_lines.append("state_ind = dict([{0}])".format(\
+                ", ".join("(\"{0}\", {1})".format(\
+                    state.param.name, i)\
+                        for i, state in enumerate(states))))
         body_lines.append("")
 
         body_lines.append("for state_name, value in values.items():")
-        body_lines.append(\
-            ["if state_name not in state_ind:",
-             ["raise ValueError(\"{0} is not a state.\".format(state_name))"],
-             # FIXME: Outcommented because of bug in indent_and_split_lines
-             # ["raise ValueError(\"{{0}} is not a state in the {0} ODE\"."\
-             #"format(state_name))".format(self.oderepr.name)],
-             "ind, range = state_ind[state_name]",
-             "if value not in range:",
-             ["raise ValueError(\"While setting \'{0}\' {1}\".format("\
-              "state_name, range.format_not_in(value)))"],
-             "", "# Assign value",
-             "init_values[ind] = value"])
+        if perform_range_check:
+            body_lines.append(\
+                ["if state_name not in state_ind:",
+                ["raise ValueError(\"{0} is not a state.\".format(state_name))"],
+                # FIXME: Outcommented because of bug in indent_and_split_lines
+                # ["raise ValueError(\"{{0}} is not a state in the {0} ODE\"."\
+                #"format(state_name))".format(self.oderepr.name)],
+                "ind, range = state_ind[state_name]",
+                "if value not in range:",
+                ["raise ValueError(\"While setting \'{0}\' {1}\".format("\
+                "state_name, range.format_not_in(value)))"],
+                "", "# Assign value",
+                "init_values[ind] = value"])
+        else:
+            body_lines.append(\
+                ["if state_name not in state_ind:",
+                ["raise ValueError(\"{0} is not a state.\".format(state_name))"],
+                "ind = state_ind[state_name]",
+                "", "# Assign value",
+                "init_values[ind] = value"])
 
         body_lines.append("")
         body_lines.append("return init_values")
@@ -707,7 +722,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
 
         return "\n".join(self.indent_and_split_lines(init_function, indent=indent))
 
-    def init_parameters_code(self, ode, indent=0):
+    def init_parameters_code(self, ode, indent=0, perform_range_check=False):
         """
         Generate code for setting parameters
         """
@@ -718,9 +733,10 @@ class PythonCodeGenerator(BaseCodeGenerator):
         parameters = ode.parameters
 
         # Start building body
-        body_lines = ["# Imports", "import numpy as np",\
-                      "from modelparameters.utils import Range",\
-                      "", "# Param values"]
+        body_lines = ["# Imports", "import numpy as np"]
+        if perform_range_check:
+            body_lines.append("from modelparameters.utils import Range")
+        body_lines += ["", "# Param values"]
         body_lines.append("# {0}".format(", ".join("{0}={1}".format(\
             param.name, param.init) for param in parameters)))
         body_lines.append("init_values = np.array([{0}], dtype=np.{1})"\
@@ -732,24 +748,38 @@ class PythonCodeGenerator(BaseCodeGenerator):
                       "value {maxop} {maxvalue}"
         body_lines.append("# Parameter indices and limit checker")
 
-        body_lines.append("param_ind = dict([{0}])".format(\
-            ", ".join("(\"{0}\", ({1}, {2}))".format(\
-                state.param.name, i, repr(state.param._range))\
-                for i, state in enumerate(parameters))))
+        if perform_range_check:
+            body_lines.append("param_ind = dict([{0}])".format(\
+                ", ".join("(\"{0}\", ({1}, {2}))".format(\
+                    param.param.name, i, repr(param.param._range))\
+                    for i, param in enumerate(parameters))))
+        else:
+            body_lines.append("param_ind = dict([{0}])".format(\
+                ", ".join("(\"{0}\", {1})".format(\
+                    param.param.name, i)\
+                        for i, param in enumerate(parameters))))
         body_lines.append("")
 
         body_lines.append("for param_name, value in values.items():")
-        body_lines.append(\
-            ["if param_name not in param_ind:",
-             ["raise ValueError(\"{0} is not a parameter.\".format(param_name))"],
-             # ["raise ValueError(\"{{0}} is not a param in the {0} ODE\"."\
-             #  "format(param_name))".format(self.oderepr.name)],
-             "ind, range = param_ind[param_name]",
-             "if value not in range:",
-             ["raise ValueError(\"While setting \'{0}\' {1}\".format("\
-              "param_name, range.format_not_in(value)))"],
-             "", "# Assign value",
-             "init_values[ind] = value"])
+        if perform_range_check:
+            body_lines.append(\
+                ["if param_name not in param_ind:",
+                ["raise ValueError(\"{0} is not a parameter.\".format(param_name))"],
+                # ["raise ValueError(\"{{0}} is not a param in the {0} ODE\"."\
+                #  "format(param_name))".format(self.oderepr.name)],
+                "ind, range = param_ind[param_name]",
+                "if value not in range:",
+                ["raise ValueError(\"While setting \'{0}\' {1}\".format("\
+                "param_name, range.format_not_in(value)))"],
+                "", "# Assign value",
+                "init_values[ind] = value"])
+        else:
+            body_lines.append(\
+                ["if param_name not in param_ind:",
+                ["raise ValueError(\"{0} is not a parameter.\".format(param_name))"],
+                "ind = param_ind[state_name]",
+                "", "# Assign value",
+                "init_values[ind] = value"])
 
         body_lines.append("")
         body_lines.append("return init_values")
