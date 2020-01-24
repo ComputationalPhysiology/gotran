@@ -1968,10 +1968,10 @@ class CUDACodeGenerator(CCodeGenerator):
         code_list.append(self.field_states_getter_code(ode))
         code_list.append(self.field_states_setter_code(ode))
         code_list.append(self.field_parameters_setter_code(ode))
-        return  """// Gotran generated CUDA code for the "{0}" model
+        return  """// Gotran generated {2} code for the "{0}" model
 
 {1}
-""".format(ode.name, "\n\n".join(code_list))
+""".format(ode.name, "\n\n".join(code_list), self.language)
 
     def solver_code(self, ode, solver_type):
         code_list = list()
@@ -1982,10 +1982,10 @@ class CUDACodeGenerator(CCodeGenerator):
         code_list.append(self.field_states_setter_code(ode))
         code_list.append(self.init_field_parameters_code(ode))
         code_list.append(self.field_parameters_setter_code(ode))
-        return """// Gotran generated CUDA solver code for the "{0}" model
+        return """// Gotran generated {2} solver code for the "{0}" model
 
 {1}
-""".format(ode.name, "\n\n".join(code_list))
+""".format(ode.name, "\n\n".join(code_list), self.language)
 
 class OpenCLCodeGenerator(CCodeGenerator):
     # Class attributes
@@ -2235,10 +2235,19 @@ class OpenCLCodeGenerator(CCodeGenerator):
         Generate code for setting parameters
         """
 
-        # FIXME: Parameters should be stored in a __constant__ array.
-        # We could have a function to initialise that array.
-        # For now, just initialise the arrays in host memory.
-        return CCodeGenerator.init_parameters_code(self, ode, indent)
+        # FIXME: The OpenCL program cannot contain CPU/host functions,
+        # so we must leave out the parameter initialisation code
+        return "// cannot generate init_parameters function for OpenCL"
+
+    def state_name_to_index_code(self, ode, indent=0):
+        # FIXME: The OpenCL program cannot contain CPU/host functions,
+        # so we must leave out the parameter initialisation code
+        return "// cannot generate state_index function for OpenCL"
+
+    def param_name_to_index_code(self, ode, indent=0):
+        # FIXME: The OpenCL program cannot contain CPU/host functions,
+        # so we must leave out the parameter initialisation code
+        return "// cannot generate parameter_index function for OpenCL"
 
     def init_field_parameters_code(self, ode, indent=0):
         """
@@ -2351,7 +2360,7 @@ class OpenCLCodeGenerator(CCodeGenerator):
         # Add function prototype
         getter_func = self.wrap_body_with_function_prototype(
             body_lines, "get_field_states",
-            "const {0} *{1}, {0} *{2}".format(self.float_type, \
+            "__global const {0} *{1}, __global {0} *{2}".format(self.float_type, \
                                               array_name, field_array_name),
             comment="Get field states", kernel=True)
 
@@ -2406,7 +2415,7 @@ class OpenCLCodeGenerator(CCodeGenerator):
         # Add function prototype
         setter_func = self.wrap_body_with_function_prototype(
             body_lines, "set_field_states",
-            "const {0} *{1}, {0} *{2}".format(self.float_type, \
+            "__global const {0} *{1}, __global {0} *{2}".format(self.float_type, \
                                               field_array_name, array_name),
             comment="Set field states", kernel=True)
 
@@ -2514,7 +2523,7 @@ class OpenCLCodeGenerator(CCodeGenerator):
         code_list.append(self.field_states_getter_code(ode))
         code_list.append(self.field_states_setter_code(ode))
         code_list.append(self.field_parameters_setter_code(ode))
-        return  """// Gotran generated CUDA code for the "{0}" model
+        return  """// Gotran generated OpenCL code for the "{0}" model
 
 {1}
 """.format(ode.name, "\n\n".join(code_list))
@@ -2528,7 +2537,7 @@ class OpenCLCodeGenerator(CCodeGenerator):
         code_list.append(self.field_states_setter_code(ode))
         code_list.append(self.init_field_parameters_code(ode))
         code_list.append(self.field_parameters_setter_code(ode))
-        return """// Gotran generated CUDA solver code for the "{0}" model
+        return """// Gotran generated OpenCL solver code for the "{0}" model
 
 {1}
 """.format(ode.name, "\n\n".join(code_list))
