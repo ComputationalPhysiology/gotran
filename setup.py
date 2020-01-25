@@ -13,7 +13,7 @@ import sys
 
 # Version number
 major = 2020
-minor = 0.1
+minor = 1.0
 VERSION = "{0}.{1}".format(major, minor)
 
 DESCRIPTION = "A declarative language describing ordinary differential equations."

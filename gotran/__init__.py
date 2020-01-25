@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-__version__ = "2020.0.1"
+__version__ = "2020.1.0"
 
 import modelparameters.utils
 import modelparameters.parameterdict
