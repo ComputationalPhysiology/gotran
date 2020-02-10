@@ -6,8 +6,10 @@ from gotran.model.loadmodel import load_ode
 from gotran.codegeneration.codegenerators import PythonCodeGenerator
 from gotran.common.options import parameters
 from gotran.common import error, info, list_timings, Timer
+from modelparameters.parameterdict import *
 
-def main(filename, params):
+
+def gotran2py(filename, params):
     """
     Create a c header file from a gotran model
     """
@@ -28,10 +30,10 @@ def main(filename, params):
     output = params.output
 
     if output:
-        if not(len(output)>2 and output[-2:] == ".py"):
+        if not (len(output) > 2 and output[-2:] == ".py"):
             output += ".py"
     else:
-        output = filename.replace(".ode", "")+".py"
+        output = filename.replace(".ode", "") + ".py"
 
     info("")
     info("Generating Python code for the {0} ode...".format(ode.name))
@@ -42,32 +44,43 @@ def main(filename, params):
     info("  done.")
     with open(output, "w") as f:
         f.write(code)
-    
+
     del timer
-    
+
     if params.list_timings:
         list_timings()
 
-if __name__ == "__main__":
-    import sys, os
-    from modelparameters.parameterdict import *
 
-    generation_params=parameters.generation.copy()
-    
-    params = ParameterDict(\
-        list_timings = Param(False, description="If true timings for reading "\
-                             "and evaluating the model is listed."),
-        output = Param("", description="Specify output file name"),\
-        namespace = OptionParam("math", ["math", "numpy", "ufl"],
-                                description="The math namespace of the generated code"), 
-        **generation_params)
-    params.parse_args(usage="usage: %prog FILE [options]")#sys.argv[2:])
-    
+def main():
+    import sys, os
+
+    generation_params = parameters.generation.copy()
+
+    params = ParameterDict(
+        list_timings=Param(
+            False,
+            description="If true timings for reading "
+            "and evaluating the model is listed.",
+        ),
+        output=Param("", description="Specify output file name"),
+        namespace=OptionParam(
+            "math",
+            ["math", "numpy", "ufl"],
+            description="The math namespace of the generated code",
+        ),
+        **generation_params
+    )
+    params.parse_args(usage="usage: %prog FILE [options]")  # sys.argv[2:])
+
     if len(sys.argv) < 2:
         raise RuntimeError("Expected a single gotran file argument")
 
     if not os.path.isfile(sys.argv[1]):
         raise IOError("Expected the argument to be a file")
-	 
+
     file_name = sys.argv[1]
-    main(file_name, params)
+    gotran2py(file_name, params)
+
+
+if __name__ == "__main__":
+    main()

@@ -7,7 +7,8 @@ from gotran.codegeneration.codegenerators import DOLFINCodeGenerator
 from gotran.model.loadmodel import load_ode
 from gotran.codegeneration.algorithmcomponents import rhs_expressions
 
-def main(filename, params):
+
+def gotran2dolfin(filename, params):
     """
     Create ufl code from a gotran model
     """
@@ -21,7 +22,7 @@ def main(filename, params):
     output = params.output
 
     if output:
-        if not(len(output) > 3 and output[-3:] == ".py"):
+        if not (len(output) > 3 and output[-3:] == ".py"):
             output += ".py"
     else:
         output = filename.replace(".ode", "") + ".py"
@@ -30,17 +31,20 @@ def main(filename, params):
     f.write("from __future__ import division\n\n")
     f.write(code_gen.init_states_code(ode) + "\n\n")
     f.write(code_gen.init_parameters_code(ode) + "\n\n")
-    f.write(code_gen.function_code(rhs_expressions(\
-        ode, params=code_gen.params.code)) + "\n")
+    f.write(
+        code_gen.function_code(rhs_expressions(ode, params=code_gen.params.code)) + "\n"
+    )
 
-if __name__ == "__main__":
+
+def main():
     import sys
     from modelparameters.parameterdict import ParameterDict, OptionParam, Param
 
-    params = ParameterDict(\
-        output = Param("", description="Specify output file name"),\
-        **DOLFINCodeGenerator.default_parameters())
-    params.parse_args(usage="usage: %prog FILE [options]")#sys.argv[2:])
+    params = ParameterDict(
+        output=Param("", description="Specify output file name"),
+        **DOLFINCodeGenerator.default_parameters()
+    )
+    params.parse_args(usage="usage: %prog FILE [options]")  # sys.argv[2:])
 
     if len(sys.argv) < 2:
         raise RuntimeError("Expected a single gotran file argument")
@@ -49,4 +53,8 @@ if __name__ == "__main__":
         raise IOError("Expected the argument to be a file")
 
     file_name = sys.argv[1]
-    main(file_name, params)
+    gotran2dolfin(file_name, params)
+
+
+if __name__ == "__main__":
+    main()

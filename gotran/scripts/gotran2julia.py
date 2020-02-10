@@ -6,8 +6,10 @@ from gotran.model.loadmodel import load_ode
 from gotran.codegeneration.codegenerators import JuliaCodeGenerator
 from gotran.common.options import parameters
 from gotran.common import error, info, list_timings, Timer
+from modelparameters.parameterdict import *
 
-def main(filename, params):
+
+def gotran2julia(filename, params):
     """
     Create a c header file from a gotran model
     """
@@ -28,10 +30,10 @@ def main(filename, params):
     output = params.output
 
     if output:
-        if not(len(output)>2 and output[-2:] == ".jl"):
+        if not (len(output) > 2 and output[-2:] == ".jl"):
             output += ".jl"
     else:
-        output = filename.replace(".ode", "")+".jl"
+        output = filename.replace(".ode", "") + ".jl"
 
     info("")
     info("Generating Julia code for the {0} ode...".format(ode.name))
@@ -45,15 +47,19 @@ def main(filename, params):
     if params.list_timings:
         list_timings()
 
-if __name__ == "__main__":
-    import sys, os
-    from modelparameters.parameterdict import *
 
-    params = ParameterDict(\
-        list_timings = Param(False, description="If true timings for reading "\
-                             "and evaluating the model is listed."),
-        output = Param("", description="Specify output file name"),\
-        **JuliaCodeGenerator.default_parameters())
+def main():
+    import sys, os
+
+    params = ParameterDict(
+        list_timings=Param(
+            False,
+            description="If true timings for reading "
+            "and evaluating the model is listed.",
+        ),
+        output=Param("", description="Specify output file name"),
+        **JuliaCodeGenerator.default_parameters()
+    )
 
     params.parse_args(usage="usage: %prog FILE [options]")
 
@@ -64,4 +70,8 @@ if __name__ == "__main__":
         raise IOError("Expected the argument to be a file")
 
     file_name = sys.argv[1]
-    main(file_name, params)
+    gotran2julia(file_name, params)
+
+
+if __name__ == "__main__":
+    main()

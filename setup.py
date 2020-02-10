@@ -29,7 +29,7 @@ except FileNotFoundError:
     long_description = DESCRIPTION
 
 
-scripts = glob.glob("scripts/*")
+scripts = glob.glob("gotran/scripts/*")
 
 requirements = [
     "sympy<=1.1.1",
@@ -154,8 +154,10 @@ setup(
         "gotran.codegeneration",
         "gotran.input",
         "gotran.solver",
+        "gotran.scripts",
     ],
     install_requires=requirements,
     scripts=scripts,
+    entry_points={"console_scripts": ["gotran=gotran.__main__:main"]},
     cmdclass={"test": run_tests, "clean": clean, "upload": UploadCommand,},
 )
