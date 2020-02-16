@@ -4,6 +4,7 @@
 # System imports
 from setuptools import setup, Command
 from shutil import rmtree
+from pathlib import Path
 import os
 import io
 from os.path import join as pjoin
@@ -29,7 +30,11 @@ except FileNotFoundError:
     long_description = DESCRIPTION
 
 
-scripts = glob.glob("gotran/scripts/*")
+scripts = [
+    os.path.splitext(script)[0]
+    for script in glob.glob("gotran/scripts/*")
+    if Path(script).suffix == ".py" and Path(script).stem != "__init__"
+]
 
 requirements = [
     "sympy<=1.1.1",
@@ -157,7 +162,12 @@ setup(
         "gotran.scripts",
     ],
     install_requires=requirements,
-    scripts=scripts,
-    entry_points={"console_scripts": ["gotran=gotran.__main__:main"]},
-    cmdclass={"test": run_tests, "clean": clean, "upload": UploadCommand,},
+    entry_points={
+        "console_scripts": ["gotran=gotran.__main__:main"]
+        + [
+            f"{Path(script).stem}={'.'.join(script.split(os.path.sep))}:main"
+            for script in scripts
+        ]
+    },
+    cmdclass={"test": run_tests, "clean": clean, "upload": UploadCommand},
 )
