@@ -83,7 +83,7 @@ def main():
     import sys, os
 
     params = ParameterDict(
-        flat_view=Param(True, description="List all objects in a flat view"),
+        flat_view=Param(True, description="List all objects in a flat view")
     )
     params.parse_args(usage="usage: %prog FILE [options]")
 

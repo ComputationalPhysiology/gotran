@@ -15,11 +15,21 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ["Expression", "DerivativeExpression", "AlgebraicExpression", \
-           "StateExpression", "StateSolution", "RateExpression", \
-           "Intermediate", "StateDerivative", "Derivatives", \
-           "IndexedExpression", "StateIndexedExpression", \
-           "ParameterIndexedExpression", "recreate_expression"]
+__all__ = [
+    "Expression",
+    "DerivativeExpression",
+    "AlgebraicExpression",
+    "StateExpression",
+    "StateSolution",
+    "RateExpression",
+    "Intermediate",
+    "StateDerivative",
+    "Derivatives",
+    "IndexedExpression",
+    "StateIndexedExpression",
+    "ParameterIndexedExpression",
+    "recreate_expression",
+]
 
 # ModelParameters imports
 from modelparameters.parameters import SlaveParam
@@ -28,9 +38,19 @@ from modelparameters.codegeneration import sympycode, latex
 from sympy.core.function import AppliedUndef
 
 # Local imports
-from gotran.common import error, check_arg, scalars, debug, DEBUG, \
-     get_log_level, Timer, tuplewrap, parameters
+from gotran.common import (
+    error,
+    check_arg,
+    scalars,
+    debug,
+    DEBUG,
+    get_log_level,
+    Timer,
+    tuplewrap,
+    parameters,
+)
 from gotran.model.odeobjects import *
+
 
 def recreate_expression(expr, *replace_dicts, **kwargs):
     """
@@ -39,8 +59,10 @@ def recreate_expression(expr, *replace_dicts, **kwargs):
 
     replace_type = kwargs.get("replace_type", "xreplace")
     if not replace_type in ["xreplace", "subs"]:
-        error("Valid alternatives for replace_type is: 'xreplace', "\
-              "'subs' got {0}".format(replace_type))
+        error(
+            "Valid alternatives for replace_type is: 'xreplace', "
+            "'subs' got {0}".format(replace_type)
+        )
 
     # First do the replacements
     sympyexpr = expr.expr
@@ -62,17 +84,35 @@ def recreate_expression(expr, *replace_dicts, **kwargs):
         new_expr = AlgebraicExpression(expr.state, sympyexpr)
 
     elif isinstance(expr, IndexedExpression):
-        new_expr = IndexedExpression(expr.basename, expr.indices, \
-                                     sympyexpr, expr.shape, expr._array_params,
-                                     expr._offset_str, enum=expr.enum)
+        new_expr = IndexedExpression(
+            expr.basename,
+            expr.indices,
+            sympyexpr,
+            expr.shape,
+            expr._array_params,
+            expr._offset_str,
+            enum=expr.enum,
+        )
     elif isinstance(expr, StateIndexedExpression):
-        new_expr = StateIndexedExpression(expr.basename, expr.indices, \
-                                          sympyexpr, expr.state, expr.shape, \
-                                          expr._array_params, expr._offset_str)
+        new_expr = StateIndexedExpression(
+            expr.basename,
+            expr.indices,
+            sympyexpr,
+            expr.state,
+            expr.shape,
+            expr._array_params,
+            expr._offset_str,
+        )
     elif isinstance(expr, ParameterIndexedExpression):
-        new_expr = ParameterIndexedExpression(expr.basename, expr.indices, \
-                                          sympyexpr, expr.state, expr.parameter, \
-                                          expr._array_params, expr._offset_str)
+        new_expr = ParameterIndexedExpression(
+            expr.basename,
+            expr.indices,
+            sympyexpr,
+            expr.state,
+            expr.parameter,
+            expr._array_params,
+            expr._offset_str,
+        )
     else:
         error("Should not reach here")
 
@@ -81,10 +121,12 @@ def recreate_expression(expr, *replace_dicts, **kwargs):
 
     return new_expr
 
+
 class Expression(ODEValueObject):
     """
     class for all expressions such as intermediates and derivatives
     """
+
     def __init__(self, name, expr, dependent=None):
         """
         Create an Expression with an associated name
@@ -111,10 +153,11 @@ class Expression(ODEValueObject):
         for sub_expr in expr.atoms(sp.Subs):
 
             # deal with one Subs at a time
-            subs = dict((key,value) for key, value in \
-                    zip(sub_expr.variables, sub_expr.point))
+            subs = dict(
+                (key, value) for key, value in zip(sub_expr.variables, sub_expr.point)
+            )
 
-            expr =  expr.subs(sub_expr, sub_expr.expr.xreplace(subs))
+            expr = expr.subs(sub_expr, sub_expr.expr.xreplace(subs))
 
         # Deal with im and re
         im_exprs = expr.atoms(sp.im)
@@ -128,16 +171,20 @@ class Expression(ODEValueObject):
             expr = expr.xreplace(replace_dict)
 
         if not symbols_from_expr(expr, include_numbers=True):
-            error("expected the expression to contain at least one "\
-                  "Symbol or Number.")
+            error(
+                "expected the expression to contain at least one " "Symbol or Number."
+            )
 
         # Call super class with expression as the "value"
         super(Expression, self).__init__(name, expr, dependent)
 
         # Collect dependent symbols
-        dependent = tuple(sorted(symbols_from_expr(expr),
-                                 key=cmp_to_key(lambda a, b: cmp(sympycode(a),
-                                                                 sympycode(b)))))
+        dependent = tuple(
+            sorted(
+                symbols_from_expr(expr),
+                key=cmp_to_key(lambda a, b: cmp(sympycode(a), sympycode(b))),
+            )
+        )
 
         if dependent:
             self._sym = self._param.sym(*dependent)
@@ -195,8 +242,7 @@ class Expression(ODEValueObject):
         Return a pretty latex representation of the Expression object
         """
 
-        return "${0} = {1}$".format(self._repr_latex_name(),
-                                    self._repr_latex_expr())
+        return "${0} = {1}$".format(self._repr_latex_name(), self._repr_latex_expr())
 
     def _repr_latex_expr(self):
         return latex(self.expr)
@@ -204,10 +250,12 @@ class Expression(ODEValueObject):
     def _repr_latex_name(self):
         return "{0}".format(latex(self.name))
 
+
 class Intermediate(Expression):
     """
     A class for all Intermediate classes
     """
+
     def __init__(self, name, expr, dependent=None):
         """
         Create an Intermediate with an associated name
@@ -224,10 +272,12 @@ class Intermediate(Expression):
         """
         super(Intermediate, self).__init__(name, expr, dependent)
 
+
 class StateSolution(Intermediate):
     """
     Sub class of Expression for state solution expressions
     """
+
     def __init__(self, state, expr, dependent=None):
         """
         Create a StateSolution
@@ -260,10 +310,12 @@ class StateSolution(Intermediate):
         """
         return "'{0}', {1}".format(repr(self.state), sympycode(self.expr))
 
+
 class DerivativeExpression(Intermediate):
     """
     A class for Intermediate derivative expressions
     """
+
     def __init__(self, der_expr, dep_var, expr, dependent=None):
         """
         Create a DerivativeExpression
@@ -285,8 +337,10 @@ class DerivativeExpression(Intermediate):
 
         # Check that the der_expr is dependent on var
         if dep_var.sym not in der_expr.sym.args:
-            error("Cannot create a DerivativeExpression as {0} is not "\
-                  "dependent on {1}".format(der_expr, dep_var))
+            error(
+                "Cannot create a DerivativeExpression as {0} is not "
+                "dependent on {1}".format(der_expr, dep_var)
+            )
 
         der_sym = sp.Derivative(der_expr.sym, dep_var.sym)
         self._der_expr = der_expr
@@ -312,24 +366,29 @@ class DerivativeExpression(Intermediate):
         """
         Return a formatted str of __init__ arguments
         """
-        return "{0}, {1}, {2}".format(repr(self._der_expr), \
-                                      repr(self._dep_var), \
-                                      sympycode(self.expr))
+        return "{0}, {1}, {2}".format(
+            repr(self._der_expr), repr(self._dep_var), sympycode(self.expr)
+        )
+
     def _repr_latex_name(self):
-        return "\\frac{{d{0}}}{{d{1}}}".format(latex(self._der_expr.name),
-                                               latex(self._dep_var.name))
+        return "\\frac{{d{0}}}{{d{1}}}".format(
+            latex(self._der_expr.name), latex(self._dep_var.name)
+        )
+
 
 class RateExpression(Intermediate):
     """
     A sub class of Expression holding single rates
     """
+
     def __init__(self, to_state, from_state, expr, dependent=None):
 
         check_arg(to_state, (State, StateSolution), 0, RateExpression)
         check_arg(from_state, (State, StateSolution), 1, RateExpression)
 
-        super(RateExpression, self).__init__("rates_{0}_{1}".format(\
-            to_state, from_state), expr, dependent)
+        super(RateExpression, self).__init__(
+            "rates_{0}_{1}".format(to_state, from_state), expr, dependent
+        )
         self._to_state = to_state
         self._from_state = from_state
 
@@ -337,8 +396,9 @@ class RateExpression(Intermediate):
         """
         Return a formatted str of __init__ arguments
         """
-        return "{0}, {1}, {2}".format(\
-            repr(self._to_state), repr(self._from_state), sympycode(self.expr))
+        return "{0}, {1}, {2}".format(
+            repr(self._to_state), repr(self._from_state), sympycode(self.expr)
+        )
 
     @property
     def states(self):
@@ -348,10 +408,12 @@ class RateExpression(Intermediate):
         """
         return self._to_state, self._from_state
 
+
 class StateExpression(Expression):
     """
     An expression which determines a State.
     """
+
     def __init__(self, name, state, expr, dependent=None):
         """
         Create an StateExpression with an assosiated name
@@ -383,13 +445,14 @@ class StateExpression(Expression):
         """
         Return a formatted str of __init__ arguments
         """
-        return "'{0}', {1}, {2}".format(self.name, repr(state), \
-                                        sympycode(self.expr))
+        return "'{0}', {1}, {2}".format(self.name, repr(state), sympycode(self.expr))
+
 
 class StateDerivative(StateExpression):
     """
     A class for all state derivatives
     """
+
     def __init__(self, state, expr, dependent=None):
         """
         Create a StateDerivative
@@ -414,8 +477,7 @@ class StateDerivative(StateExpression):
         sym._assumptions["complex"] = True
 
         # Call base class constructor
-        super(StateDerivative, self).__init__(sympycode(sym), state, expr, \
-                                              dependent)
+        super(StateDerivative, self).__init__(sympycode(sym), state, expr, dependent)
         self._sym = sym
 
     @property
@@ -431,11 +493,13 @@ class StateDerivative(StateExpression):
     def _repr_latex_name(self):
         return "\\frac{{d{0}}}{{dt}}".format(latex(self.state.name))
 
+
 class AlgebraicExpression(StateExpression):
     """
     A class for algebraic expressions which relates a State with an
     expression which should equal to 0
     """
+
     def __init__(self, state, expr, dependent=None):
         """
         Create an AlgebraicExpression
@@ -452,12 +516,13 @@ class AlgebraicExpression(StateExpression):
         """
         check_arg(state, State, 0, AlgebraicExpression)
 
-        super(AlgebraicExpression, self).__init__("alg_{0}_0".format(\
-            state), state, expr, dependent)
+        super(AlgebraicExpression, self).__init__(
+            "alg_{0}_0".format(state), state, expr, dependent
+        )
 
         # Check that the expr is dependent on the state
         # FIXME: No need because Simone says so!
-        #if state.sym not in self.sym:
+        # if state.sym not in self.sym:
         #    error("Cannot create an AlgebraicExpression as {0} is not "\
         #          "dependent on {1}".format(state, expr))
 
@@ -467,17 +532,27 @@ class AlgebraicExpression(StateExpression):
         """
         return "{0}, {1}".format(repr(self._state), sympycode(self.expr))
 
-
     def _repr_latex_name(self):
         return "0"
+
 
 class IndexedExpression(IndexedObject, Expression):
     """
     An expression which represents an expression with a fixed index
     associated with it
     """
-    def __init__(self, basename, indices, expr, shape=None, \
-                 array_params=None, add_offset="", dependent=None, enum=None):
+
+    def __init__(
+        self,
+        basename,
+        indices,
+        expr,
+        shape=None,
+        array_params=None,
+        add_offset="",
+        dependent=None,
+        enum=None,
+    ):
         """
         Create an IndexedExpression with an associated basename used in code
         generation.
@@ -502,17 +577,29 @@ class IndexedExpression(IndexedObject, Expression):
         enum : str
             String that can be used for enumeration
         """
-        IndexedObject.__init__(self, basename, indices, shape, array_params, \
-                               add_offset, dependent, enum)
+        IndexedObject.__init__(
+            self, basename, indices, shape, array_params, add_offset, dependent, enum
+        )
         Expression.__init__(self, self.name, expr, dependent)
+
 
 class StateIndexedExpression(StateIndexedObject, Expression):
     """
     An expression which represents an expression with a fixed state index
     associated with it
     """
-    def __init__(self, basename, indices, expr, state, shape=None, \
-                 array_params=None, add_offset="", dependent=None):
+
+    def __init__(
+        self,
+        basename,
+        indices,
+        expr,
+        state,
+        shape=None,
+        array_params=None,
+        add_offset="",
+        dependent=None,
+    ):
         """
         Create an IndexedExpression with an associated basename used in code
         generation.
@@ -539,17 +626,29 @@ class StateIndexedExpression(StateIndexedObject, Expression):
 
         """
 
-        StateIndexedObject.__init__(self, basename, indices, state, shape, \
-                                    array_params, add_offset, dependent)
+        StateIndexedObject.__init__(
+            self, basename, indices, state, shape, array_params, add_offset, dependent
+        )
         Expression.__init__(self, self.name, expr, dependent)
+
 
 class ParameterIndexedExpression(ParameterIndexedObject, Expression):
     """
     An expression which represents an expression with a fixed state index
     associated with it
     """
-    def __init__(self, basename, indices, expr, parameter, shape=None, \
-                 array_params=None, add_offset="", dependent=None):
+
+    def __init__(
+        self,
+        basename,
+        indices,
+        expr,
+        parameter,
+        shape=None,
+        array_params=None,
+        add_offset="",
+        dependent=None,
+    ):
         """
         Create an IndexedExpression with an associated basename used in code
         generation.
@@ -575,9 +674,18 @@ class ParameterIndexedExpression(ParameterIndexedObject, Expression):
             fractional count based on the count of the dependent object
         """
 
-        ParameterIndexedObject.__init__(self, basename, indices, parameter, shape, \
-                                    array_params, add_offset, dependent)
+        ParameterIndexedObject.__init__(
+            self,
+            basename,
+            indices,
+            parameter,
+            shape,
+            array_params,
+            add_offset,
+            dependent,
+        )
         Expression.__init__(self, self.name, expr, dependent)
+
 
 # Tuple with Derivative types, for type checking
 Derivatives = (StateDerivative, DerivativeExpression)

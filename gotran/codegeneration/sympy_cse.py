@@ -11,8 +11,7 @@ from sympy.core.basic import preorder_traversal
 from sympy.core.function import _coeff_isneg
 from sympy.core.exprtools import factor_terms
 from sympy.core.compatibility import iterable
-from sympy.utilities.iterables import numbered_symbols, \
-    sift, topological_sort, ordered
+from sympy.utilities.iterables import numbered_symbols, sift, topological_sort, ordered
 
 # (preprocessor, postprocessor) pairs which are commonly useful. They should
 # each take a sympy expression and return a possibly transformed expression.
@@ -27,7 +26,7 @@ from sympy.utilities.iterables import numbered_symbols, \
 # postprocessor.
 
 
-#basic_optimizations = [(cse_opts.sub_pre, cse_opts.sub_post),
+# basic_optimizations = [(cse_opts.sub_pre, cse_opts.sub_post),
 #                       (factor_terms, None)]
 basic_optimizations = []
 
@@ -88,6 +87,7 @@ def cse_separate(r, e):
     e = d[False]
     return [reps_toposort(r), e]
 
+
 # ====end of cse postprocess idioms===========================
 
 
@@ -139,7 +139,7 @@ def postprocess_for_cse(expr, optimizations):
     return expr
 
 
-def opt_cse(exprs, order='canonical'):
+def opt_cse(exprs, order="canonical"):
     """Find optimization opportunities in Adds, Muls, Pows and negative
     coefficient Muls
 
@@ -177,7 +177,7 @@ def opt_cse(exprs, order='canonical'):
 
         if not isinstance(expr, Basic):
             return
-        
+
         if expr.is_Atom:
             return
 
@@ -206,8 +206,9 @@ def opt_cse(exprs, order='canonical'):
 
         elif expr.is_Pow:
             if _coeff_isneg(expr.exp):
-                opt_subs[expr] = Pow(Pow(expr.base, -expr.exp), S.NegativeOne,
-                                     evaluate=False)
+                opt_subs[expr] = Pow(
+                    Pow(expr.base, -expr.exp), S.NegativeOne, evaluate=False
+                )
 
     for e in exprs:
         if isinstance(e, Basic):
@@ -216,7 +217,7 @@ def opt_cse(exprs, order='canonical'):
     ## Process Adds and commutative Muls
 
     def _match_common_args(Func, funcs):
-        if order != 'none':
+        if order != "none":
             funcs = list(ordered(funcs))
         else:
             funcs = sorted(funcs, key=lambda x: len(x.args))
@@ -234,20 +235,21 @@ def opt_cse(exprs, order='canonical'):
                     diff_i = func_args[i].difference(com_args)
                     func_args[i] = diff_i | set([com_func])
                     if diff_i:
-                        opt_subs[funcs[i]] = Func(Func(*diff_i), com_func,
-                                                  evaluate=False)
+                        opt_subs[funcs[i]] = Func(
+                            Func(*diff_i), com_func, evaluate=False
+                        )
 
                     diff_j = func_args[j].difference(com_args)
                     func_args[j] = diff_j | set([com_func])
-                    opt_subs[funcs[j]] = Func(Func(*diff_j), com_func,
-                                              evaluate=False)
+                    opt_subs[funcs[j]] = Func(Func(*diff_j), com_func, evaluate=False)
 
                     for k in range(j + 1, len(func_args)):
                         if not com_args.difference(func_args[k]):
                             diff_k = func_args[k].difference(com_args)
                             func_args[k] = diff_k | set([com_func])
-                            opt_subs[funcs[k]] = Func(Func(*diff_k), com_func,
-                                                      evaluate=False)
+                            opt_subs[funcs[k]] = Func(
+                                Func(*diff_k), com_func, evaluate=False
+                            )
 
     # split muls into commutative
     comutative_muls = set()
@@ -266,7 +268,7 @@ def opt_cse(exprs, order='canonical'):
     return opt_subs
 
 
-def tree_cse(exprs, symbols, opt_subs=None, order='canonical'):
+def tree_cse(exprs, symbols, opt_subs=None, order="canonical"):
     """Perform raw CSE on expression tree, taking opt_subs into account.
 
     Parameters
@@ -297,7 +299,7 @@ def tree_cse(exprs, symbols, opt_subs=None, order='canonical'):
     def _find_repeated(expr):
         if not isinstance(expr, Basic):
             return
-        
+
         if expr.is_Atom:
             return
 
@@ -332,7 +334,7 @@ def tree_cse(exprs, symbols, opt_subs=None, order='canonical'):
 
         if not isinstance(expr, Basic):
             return expr
-        
+
         if expr.is_Atom:
             return expr
 
@@ -349,7 +351,7 @@ def tree_cse(exprs, symbols, opt_subs=None, order='canonical'):
 
         # If enabled, parse Muls and Adds arguments by order to ensure
         # replacement order independent from hashes
-        if order != 'none':
+        if order != "none":
             if expr.is_Mul:
                 c, nc = expr.args_cnc()
                 args = list(ordered(c)) + nc
@@ -386,8 +388,7 @@ def tree_cse(exprs, symbols, opt_subs=None, order='canonical'):
     return replacements, reduced_exprs
 
 
-def cse(exprs, symbols=None, optimizations=None, postprocess=None,
-        order='canonical'):
+def cse(exprs, symbols=None, optimizations=None, postprocess=None, order="canonical"):
     """ Perform common subexpression elimination on an expression.
 
     Parameters
@@ -438,7 +439,7 @@ def cse(exprs, symbols=None, optimizations=None, postprocess=None,
 
     if optimizations is None:
         optimizations = list()
-    elif optimizations == 'basic':
+    elif optimizations == "basic":
         optimizations = basic_optimizations
 
     # Handle the case if just one expression was passed.
@@ -452,15 +453,13 @@ def cse(exprs, symbols=None, optimizations=None, postprocess=None,
     opt_subs = opt_cse(reduced_exprs, order)
 
     # Main CSE algorithm.
-    replacements, reduced_exprs = tree_cse(reduced_exprs, symbols, opt_subs,
-                                           order)
+    replacements, reduced_exprs = tree_cse(reduced_exprs, symbols, opt_subs, order)
 
     # Postprocess the expressions to return the expressions to canonical form.
     for i, (sym, subtree) in enumerate(replacements):
         subtree = postprocess_for_cse(subtree, optimizations)
         replacements[i] = (sym, subtree)
-    reduced_exprs = [postprocess_for_cse(e, optimizations)
-                     for e in reduced_exprs]
+    reduced_exprs = [postprocess_for_cse(e, optimizations) for e in reduced_exprs]
 
     if isinstance(exprs, Matrix):
         reduced_exprs = [Matrix(exprs.rows, exprs.cols, reduced_exprs)]

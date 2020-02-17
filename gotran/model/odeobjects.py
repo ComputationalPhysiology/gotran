@@ -15,9 +15,21 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ["ODEObject", "Comment", "ODEValueObject", "Parameter", "State", \
-           "SingleODEObjects", "Time", "Dt", "IndexedObject",
-           "StateIndexedObject", "ParameterIndexedObject", "cmp_to_key", "cmp"]
+__all__ = [
+    "ODEObject",
+    "Comment",
+    "ODEValueObject",
+    "Parameter",
+    "State",
+    "SingleODEObjects",
+    "Time",
+    "Dt",
+    "IndexedObject",
+    "StateIndexedObject",
+    "ParameterIndexedObject",
+    "cmp_to_key",
+    "cmp",
+]
 
 # System imports
 import numpy as np
@@ -30,20 +42,31 @@ from modelparameters.codegeneration import sympycode, latex
 from modelparameters.parameters import *
 from modelparameters.parameterdict import cmp_to_key
 
-from gotran.common import error, check_arg, scalars, debug, DEBUG, \
-     get_log_level, Timer, parameters
+from gotran.common import (
+    error,
+    check_arg,
+    scalars,
+    debug,
+    DEBUG,
+    get_log_level,
+    Timer,
+    parameters,
+)
 from functools import reduce, cmp_to_key
 
 
 def cmp(a, b):
     return (a > b) - (a < b)
 
+
 class ODEObject(object):
     """
     Base container class for all ODEObjects
     """
+
     __count = 0
-    __dependent_counts = defaultdict(lambda : 0)
+    __dependent_counts = defaultdict(lambda: 0)
+
     def __init__(self, name, dependent=None):
         """
         Create ODEObject instance
@@ -57,7 +80,6 @@ class ODEObject(object):
             fractional count based on the count of the dependent object
         """
 
-
         check_arg(name, str, 0, ODEObject)
         check_arg(dependent, (type(None), ODEObject))
         self._name = self._check_name(name)
@@ -70,8 +92,10 @@ class ODEObject(object):
             ODEObject.__dependent_counts[dependent._count] += 1
 
             # FIXME: Do not hardcode the fractional increase
-            self._count = dependent._count + \
-                          ODEObject.__dependent_counts[dependent._count] * 0.00001
+            self._count = (
+                dependent._count
+                + ODEObject.__dependent_counts[dependent._count] * 0.00001
+            )
 
     def __hash__(self):
         return id(self)
@@ -145,12 +169,13 @@ class ODEObject(object):
         """
         Check the name
         """
-        assert(isinstance(name, str))
+        assert isinstance(name, str)
 
         # Check for underscore in name
         if len(name) > 0 and name[0] == "_":
-            error("No ODEObject names can start with an underscore: "\
-                  "'{0}'".format(name))
+            error(
+                "No ODEObject names can start with an underscore: " "'{0}'".format(name)
+            )
 
         return name
 
@@ -167,19 +192,26 @@ class ODEObject(object):
             ODEObject.__dependent_counts[dependent._count] += 1
 
             # FIXME: Do not hardcode the fractional increase
-            self._count = dependent._count + \
-                          ODEObject.__dependent_counts[dependent._count] * 0.00001
+            self._count = (
+                dependent._count
+                + ODEObject.__dependent_counts[dependent._count] * 0.00001
+            )
         else:
             self._count = ODEObject.__count
             ODEObject.__count += 1
 
-        debug("Change count of {0} from {1} to {2}".format(\
-            self.name, old_count, self._count))
+        debug(
+            "Change count of {0} from {1} to {2}".format(
+                self.name, old_count, self._count
+            )
+        )
+
 
 class Comment(ODEObject):
     """
     A Comment. To keep track of user comments in an ODE
     """
+
     def __init__(self, comment, dependent=None):
         """
         Create a comment
@@ -199,10 +231,12 @@ class Comment(ODEObject):
     def _repr_latex_(self):
         return "$\\mathbf{{{0}}}$".format(self.name.replace(" ", "\\;"))
 
+
 class ODEValueObject(ODEObject):
     """
     A class for all ODE objects which has a value
     """
+
     def __init__(self, name, value, dependent=None):
         """
         Create ODEObject instance
@@ -240,13 +274,13 @@ class ODEValueObject(ODEObject):
             value = SlaveParam(value, name=name)
 
         # Debug
-        #if get_log_level() <= DEBUG:
+        # if get_log_level() <= DEBUG:
         #    if isinstance(value, SlaveParam):
         #        debug("{0}: {1} {2:.3f}".format(self.name, value.expr, value.value))
         #    else:
         #        debug("{0}: {1}".format(name, value.value))
 
-            # Store the Param
+        # Store the Param
         self._param = value
 
     def rename(self, name):
@@ -264,13 +298,14 @@ class ODEValueObject(ODEObject):
         """
         Check the name
         """
-        assert(isinstance(name, str))
+        assert isinstance(name, str)
         name = name.strip().replace(" ", "_")
 
         # Check for underscore in name
         if len(name) > 0 and name[0] == "_":
-            error("No ODEObject names can start with an underscore: "\
-                  "'{0}'".format(name))
+            error(
+                "No ODEObject names can start with an underscore: " "'{0}'".format(name)
+            )
 
         return name
 
@@ -301,18 +336,19 @@ class ODEValueObject(ODEObject):
         """
         Return a formatted str of __init__ arguments
         """
-        return "'{0}', {1}".format(self.name, self._param.repr(\
-            include_name=False))
+        return "'{0}', {1}".format(self.name, self._param.repr(include_name=False))
 
     def _repr_latex_(self):
         """
         Return a pretty latex representation of the ODEValue object
         """
         from modelparameters.codegeneration import latex_unit
+
         value = self.value
         unit_str = latex_unit(self.param.unit)
-        return "${0}{1}$".format(latex(value), "\\;{0}".format(unit_str) \
-                                 if unit_str else "")
+        return "${0}{1}$".format(
+            latex(value), "\\;{0}".format(unit_str) if unit_str else ""
+        )
 
     def __truediv__(self, other):
         # Python 3
@@ -351,10 +387,12 @@ class ODEValueObject(ODEObject):
     def __pow__(self, other):
         return self.param.__pow__(other)
 
+
 class State(ODEValueObject):
     """
     class for a State variable
     """
+
     def __init__(self, name, init, time):
         """
         Create a state variable with an associated initial value
@@ -405,19 +443,20 @@ class State(ODEValueObject):
         """
         Return a formatted str of __init__ arguments
         """
-        return "'{0}', {1}, {2}".format(\
-            self.name, repr(self._param.copy(include_name=False)), repr(self.time))
+        return "'{0}', {1}, {2}".format(
+            self.name, repr(self._param.copy(include_name=False)), repr(self.time)
+        )
 
     @property
     def is_solved(self):
         return self._is_solved
 
 
-
 class Parameter(ODEValueObject):
     """
     class for a Parameter
     """
+
     def __init__(self, name, init):
         """
         Create a Parameter with an associated initial value
@@ -436,13 +475,14 @@ class Parameter(ODEValueObject):
         # Call super class
         super(Parameter, self).__init__(name, init)
 
-
     init = ODEValueObject.value
+
 
 class IndexedObject(ODEObject):
     """
     An object with a fixed index associated with it
     """
+
     @staticmethod
     def default_parameters():
         """
@@ -450,8 +490,16 @@ class IndexedObject(ODEObject):
         """
         return parameters.generation.code.array.copy()
 
-    def __init__(self, basename, indices, shape=None, array_params=None, \
-                 add_offset="", dependent=None, enum=None):
+    def __init__(
+        self,
+        basename,
+        indices,
+        shape=None,
+        array_params=None,
+        add_offset="",
+        dependent=None,
+        enum=None,
+    ):
         """
         Create an IndexedExpression with an associated basename
 
@@ -494,37 +542,49 @@ class IndexedObject(ODEObject):
         self._offset_str = offset_str
 
         if offset_str:
-            offset_str +="+"
+            offset_str += "+"
 
         # If trying to flatten indices, with a rank larger than 1 a shape needs
         # to be provided
-        if len(indices)>1 and flatten and shape is None:
-            error("A 'shape' need to be provided to generate flatten indices "\
-                  "for index expressions with rank larger than 1.")
+        if len(indices) > 1 and flatten and shape is None:
+            error(
+                "A 'shape' need to be provided to generate flatten indices "
+                "for index expressions with rank larger than 1."
+            )
 
         # Create index format
         if index_format == "{}":
             index_format = "{{{0}}}"
         else:
-            index_format = index_format[0]+"{0}"+index_format[1]
+            index_format = index_format[0] + "{0}" + index_format[1]
 
         orig_indices = indices
         # If flatten indices
-        if flatten and len(indices)>1:
-            indices = (sum(reduce(lambda i, j: i*j, shape[i+1:],1)*\
-                        (index+index_offset) for i, index in \
-                        enumerate(indices)),)
+        if flatten and len(indices) > 1:
+            indices = (
+                sum(
+                    reduce(lambda i, j: i * j, shape[i + 1 :], 1)
+                    * (index + index_offset)
+                    for i, index in enumerate(indices)
+                ),
+            )
         else:
-            indices = tuple(index+index_offset for index in indices)
+            indices = tuple(index + index_offset for index in indices)
 
-        index_str = ",".join(offset_str+str(index) for index in indices)
+        index_str = ",".join(offset_str + str(index) for index in indices)
         name = basename + index_format.format(index_str)
 
         ODEObject.__init__(self, name, dependent)
         self._basename = basename
         self._indices = orig_indices
-        self._sym = sp.Symbol(name, real=True, imaginary=False, commutative=True,
-                              hermitian=True, complex=True)
+        self._sym = sp.Symbol(
+            name,
+            real=True,
+            imaginary=False,
+            commutative=True,
+            hermitian=True,
+            complex=True,
+        )
         self._shape = shape
 
     @property
@@ -551,10 +611,19 @@ class IndexedObject(ODEObject):
     def shape(self):
         return self._shape
 
+
 class StateIndexedObject(IndexedObject):
-    def __init__(self, basename, indices, state, shape=None, array_params=None, \
-                    add_offset="", dependent=None):
-            """
+    def __init__(
+        self,
+        basename,
+        indices,
+        state,
+        shape=None,
+        array_params=None,
+        add_offset="",
+        dependent=None,
+    ):
+        """
             Create an IndexedExpression with an associated basename
 
             Arguments
@@ -575,17 +644,28 @@ class StateIndexedObject(IndexedObject):
                 If given the count of this IndexedObject will follow as a
                 fractional count based on the count of the dependent object
             """
-            super(StateIndexedObject, self).__init__(basename, indices, shape,
-                array_params, add_offset, dependent)
-            self._state = state
+        super(StateIndexedObject, self).__init__(
+            basename, indices, shape, array_params, add_offset, dependent
+        )
+        self._state = state
+
     @property
     def state(self):
         return self._state
 
+
 class ParameterIndexedObject(IndexedObject):
-    def __init__(self, basename, indices, parameter, shape=None, array_params=None, \
-                    add_offset="", dependent=None):
-            """
+    def __init__(
+        self,
+        basename,
+        indices,
+        parameter,
+        shape=None,
+        array_params=None,
+        add_offset="",
+        dependent=None,
+    ):
+        """
             Create an IndexedExpression with an associated basename
 
             Arguments
@@ -606,17 +686,21 @@ class ParameterIndexedObject(IndexedObject):
                 If given the count of this IndexedObject will follow as a
                 fractional count based on the count of the dependent object
             """
-            super(ParameterIndexedObject, self).__init__(basename, indices, shape,
-                array_params, add_offset, dependent)
-            self._parameter = parameter
+        super(ParameterIndexedObject, self).__init__(
+            basename, indices, shape, array_params, add_offset, dependent
+        )
+        self._parameter = parameter
+
     @property
     def parameter(self):
         return self._parameter
+
 
 class Argument(ODEValueObject):
     """
     class for an arbitrary argument used to add arguments to CodeComponents
     """
+
     def __init__(self, name):
         """
         Create a Parameter with an associated initial value
@@ -631,17 +715,23 @@ class Argument(ODEValueObject):
         super(Argument, self).__init__(name, 0.0)
 
 
-
 class Time(ODEValueObject):
     """
     Specialization for a Time class
     """
+
     def __init__(self, name, unit="ms"):
         super(Time, self).__init__(name, ScalarParam(0.0, unit=unit))
 
         # Add previous value symbol
-        self.sym_0 = sp.Symbol("{0}_0".format(name), real=True, imaginary=False,
-                               commutative=True, hermitian=True, complex=True)
+        self.sym_0 = sp.Symbol(
+            "{0}_0".format(name),
+            real=True,
+            imaginary=False,
+            commutative=True,
+            hermitian=True,
+            complex=True,
+        )
 
     def update_unit(self, unit):
         """
@@ -659,6 +749,7 @@ class Dt(ODEValueObject):
     """
     Specialization for a time step class
     """
+
     def __init__(self, name, unit="ms"):
         super(Dt, self).__init__(name, ScalarParam(0.1, unit=unit))
 

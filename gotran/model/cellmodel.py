@@ -22,6 +22,7 @@ __all__ = ["CellModel", "gccm"]
 from gotran.common import *
 from gotran.model.ode import ODE
 from gotran.model.odeobjects import *
+
 # from gotran.common import error, debug, check_arg, check_kwarg, check_arginlist
 
 from modelparameters.parameters import *
@@ -77,12 +78,14 @@ def stimulation_protocal(stim_params):
             elif key == "frequency":
                 self["period"].update(60.0 / value)
 
-    return StimDict(amplitude=amplitude,
-                    duration=duration,
-                    period=period,
-                    frequency=frequency,
-                    start=start,
-                    end=end)
+    return StimDict(
+        amplitude=amplitude,
+        duration=duration,
+        period=period,
+        frequency=frequency,
+        start=start,
+        end=end,
+    )
 
 
 def get_parameter_list_from_string(string, lst, case_insesitive=True):
@@ -239,16 +242,13 @@ class CellModel(ODE):
             if isinstance(expr, sp.Piecewise):
                 expr = expr.args[0][0]
 
-
-            expr = expr.replace(sp.log, lambda t : 1)
-            expr = expr.replace(sp.exp, lambda t : 1)
-            expr = expr.replace(sp.zoo, lambda : 1)
+            expr = expr.replace(sp.log, lambda t: 1)
+            expr = expr.replace(sp.exp, lambda t: 1)
+            expr = expr.replace(sp.zoo, lambda: 1)
 
             unit_dep_map = {}
 
-
             for dep in sp_tools.symbols_from_expr(expr):
-
 
                 dep_str = str(dep).rsplit("(")[0]
 
@@ -256,20 +256,17 @@ class CellModel(ODE):
                     p = self.get_parameter(str(dep))
                     unit = p.unit
 
-
                 elif dep_str in self.state_symbols:
                     p = self.get_state(dep_str)
                     unit = p.unit
 
                 elif dep_str in self.intermediate_symbols:
-                    unit, factor_= get_intermediate_unit(dep_str, "original")
+                    unit, factor_ = get_intermediate_unit(dep_str, "original")
                     # factor *= factor_
 
                 else:
                     # Parmaterer not found (most likely the time variable)
                     continue
-
-
 
                 expr1 = expr.subs(dep, unit)
                 if expr1 == 0:
@@ -280,8 +277,7 @@ class CellModel(ODE):
                 else:
                     expr = expr1
 
-
-                unit_dep_map[dep]=unit
+                unit_dep_map[dep] = unit
 
             # Substitute again
             for k, v in list(unit_dep_map.items()):
@@ -292,15 +288,13 @@ class CellModel(ODE):
             # Fix fractions and remove possible numbers
             unit_exprs = []
 
-
-            def add_unit(k,v):
+            def add_unit(k, v):
                 if not k.is_Number and v.as_numer_denom()[1] == 1:
 
                     exp = "**{}".format(str(v)) if v != 1 else ""
                     unit_ = str(k)
 
-                    unit_exprs.append(unit_+exp)
-
+                    unit_exprs.append(unit_ + exp)
 
             for k, v in list(expr.as_powers_dict().items()):
 
@@ -314,7 +308,6 @@ class CellModel(ODE):
                 else:
                     add_unit(k, v)
 
-
             # Join by multiplication
             unit_expr = "*".join(unit_exprs)
 
@@ -326,20 +319,22 @@ class CellModel(ODE):
             new_subunits = []
 
             def isfloat(el):
-                try: float(el)
-                except: return False
-                else: return True
-
+                try:
+                    float(el)
+                except:
+                    return False
+                else:
+                    return True
 
             for u in subunits:
                 if not isfloat(u):
                     new_subunits.append(u)
 
-
             # Join new expression
             unit_expr = "**".join("*".join(new_subunits).split("^"))
 
-            if unit_expr == "": unit_expr = "1"
+            if unit_expr == "":
+                unit_expr = "1"
 
             unit = Unit(unit_expr)
 
@@ -361,7 +356,6 @@ class CellModel(ODE):
             return unit_, factor_
         return unit_
 
-
     def set_residual_current(self, t, current):
         """
         Set rediual current
@@ -376,7 +370,8 @@ class CellModel(ODE):
 
         """
         from scipy.interpolate import UnivariateSpline
-        self._residual_current = UnivariateSpline(t, current, s= 0)
+
+        self._residual_current = UnivariateSpline(t, current, s=0)
 
     def residual_current(self, t):
 
@@ -384,8 +379,6 @@ class CellModel(ODE):
             return np.zeros_like(t)
 
         return self._residual_current(t)
-
-
 
     @property
     def intermediate_symbols(self):
@@ -438,20 +431,19 @@ class CellModel(ODE):
         if stim_params["period"]:
             period = stim_params["period"].value
         else:
-            period = 60.0/stim_params["frequency"].value
+            period = 60.0 / stim_params["frequency"].value
 
         # Get duration of simulus
         duration = stim_params["duration"].value
 
-
         factor = 1e-3 if stim_params["duration"].param.unit == "s" else 1.0
         # Include additional 60 ms before stimulation
         extra_ = factor * extra
-        beattime = int((period+duration+extra_) / float(dt)) + 1
+        beattime = int((period + duration + extra_) / float(dt)) + 1
 
         return beattime
 
-    def get_time_steps(self, nbeats=1, t1=None, dt=1.0, t0 = 0.0):
+    def get_time_steps(self, nbeats=1, t1=None, dt=1.0, t0=0.0):
         """
         Get list with time steps given the number
         of beats and time increment
@@ -472,7 +464,7 @@ class CellModel(ODE):
 
         """
         if isinstance(dt, scalars):
-            dt = ScalarParam(dt, unit='ms')
+            dt = ScalarParam(dt, unit="ms")
         # Get stimulation prototocal
         stim_params = self.stimulation_protocol
         # We let the period of the frequency
@@ -485,9 +477,9 @@ class CellModel(ODE):
 
         # Estimate number of steps
         nsteps = t1 / dt + 1
-        tsteps = np.linspace(param2value(t0),
-                             param2value(t1),
-                             param2value(nsteps.value))
+        tsteps = np.linspace(
+            param2value(t0), param2value(t1), param2value(nsteps.value)
+        )
         return tsteps
 
     def simulate(self, **kwargs):
@@ -536,26 +528,25 @@ class CellModel(ODE):
         if stim_params["period"]:
             period = stim_params["period"].value
         else:
-            period = 60.0/stim_params["frequency"].value
+            period = 60.0 / stim_params["frequency"].value
 
         if t_end is None:
             # Use the stimultation protocol to determine the end time
-            t0 =  stim_params["start"]
+            t0 = stim_params["start"]
             t_end = t0 + nbeats * period
 
         # Estimate number of steps
-        nsteps = int(t_end/float(dt))
+        nsteps = int(t_end / float(dt))
 
         # Find start and end indices
         if return_final_beat:
-            start_idx = int(nsteps*( 1 - (period + \
-                                          stim_params["start"].value) \
-                                     / float(t_end)) -1)
+            start_idx = int(
+                nsteps * (1 - (period + stim_params["start"].value) / float(t_end)) - 1
+            )
             end_idx = int(nsteps)
         else:
             start_idx = 0
             end_idx = nsteps
-
 
         # Set the end value for stimulation
         stim_params["end"].param.setvalue(t_end, False)
@@ -564,9 +555,9 @@ class CellModel(ODE):
 
             import goss
 
-
-            msg = ("Solver method has to be one of "+
-                   "{}, got {}".format(goss.goss_solvers, method))
+            msg = "Solver method has to be one of " + "{}, got {}".format(
+                goss.goss_solvers, method
+            )
             assert method in goss.goss_solvers, msg
 
             monitored_symbols = self.intermediate_symbols if return_monitored else None
@@ -593,37 +584,33 @@ class CellModel(ODE):
 
                 if return_monitored:
                     module.eval_monitored(x0, t, monitor)
-                    monitored[step,:] = monitor
-
-
+                    monitored[step, :] = monitor
 
                 # print t
                 solver.forward(x0, t, dt)
 
-                ys[step,:] = x0
+                ys[step, :] = x0
                 ts[step] = t
                 t += dt
-
 
             ret = [ts, ys]
 
             if return_monitored:
                 ret.append(monitored)
 
-
         else:
             from gotran.codegeneration.codegenerators import PythonCodeGenerator
             from gotran.common.options import parameters
             import imp
 
-
             params = parameters.generation.copy()
-            params.functions.rhs.function_name="__call__"
-            params.code.default_arguments="tsp"
-            params.class_code=1
+            params.functions.rhs.function_name = "__call__"
+            params.code.default_arguments = "tsp"
+            params.class_code = 1
 
-
-            monitored = [expr.name for expr in self.intermediates + self.state_expressions]
+            monitored = [
+                expr.name for expr in self.intermediates + self.state_expressions
+            ]
             gen = PythonCodeGenerator(params)
 
             name = self.name
@@ -631,26 +618,25 @@ class CellModel(ODE):
             code = gen.class_code(self, monitored)
             self.rename(name)
 
-
             module = imp.new_module("simulation")
             exec(code, module.__dict__)
 
             ode = module.ODESim()
             from cellmodels.odesolver import ODESolver
 
-            states= ode.init_state_values()
-
+            states = ode.init_state_values()
 
             options = ODESolver.list_solver_options(method)
             atol = kwargs.pop("atol", None)
 
-            if atol: options["atol"] = atol * np.ones(len(states))
+            if atol:
+                options["atol"] = atol * np.ones(len(states))
 
             for k, v in kwargs.items():
-                if v and k in options: options[k] = v
+                if v and k in options:
+                    options[k] = v
 
-
-            solver = ODESolver(ode, states, method = method, **options)
+            solver = ODESolver(ode, states, method=method, **options)
 
             t_, y_ = solver.solve(t_end, nbeats)
 
@@ -662,7 +648,6 @@ class CellModel(ODE):
             ret[1] = ret[1][start_idx:end_idx]
 
         return ret
-
 
     def get_component(self, name):
         """
@@ -757,7 +742,6 @@ class CellModel(ODE):
         # Return the parameter
         return self.intermediates[idx]
 
-
     def get_parameter(self, name):
         """
         Get the parameter with the given name
@@ -815,12 +799,14 @@ class CellModel(ODE):
         else:
             self.set_parameter(name, value)
 
+
 # Construct a default CellModel
 # _current_cellmodel = CellModel("Default")
+
 
 def gccm():
     """
     Return the current CellModel
     """
-    assert(isinstance(_current_cellmodel, CellModel))
+    assert isinstance(_current_cellmodel, CellModel)
     return _current_cellmodel

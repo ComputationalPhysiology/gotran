@@ -28,17 +28,36 @@ from modelparameters.sympytools import sp
 from modelparameters.codegeneration import sympycode
 
 # Local imports
-from gotran.common import error, info, debug, check_arg, check_kwarg, \
-     scalars, Timer, warning, tuplewrap, parameters
-from gotran.model.odeobjects import State, Parameter, IndexedObject, \
-     StateIndexedObject, ParameterIndexedObject, Comment, cmp
+from gotran.common import (
+    error,
+    info,
+    debug,
+    check_arg,
+    check_kwarg,
+    scalars,
+    Timer,
+    warning,
+    tuplewrap,
+    parameters,
+)
+from gotran.model.odeobjects import (
+    State,
+    Parameter,
+    IndexedObject,
+    StateIndexedObject,
+    ParameterIndexedObject,
+    Comment,
+    cmp,
+)
 from gotran.model.expressions import *
 from gotran.model.odecomponent import ODEComponent
 from gotran.model.ode import ODE
 
-#FIXME: Remove our own cse, or move to this module?
+# FIXME: Remove our own cse, or move to this module?
 from gotran.codegeneration.sympy_cse import cse
-#from sympy import cse
+
+# from sympy import cse
+
 
 class CodeComponent(ODEComponent):
     """
@@ -55,9 +74,17 @@ class CodeComponent(ODEComponent):
         """
         return parameters.generation.code.copy()
 
-    def __init__(self, name, ode, function_name, description, params=None,
-                 use_default_arguments=True, additional_arguments=None,
-                 **results):
+    def __init__(
+        self,
+        name,
+        ode,
+        function_name,
+        description,
+        params=None,
+        use_default_arguments=True,
+        additional_arguments=None,
+        **results
+    ):
         """
         Creates a CodeComponent
 
@@ -99,8 +126,9 @@ class CodeComponent(ODEComponent):
         # method
         self._allow_magic_attributes = False
         for result_name, result_expressions in list(results.items()):
-            check_kwarg(result_expressions, result_name, list, \
-                        itemtypes=(Expression, Comment))
+            check_kwarg(
+                result_expressions, result_name, list, itemtypes=(Expression, Comment)
+            )
 
         # Store parameters
         self._params = self.default_parameters()
@@ -126,8 +154,7 @@ class CodeComponent(ODEComponent):
         # Recreate body expressions based on the given result_expressions
         if results:
             results, body_expressions = self._body_from_results(**results)
-            self.body_expressions = self._recreate_body(\
-                body_expressions, **results)
+            self.body_expressions = self._recreate_body(body_expressions, **results)
         else:
             self.body_expressions = []
 
@@ -135,8 +162,9 @@ class CodeComponent(ODEComponent):
         self.use_default_arguments = use_default_arguments
         self.additional_arguments = additional_arguments
 
-    def add_indexed_expression(self, basename, indices, expr, add_offset=False,
-                               dependent=None, enum=None):
+    def add_indexed_expression(
+        self, basename, indices, expr, add_offset=False, dependent=None, enum=None
+    ):
         """
         Add an indexed expression using a basename and the indices
 
@@ -160,27 +188,54 @@ class CodeComponent(ODEComponent):
 
         # Check that provided indices fit with the registered shape
         if len(self.shapes[basename]) > len(indices):
-            error("Shape mismatch between indices {0} and registered "\
-                  "shape for {1}{2}".format(indices, basename, self.shapes[basename]))
+            error(
+                "Shape mismatch between indices {0} and registered "
+                "shape for {1}{2}".format(indices, basename, self.shapes[basename])
+            )
 
         for dim, (index, shape_ind) in enumerate(zip(indices, self.shapes[basename])):
             if index >= shape_ind:
-                error("Indices must be smaller or equal to the shape. Mismatch "\
-                      "in dim {0}: {1}>={2}".format(dim+1, index, shape_ind))
+                error(
+                    "Indices must be smaller or equal to the shape. Mismatch "
+                    "in dim {0}: {1}>={2}".format(dim + 1, index, shape_ind)
+                )
 
         # Create the indexed expression
         if enum is None:
-            expr = IndexedExpression(basename, indices, expr, self.shapes[basename], \
-                                     self._params.array, add_offset, dependent, enum=enum)
+            expr = IndexedExpression(
+                basename,
+                indices,
+                expr,
+                self.shapes[basename],
+                self._params.array,
+                add_offset,
+                dependent,
+                enum=enum,
+            )
         elif isinstance(enum, State):
             state = enum
-            expr = StateIndexedExpression(basename, indices, expr, state, self.shapes[basename], \
-                                 self._params.array, add_offset, dependent)
+            expr = StateIndexedExpression(
+                basename,
+                indices,
+                expr,
+                state,
+                self.shapes[basename],
+                self._params.array,
+                add_offset,
+                dependent,
+            )
         elif isinstance(enum, Parameter):
             parameter = enum
-            expr = ParameterIndexedExpression(basename, indices, expr, parameter, \
-                                              self.shapes[basename], \
-                                              self._params.array, add_offset, dependent)
+            expr = ParameterIndexedExpression(
+                basename,
+                indices,
+                expr,
+                parameter,
+                self.shapes[basename],
+                self._params.array,
+                add_offset,
+                dependent,
+            )
         else:
             error("enum must be State or Parameter. Was {0}".format(type(enum)))
         self._register_component_object(expr, dependent)
@@ -206,17 +261,22 @@ class CodeComponent(ODEComponent):
 
         # Check that provided indices fit with the registered shape
         if len(self.shapes[basename]) > len(indices):
-            error("Shape mismatch between indices {0} and registered "\
-                  "shape for {1}{2}".format(indices, basename, self.shapes[basename]))
+            error(
+                "Shape mismatch between indices {0} and registered "
+                "shape for {1}{2}".format(indices, basename, self.shapes[basename])
+            )
 
         for dim, (index, shape_ind) in enumerate(zip(indices, self.shapes[basename])):
             if index >= shape_ind:
-                error("Indices must be smaller or equal to the shape. Mismatch "\
-                      "in dim {0}: {1}>={2}".format(dim+1, index, shape_ind))
+                error(
+                    "Indices must be smaller or equal to the shape. Mismatch "
+                    "in dim {0}: {1}>={2}".format(dim + 1, index, shape_ind)
+                )
 
         # Create IndexedObject
-        obj = IndexedObject(basename, indices, self.shapes[basename], \
-                            self._params.array, add_offset)
+        obj = IndexedObject(
+            basename, indices, self.shapes[basename], self._params.array, add_offset
+        )
         self._register_component_object(obj)
 
         # Return the sympy version of the object
@@ -229,8 +289,11 @@ class CodeComponent(ODEComponent):
         """
         if not basenames:
             basenames = list(self.shapes.keys())
-        return [obj for obj in self.ode_objects if isinstance(\
-            obj, IndexedObject) and obj.basename in basenames]
+        return [
+            obj
+            for obj in self.ode_objects
+            if isinstance(obj, IndexedObject) and obj.basename in basenames
+        ]
 
     def _init_param_state_replace_dict(self):
         """
@@ -255,8 +318,10 @@ class CodeComponent(ODEComponent):
 
         for param in field_parameters:
             if not isinstance(self.root.present_ode_objects[param], Parameter):
-                error("Field parameter '{0}' is not a parameter in the "\
-                      "'{1}'".format(param, self.root))
+                error(
+                    "Field parameter '{0}' is not a parameter in the "
+                    "'{1}'".format(param, self.root)
+                )
 
         state_repr = self._params["states"]["representation"]
         state_name = self._params["states"]["array_name"]
@@ -266,14 +331,21 @@ class CodeComponent(ODEComponent):
 
         # Create a map between states, parameters and the corresponding
         # IndexedObjects
-        param_state_map = OrderedDict([("states", OrderedDict()),
-                                       ("parameters", OrderedDict())])
+        param_state_map = OrderedDict(
+            [("states", OrderedDict()), ("parameters", OrderedDict())]
+        )
 
         # Add states
         states = param_state_map["states"]
         for ind, state in enumerate(self.root.full_states):
-            states[state] = StateIndexedObject(state_name, ind, state,\
-                            (self.root.num_full_states,), array_params, state_offset)
+            states[state] = StateIndexedObject(
+                state_name,
+                ind,
+                state,
+                (self.root.num_full_states,),
+                array_params,
+                state_offset,
+            )
 
         # Add parameters
         parameters = param_state_map["parameters"]
@@ -290,26 +362,30 @@ class CodeComponent(ODEComponent):
                 shape = (self.num_parameters,)
                 offset = param_offset
 
-            parameters[param] = ParameterIndexedObject(basename, index, param,\
-                                              shape, array_params, offset)
+            parameters[param] = ParameterIndexedObject(
+                basename, index, param, shape, array_params, offset
+            )
 
         # If not having named parameters
         if param_repr == "numerals":
-            param_state_replace_dict.update((param.sym, param.init) for \
-                                            param in self.root.parameters)
+            param_state_replace_dict.update(
+                (param.sym, param.init) for param in self.root.parameters
+            )
         elif param_repr == "array":
             self.shapes[param_name] = (self.root.num_parameters,)
             if field_parameters:
-                self.shapes["field_"+param_name] = (len(field_parameters),)
-            param_state_replace_dict.update((param.sym, indexed.sym) \
-                                            for param, indexed in \
-                                            list(param_state_map["parameters"].items()))
+                self.shapes["field_" + param_name] = (len(field_parameters),)
+            param_state_replace_dict.update(
+                (param.sym, indexed.sym)
+                for param, indexed in list(param_state_map["parameters"].items())
+            )
 
         if state_repr == "array":
             self.shapes[state_name] = (self.root.num_full_states,)
-            param_state_replace_dict.update((state.sym, indexed.sym) \
-                                            for state, indexed in \
-                                            list(param_state_map["states"].items()))
+            param_state_replace_dict.update(
+                (state.sym, indexed.sym)
+                for state, indexed in list(param_state_map["states"].items())
+            )
 
         param_state_replace_dict[self.root._time.sym] = sp.Symbol(time_name)
         param_state_replace_dict[self.root._dt.sym] = sp.Symbol(dt_name)
@@ -342,13 +418,16 @@ class CodeComponent(ODEComponent):
         orig_result_expressions = sum(list(results.values()), [])
 
         # A map between result expression and result name
-        result_names = dict((result_expr, result_name) for \
-                            result_name, result_exprs in list(results.items()) \
-                            for result_expr in result_exprs)
+        result_names = dict(
+            (result_expr, result_name)
+            for result_name, result_exprs in list(results.items())
+            for result_expr in result_exprs
+        )
 
         # The expanded result expressions
-        expanded_result_exprs = [self.root.expanded_expression(obj) \
-                                 for obj in orig_result_expressions]
+        expanded_result_exprs = [
+            self.root.expanded_expression(obj) for obj in orig_result_expressions
+        ]
 
         # Set shape for result expressions
         for result_name, result_expressions in list(results.items()):
@@ -359,8 +438,9 @@ class CodeComponent(ODEComponent):
 
     def _only_result_expressions(self, **results):
 
-        orig_result_expressions, result_names, expanded_result_exprs = \
-                                 self._expanded_result_expressions(**results)
+        orig_result_expressions, result_names, expanded_result_exprs = self._expanded_result_expressions(
+            **results
+        )
 
         body_expressions = []
         new_results = defaultdict(list)
@@ -369,8 +449,9 @@ class CodeComponent(ODEComponent):
 
         timer = Timer("Compute common sub expressions for {0}".format(self.name))
 
-        orig_result_expressions, result_names, expanded_result_exprs = \
-                                 self._expanded_result_expressions(**results)
+        orig_result_expressions, result_names, expanded_result_exprs = self._expanded_result_expressions(
+            **results
+        )
 
         state_offset = self._params["states"]["add_offset"]
 
@@ -381,14 +462,16 @@ class CodeComponent(ODEComponent):
         might_take_time = len(orig_result_expressions) >= 40
 
         if might_take_time:
-            info("Computing common sub expressions for {0}. Might take "\
-                 "some time...".format(self.name))
+            info(
+                "Computing common sub expressions for {0}. Might take "
+                "some time...".format(self.name)
+            )
             sys.stdout.flush()
 
         # Call sympy common sub expression reduction
-        cse_exprs, cse_result_exprs = cse(expanded_result_exprs,\
-                                          symbols=sp.numbered_symbols("cse_"),\
-                                          optimizations=[])
+        cse_exprs, cse_result_exprs = cse(
+            expanded_result_exprs, symbols=sp.numbered_symbols("cse_"), optimizations=[]
+        )
 
         # Map the cse_expr to an OrderedDict
         cse_exprs = OrderedDict(cse_expr for cse_expr in cse_exprs)
@@ -418,14 +501,20 @@ class CodeComponent(ODEComponent):
         # A map between cse_sym and its substitutes
         cse_subs = {}
 
-        for ind, (orig_result_expr, result_expr) in \
-                enumerate(zip(orig_result_expressions, cse_result_exprs)):
+        for ind, (orig_result_expr, result_expr) in enumerate(
+            zip(orig_result_expressions, cse_result_exprs)
+        ):
 
             # Collect information so that we can recreate the result
             # expression from
-            result_expr_map[result_expr].append((\
-                result_names[orig_result_expr], orig_result_expr.indices \
-                if isinstance(orig_result_expr, IndexedExpression) else ind))
+            result_expr_map[result_expr].append(
+                (
+                    result_names[orig_result_expr],
+                    orig_result_expr.indices
+                    if isinstance(orig_result_expr, IndexedExpression)
+                    else ind,
+                )
+            )
 
             # If result_expr does not contain any cse_sym
             if not any(cse_sym in cse_syms for cse_sym in result_expr.atoms()):
@@ -434,21 +523,22 @@ class CodeComponent(ODEComponent):
             else:
 
                 # Get last cse_sym used in result expression
-                last_cse_sym = sorted((cse_sym for cse_sym in result_expr.atoms() \
-                                       if cse_sym in cse_syms), \
-                                      key=cmp_to_key(lambda a,b : cmp(int(a.name[4:]), \
-                                                           int(b.name[4:]))))[-1]
+                last_cse_sym = sorted(
+                    (cse_sym for cse_sym in result_expr.atoms() if cse_sym in cse_syms),
+                    key=cmp_to_key(lambda a, b: cmp(int(a.name[4:]), int(b.name[4:]))),
+                )[-1]
 
-                if result_expr not in \
-                       last_cse_expr_used_in_result_expr[last_cse_sym]:
-                    last_cse_expr_used_in_result_expr[\
-                        last_cse_sym].append(result_expr)
+                if result_expr not in last_cse_expr_used_in_result_expr[last_cse_sym]:
+                    last_cse_expr_used_in_result_expr[last_cse_sym].append(result_expr)
 
-        debug("Found {0} result expressions without any cse_syms.".format(\
-            len(result_expr_without_cse_syms)))
+        debug(
+            "Found {0} result expressions without any cse_syms.".format(
+                len(result_expr_without_cse_syms)
+            )
+        )
 
-        #print ""
-        #print "LAST cse_syms:", last_cse_expr_used_in_result_expr.keys()
+        # print ""
+        # print "LAST cse_syms:", last_cse_expr_used_in_result_expr.keys()
 
         cse_cnt = 0
         atoms = [state.sym for state in self.root.full_states]
@@ -458,27 +548,30 @@ class CodeComponent(ODEComponent):
         used_states = set()
         used_parameters = set()
 
-        self.add_comment("Common sub expressions for the body and the "\
-                         "result expressions")
+        self.add_comment(
+            "Common sub expressions for the body and the " "result expressions"
+        )
         body_expressions.append(self.ode_objects[-1])
 
         # Register the common sub expressions as Intermediates
         for cse_sym, expr in list(cse_exprs.items()):
 
-            #print cse_sym, expr
+            # print cse_sym, expr
 
             # If the expression is just one of the atoms of the ODE we
             # skip the cse expressions but add a subs for the atom We
             # also skip Relationals and Piecewise as the type checking
             # in Piecewise otherwise kicks in and destroys things for
             # us.
-            if expr in atoms or isinstance(expr, (\
-                sp.Piecewise, sp.relational.Relational, sp.relational.Boolean)):
+            if expr in atoms or isinstance(
+                expr, (sp.Piecewise, sp.relational.Relational, sp.relational.Boolean)
+            ):
                 cse_subs[cse_sym] = expr.xreplace(cse_subs)
             else:
                 # Add body expression as an intermediate expression
-                sym = self.add_intermediate("cse_{0}".format(\
-                    cse_cnt), expr.xreplace(cse_subs))
+                sym = self.add_intermediate(
+                    "cse_{0}".format(cse_cnt), expr.xreplace(cse_subs)
+                )
                 obj = self.ode_objects.get(sympycode(sym))
                 for dep in self.root.expression_dependencies[obj]:
                     if isinstance(dep, State):
@@ -498,11 +591,12 @@ class CodeComponent(ODEComponent):
                     for result_name, indices in result_expr_map[result_expr]:
 
                         # Replace pure state and param expressions
-                        #print cse_subs, result_expr
+                        # print cse_subs, result_expr
                         exp_expr = result_expr.xreplace(cse_subs)
 
-                        sym = self.add_indexed_expression(\
-                            result_name, indices, exp_expr, add_offset=state_offset)
+                        sym = self.add_indexed_expression(
+                            result_name, indices, exp_expr, add_offset=state_offset
+                        )
 
                         expr = self.ode_objects.get(sympycode(sym))
 
@@ -542,8 +636,9 @@ class CodeComponent(ODEComponent):
         exprs_not_in_body = []
 
         for expr in result_expressions:
-            check_arg(expr, (Expression, Comment), \
-                      context=CodeComponent._body_from_results)
+            check_arg(
+                expr, (Expression, Comment), context=CodeComponent._body_from_results
+            )
 
             if isinstance(expr, Comment):
                 continue
@@ -596,17 +691,23 @@ class CodeComponent(ODEComponent):
             return
 
         for result_name, result_expressions in list(results.items()):
-            check_kwarg(result_expressions, result_name, list, \
-                        context=CodeComponent._recreate_body, \
-                        itemtypes=(Expression, Comment))
+            check_kwarg(
+                result_expressions,
+                result_name,
+                list,
+                context=CodeComponent._recreate_body,
+                itemtypes=(Expression, Comment),
+            )
 
         # Extract all result expressions
         result_expressions = sum(list(results.values()), [])
 
         # A map between result expression and result name
-        result_names = dict((result_expr, result_name) for \
-                            result_name, result_exprs in list(results.items()) \
-                            for result_expr in result_exprs)
+        result_names = dict(
+            (result_expr, result_name)
+            for result_name, result_exprs in list(results.items())
+            for result_expr in result_exprs
+        )
 
         timer = Timer("Recreate body expressions for {0}".format(self.name))
 
@@ -648,15 +749,20 @@ class CodeComponent(ODEComponent):
         replaced_expr_map = OrderedDict()
         new_body_expressions = []
 
-        present_ode_objects = dict((state.name, state) for state in self.root.full_states)
-        present_ode_objects.update((param.name, param) for param in self.root.parameters)
+        present_ode_objects = dict(
+            (state.name, state) for state in self.root.full_states
+        )
+        present_ode_objects.update(
+            (param.name, param) for param in self.root.parameters
+        )
         old_present_ode_objects = present_ode_objects.copy()
 
         def store_expressions(expr, new_expr):
             "Help function to store new expressions"
 
-            timer = Timer("Store expression while recreating body of {}".format(\
-                self.name))
+            timer = Timer(
+                "Store expression while recreating body of {}".format(self.name)
+            )
 
             # Update sym replace dict
             if isinstance(expr, Derivatives):
@@ -681,8 +787,7 @@ class CodeComponent(ODEComponent):
                 object_used_in[new_expr] = object_used_in.pop(expr)
 
             if expr in expression_dependencies:
-                expression_dependencies[new_expr] = expression_dependencies.pop(\
-                    expr)
+                expression_dependencies[new_expr] = expression_dependencies.pop(expr)
 
         self.add_comment("Recreated body expressions")
 
@@ -694,17 +799,18 @@ class CodeComponent(ODEComponent):
                 new_body_expressions.append(expr)
                 continue
 
-            assert(isinstance(expr, Expression))
+            assert isinstance(expr, Expression)
 
             # 2) Check for expression optimizations
             if not (optimize_exprs == "none" or expr in result_expressions):
 
-                timer_opt = Timer("Handle expression optimization for {0}".format(self.name))
+                timer_opt = Timer(
+                    "Handle expression optimization for {0}".format(self.name)
+                )
 
                 # If expr is just a number we exchange the expression with the
                 # number
-                if "numerals" in optimize_exprs and \
-                       isinstance(expr.expr, sp.Number):
+                if "numerals" in optimize_exprs and isinstance(expr.expr, sp.Number):
                     replace_dict[expr.sym] = expr.expr
 
                     # Remove information about this expr beeing used
@@ -715,15 +821,18 @@ class CodeComponent(ODEComponent):
 
                 # If the expr is just a symbol (symbol multiplied with a scalar)
                 # we exchange the expression with the sympy expressions
-                elif "symbols" in  optimize_exprs and \
-                       (isinstance(expr.expr, (sp.Symbol, AppliedUndef)) or \
-                        isinstance(expr.expr, sp.Mul) and len(expr.expr.args)==2 and \
-                        isinstance(expr.expr.args[1], (sp.Symbol, AppliedUndef)) and \
-                        expr.expr.args[0].is_number):
+                elif "symbols" in optimize_exprs and (
+                    isinstance(expr.expr, (sp.Symbol, AppliedUndef))
+                    or isinstance(expr.expr, sp.Mul)
+                    and len(expr.expr.args) == 2
+                    and isinstance(expr.expr.args[1], (sp.Symbol, AppliedUndef))
+                    and expr.expr.args[0].is_number
+                ):
 
                     # Add a replace rule based on the stored sympy expression
-                    sympy_expr = expr.expr.xreplace(der_replace_dict).xreplace(\
-                        replace_dict)
+                    sympy_expr = expr.expr.xreplace(der_replace_dict).xreplace(
+                        replace_dict
+                    )
 
                     if isinstance(expr.sym, sp.Derivative):
                         der_replace_dict[expr.sym] = sympy_expr
@@ -742,8 +851,11 @@ class CodeComponent(ODEComponent):
                     # index information so that the index previously available
                     # for this expressions gets available at the last expressions
                     # the present expression is used in.
-                    if isinstance(dep_expr, IndexedExpression) and \
-                           dep_expr.basename == body_name and "reused" in body_repr:
+                    if (
+                        isinstance(dep_expr, IndexedExpression)
+                        and dep_expr.basename == body_name
+                        and "reused" in body_repr
+                    ):
                         ind = dep_expr.indices[0]
 
                         # Remove available index information
@@ -790,20 +902,22 @@ class CodeComponent(ODEComponent):
             # 4) Handle result expression
             if expr in result_expressions:
 
-                timer_result = Timer("Handle result expressions for {0}".format(self.name))
+                timer_result = Timer(
+                    "Handle result expressions for {0}".format(self.name)
+                )
 
                 # Get the result name
                 result_name = result_names[expr]
 
                 # If the expression is an IndexedExpression with the same basename
                 # as the result name we just recreate it
-                if (isinstance(expr, IndexedExpression) \
-                        or isinstance(expr, StateIndexedExpression) \
-                        or isinstance(expr, ParameterIndexedExpression)) \
-                    and result_name == expr.basename:
+                if (
+                    isinstance(expr, IndexedExpression)
+                    or isinstance(expr, StateIndexedExpression)
+                    or isinstance(expr, ParameterIndexedExpression)
+                ) and result_name == expr.basename:
 
-                    new_expr = recreate_expression(expr, der_replace_dict, \
-                                                   replace_dict)
+                    new_expr = recreate_expression(expr, der_replace_dict, replace_dict)
 
                 # Not an indexed expression
                 else:
@@ -814,18 +928,22 @@ class CodeComponent(ODEComponent):
                     # NOTE: First replace any derivative expression replaces, then state and
                     # NOTE: params
                     if isinstance(expr, StateDerivative):
-                        new_expr = StateIndexedExpression(result_name, index, expr.expr.\
-                                                 xreplace(der_replace_dict).\
-                                                 xreplace(replace_dict), \
-                                                 expr.state,
-                                                 (len(results[result_name]), ),
-                                                 array_params=self._params.array)
+                        new_expr = StateIndexedExpression(
+                            result_name,
+                            index,
+                            expr.expr.xreplace(der_replace_dict).xreplace(replace_dict),
+                            expr.state,
+                            (len(results[result_name]),),
+                            array_params=self._params.array,
+                        )
                     else:
-                        new_expr = IndexedExpression(result_name, index, expr.expr.\
-                                                 xreplace(der_replace_dict).\
-                                                 xreplace(replace_dict), \
-                                                 (len(results[result_name]), ),
-                                                 array_params=self._params.array)
+                        new_expr = IndexedExpression(
+                            result_name,
+                            index,
+                            expr.expr.xreplace(der_replace_dict).xreplace(replace_dict),
+                            (len(results[result_name]),),
+                            array_params=self._params.array,
+                        )
 
                     if new_expr.basename not in self.indexed_map:
                         self.indexed_map[new_expr.basename] = OrderedDict()
@@ -844,10 +962,11 @@ class CodeComponent(ODEComponent):
             # sympy expressions
             elif isinstance(expr, IndexedExpression):
 
-                timer_indexed = Timer("Handle indexed expressions for {0}".format(self.name))
+                timer_indexed = Timer(
+                    "Handle indexed expressions for {0}".format(self.name)
+                )
 
-                new_expr = recreate_expression(expr, der_replace_dict, \
-                                               replace_dict)
+                new_expr = recreate_expression(expr, der_replace_dict, replace_dict)
 
                 # Store the expressions
                 store_expressions(expr, new_expr)
@@ -886,11 +1005,13 @@ class CodeComponent(ODEComponent):
                     body_ind += 1
 
                 # Create the IndexedExpression
-                new_expr = IndexedExpression(body_name, ind, expr.expr.\
-                                             xreplace(der_replace_dict).\
-                                             xreplace(replace_dict),
-                                             array_params=self._params.array,
-                                             enum=expr.name)
+                new_expr = IndexedExpression(
+                    body_name,
+                    ind,
+                    expr.expr.xreplace(der_replace_dict).xreplace(replace_dict),
+                    array_params=self._params.array,
+                    enum=expr.name,
+                )
 
                 if body_name not in self.indexed_map:
                     self.indexed_map[body_name] = OrderedDict()
@@ -912,13 +1033,13 @@ class CodeComponent(ODEComponent):
                 # If the expression is a state derivative we need to add a
                 # replacement for the Derivative symbol
                 if isinstance(expr, StateDerivative):
-                    new_expr = Intermediate(sympycode(expr.sym), expr.expr.\
-                                            xreplace(der_replace_dict).\
-                                            xreplace(replace_dict))
+                    new_expr = Intermediate(
+                        sympycode(expr.sym),
+                        expr.expr.xreplace(der_replace_dict).xreplace(replace_dict),
+                    )
                     new_expr._recount(expr._count)
                 else:
-                    new_expr = recreate_expression(expr, der_replace_dict, \
-                                                   replace_dict)
+                    new_expr = recreate_expression(expr, der_replace_dict, replace_dict)
 
                 del timer_expr
 
@@ -929,7 +1050,7 @@ class CodeComponent(ODEComponent):
         if "reused_array" == body_repr:
 
             if max_index > -1:
-                self.shapes[body_name] = (max_index+1,)
+                self.shapes[body_name] = (max_index + 1,)
             else:
                 self.shapes.pop(body_name)
 

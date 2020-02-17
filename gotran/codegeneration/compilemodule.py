@@ -24,15 +24,29 @@ import hashlib
 import types
 
 import gotran
-from gotran.common import check_arg, check_kwarg, push_log_level, \
-     pop_log_level, info, INFO, value_error
+from gotran.common import (
+    check_arg,
+    check_kwarg,
+    push_log_level,
+    pop_log_level,
+    info,
+    INFO,
+    value_error,
+)
 from gotran.model.ode import ODE
 from gotran.model.loadmodel import load_ode
 from gotran.common.options import parameters
-from gotran.codegeneration.codegenerators import PythonCodeGenerator, \
-     CCodeGenerator, class_name, DOLFINCodeGenerator
-from gotran.codegeneration.algorithmcomponents import rhs_expressions, \
-     monitored_expressions, jacobian_expressions
+from gotran.codegeneration.codegenerators import (
+    PythonCodeGenerator,
+    CCodeGenerator,
+    class_name,
+    DOLFINCodeGenerator,
+)
+from gotran.codegeneration.algorithmcomponents import (
+    rhs_expressions,
+    monitored_expressions,
+    jacobian_expressions,
+)
 
 # Set log level of instant
 instant.set_log_level("WARNING")
@@ -282,10 +296,15 @@ def {monitored_function_name}({args}, {monitored_name}=None):
 %rename (_{monitored_function_name}) {monitored_function_name};
 """
 
-def compile_module(ode, language="C", monitored=None,
-                   generation_params=None,
-                   additional_declarations=None,
-                   jacobian_declaration_template=None):
+
+def compile_module(
+    ode,
+    language="C",
+    monitored=None,
+    generation_params=None,
+    additional_declarations=None,
+    jacobian_declaration_template=None,
+):
     """
     JIT compile an ode
 
@@ -314,25 +333,40 @@ def compile_module(ode, language="C", monitored=None,
     check_kwarg(language, "language", str)
 
     language = language.capitalize()
-    valid_languages = ["C", "Python", 'Dolfin']
+    valid_languages = ["C", "Python", "Dolfin"]
     if language not in valid_languages:
-        value_error("Expected one of {0} for the language kwarg.".format(\
-            ", ".join("'{0}'".format(lang) for lang in valid_languages)))
+        value_error(
+            "Expected one of {0} for the language kwarg.".format(
+                ", ".join("'{0}'".format(lang) for lang in valid_languages)
+            )
+        )
 
     params = parameters.generation.copy()
     params.update(generation_params)
 
     if language == "C":
-        return compile_extension_module(ode, monitored, params,
-                                        additional_declarations,
-                                        jacobian_declaration_template)
+        return compile_extension_module(
+            ode,
+            monitored,
+            params,
+            additional_declarations,
+            jacobian_declaration_template,
+        )
 
     # Create unique module name for this application run
-    modulename = "gotran_{0}_module_{1}_{2}".format(\
+    modulename = "gotran_{0}_module_{1}_{2}".format(
         language.lower(),
-        class_name(ode.name), hashlib.sha1(str(\
-            ode.signature() + str(monitored) + repr(params) + \
-            gotran.__version__ + instant.__version__).encode('utf-8')).hexdigest())
+        class_name(ode.name),
+        hashlib.sha1(
+            str(
+                ode.signature()
+                + str(monitored)
+                + repr(params)
+                + gotran.__version__
+                + instant.__version__
+            ).encode("utf-8")
+        ).hexdigest(),
+    )
 
     # Check cache
     python_module = instant.import_module(modulename)
@@ -340,26 +374,32 @@ def compile_module(ode, language="C", monitored=None,
         return getattr(python_module, class_name(ode.name))()
 
     # No module in cache generate python version
-    if language == 'Dolfin':
+    if language == "Dolfin":
         pgen = DOLFINCodeGenerator(params)
     else:
         pgen = PythonCodeGenerator(params)
 
     # Generate class code, execute it and collect namespace
-    code = "from __future__ import division\nimport numpy as np\nimport math" + pgen.class_code(ode, monitored=monitored)
+    code = (
+        "from __future__ import division\nimport numpy as np\nimport math"
+        + pgen.class_code(ode, monitored=monitored)
+    )
 
     # Make a temporary module path for compilation
     module_path = os.path.join(instant.get_temp_dir(), modulename)
-    instant.instant_assert(not os.path.exists(module_path),
-                           "Not expecting module_path to exist: '{}'".format(module_path))
+    instant.instant_assert(
+        not os.path.exists(module_path),
+        "Not expecting module_path to exist: '{}'".format(module_path),
+    )
     instant.makedirs(module_path)
     original_path = os.getcwd()
     try:
         module_path = os.path.abspath(module_path)
         os.chdir(module_path)
         instant.write_file("__init__.py", code)
-        module_path = instant.copy_to_cache(\
-            module_path, instant.get_default_cache_dir(), modulename)
+        module_path = instant.copy_to_cache(
+            module_path, instant.get_default_cache_dir(), modulename
+        )
 
     finally:
         # Always get back to original directory.
@@ -368,41 +408,66 @@ def compile_module(ode, language="C", monitored=None,
     python_module = instant.import_module(modulename)
     return getattr(python_module, class_name(ode.name))()
 
-def compile_extension_module(ode, monitored, params,
-                             additional_declarations=None,
-                             jacobian_declaration_template=None):
+
+def compile_extension_module(
+    ode,
+    monitored,
+    params,
+    additional_declarations=None,
+    jacobian_declaration_template=None,
+):
     """
     Compile an extension module, based on the C code from the ode
     """
 
     # Add function prototype
-    args=[]
-    args_doc=[]
+    args = []
+    args_doc = []
     for arg in params.code.default_arguments:
         if arg == "s":
             args.append("states")
-            args_doc.append("""    {0} : np.ndarray
-        The state values""".format(params.code.states.array_name))
+            args_doc.append(
+                """    {0} : np.ndarray
+        The state values""".format(
+                    params.code.states.array_name
+                )
+            )
         elif arg == "t":
             args.append("time")
-            args_doc.append("""    time : scalar
-        The present time""")
-        elif arg == "p" and \
-                 params.code.parameters.representation != "numerals":
+            args_doc.append(
+                """    time : scalar
+        The present time"""
+            )
+        elif arg == "p" and params.code.parameters.representation != "numerals":
             args.append("parameters")
-            args_doc.append("""    {0} : np.ndarray
-        The parameter values""".format(params.code.parameters.array_name))
-        elif arg == "b" and \
-                 params.code.body.representation != "named":
+            args_doc.append(
+                """    {0} : np.ndarray
+        The parameter values""".format(
+                    params.code.parameters.array_name
+                )
+            )
+        elif arg == "b" and params.code.body.representation != "named":
             args.append("body")
-            args_doc.append("""    {0} : np.ndarray
-        The body values""".format(params.code.body.array_name))
+            args_doc.append(
+                """    {0} : np.ndarray
+        The body values""".format(
+                    params.code.body.array_name
+                )
+            )
 
     # Create unique module name for this application run
-    modulename = "gotran_compiled_module_{0}_{1}".format(\
-        class_name(ode.name), hashlib.sha1(str(\
-            ode.signature() + str(monitored) + repr(params) + \
-            gotran.__version__ + instant.__version__).encode('utf-8')).hexdigest())
+    modulename = "gotran_compiled_module_{0}_{1}".format(
+        class_name(ode.name),
+        hashlib.sha1(
+            str(
+                ode.signature()
+                + str(monitored)
+                + repr(params)
+                + gotran.__version__
+                + instant.__version__
+            ).encode("utf-8")
+        ).hexdigest(),
+    )
 
     # Check cache
     compiled_module = instant.import_module(modulename)
@@ -426,58 +491,60 @@ def compile_extension_module(ode, monitored, params,
 
         # Flatten jacobian params
         if not params.code.array.flatten:
-            debug("Generating jacobian C-code, forcing jacobian array "\
-                  "to be flattened.")
+            debug(
+                "Generating jacobian C-code, forcing jacobian array " "to be flattened."
+            )
             params.code.array.flatten = True
 
-        jacobian_declaration_template = jacobian_declaration_template_ if \
-                                        jacobian_declaration_template is None \
-                                        else jacobian_declaration_template
+        jacobian_declaration_template = (
+            jacobian_declaration_template_
+            if jacobian_declaration_template is None
+            else jacobian_declaration_template
+        )
 
-        jacobian_declaration = jacobian_declaration_template.format(\
-            num_states = ode.num_full_states,
+        jacobian_declaration = jacobian_declaration_template.format(
+            num_states=ode.num_full_states,
             args=args,
             args_doc=args_doc,
             jac_name=params.functions.jacobian.result_name,
             jacobian_function_name=params.functions.jacobian.function_name,
-            )
+        )
 
     if monitored and params.functions.monitored.generate:
-        monitor_declaration = monitor_declaration_template.format(\
-            num_states = ode.num_full_states,
-            num_monitored = len(monitored),
+        monitor_declaration = monitor_declaration_template.format(
+            num_states=ode.num_full_states,
+            num_monitored=len(monitored),
             args=args,
             args_doc=args_doc,
             monitored_name=params.functions.monitored.result_name,
             monitored_function_name=params.functions.monitored.function_name,
-            )
+        )
 
     pgen = PythonCodeGenerator(python_params)
     cgen = CCodeGenerator(params)
 
-    pcode = "\n\n".join(\
-        list(pgen.code_dict(ode, monitored=monitored).values()))
+    pcode = "\n\n".join(list(pgen.code_dict(ode, monitored=monitored).values()))
 
-    ccode = "\n\n".join(list(cgen.code_dict(ode,
-                        monitored=monitored,
-                        include_init=False,
-                        include_index_map=False).values()))
+    ccode = "\n\n".join(
+        list(
+            cgen.code_dict(
+                ode, monitored=monitored, include_init=False, include_index_map=False
+            ).values()
+        )
+    )
 
     # push_log_level(INFO)
-    info("Calling GOTRAN just-in-time (JIT) compiler, this may take some "\
-         "time...")
+    info("Calling GOTRAN just-in-time (JIT) compiler, this may take some " "time...")
     sys.stdout.flush()
 
     # Configure instant and add additional system headers
     instant_kwargs = configure_instant()
 
-
-
-    declaration_form = dict(\
-        num_states = ode.num_full_states,
-        num_parameters = ode.num_parameters,
-        num_monitored = len(monitored),
-        python_code = pcode,
+    declaration_form = dict(
+        num_states=ode.num_full_states,
+        num_parameters=ode.num_parameters,
+        num_monitored=len(monitored),
+        python_code=pcode,
         args=args,
         args_doc=args_doc,
         jacobian_declaration=jacobian_declaration,
@@ -486,23 +553,26 @@ def compile_extension_module(ode, monitored, params,
         states_name=params.code.states.array_name,
         parameters_name=params.code.parameters.array_name,
         monitor_declaration=monitor_declaration,
-        )
+    )
 
-    additional_declarations = additional_declarations_ if \
-                              additional_declarations is None \
-                              else additional_declarations
+    additional_declarations = (
+        additional_declarations_
+        if additional_declarations is None
+        else additional_declarations
+    )
     # Compile extension module with instant
-    compiled_module = instant.build_module(\
-        code  = ccode,
-        additional_declarations = additional_declarations.format(\
-            **declaration_form),
-        signature = modulename,
-        **instant_kwargs)
+    compiled_module = instant.build_module(
+        code=ccode,
+        additional_declarations=additional_declarations.format(**declaration_form),
+        signature=modulename,
+        **instant_kwargs
+    )
 
     info(" done")
     # pop_log_level()
     sys.stdout.flush()
     return compiled_module
+
 
 def configure_instant():
     """
@@ -513,10 +583,13 @@ def configure_instant():
     instant_kwargs = {}
     swig_include_dirs = []
 
-    instant_kwargs['swig_include_dirs'] = swig_include_dirs
-    instant_kwargs['include_dirs'] = [numpy.get_include()]
-    instant_kwargs['system_headers'] = ["numpy/arrayobject.h", "math.h"]#, "complex.h"]
-    instant_kwargs['swigargs'] =['-O -c++']
-    instant_kwargs['cppargs'] = ['-O2']
+    instant_kwargs["swig_include_dirs"] = swig_include_dirs
+    instant_kwargs["include_dirs"] = [numpy.get_include()]
+    instant_kwargs["system_headers"] = [
+        "numpy/arrayobject.h",
+        "math.h",
+    ]  # , "complex.h"]
+    instant_kwargs["swigargs"] = ["-O -c++"]
+    instant_kwargs["cppargs"] = ["-O2"]
 
     return instant_kwargs

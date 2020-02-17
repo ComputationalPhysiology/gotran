@@ -30,9 +30,11 @@ from gotran.common import *
 
 TIME_FORMAT = "%Y.%m.%d-%H.%M.%S"
 
+
 def present_time_str():
     "Returns the present time nicely formated"
     return time.strftime(TIME_FORMAT)
+
 
 def save(basename, **data):
     """
@@ -51,9 +53,9 @@ def save(basename, **data):
     if len(data) == 0:
         return
 
-    filename = basename if ".cpickle" in basename else basename+".cpickle"
+    filename = basename if ".cpickle" in basename else basename + ".cpickle"
 
-    f = open(filename,'w')
+    f = open(filename, "w")
 
     p = Pickler(f)
 
@@ -61,10 +63,11 @@ def save(basename, **data):
     p.dump(data)
     f.close()
 
+
 def compare_dicts(p1, p2):
     "Recursively compares a dict of values"
-    assert(isinstance(p1, dict))
-    assert(isinstance(p2, dict))
+    assert isinstance(p1, dict)
+    assert isinstance(p2, dict)
     try:
         ret = p1 == p2
     except ValueError as e:
@@ -73,10 +76,11 @@ def compare_dicts(p1, p2):
             if isinstance(value, numpy.ndarray):
                 ret = ret and (value == p2[key]).all()
             elif isinstance(value, dict):
-                ret = ret and compare_dicts(value,p2[key])
+                ret = ret and compare_dicts(value, p2[key])
             else:
                 ret = ret and value == p2[key]
     return ret
+
 
 def load(basename, latest_timestamp=False, collect=False):
     """
@@ -121,12 +125,12 @@ def load(basename, latest_timestamp=False, collect=False):
 
     return data
 
+
 def merge_data_dicts(data0, data1):
     "Merge data from data1 into data0"
 
     def recursively_merge_data(data0, data1):
-        for (key, values), org_values in zip(iter(data1.items()),\
-                                             list(data0.values())):
+        for (key, values), org_values in zip(iter(data1.items()), list(data0.values())):
             if isinstance(values, dict):
                 data0[key] = recursively_merge_data(org_values, values)
             elif isinstance(values, list):
@@ -144,38 +148,43 @@ def merge_data_dicts(data0, data1):
 
         data0[key] = recursively_merge_data(values, org_values)
 
+
 def load_single_data(basename, latest_timestamp):
     "Helper function for load"
 
     if latest_timestamp:
         filenames = get_data_filenames(basename)
         if not filenames:
-            raise IOError("No files with timestamp for basename: "\
-                  "'%s' excist"%basename)
+            raise IOError(
+                "No files with timestamp for basename: " "'%s' excist" % basename
+            )
         basename = filenames[-1]
 
-    filename = basename if ".cpickle" in basename else basename+".cpickle"
+    filename = basename if ".cpickle" in basename else basename + ".cpickle"
 
     if not os.path.isfile(filename):
-        raise IOError("No file with basename: '%s' excists"%basename)
-
+        raise IOError("No file with basename: '%s' excists" % basename)
 
     info("Loading data from: %s", filename)
-    f = open(filename,'r')
+    f = open(filename, "r")
 
     return Unpickler(f).load()
+
 
 def get_data_filenames(basename):
     "Helper functions for getting data filenames"
     import glob, re
-    basename = basename if ".cpickle" in basename else \
-               basename.replace(".cpickle", "")
-    pattern = re.compile("%s-[0-9]+\.[0-9]+\.[0-9]+-[0-9]+"\
-                         "\.[0-9]+\.[0-9]+.cpickle"%basename)
 
-    filenames = [filename for filename in \
-                 glob.glob("%s*.cpickle"%basename) \
-                 if re.search(pattern, filename)]
+    basename = basename if ".cpickle" in basename else basename.replace(".cpickle", "")
+    pattern = re.compile(
+        "%s-[0-9]+\.[0-9]+\.[0-9]+-[0-9]+" "\.[0-9]+\.[0-9]+.cpickle" % basename
+    )
+
+    filenames = [
+        filename
+        for filename in glob.glob("%s*.cpickle" % basename)
+        if re.search(pattern, filename)
+    ]
 
     if not filenames:
         return []

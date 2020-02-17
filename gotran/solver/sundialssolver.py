@@ -6,6 +6,7 @@ conda install assimulo
 
 """
 from .utils import suppress_stdout_stderr
+
 # Assimulo imports
 try:
     with suppress_stdout_stderr():
@@ -20,17 +21,16 @@ from .odesolver import Solver, ODESolverError
 __all__ = ["SundialsSolver", "has_sundials", "SundialsNotInstalled"]
 
 
-class SundialsNotInstalled(Exception):pass
+class SundialsNotInstalled(Exception):
+    pass
 
 
 class SundialsSolver(Solver):
-
     def __init__(self, ode, method="cvode", **options):
 
         # Check imports
         if not has_sundials:
-            msg = ("Chosen backend is sundials, but sundials is "+
-                   "not installed")
+            msg = "Chosen backend is sundials, but sundials is " + "not installed"
             raise SundialsNotInstalled(msg)
 
         # # Check method
@@ -41,13 +41,15 @@ class SundialsSolver(Solver):
 
         self._options = options
 
-
-        Solver.__init__(self, ode, arguments="tsp",
-                        additional_declarations=additional_declarations,
-                        jacobian_declaration_template=jacobian_declaration_template,
-                        **options)
+        Solver.__init__(
+            self,
+            ode,
+            arguments="tsp",
+            additional_declarations=additional_declarations,
+            jacobian_declaration_template=jacobian_declaration_template,
+            **options
+        )
         self._create_solver()
-
 
     def _create_solver(self):
         # Create problem
@@ -56,7 +58,7 @@ class SundialsSolver(Solver):
         # Set Jacobian if used
         if self._jac is not None:
             self._problem.jac = self._jac
-            self._options['usejac'] = True
+            self._options["usejac"] = True
 
         # Create the solver
         # if self._method == "cvode":
@@ -64,7 +66,7 @@ class SundialsSolver(Solver):
 
         # Parse parameters to rhs
         self._solver.sw = self._model_params.tolist()
-        self._solver.problem_info["switches"]=True
+        self._solver.problem_info["switches"] = True
 
         # Set verbosity to 100 (i.e turn of printing) if not specified
         verbosity = self._options.pop("verbosity", 100)
@@ -74,8 +76,11 @@ class SundialsSolver(Solver):
         maxh = self._options.pop("maxh", 5e-4)
         self._options["maxh"] = maxh
 
-        self._solver.options.update((k,v) for k,v in self._options.items() \
-                                    if k in list(self._solver.options.keys()))
+        self._solver.options.update(
+            (k, v)
+            for k, v in self._options.items()
+            if k in list(self._solver.options.keys())
+        )
 
     def _eval_monitored(self, time, res, params, values):
         self.module.monitor(time, res, params, values)
@@ -87,7 +92,6 @@ class SundialsSolver(Solver):
     @property
     def solver(self):
         return self._solver
-
 
     def get_options(self):
         """
@@ -115,51 +119,53 @@ class SundialsSolver(Solver):
         t, y = self._solver.simulate(t_end, ncp, ncp_list)
         # t,y = self._solver.simulate(t_end)
 
-        return t,y
+        return t, y
+
 
 if has_sundials:
 
     class _CVode:
         @staticmethod
         def default_options():
-            d =  {'atol': np.array([]),
-                  'backward': False,
-                  'clock_step': False,
-                  'discr': 'BDF',
-                  'display_progress': True,
-                  'dqrhomax': 0.0,
-                  'dqtype': 'CENTERED',
-                  'external_event_detection': False,
-                  'inith': 0.0,
-                  'iter': 'Newton',
-                  'linear_solver': 'DENSE',
-                  'maxcor': 3,
-                  'maxcorS': 3,
-                  'maxh': 0.0,
-                  'maxkrylov': 5,
-                  'maxncf': 10,
-                  'maxnef': 20,
-                  'maxord': 5,
-                  'maxsteps': 500,
-                  'minh': 0.0,
-                  'nnz': -1,
-                  'norm': 'WRMS',
-                  'num_threads': 1,
-                  'pbar': [],
-                  'precond': "Banded",
-                  'report_continuously': False,
-                  'rtol': 1e-06,
-                  'sensmethod': 'STAGGERED',
-                  'stablimit': False,
-                  'store_event_points': True,
-                  'suppress_sens': False,
-                  'time_limit': 0,
-                  'usejac': False,
-                  'usesens': False,
-                  'verbosity': 30}
+            d = {
+                "atol": np.array([]),
+                "backward": False,
+                "clock_step": False,
+                "discr": "BDF",
+                "display_progress": True,
+                "dqrhomax": 0.0,
+                "dqtype": "CENTERED",
+                "external_event_detection": False,
+                "inith": 0.0,
+                "iter": "Newton",
+                "linear_solver": "DENSE",
+                "maxcor": 3,
+                "maxcorS": 3,
+                "maxh": 0.0,
+                "maxkrylov": 5,
+                "maxncf": 10,
+                "maxnef": 20,
+                "maxord": 5,
+                "maxsteps": 500,
+                "minh": 0.0,
+                "nnz": -1,
+                "norm": "WRMS",
+                "num_threads": 1,
+                "pbar": [],
+                "precond": "Banded",
+                "report_continuously": False,
+                "rtol": 1e-06,
+                "sensmethod": "STAGGERED",
+                "stablimit": False,
+                "store_event_points": True,
+                "suppress_sens": False,
+                "time_limit": 0,
+                "usejac": False,
+                "usesens": False,
+                "verbosity": 30,
+            }
             d.pop("atol")
             return d
-
 
 
 additional_declarations = r"""

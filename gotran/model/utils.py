@@ -15,10 +15,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ["ode_primitives", "INTERMEDIATE", "ALGEBRAIC_EXPRESSION", \
-           "DERIVATIVE_EXPRESSION", "STATE_SOLUTION_EXPRESSION", \
-           "special_expression", "iter_objects", \
-           "ode_objects", "ode_components", "ODEObjectList", "RateDict"]
+__all__ = [
+    "ode_primitives",
+    "INTERMEDIATE",
+    "ALGEBRAIC_EXPRESSION",
+    "DERIVATIVE_EXPRESSION",
+    "STATE_SOLUTION_EXPRESSION",
+    "special_expression",
+    "iter_objects",
+    "ode_objects",
+    "ode_components",
+    "ODEObjectList",
+    "RateDict",
+]
 
 # System imports
 from collections import OrderedDict
@@ -37,6 +46,7 @@ from gotran.common import error, debug, check_arg, check_kwarg, scalars
 from gotran.model.odeobjects import *
 from gotran.model.expressions import *
 
+
 def ode_primitives(expr, time):
     """
     Return all ODE primitives
@@ -54,14 +64,18 @@ def ode_primitives(expr, time):
     for node in pt:
 
         # Collect AppliedUndefs which are functions of time
-        if isinstance(node, AppliedUndef) and len(node.args) == 1 and \
-               node.args[0] == time:
+        if (
+            isinstance(node, AppliedUndef)
+            and len(node.args) == 1
+            and node.args[0] == time
+        ):
             pt.skip()
             symbols.add(node)
-        elif(isinstance(node, Symbol)):
+        elif isinstance(node, Symbol):
             symbols.add(node)
 
     return symbols
+
 
 _derivative_name_template = re.compile("\Ad([a-zA-Z]\w*)_d([a-zA-Z]\w*)\Z")
 _algebraic_name_template = re.compile("\Aalg_([a-zA-Z]\w*)_0\Z")
@@ -71,6 +85,7 @@ INTERMEDIATE = 0
 ALGEBRAIC_EXPRESSION = 1
 DERIVATIVE_EXPRESSION = 2
 STATE_SOLUTION_EXPRESSION = 3
+
 
 def special_expression(name, root):
     """
@@ -91,6 +106,7 @@ def special_expression(name, root):
 
     return None, INTERMEDIATE
 
+
 class iter_objects(object):
     """
     A recursive iterator over all objects of a component including its
@@ -110,9 +126,12 @@ class iter_objects(object):
     ode_object : gotran.ODEObject
         All ODEObjects of a component
     """
-    def __init__(self, comp, return_comp=True, only_return_comp=False,
-                 reverse=False, *types):
+
+    def __init__(
+        self, comp, return_comp=True, only_return_comp=False, reverse=False, *types
+    ):
         from .odecomponent import ODEComponent
+
         assert isinstance(comp, ODEComponent)
         self._types = tuplewrap(types) or (ODEObject,)
         self._return_comp = return_comp
@@ -170,6 +189,7 @@ class iter_objects(object):
     def next(self):
         return self.__next__()
 
+
 def ode_objects(comp, *types):
     """
     Return a list of ode objects
@@ -182,6 +202,7 @@ def ode_objects(comp, *types):
         Only include objects of type given in types
     """
     return [obj for obj in iter_objects(comp, False, False, False, *types)]
+
 
 def ode_components(comp, include_self=True):
     """
@@ -201,11 +222,13 @@ def ode_components(comp, include_self=True):
 
     return comps
 
+
 class ODEObjectList(list):
     """
     Specialized container for ODEObjects. It is a list but adds dict
     access through the name attribute of an ODEObjects
     """
+
     def __init__(self):
         """
         Initialize ODEObjectList. Only empty such.
@@ -270,8 +293,7 @@ class ODEObjectList(list):
             for ind, obj in enumerate(self):
                 if item == obj:
                     return ind
-        raise ValueError("Item '{0}' not part of this ODEObjectList.".format(\
-            str(item)))
+        raise ValueError("Item '{0}' not part of this ODEObjectList.".format(str(item)))
 
     def sort(self):
         error("Cannot sort ODEObjectList.")
@@ -281,7 +303,7 @@ class ODEObjectList(list):
         check_arg(index, int)
         if index >= len(self):
             raise IndexError("pop index out of range")
-        obj=super(ODEObjectList, self).pop(index)
+        obj = super(ODEObjectList, self).pop(index)
         self._objects.pop(obj.name)
 
     def remove(self, item):
@@ -295,12 +317,15 @@ class ODEObjectList(list):
     def reverse(self, item):
         error("Cannot alter ODEObjectList, other than adding ODEObjects.")
 
+
 class RateDict(OrderedDict):
     """
     A storage class for Markov model rates
     """
+
     def __init__(self, comp):
         from .odecomponent import ODEComponent
+
         check_arg(comp, ODEComponent)
         self._comp = weakref.ref(comp)
         super(RateDict, self).__init__()
@@ -328,9 +353,11 @@ class RateDict(OrderedDict):
         if isinstance(expr, sp.Matrix):
             self._comp()._add_rates(states, expr)
         else:
-            if not isinstance(states, tuple) or len(states)!=2:
-                error("Expected a tuple of size 2 with states when "\
-                      "registering a single rate.")
+            if not isinstance(states, tuple) or len(states) != 2:
+                error(
+                    "Expected a tuple of size 2 with states when "
+                    "registering a single rate."
+                )
 
             # NOTE: the actuall item is set by the component while calling this
             # function, using _register_single_rate. See below.

@@ -167,7 +167,7 @@ def gotranrun(filename, params):
         result = root(
             rhs,
             y0,
-            args=(0.0, model_params,),
+            args=(0.0, model_params),
             jac=jac,
             method=params.steady_state.method,
             tol=params.steady_state.tol,

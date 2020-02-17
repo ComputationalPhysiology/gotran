@@ -27,14 +27,16 @@ from sympy.core.add import Add as _Add
 from sympy.core.cache import cacheit as _cacheit
 from sympy.core import function as _function
 from sympy.core.assumptions import ManagedProperties as _ManagedProperties
+
 try:
     import sympy.mpmath.libmp as _mlib
 except ImportError as ex:
     print(ex)
-    
+
 import types
 
 _evaluate = False
+
 
 def enable_evaluation():
     """
@@ -43,6 +45,7 @@ def enable_evaluation():
     global _evaluate
     _evaluate = True
 
+
 def disable_evaluation():
     """
     Disable Add, Mul and Pow contractions
@@ -50,11 +53,12 @@ def disable_evaluation():
     global _evaluate
     _evaluate = False
 
+
 def _assocop_new(cls, *args, **options):
     args = list(map(sp.sympify, args))
     args = [a for a in args if a is not cls.identity]
 
-    if not options.pop('evaluate', _evaluate):
+    if not options.pop("evaluate", _evaluate):
         return cls._from_args(args)
 
     if len(args) == 0:
@@ -69,6 +73,7 @@ def _assocop_new(cls, *args, **options):
     if order_symbols is not None:
         return C.Order(obj, *order_symbols)
     return obj
+
 
 def _function_new(cls, *args, **options):
     # Handle calls like Function('f')
@@ -88,16 +93,16 @@ def _function_new(cls, *args, **options):
             # it work with NumPy's functions like vectorize(). The ideal
             # solution would be just to attach metadata to the exception
             # and change NumPy to take advantage of this.
-            temp = ('%(name)s takes exactly %(args)s '
-                   'argument%(plural)s (%(given)s given)')
-            raise TypeError(temp %
-                {
-                'name': cls,
-                'args': cls.nargs,
-                'plural': 's'*(n != 1),
-                'given': n})
+            temp = (
+                "%(name)s takes exactly %(args)s "
+                "argument%(plural)s (%(given)s given)"
+            )
+            raise TypeError(
+                temp
+                % {"name": cls, "args": cls.nargs, "plural": "s" * (n != 1), "given": n}
+            )
 
-    evaluate = options.get('evaluate', _evaluate)
+    evaluate = options.get("evaluate", _evaluate)
     result = super(_function.Function, cls).__new__(cls, *args, **options)
     if not evaluate or not isinstance(result, cls):
         return result
@@ -107,6 +112,7 @@ def _function_new(cls, *args, **options):
     if pr2 > 0:
         return result.evalf(_mlib.libmpf.prec_to_dps(pr))
     return result
+
 
 def _pow_new(cls, b, e, evaluate=True):
     # don't optimize "if e==0; return 1" here; it's better to handle that
@@ -119,7 +125,7 @@ def _pow_new(cls, b, e, evaluate=True):
         elif e is sp.S.One:
             return b
         elif sp.S.NaN in (b, e):
-            if b is sp.S.One: # already handled e == 0 above
+            if b is sp.S.One:  # already handled e == 0 above
                 return sp.S.One
             return sp.S.NaN
         else:
@@ -128,8 +134,9 @@ def _pow_new(cls, b, e, evaluate=True):
                 return obj
 
     obj = _Expr.__new__(cls, b, e)
-    obj.is_commutative = (b.is_commutative and e.is_commutative)
+    obj.is_commutative = b.is_commutative and e.is_commutative
     return obj
+
 
 # Overload new method with none evaluating one
 # FIXME: Need to look at inheritance

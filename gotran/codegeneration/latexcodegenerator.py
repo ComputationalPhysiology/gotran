@@ -129,8 +129,10 @@ _components_template = """
 % ----------------- END COMPONENTS ----------------- %
 """
 
-_greek = 'alpha beta gamma delta epsilon zeta eta theta iota kappa lamda '\
-    'mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega'.split(' ')
+_greek = (
+    "alpha beta gamma delta epsilon zeta eta theta iota kappa lamda "
+    "mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega".split(" ")
+)
 
 
 def _default_latex_params():
@@ -141,8 +143,7 @@ def _default_latex_params():
     params = dict()
 
     # Specify output file
-    params["output"] = Param(
-        "", description="Specify LaTeX output file")
+    params["output"] = Param("", description="Specify LaTeX output file")
 
     # Set number of columns per page
     # FIXME: ScalarParam might cause parse_args() to crash due to non-ASCII
@@ -151,8 +152,8 @@ def _default_latex_params():
     #     1, ge=1, description="Set number of columns per page in "
     #     "LaTeX document")
     params["page_columns"] = Param(
-        1, description="Set number of columns per page in "
-        "LaTeX document")
+        1, description="Set number of columns per page in " "LaTeX document"
+    )
 
     # Set equation font size
     # FIXME: ScalarParam might cause parse_args() to crash due to non-ASCII
@@ -160,40 +161,46 @@ def _default_latex_params():
     # params["font_size"] = ScalarParam(
     #     10, ge=1, description="Set global font size for LaTeX document")
     params["font_size"] = Param(
-        10.0, description="Set global font size for LaTeX document")
+        10.0, description="Set global font size for LaTeX document"
+    )
 
     # Set font size for mathematical expressions.
     # FIXME: ScalarParam might cause parse_args() to crash due to non-ASCII
     # symbols.
-    #params["math_font_size"] = ScalarParam(
+    # params["math_font_size"] = ScalarParam(
     #    1, ge=1, description="Set font size for mathematical "
     #    "expressions in LaTeX document. Uses global font size if left "
     #    "blank")
     params["math_font_size"] = Param(
-        0.0, description="Set font size for mathematical expressions in "
-        "LaTeX document. Uses global font size if left blank")
+        0.0,
+        description="Set font size for mathematical expressions in "
+        "LaTeX document. Uses global font size if left blank",
+    )
 
     # Toggle bold equation labels
     params["bold_equation_labels"] = Param(
-        True, description="Give equation labels a bold typeface in "
-        "LaTeX document")
+        True, description="Give equation labels a bold typeface in " "LaTeX document"
+    )
 
     # If set to False, does not generate the preamble
     params["preamble"] = Param(
-        True, description="If set to False, LaTeX document will be "
-        "be generated without the preamble")
+        True,
+        description="If set to False, LaTeX document will be "
+        "be generated without the preamble",
+    )
 
     # If set to true, sets document to a landscape page layout
     params["landscape"] = Param(
-        False, description="Set LaTeX document to landscape layout")
+        False, description="Set LaTeX document to landscape layout"
+    )
 
     # Latex separator between factors in products
     params["mul_symbol"] = Param(
-        "dot", description="Multiplication symbol for Sympy LatexPrinter")
+        "dot", description="Multiplication symbol for Sympy LatexPrinter"
+    )
 
     # Flag to enable page numbers
-    params["page_numbers"] = Param(
-        True, description="Enable page numbers")
+    params["page_numbers"] = Param(True, description="Enable page numbers")
 
     # Flag to disable state table (currently unused)
     # params["no_state_descriptions"] = Param(
@@ -205,49 +212,67 @@ def _default_latex_params():
 
     # Set headline types for States, Parameters and Components
     params["section_type"] = Param(
-        "section", description="Section type (e.g. 'section', 'subsection')")
+        "section", description="Section type (e.g. 'section', 'subsection')"
+    )
 
     # Set page margins
     params["margins"] = Param(
-        "", description="Set page margins (e.g. '0.75in'). Uses LaTeX "
-        "defaults if left blank")
+        "",
+        description="Set page margins (e.g. '0.75in'). Uses LaTeX "
+        "defaults if left blank",
+    )
 
     # Set column seperator distance
     params["columnsep"] = Param(
-        "", description="Set column separator distance (e.g. '0.25cm'). "
-        "Uses LaTeX default if left blank")
+        "",
+        description="Set column separator distance (e.g. '0.25cm'). "
+        "Uses LaTeX default if left blank",
+    )
 
     # Set column separator line width
     params["columnseprule"] = Param(
-        "", description="Set column separator line width (e.g. '0.2pt'). "
-        "Uses LaTeX default if left blank")
+        "",
+        description="Set column separator line width (e.g. '0.2pt'). "
+        "Uses LaTeX default if left blank",
+    )
 
     # Flag to let the code generator attempt automatically converting
     # state and parameter names in descriptions to math-mode
     params["auto_format_description"] = Param(
-        False, description="Automatically format state and parameter "
-        "descriptions")
+        False, description="Automatically format state and parameter " "descriptions"
+    )
 
     # Flag to toggle numbering style for equations.
     params["equation_subnumbering"] = Param(
-        True, description="Use component-wise equation subnumbering")
+        True, description="Use component-wise equation subnumbering"
+    )
 
     params["parameter_description_cell_style"] = Param(
-        "l", description="Set description cell type for the parameter table. " \
-        "Use 'X' for long descriptions, or 'p{5cm}' to set a fixed 5 cm")
+        "l",
+        description="Set description cell type for the parameter table. "
+        "Use 'X' for long descriptions, or 'p{5cm}' to set a fixed 5 cm",
+    )
 
     params["state_description_cell_style"] = Param(
-        "l", description="Set description cell type for the state table. " \
-        "Use 'X' for long descriptions, or 'p{5cm}' to set a fixed 5 cm")
+        "l",
+        description="Set description cell type for the state table. "
+        "Use 'X' for long descriptions, or 'p{5cm}' to set a fixed 5 cm",
+    )
 
     # Return the ParameterDict
     return ParameterDict(**params)
 
 
 class LatexCodeGenerator(object):
-    packages = [("fullpage", ""), ("longtable,tabu", ""), ("multicol", ""),
-                ("amsmath", ""), ("mathpazo", ""), ("flexisym", "[mathpazo]"),
-                ("breqn", "")]
+    packages = [
+        ("fullpage", ""),
+        ("longtable,tabu", ""),
+        ("multicol", ""),
+        ("amsmath", ""),
+        ("mathpazo", ""),
+        ("flexisym", "[mathpazo]"),
+        ("breqn", ""),
+    ]
     print_settings = dict()
 
     def __init__(self, ode, params=None):
@@ -255,8 +280,7 @@ class LatexCodeGenerator(object):
         self._name = ode.name
         self.params = params if params else _default_latex_params()
 
-        self.output_file = params.output or '{0}.tex'.format(
-            ode.name)
+        self.output_file = params.output or "{0}.tex".format(ode.name)
 
         # Verify valid multiplication symbol
         if self.params.mul_symbol in ("dot", "ldot", "times"):
@@ -265,7 +289,7 @@ class LatexCodeGenerator(object):
             self.print_settings["mul_symbol"] = None
 
         if self.params.margins:
-            self.packages.append(("geometry", '[margin='+self.params.margins+']'))
+            self.packages.append(("geometry", "[margin=" + self.params.margins + "]"))
 
     def generate(self, params=None):
         """
@@ -277,20 +301,25 @@ class LatexCodeGenerator(object):
         global_opts = self.format_global_options(_global_opts)
 
         if not params.preamble:
-            latex_output = self.generate_parameter_table() \
-                          + self.generate_state_table() \
-                          + self.generate_components()
+            latex_output = (
+                self.generate_parameter_table()
+                + self.generate_state_table()
+                + self.generate_components()
+            )
         else:
             document_opts = self.format_options(
-                override=["font_size", "landscape", "page_numbers"])
+                override=["font_size", "landscape", "page_numbers"]
+            )
             latex_output = _latex_template.format(
                 FONTSIZE=params.font_size,
                 PKGS=self.format_packages(self.packages),
-                PREOPTS=global_opts, OPTS=document_opts["begin"],
+                PREOPTS=global_opts,
+                OPTS=document_opts["begin"],
                 BODY=self.generate_parameter_table()
-                     + self.generate_state_table()
-                     + self.generate_components(),
-                ENDOPTS=document_opts["end"])
+                + self.generate_state_table()
+                + self.generate_components(),
+                ENDOPTS=document_opts["end"],
+            )
 
         return latex_output
 
@@ -301,14 +330,16 @@ class LatexCodeGenerator(object):
         """
         params = params if params else self.params
         param_str = "\\\\\n".join(
-            self.format_param_table_row(par)
-            for par in self.ode.parameters)
+            self.format_param_table_row(par) for par in self.ode.parameters
+        )
         param_table_opts = self.format_options(exclude=["page_columns"])
         param_table_output = _param_table_template.format(
             SECTIONTYPE=params["section_type"],
             PDESCCELLSTYLE=params["parameter_description_cell_style"],
-            OPTS=param_table_opts["begin"], BODY=param_str,
-            ENDOPTS=param_table_opts["end"])
+            OPTS=param_table_opts["begin"],
+            BODY=param_str,
+            ENDOPTS=param_table_opts["end"],
+        )
         return param_table_output
 
     def generate_state_table(self, params=None):
@@ -318,14 +349,16 @@ class LatexCodeGenerator(object):
         """
         params = params if params else self.params
         state_str = "\\\\\n".join(
-            self.format_state_table_row(state)
-            for state in self.ode.full_states)
+            self.format_state_table_row(state) for state in self.ode.full_states
+        )
         state_table_opts = self.format_options(exclude=["page_columns"])
         state_table_output = _state_table_template.format(
             SECTIONTYPE=params["section_type"],
             SDESCCELLSTYLE=params["state_description_cell_style"],
-            OPTS=state_table_opts["begin"], BODY=state_str,
-            ENDOPTS=state_table_opts["end"])
+            OPTS=state_table_opts["begin"],
+            BODY=state_str,
+            ENDOPTS=state_table_opts["end"],
+        )
         return state_table_output
 
     def generate_components(self, params=None):
@@ -335,49 +368,58 @@ class LatexCodeGenerator(object):
         """
         params = params if params else self.params
         components_str = ""
-        comp_template = "{LABEL}\n\\label{{comp:{LABELID}}}\n" \
-            "\\begin{{dgroup{SUBNUM}}}\n" \
+        comp_template = (
+            "{LABEL}\n\\label{{comp:{LABELID}}}\n"
+            "\\begin{{dgroup{SUBNUM}}}\n"
             "{BODY}\\end{{dgroup{SUBNUM}}}\n"
-        eqn_template = \
-            "  \\begin{{dmath}}\n    \\label{{eq:{0}}}\n" \
+        )
+        eqn_template = (
+            "  \\begin{{dmath}}\n    \\label{{eq:{0}}}\n"
             "    {1} = {2}\\\\\n  \\end{{dmath}}\n"
+        )
 
-        subnumbering = '' if params["equation_subnumbering"] else '*'
+        subnumbering = "" if params["equation_subnumbering"] else "*"
 
         for comp in self.ode.components:
             if comp.rates:
-                body = [obj for obj in comp.ode_objects \
-                        if isinstance(obj, Expression) and \
-                        not isinstance(obj, StateDerivative)]
+                body = [
+                    obj
+                    for obj in comp.ode_objects
+                    if isinstance(obj, Expression)
+                    and not isinstance(obj, StateDerivative)
+                ]
             else:
-                body = [obj for obj in comp.ode_objects \
-                        if isinstance(obj, Expression)]
+                body = [obj for obj in comp.ode_objects if isinstance(obj, Expression)]
 
             if not body:
                 continue
 
             format_label = self.format_component_label(comp.name)
-            label_id = comp.name.replace(' ', '_')
+            label_id = comp.name.replace(" ", "_")
             format_body = ""
 
             # Iterate over all objects of the component
             for obj in body:
                 format_body += eqn_template.format(
-                    obj.name,
-                    obj._repr_latex_name(),
-                    obj._repr_latex_expr())
+                    obj.name, obj._repr_latex_name(), obj._repr_latex_expr()
+                )
 
-            components_str += comp_template.format(LABEL=format_label,
-                                                   LABELID=label_id,
-                                                   BODY=format_body,
-                                                   SUBNUM=subnumbering)
+            components_str += comp_template.format(
+                LABEL=format_label,
+                LABELID=label_id,
+                BODY=format_body,
+                SUBNUM=subnumbering,
+            )
 
-        components_opts = \
-            self.format_options(override=["page_columns", "math_font_size"])
+        components_opts = self.format_options(
+            override=["page_columns", "math_font_size"]
+        )
         components_output = _components_template.format(
             SECTIONTYPE=params["section_type"],
-            OPTS=components_opts["begin"], BODY=components_str,
-            ENDOPTS=components_opts["end"])
+            OPTS=components_opts["begin"],
+            BODY=components_str,
+            ENDOPTS=components_opts["end"],
+        )
         return components_output
 
     def format_param_table_row(self, param):
@@ -392,12 +434,14 @@ class LatexCodeGenerator(object):
         '  $g_{earth}$\\hspace{0.5cm} & $9.81 \\mathrm{\\frac{m}{s^{2}}}$
         \\hspace{0.5cm} & Surface gravity'
         """
-        return "  ${NAME}$\\hspace{{0.5cm}} & {VAL}" \
-               "\\hspace{{0.5cm}} & {DESC}".format(\
-                            NAME=self.format_expr(param.name),
-                            VAL=param._repr_latex_(),
-                            DESC=self.format_description(
-                                    param.param.description, param.name))
+        return (
+            "  ${NAME}$\\hspace{{0.5cm}} & {VAL}"
+            "\\hspace{{0.5cm}} & {DESC}".format(
+                NAME=self.format_expr(param.name),
+                VAL=param._repr_latex_(),
+                DESC=self.format_description(param.param.description, param.name),
+            )
+        )
 
     def format_state_table_row(self, state):
         """
@@ -409,20 +453,23 @@ class LatexCodeGenerator(object):
         '  $amu$\\hspace{0.5cm} & $931.46 \\mathrm{\\frac{MeV}{c^{2}}}$
         \\hspace{0.5cm} & Atomic mass unit'
         """
-        return "  ${NAME}$\\hspace{{0.5cm}} & {VAL}" \
-               "\\hspace{{0.5cm}} & {DESC}".format(
-                   NAME=self.format_expr(state.name), VAL=state._repr_latex_(),
-                   DESC=self.format_description(state.param.description,
-                                                state.name))
+        return (
+            "  ${NAME}$\\hspace{{0.5cm}} & {VAL}"
+            "\\hspace{{0.5cm}} & {DESC}".format(
+                NAME=self.format_expr(state.name),
+                VAL=state._repr_latex_(),
+                DESC=self.format_description(state.param.description, state.name),
+            )
+        )
 
     def format_component_label(self, label):
         """
         Return a LaTeX-formatted string of an ODE component group label.
         """
         label_opts = self.format_options(override=["bold_equation_labels"])
-        return "{0}{1}{2}\\\\".format(label_opts["begin"],
-                                      label.replace("_", "\\_"),
-                                      label_opts["end"])
+        return "{0}{1}{2}\\\\".format(
+            label_opts["begin"], label.replace("_", "\\_"), label_opts["end"]
+        )
 
     def format_description(self, description, name):
         """
@@ -431,39 +478,44 @@ class LatexCodeGenerator(object):
         """
 
         if not self.params["auto_format_description"]:
-            return description + '\\hspace{0.5cm}'
+            return description + "\\hspace{0.5cm}"
 
-        formatted_description = ''
+        formatted_description = ""
         first = True
-        for ttype, token, _, _, _ \
-                in tokenize.generate_tokens(StringIO(description).readline):
+        for ttype, token, _, _, _ in tokenize.generate_tokens(
+            StringIO(description).readline
+        ):
             if tokenize.ISEOF(ttype):
                 break
 
             formatted_token = token
             mathmode = False
 
-            if any([c in token for c in ('_', '^')]) or token == name:
-                    # or token in [state.name for state in self.ode.full_states] \
-                    # or token in [par.name for par in self.ode.parameters]:
+            if any([c in token for c in ("_", "^")]) or token == name:
+                # or token in [state.name for state in self.ode.full_states] \
+                # or token in [par.name for par in self.ode.parameters]:
                 mathmode = True
 
             if mathmode:
-                for c in ('_', '^'):
+                for c in ("_", "^"):
                     i = formatted_token.find(c)
                     while i != -1:
-                        formatted_token = formatted_token[:i+1] \
-                            + '{' + formatted_token[i+1:] + '}'
-                        i = formatted_token.find(c, i+1)
-                formatted_token = '$' + formatted_token + '$'
+                        formatted_token = (
+                            formatted_token[: i + 1]
+                            + "{"
+                            + formatted_token[i + 1 :]
+                            + "}"
+                        )
+                        i = formatted_token.find(c, i + 1)
+                formatted_token = "$" + formatted_token + "$"
 
             if token not in string.punctuation and not first:
-                formatted_token = ' ' + formatted_token
+                formatted_token = " " + formatted_token
 
             formatted_description += formatted_token
             first = False
 
-        return formatted_description + '\\hspace{0.5cm}'
+        return formatted_description + "\\hspace{0.5cm}"
 
     def format_options(self, exclude=None, override=None, params=None):
         """
@@ -478,23 +530,33 @@ class LatexCodeGenerator(object):
 
         begin_str = end_str = ""
 
-        if opts.page_columns > 1 \
-            and (("page_columns" not in exclude and not override)
-                 or "page_columns" in override):
-            begin_str = "\\begin{{multicols}}{{{0}}}\n".format(
-                opts.page_columns) + begin_str
+        if opts.page_columns > 1 and (
+            ("page_columns" not in exclude and not override)
+            or "page_columns" in override
+        ):
+            begin_str = (
+                "\\begin{{multicols}}{{{0}}}\n".format(opts.page_columns) + begin_str
+            )
             end_str += "\\end{multicols}\n"
 
         # Non-standard options -- only include if specified in override:
 
         if "font_size" in override:
-            begin_str = "{{\\fontsize{{{0}}}{{{1:.1f}}}\\selectfont\n".format(
-                opts.font_size, opts.font_size*1.2) + begin_str
+            begin_str = (
+                "{{\\fontsize{{{0}}}{{{1:.1f}}}\\selectfont\n".format(
+                    opts.font_size, opts.font_size * 1.2
+                )
+                + begin_str
+            )
             end_str += "}% end fontsize\n"
 
         if "math_font_size" in override and opts.math_font_size:
-            begin_str = "{{\\fontsize{{{0}}}{{{1:.1f}}}\n".format(
-                opts.math_font_size, opts.math_font_size*1.2) + begin_str
+            begin_str = (
+                "{{\\fontsize{{{0}}}{{{1:.1f}}}\n".format(
+                    opts.math_font_size, opts.math_font_size * 1.2
+                )
+                + begin_str
+            )
             end_str += "}% end fontsize\n"
 
         if "bold_equation_labels" in override and opts.bold_equation_labels:
@@ -502,8 +564,7 @@ class LatexCodeGenerator(object):
             end_str += "}"
 
         if "landscape" in override and opts.landscape:
-            if not "pdflscape" in \
-                    (package_name for package_name, _ in self.packages):
+            if not "pdflscape" in (package_name for package_name, _ in self.packages):
                 self.packages.append(("pdflscape", ""))
             begin_str = "\\begin{landscape}\n" + begin_str
             end_str += "\\end{landscape}\n"
@@ -524,16 +585,19 @@ class LatexCodeGenerator(object):
 
         if opts.columnsep:
             additional_options.append(
-                "\\setlength{{\\columnsep}}{{{COLSEP}}}".format(
-                    COLSEP=opts.columnsep))
+                "\\setlength{{\\columnsep}}{{{COLSEP}}}".format(COLSEP=opts.columnsep)
+            )
 
         if opts.columnseprule:
             additional_options.append(
                 "\\setlength{{\\columnseprule}}{{{COLSEPR}}}".format(
-                    COLSEPR=opts.columnseprule))
+                    COLSEPR=opts.columnseprule
+                )
+            )
 
         global_options = option_template.format(
-            GLOBALOPTS='\n'.join(additional_options))
+            GLOBALOPTS="\n".join(additional_options)
+        )
 
         return global_options
 
@@ -548,8 +612,7 @@ class LatexCodeGenerator(object):
             return "\\{0}".format(expr)
         # Some values are treated as special cases by sympy.sympify.
         # Return these as they are.
-        if isinstance(expr, str) and expr in \
-                [x for x in dir(sympy) if len(x) == 1]:
+        if isinstance(expr, str) and expr in [x for x in dir(sympy) if len(x) == 1]:
             return expr
         return mp_latex(sympy.sympify(expr), **self.print_settings)
 
@@ -563,17 +626,19 @@ class LatexCodeGenerator(object):
         atomic_units = re.findall(r"([a-zA-Z]+)", unit)
         atomic_dict = dict((au, sympy.Symbol(au)) for au in atomic_units)
         sympified_unit = eval(unit, atomic_dict, dict())
-        return "\\mathrm{{{0}}}".format(mp_latex(sympified_unit),
-                                        **self.print_settings)
+        return "\\mathrm{{{0}}}".format(mp_latex(sympified_unit), **self.print_settings)
 
     def format_packages(self, package_list):
         """
         Return list of packages and options as a LaTeX-formatted string.
         Assumes package list is on the form (("package1", "[options1]"), ...).
         """
-        return "\n".join("\\usepackage{0}{{{1}}}".format(option, package)
-                         for package, option in package_list)
+        return "\n".join(
+            "\\usepackage{0}{{{1}}}".format(option, package)
+            for package, option in package_list
+        )
 
     def __repr__(self):
         return "{0}({1}, {2})".format(
-            self.__class__.__name__, repr(self.ode), repr(self.params))
+            self.__class__.__name__, repr(self.ode), repr(self.params)
+        )

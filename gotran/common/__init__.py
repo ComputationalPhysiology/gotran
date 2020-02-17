@@ -24,8 +24,10 @@ class GotranException(RuntimeError):
     "Base class for ModelParameters exceptions"
     pass
 
+
 set_default_exception(GotranException)
 from modelparameters.utils import *
+
 # from modelparameters.utils import (Range, Timer, list_types, clear_timings, tic,
 #                              toc, is_iterable, add_iterable, camel_capitalize,
 #                              tuplewrap, listwrap, check_arg, check_arginlist,

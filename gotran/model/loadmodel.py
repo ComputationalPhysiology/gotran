@@ -1,4 +1,4 @@
- # Copyright (C) 2011-2012 Johan Hake
+# Copyright (C) 2011-2012 Johan Hake
 #
 # This file is part of Gotran.
 #
@@ -27,8 +27,14 @@ import weakref
 from collections import OrderedDict, deque
 
 # modelparameters import
-from modelparameters.parameters import Param, ScalarParam, ArrayParam, \
-     ConstParam, scalars, OptionParam
+from modelparameters.parameters import (
+    Param,
+    ScalarParam,
+    ArrayParam,
+    ConstParam,
+    scalars,
+    OptionParam,
+)
 from modelparameters.sympytools import sp_namespace, sp
 
 # gotran imports
@@ -72,36 +78,43 @@ class IntermediateDispatcher(dict):
         """
 
         from modelparameters.sympytools import symbols_from_expr
+
         timer = Timer("Namespace dispatcher")
         # Set the attr of the ODE
         # If a scalar or a sympy number or it is a sympy.Basic consisting of
         # sp.Symbols
 
-        if isinstance(value, scalars) or isinstance(value, sp.Number) or \
-               (isinstance(value, sp.Basic) and symbols_from_expr(value)):
+        if (
+            isinstance(value, scalars)
+            or isinstance(value, sp.Number)
+            or (isinstance(value, sp.Basic) and symbols_from_expr(value))
+        ):
 
             # Get source which triggers the insertion to the global namespace
             frame = inspect.currentframe().f_back
             lines, lnum = inspect.findsource(frame)
             # Try getting the code
             try:
-                code = lines[frame.f_lineno-1].strip()
+                code = lines[frame.f_lineno - 1].strip()
 
                 # Concatenate lines with line continuation symbols
                 prev = 2
-                while frame.f_lineno-prev >=0 and \
-                          len(lines[frame.f_lineno-prev]) >= 2 and \
-                          lines[frame.f_lineno-prev][-2:] == "\\\n":
-                    code = lines[frame.f_lineno-prev][:-2].strip() + code
-                    prev +=1
-            except :
+                while (
+                    frame.f_lineno - prev >= 0
+                    and len(lines[frame.f_lineno - prev]) >= 2
+                    and lines[frame.f_lineno - prev][-2:] == "\\\n"
+                ):
+                    code = lines[frame.f_lineno - prev][:-2].strip() + code
+                    prev += 1
+            except:
                 code = ""
 
             # Check if the line includes a for statement
             # Here we strip op potiential code comments after the main for
             # statement.
-            if re.search(_for_template, code.split("#")[0].strip()) or \
-                   re.search(_no_intermediate_template, code):
+            if re.search(_for_template, code.split("#")[0].strip()) or re.search(
+                _no_intermediate_template, code
+            ):
 
                 debug("Not registering '{0}' as an intermediate.".format(name))
 
@@ -128,6 +141,7 @@ class IntermediateDispatcher(dict):
         for name, value in list(other.items()):
             dict.__setitem__(self, name, value)
 
+
 def _init_namespace(ode, load_arguments, namespace):
     """
     Create namespace and populate it
@@ -138,18 +152,22 @@ def _init_namespace(ode, load_arguments, namespace):
     # Add Sympy matrix related stuff
     namespace.update(dict(eye=sp.eye, diag=sp.diag, Matrix=sp.Matrix, zeros=sp.zeros))
 
-    namespace.update(dict(t=ode.t,
-                          ScalarParam=ScalarParam,
-                          ArrayParam=ArrayParam,
-                          ConstParam=ConstParam,
-                          OptionParam=OptionParam,
-                          sp=sp,
-                          ))
+    namespace.update(
+        dict(
+            t=ode.t,
+            ScalarParam=ScalarParam,
+            ArrayParam=ArrayParam,
+            ConstParam=ConstParam,
+            OptionParam=OptionParam,
+            sp=sp,
+        )
+    )
 
     # Add ode and model_arguments
     _namespace_binder(namespace, weakref.ref(ode), load_arguments)
 
     return namespace
+
 
 def exec_ode(ode_str, name, **arguments):
     """
@@ -183,8 +201,7 @@ def exec_ode(ode_str, name, **arguments):
 
     # Execute file and collect
     with open("_tmp_gotrand.ode") as f:
-        exec(compile(f.read(), "_tmp_gotrand.ode", 'exec'),
-             intermediate_dispatcher)
+        exec(compile(f.read(), "_tmp_gotrand.ode", "exec"), intermediate_dispatcher)
     os.unlink("_tmp_gotrand.ode")
 
     # Finalize ODE
@@ -197,9 +214,9 @@ def exec_ode(ode_str, name, **arguments):
     info("Loaded ODE model '{0}' with:".format(ode.name))
     for what in ["full_states", "parameters"]:
         num = getattr(ode, "num_{0}".format(what))
-        info("{0}: {1}".format(("Num "+what.replace("_", \
-                                                    " ")).rjust(20), num))
+        info("{0}: {1}".format(("Num " + what.replace("_", " ")).rjust(20), num))
     return ode
+
 
 def load_ode(filename, name=None, **arguments):
     """
@@ -219,6 +236,7 @@ def load_ode(filename, name=None, **arguments):
 
     arguments["class_type"] = "ode"
     return _load(filename, name, **arguments)
+
 
 def _load(filename, name, **arguments):
     """
@@ -243,11 +261,9 @@ def _load(filename, name, **arguments):
     elif name is None:
         name = filename[:-4]
 
-
     # Execute the file
-    if (not os.path.isfile(filename)):
+    if not os.path.isfile(filename):
         error("Could not find '{0}'".format(filename))
-
 
     # Copy file temporary to current directory
     basename = os.path.basename(filename)
@@ -256,24 +272,19 @@ def _load(filename, name, **arguments):
         shutil.copy(filename, basename)
         filename = basename
         name = filename[:-4]
-        copyfile=True
-
+        copyfile = True
 
     # If a Param is provided turn it into its value
     for key, value in list(arguments.items()):
         if isinstance(value, Param):
             arguments[key] = value.getvalue()
 
-
     class_type = arguments.pop("class_type", "ode")
-    msg = "Argument class_type must be one of "\
-          "('ode', 'cell'), got %s " % class_type
-    assert(class_type in ("ode", "cell")), msg
-
+    msg = "Argument class_type must be one of " "('ode', 'cell'), got %s " % class_type
+    assert class_type in ("ode", "cell"), msg
 
     # Dict to collect namespace
     intermediate_dispatcher = IntermediateDispatcher()
-
 
     # Create an ODE which will be populated with data when ode file is loaded
 
@@ -286,14 +297,12 @@ def _load(filename, name, **arguments):
 
     debug("Loading {}".format(ode.name))
 
-
     # Create namespace which the ode file will be executed in
     _init_namespace(ode, arguments, intermediate_dispatcher)
 
     # Execute file and collect
-    with open(filename, 'r') as f:
-        exec(compile(f.read(), filename, 'exec'),
-             intermediate_dispatcher)
+    with open(filename, "r") as f:
+        exec(compile(f.read(), filename, "exec"), intermediate_dispatcher)
 
     # Finalize ODE
     ode.finalize()
@@ -305,12 +314,11 @@ def _load(filename, name, **arguments):
     info("Loaded ODE model '{0}' with:".format(ode.name))
     for what in ["full_states", "parameters"]:
         num = getattr(ode, "num_{0}".format(what))
-        info("{0}: {1}".format(("Num "+what.replace("_", \
-                                                    " ")).rjust(20), num))
-    if copyfile: os.unlink(filename)
+        info("{0}: {1}".format(("Num " + what.replace("_", " ")).rjust(20), num))
+    if copyfile:
+        os.unlink(filename)
 
     return ode
-
 
 
 def load_cell(filename, name=None, **arguments):
@@ -330,7 +338,7 @@ def load_cell(filename, name=None, **arguments):
     """
     arguments["class_type"] = "cell"
 
-    cell =_load(filename, name, **arguments)
+    cell = _load(filename, name, **arguments)
     cell._initialize_cell_model()
     return cell
 
@@ -339,7 +347,6 @@ def _namespace_binder(namespace, ode, load_arguments):
     """
     Add functions all bound to current ode, namespace and arguments
     """
-
 
     def comment(comment):
         """
@@ -370,8 +377,7 @@ def _namespace_binder(namespace, ode, load_arguments):
         A list of components which will be extracted and added to the present
             ODE. If not given the whole ODE will be added.
         """
-        warning("Usage of 'sub_ode()' is deprecated. "\
-                "Use 'import_ode()' instead.")
+        warning("Usage of 'sub_ode()' is deprecated. " "Use 'import_ode()' instead.")
         import_model(subode, prefix, components)
 
     def import_ode(subode, prefix="", components=None, **arguments):
@@ -407,7 +413,6 @@ def _namespace_binder(namespace, ode, load_arguments):
             comp._time.update_unit(args[0])
             comp._dt.update_unit(args[0])
 
-
     def states(*args, **kwargs):
         """
         Add a number of states to the current component or to the
@@ -430,8 +435,6 @@ def _namespace_binder(namespace, ode, load_arguments):
 
         # Add the states
         comp.add_states(*args, **kwargs)
-
-
 
     def parameters(*args, **kwargs):
         """
@@ -486,8 +489,10 @@ def _namespace_binder(namespace, ode, load_arguments):
         ns = {}
         for key, value in list(kwargs.items()):
             if not isinstance(value, (float, int, str, Param)):
-                error("expected only 'float', 'int', 'str' or 'Param', as model_arguments, "\
-                      "got: '{}' for '{}'".format(type(value).__name__, key))
+                error(
+                    "expected only 'float', 'int', 'str' or 'Param', as model_arguments, "
+                    "got: '{}' for '{}'".format(type(value).__name__, key)
+                )
 
             if key not in load_arguments:
                 ns[key] = value.getvalue() if isinstance(value, Param) else value
@@ -514,8 +519,7 @@ def _namespace_binder(namespace, ode, load_arguments):
         """
         Set the present component, deprecated
         """
-        warning("Usage of 'component()' is deprecated. "\
-                "Use 'expressions()' instead.")
+        warning("Usage of 'component()' is deprecated. " "Use 'expressions()' instead.")
         return expressions(*args)
 
     def expressions(*args):
@@ -538,15 +542,16 @@ def _namespace_binder(namespace, ode, load_arguments):
         return comp
 
     # Update provided namespace
-    namespace.update(dict(
-        timeunit=timeunit,
-        states=states,
-        parameters=parameters,
-        model_arguments=model_arguments,
-        component=component,
-        expressions=expressions,
-        subode=subode,
-        import_ode=import_ode,
-        comment=comment
+    namespace.update(
+        dict(
+            timeunit=timeunit,
+            states=states,
+            parameters=parameters,
+            model_arguments=model_arguments,
+            component=component,
+            expressions=expressions,
+            subode=subode,
+            import_ode=import_ode,
+            comment=comment,
         )
-                     )
+    )

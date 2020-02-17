@@ -17,40 +17,44 @@
 
 __all__ = ["adict", "odict"]
 
+
 class adict(dict):
     """A dictionary with attribute-style access. It maps attribute access to
     the real dictionary.  """
+
     def __init__(self, **kwargs):
         dict.__init__(self, **kwargs)
-        
+
     def __getstate__(self):
         return list(self.__dict__.items())
-    
+
     def __setstate__(self, items):
         for key, val in items:
             self.__dict__[key] = val
-    
+
     def __repr__(self):
         return dict.__repr__(self)
-    
+
     def __setitem__(self, key, value):
         return super(adict, self).__setitem__(key, value)
-    
+
     def __getitem__(self, name):
         return super(adict, self).__getitem__(name)
-    
+
     def __delitem__(self, name):
         return super(adict, self).__delitem__(name)
-    
+
     __getattr__ = __getitem__
     __setattr__ = __setitem__
-    
+
     def copy(self):
         ch = adict(self)
         return ch
 
+
 class odict(dict):
     "A simple ordered dict"
+
     def __init__(self, iterable=None):
         self._keys = []
         dict.__init__(self)
@@ -89,7 +93,7 @@ class odict(dict):
 
     def pop(self, *args, **kwargs):
         return NotImplemented
-    
+
     def popitem(self, *args, **kwargs):
         return NotImplemented
 
@@ -102,4 +106,3 @@ class odict(dict):
     def clear(self):
         self._keys = []
         dict.clear(self)
-

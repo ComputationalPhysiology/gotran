@@ -35,6 +35,7 @@ from gotran.model.odeobjects import *
 from gotran.model.expressions import *
 from gotran.model.odecomponent import *
 
+
 class ODE(ODEComponent):
     """
     Root ODEComponent
@@ -46,6 +47,7 @@ class ODE(ODEComponent):
     ns : dict (optional)
         A namespace which will be filled with declared ODE symbols
     """
+
     def __new__(cls, *args, **kwargs):
         self = object.__new__(cls)
 
@@ -83,7 +85,7 @@ class ODE(ODEComponent):
         self.object_component[self._dt] = self
 
         # Namespace, which can be used to eval an expression
-        self.ns.update({"t":time.sym, "time":time.sym, "dt":dt.sym})
+        self.ns.update({"t": time.sym, "time": time.sym, "dt": dt.sym})
 
         # An list with all component names with expression added to them
         # The components are always sorted wrt last expression added
@@ -98,8 +100,7 @@ class ODE(ODEComponent):
 
         # A dict with the present ode objects
         # NOTE: hashed by name so duplicated expressions are not stored
-        self.present_ode_objects = dict(t=self._time, time=self._time, \
-                                        dt=self._dt)
+        self.present_ode_objects = dict(t=self._time, time=self._time, dt=self._dt)
 
         # Keep track of duplicated expressions
         self.duplicated_expressions = defaultdict(list)
@@ -172,6 +173,7 @@ class ODE(ODEComponent):
         if isinstance(ode, str):
             # If not load external ODE
             from gotran.model.loadmodel import load_ode
+
             ode = load_ode(ode, **arguments)
 
         # Postfix prefix with "_" if prefix is not ""
@@ -184,7 +186,7 @@ class ODE(ODEComponent):
 
         # Subs for expressions
         subs = {}
-        old_new_map = {ode:self}
+        old_new_map = {ode: self}
 
         def add_comp_and_children(added, comp):
             "Help function to recursively add components to ode"
@@ -198,7 +200,7 @@ class ODE(ODEComponent):
                 if old_obj and self.object_component[old_obj] == self:
                     new_name = obj.name
                 else:
-                    new_name = prefix+obj.name
+                    new_name = prefix + obj.name
 
                 if isinstance(obj, State):
                     subs[obj.sym] = added.add_state(new_name, obj.param)
@@ -213,14 +215,12 @@ class ODE(ODEComponent):
 
                             # Skip it and add the registered symbol for
                             # substitution
-                            subs[obj.sym] = self.present_ode_objects[\
-                                str(obj)].sym
+                            subs[obj.sym] = self.present_ode_objects[str(obj)].sym
 
                         else:
 
                             # If not already present just add unprefixed name
-                            subs[obj.sym] = added.add_parameter(\
-                                obj.name, obj.param)
+                            subs[obj.sym] = added.add_parameter(obj.name, obj.param)
 
                     else:
 
@@ -243,8 +243,7 @@ class ODE(ODEComponent):
 
             comp = ode.all_components[comp_name]
 
-            comp_comment = "Expressions for the {0} "\
-                           "component".format(comp.name)
+            comp_comment = "Expressions for the {0} " "component".format(comp.name)
 
             # Get corresponding component in new ODE
             added = old_new_map[comp]
@@ -270,9 +269,9 @@ class ODE(ODEComponent):
                         elif isinstance(obj, RateExpression):
 
                             states = obj.states
-                            added._add_single_rate(subs[states[0].sym], \
-                                                   subs[states[1].sym], \
-                                                   new_expr)
+                            added._add_single_rate(
+                                subs[states[0].sym], subs[states[1].sym], new_expr
+                            )
                             continue
 
                     # If no prefix we just add the expression by using setattr
@@ -289,12 +288,12 @@ class ODE(ODEComponent):
                             subs[obj.sym] = added.add_algebraic(state, new_expr)
 
                         elif isinstance(obj, StateDerivative):
-                            subs[obj.sym] = added.add_derivative(\
-                                state, added.t, new_expr)
+                            subs[obj.sym] = added.add_derivative(
+                                state, added.t, new_expr
+                            )
 
                         elif isinstance(obj, StateSolution):
-                            subs[obj.sym] = added.add_state_solution(\
-                                state, new_expr)
+                            subs[obj.sym] = added.add_state_solution(state, new_expr)
                             print(repr(obj), obj.sym)
                         else:
                             error("Should not reach here...")
@@ -311,19 +310,24 @@ class ODE(ODEComponent):
                         if der_expr is None:
 
                             # If not found try prefixed version
-                            der_expr = self.root.present_ode_objects.get(\
-                                prefix+obj.der_expr.name)
+                            der_expr = self.root.present_ode_objects.get(
+                                prefix + obj.der_expr.name
+                            )
 
                             if der_expr is None:
                                 if prefix:
-                                    error("Could not find expression: "\
-                                          "({0}){1} while adding "\
-                                          "derivative".format(\
-                                              prefix, obj.der_expr))
+                                    error(
+                                        "Could not find expression: "
+                                        "({0}){1} while adding "
+                                        "derivative".format(prefix, obj.der_expr)
+                                    )
                                 else:
-                                    error("Could not find expression: "\
-                                          "{1} while adding derivative".format(\
-                                              obj.der_expr))
+                                    error(
+                                        "Could not find expression: "
+                                        "{1} while adding derivative".format(
+                                            obj.der_expr
+                                        )
+                                    )
 
                         dep_var = self.root.present_ode_objects.get(obj.dep_var.name)
 
@@ -333,27 +337,34 @@ class ODE(ODEComponent):
                         elif dep_var is None:
 
                             # If not found try prefixed version
-                            dep_var = self.root.present_ode_objects.get(\
-                                prefix+obj.dep_var.name)
+                            dep_var = self.root.present_ode_objects.get(
+                                prefix + obj.dep_var.name
+                            )
 
                             if dep_var is None:
                                 if prefix:
-                                    error("Could not find expression: "\
-                                          "({0}){1} while adding "\
-                                          "derivative".format(\
-                                              prefix, obj.dep_var))
+                                    error(
+                                        "Could not find expression: "
+                                        "({0}){1} while adding "
+                                        "derivative".format(prefix, obj.dep_var)
+                                    )
                                 else:
-                                    error("Could not find expression: "\
-                                          "{1} while adding derivative".format(\
-                                              obj.dep_var))
+                                    error(
+                                        "Could not find expression: "
+                                        "{1} while adding derivative".format(
+                                            obj.dep_var
+                                        )
+                                    )
 
-                        subs[obj.sym] = added.add_derivative(\
-                            der_expr, dep_var, new_expr)
+                        subs[obj.sym] = added.add_derivative(
+                            der_expr, dep_var, new_expr
+                        )
 
                     elif isinstance(obj, Intermediate):
 
-                        subs[obj.sym] = added.add_intermediate(\
-                            prefix+obj.name, new_expr)
+                        subs[obj.sym] = added.add_intermediate(
+                            prefix + obj.name, new_expr
+                        )
 
                     else:
                         error("Should not reach here!")
@@ -373,7 +384,7 @@ class ODE(ODEComponent):
             given the basename will be the same as the name of the ode.
         """
 
-        timer = Timer("Save "+ self.name)
+        timer = Timer("Save " + self.name)
 
         if not self._is_finalized_ode:
             error("ODE need to be finalized to be saved to file.")
@@ -393,16 +404,20 @@ class ODE(ODEComponent):
                 while present_comp.parent != self:
                     present_comp = present_comp.parent
                     comps.append(present_comp.name)
-                comp_name = ", ".join("\"{0}\"".format(name) for name in reversed(comps))
+                comp_name = ", ".join('"{0}"'.format(name) for name in reversed(comps))
 
             comp_names[comp] = comp_name
 
-            states = ["{0}={1},".format(obj.name, obj.param.repr(\
-                include_name=False)) for obj in comp.ode_objects \
-                      if isinstance(obj, State)]
-            parameters = ["{0}={1},".format(obj.name, obj.param.repr(\
-                include_name=False)) for obj in comp.ode_objects \
-                          if isinstance(obj, Parameter)]
+            states = [
+                "{0}={1},".format(obj.name, obj.param.repr(include_name=False))
+                for obj in comp.ode_objects
+                if isinstance(obj, State)
+            ]
+            parameters = [
+                "{0}={1},".format(obj.name, obj.param.repr(include_name=False))
+                for obj in comp.ode_objects
+                if isinstance(obj, Parameter)
+            ]
             if states:
                 lines.append("")
                 if comp_name:
@@ -428,8 +443,7 @@ class ODE(ODEComponent):
 
             comp = self.all_components[comp_name]
 
-            comp_comment = "Expressions for the {0} "\
-                           "component".format(comp.name)
+            comp_comment = "Expressions for the {0} " "component".format(comp.name)
 
             # Iterate over all objects of the component and save only expressions
             # and comments
@@ -447,15 +461,17 @@ class ODE(ODEComponent):
 
                         # Save rate expressions slightly different
                         elif isinstance(obj, RateExpression):
-                            lines.append("rates[{0}, {1}] = {2}".format(\
-                                sympycode(obj.states[0]), \
-                                sympycode(obj.states[1]), \
-                                sympycode(obj.expr)))
+                            lines.append(
+                                "rates[{0}, {1}] = {2}".format(
+                                    sympycode(obj.states[0]),
+                                    sympycode(obj.states[1]),
+                                    sympycode(obj.expr),
+                                )
+                            )
                             continue
 
                     # All other Expressions
-                    lines.append("{0} = {1}".format(obj.name, \
-                                                    sympycode(obj.expr)))
+                    lines.append("{0} = {1}".format(obj.name, sympycode(obj.expr)))
 
                 # If saving a comment
                 elif isinstance(obj, Comment):
@@ -463,20 +479,24 @@ class ODE(ODEComponent):
                     # If comment is component comment
                     if str(obj) == comp_comment:
                         lines.append("")
-                        comp_name = comp_names[comp] if comp_names[comp] \
-                                    else "\"{0}\"".format(basename)
+                        comp_name = (
+                            comp_names[comp]
+                            if comp_names[comp]
+                            else '"{0}"'.format(basename)
+                        )
                         lines.append("expressions({0})".format(comp_name))
 
                     # Just add the comment
                     else:
                         lines.append("")
-                        lines.append("comment(\"{0}\")".format(obj))
+                        lines.append('comment("{0}")'.format(obj))
 
         lines.append("")
         # Use Python code generator to indent outputted code
         # Write to file
         from gotran.codegeneration.codegenerators import PythonCodeGenerator
-        with open(basename+".ode", "w") as f:
+
+        with open(basename + ".ode", "w") as f:
             f.write("\n".join(PythonCodeGenerator.indent_and_split_lines(lines)))
 
     def register_ode_object(self, obj, comp, dependent=None):
@@ -507,8 +527,12 @@ class ODE(ODEComponent):
 
             # If duplicated object is an ODE Parameter and the added object is
             # either a State or a Parameter we replace the Parameter.
-            elif isinstance(dup_obj, Parameter) and dup_comp == self and \
-                     comp != self and isinstance(obj, (State, Parameter)):
+            elif (
+                isinstance(dup_obj, Parameter)
+                and dup_comp == self
+                and comp != self
+                and isinstance(obj, (State, Parameter))
+            ):
 
                 timer = Timer("Replace objects")
 
@@ -518,13 +542,13 @@ class ODE(ODEComponent):
                 # FIXME: Do we need to recreate all expression the objects is used in?
                 # Replace the object from the object_used_in dict and update
                 # the correponding expressions
-                subs = {dup_obj.sym : obj.sym}
+                subs = {dup_obj.sym: obj.sym}
                 subs = {}
 
                 # Recursively replace object dependencies
                 self._replace_object(dup_obj, obj, subs)
 
-                #for expr in self.object_used_in[dup_obj]:
+                # for expr in self.object_used_in[dup_obj]:
                 #    updated_expr = recreate_expression(expr, subs)
                 #    self.object_used_in[obj].add(updated_expr)
                 #
@@ -544,24 +568,42 @@ class ODE(ODEComponent):
                 #    old_comp.ode_objects[ind] = updated_expr
                 #
                 ## Remove information about the replaced objects
-                #self.object_used_in.pop(dup_obj)
+                # self.object_used_in.pop(dup_obj)
 
             # If duplicated object is an ODE Parameter and the added
             # object is an Intermediate we raise an error.
-            elif isinstance(dup_obj, Parameter) and dup_comp == self and \
-                     isinstance(obj, Expression):
-                error("Cannot replace an ODE parameter with an Expression, "\
-                      "only with Parameters and States.")
+            elif (
+                isinstance(dup_obj, Parameter)
+                and dup_comp == self
+                and isinstance(obj, Expression)
+            ):
+                error(
+                    "Cannot replace an ODE parameter with an Expression, "
+                    "only with Parameters and States."
+                )
 
             # If State, Parameter or DerivativeExpression we always raise an error
-            elif any(isinstance(oo, (State, Parameter, Time, Dt, \
-                                     DerivativeExpression,
-                                     AlgebraicExpression, StateSolution)) \
-                     for oo in [dup_obj, obj]):
-                error("Cannot register {0}. A {1} with name '{2}' is "\
-                      "already registered in this ODE.".format(\
-                          type(obj).__name__, type(\
-                              dup_obj).__name__, dup_obj.name))
+            elif any(
+                isinstance(
+                    oo,
+                    (
+                        State,
+                        Parameter,
+                        Time,
+                        Dt,
+                        DerivativeExpression,
+                        AlgebraicExpression,
+                        StateSolution,
+                    ),
+                )
+                for oo in [dup_obj, obj]
+            ):
+                error(
+                    "Cannot register {0}. A {1} with name '{2}' is "
+                    "already registered in this ODE.".format(
+                        type(obj).__name__, type(dup_obj).__name__, dup_obj.name
+                    )
+                )
             else:
 
                 # Sanity check that both obj and dup_obj are Expressions
@@ -576,7 +618,7 @@ class ODE(ODEComponent):
         # Update global information about ode object
         self.present_ode_objects[obj.name] = obj
         self.object_component[obj] = comp
-        self.ns.update({obj.name : obj.sym})
+        self.ns.update({obj.name: obj.sym})
 
         # If Expression
         if isinstance(obj, Expression):
@@ -590,8 +632,9 @@ class ODE(ODEComponent):
             expression_added = False
             replace_dict = {}
             for der_expr in obj.expr.atoms(sp.Derivative):
-                expression_added |= self._expand_single_derivative(\
-                    comp, obj, der_expr, replace_dict, dependent)
+                expression_added |= self._expand_single_derivative(
+                    comp, obj, der_expr, replace_dict, dependent
+                )
 
             # If expressions need to be re-created
             if replace_dict:
@@ -613,8 +656,10 @@ class ODE(ODEComponent):
                 dep_obj = self.present_ode_objects[sympycode(sym)]
 
                 if dep_obj is None:
-                    error("The symbol '{0}' is not declared within the '{1}' "\
-                          "ODE.".format(sym, self.name))
+                    error(
+                        "The symbol '{0}' is not declared within the '{1}' "
+                        "ODE.".format(sym, self.name)
+                    )
 
                 # Store object dependencies
                 self.expression_dependencies[obj].add(dep_obj)
@@ -622,12 +667,14 @@ class ODE(ODEComponent):
 
             # If the expression is a StateSolution the state cannot have
             # been used previously
-            if isinstance(obj, StateSolution) and \
-                   self.object_used_in.get(obj.state):
+            if isinstance(obj, StateSolution) and self.object_used_in.get(obj.state):
                 used_in = self.object_used_in.get(obj.state)
-                error("A state solution cannot have been used in "\
-                      "any previous expressions. {0} is used in: {1}".format(\
-                          obj.state, used_in))
+                error(
+                    "A state solution cannot have been used in "
+                    "any previous expressions. {0} is used in: {1}".format(
+                        obj.state, used_in
+                    )
+                )
 
     def expanded_expression(self, expr):
         """
@@ -699,12 +746,14 @@ class ODE(ODEComponent):
 
         # Check that there are no components left
         if components:
-            if len(components)>1:
-                error("{0} are not a components of this ODE.".format(\
-                    ", ".join("'{0}'".format(comp) for comp in components)))
+            if len(components) > 1:
+                error(
+                    "{0} are not a components of this ODE.".format(
+                        ", ".join("'{0}'".format(comp) for comp in components)
+                    )
+                )
             else:
-                error("'{0}' is not a component of this ODE.".format(\
-                    components[0]))
+                error("'{0}' is not a component of this ODE.".format(components[0]))
 
         # Collect dependencies
         included_objects = []
@@ -768,8 +817,7 @@ class ODE(ODEComponent):
             if comp not in collected_components:
                 continue
 
-            comp_comment = "Expressions for the {0} "\
-                           "component".format(comp.name)
+            comp_comment = "Expressions for the {0} " "component".format(comp.name)
 
             # Get corresponding component in new ODE
             added = old_new_map[comp]
@@ -795,8 +843,9 @@ class ODE(ODEComponent):
                         elif isinstance(obj, RateExpression):
 
                             states = obj.states
-                            added._add_single_rate(states[0].sym, \
-                                                   states[1].sym, new_expr)
+                            added._add_single_rate(
+                                states[0].sym, states[1].sym, new_expr
+                            )
                             continue
 
                     # All other Expressions
@@ -823,8 +872,13 @@ class ODE(ODEComponent):
 
             state_exprs = self.state_expressions
             N = len(state_exprs)
-            self._mass_matrix = sp.Matrix(N, N, lambda i, j : 1 if i==j and \
-                        isinstance(state_exprs[i], StateDerivative) else 0)
+            self._mass_matrix = sp.Matrix(
+                N,
+                N,
+                lambda i, j: 1
+                if i == j and isinstance(state_exprs[i], StateDerivative)
+                else 0,
+            )
 
         return self._mass_matrix
 
@@ -836,8 +890,9 @@ class ODE(ODEComponent):
         if not self.is_complete:
             error("The ODE is not complete")
 
-        return any(isinstance(expr, AlgebraicExpression) for expr in \
-                   self.state_expressions)
+        return any(
+            isinstance(expr, AlgebraicExpression) for expr in self.state_expressions
+        )
 
     def finalize(self):
         """
@@ -862,21 +917,21 @@ class ODE(ODEComponent):
 
             # Sort wrt stringified states and parameters avoiding trouble with
             # random ordering of **kwargs
-            def_list += sorted([repr(state.param) \
-                                for state in comp.full_states])
-            def_list += sorted([repr(param.param) \
-                                for param in comp.parameters])
+            def_list += sorted([repr(state.param) for state in comp.full_states])
+            def_list += sorted([repr(param.param) for param in comp.parameters])
             def_list += [sympycode(expr.expr) for expr in comp.intermediates]
 
             # Sort state expressions wrt stringified state names
-            def_list += [sympycode(expr.expr) for expr in sorted(\
-                self.state_expressions, key=cmp_to_key(lambda o0, o1:
-                                                       cmp(str(o0.state),
-                                                           str(o1.state))))]
-
+            def_list += [
+                sympycode(expr.expr)
+                for expr in sorted(
+                    self.state_expressions,
+                    key=cmp_to_key(lambda o0, o1: cmp(str(o0.state), str(o1.state))),
+                )
+            ]
 
         h = hashlib.sha1()
-        h.update(";".join(def_list).encode('utf-8'))
+        h.update(";".join(def_list).encode("utf-8"))
         return h.hexdigest()
 
     def _replace_object(self, old_obj, replaced_obj, replace_dicts):
@@ -912,10 +967,11 @@ class ODE(ODEComponent):
             self.expression_dependencies[old_expr].add(replaced_obj)
 
             # FIXME: Do not remove the dependencies
-            #self.expression_dependencies[updated_expr] = \
+            # self.expression_dependencies[updated_expr] = \
             #            self.expression_dependencies.pop(expr)
-            self.expression_dependencies[replaced_expr] = \
-                        self.expression_dependencies[old_expr]
+            self.expression_dependencies[replaced_expr] = self.expression_dependencies[
+                old_expr
+            ]
 
             # Find the index of old expression and exchange it with updated
             old_comp = self.object_component[old_expr]
@@ -940,8 +996,7 @@ class ODE(ODEComponent):
             self.all_expr_components_ordered.append(comp.name)
 
             # Add a comment to the component
-            comp.add_comment("Expressions for the {0} "\
-                             "component".format(comp.name))
+            comp.add_comment("Expressions for the {0} " "component".format(comp.name))
 
             # Recount the last added expression so the comment comes
             # infront of the expression
@@ -951,15 +1006,15 @@ class ODE(ODEComponent):
         elif self.all_expr_components_ordered[-1] != comp.name:
 
             # Finalize the last component we visited
-            self.all_components[\
-                self.all_expr_components_ordered[-1]].finalize_component()
+            self.all_components[
+                self.all_expr_components_ordered[-1]
+            ].finalize_component()
 
             # Append this component
             self.all_expr_components_ordered.append(comp.name)
 
             # Add a comment to the component
-            comp.add_comment("Expressions for the {0} "\
-                             "component".format(comp.name))
+            comp.add_comment("Expressions for the {0} " "component".format(comp.name))
 
             # Recount the last added expression so the comment comes
             # infront of the expression
@@ -989,12 +1044,16 @@ class ODE(ODEComponent):
             return False
 
         if not isinstance(der_expr.args[0], AppliedUndef):
-            error("Can only register Derivatives of allready registered "\
-            "Expressions. Got: {0}".format(sympycode(der_expr.args[0])))
+            error(
+                "Can only register Derivatives of allready registered "
+                "Expressions. Got: {0}".format(sympycode(der_expr.args[0]))
+            )
 
         if not isinstance(der_expr.args[1], (AppliedUndef, sp.Symbol)):
-            error("Can only register Derivatives with a single dependent "\
-                  "variabe. Got: {0}".format(sympycode(der_expr.args[1])))
+            error(
+                "Can only register Derivatives with a single dependent "
+                "variabe. Got: {0}".format(sympycode(der_expr.args[1]))
+            )
 
         # Get the expr and dependent variable objects
         expr_obj = self.present_ode_objects[sympycode(der_expr.args[0])]
@@ -1004,30 +1063,41 @@ class ODE(ODEComponent):
         # variable we raise an error as the user should already have created
         # the expression.
         if isinstance(expr_obj, State) and var_obj == self._time:
-            error("The expression {0} is dependent on the state "\
-                  "derivative of {1} which is not registered in this ODE."\
-                  .format(obj, expr_obj))
+            error(
+                "The expression {0} is dependent on the state "
+                "derivative of {1} which is not registered in this ODE.".format(
+                    obj, expr_obj
+                )
+            )
 
         # If we get a Derivative(expr, t) we issue an error
-        #if isinstance(expr_obj, Expression) and var_obj == self._time:
+        # if isinstance(expr_obj, Expression) and var_obj == self._time:
         #    error("All derivative expressions of registered expressions "\
         #          "need to be expanded with respect to time. Use "\
         #          "expr.diff(t) instead of Derivative(expr, t) ")
 
         if not isinstance(expr_obj, Expression):
-            error("Can only differentiate expressions or states. Got {0} as "\
-                  "the derivative expression.".format(expr_obj))
+            error(
+                "Can only differentiate expressions or states. Got {0} as "
+                "the derivative expression.".format(expr_obj)
+            )
 
         # Expand derivative and see if it is trivial
         der_result = expr_obj.expr.diff(var_obj.sym)
 
         # If derivative result are trival we substitute it
-        if der_result.is_number or \
-               isinstance(der_result, (sp.Symbol, AppliedUndef)) or \
-               (isinstance(der_result, (sp.Mul, sp.Pow, sp.Add)) and
-                len(der_result.args)==2 and \
-                all(isinstance(arg, (sp.Number, sp.Symbol, AppliedUndef)) \
-                    for arg in der_result.args)):
+        if (
+            der_result.is_number
+            or isinstance(der_result, (sp.Symbol, AppliedUndef))
+            or (
+                isinstance(der_result, (sp.Mul, sp.Pow, sp.Add))
+                and len(der_result.args) == 2
+                and all(
+                    isinstance(arg, (sp.Number, sp.Symbol, AppliedUndef))
+                    for arg in der_result.args
+                )
+            )
+        ):
             replace_dict[der_expr] = der_result
             return False
 

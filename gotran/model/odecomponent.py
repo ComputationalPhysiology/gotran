@@ -35,10 +35,12 @@ from gotran.model.odeobjects import *
 from gotran.model.expressions import *
 from gotran.model.utils import *
 
+
 class ODEComponent(ODEObject):
     """
     Base class for all ODE components.
     """
+
     def __init__(self, name, parent):
         """
         Create an ODEComponent
@@ -94,8 +96,7 @@ class ODEComponent(ODEObject):
         """
         p = self._parent()
         if p is None:
-            error("Cannot access parent ODEComponent. It is already "\
-                  "destroyed.")
+            error("Cannot access parent ODEComponent. It is already " "destroyed.")
         return p
 
     def get_object(self, name, reversed=True, return_component=False):
@@ -193,8 +194,10 @@ class ODEComponent(ODEObject):
 
         for arg in states:
             if not isinstance(arg, tuple) or len(arg) != 2:
-                error("excpected tuple with lenght 2 with state name (str) "\
-                      "and init values as the args argument.")
+                error(
+                    "excpected tuple with lenght 2 with state name (str) "
+                    "and init values as the args argument."
+                )
             state_name, init = arg
 
             # Add the states
@@ -240,8 +243,10 @@ class ODEComponent(ODEObject):
 
         for arg in params:
             if not isinstance(arg, tuple) or len(arg) != 2:
-                error("excpected tuple with lenght 2 with parameter name (str) "\
-                      "and init values as the args argument.")
+                error(
+                    "excpected tuple with lenght 2 with parameter name (str) "
+                    "and init values as the args argument."
+                )
             parameter_name, value = arg
 
             # Add the parameters
@@ -282,6 +287,7 @@ class ODEComponent(ODEObject):
         """
 
         from modelparameters.sympytools import symbols_from_expr
+
         state = self._expect_state(state)
 
         # Check the sympy flags
@@ -291,8 +297,10 @@ class ODEComponent(ODEObject):
         # Check that there are no expressions that are dependent on the state
         for sym in symbols_from_expr(expr, include_derivatives=True):
             if (state.sym is not sym) and (state.sym in sym.atoms()):
-                error("{0}, a sub expression of the expression, cannot depend "\
-                      "on the state for which we try to solve for.".format(sym))
+                error(
+                    "{0}, a sub expression of the expression, cannot depend "
+                    "on the state for which we try to solve for.".format(sym)
+                )
 
         # Try solve the passed expr
         try:
@@ -329,12 +337,16 @@ class ODEComponent(ODEObject):
         state = self._expect_state(state)
 
         if "d{0}_dt".format(state.name) in self.ode_objects:
-            error("Cannot registered a state solution for a state "\
-                  "that has a state derivative registered.")
+            error(
+                "Cannot registered a state solution for a state "
+                "that has a state derivative registered."
+            )
 
         if "alg_{0}_0".format(state.name) in self.ode_objects:
-            error("Cannot registered a state solution for a state "\
-                  "that has an algebraic expression registered.")
+            error(
+                "Cannot registered a state solution for a state "
+                "that has an algebraic expression registered."
+            )
 
         # Create a StateSolution in the present component
         obj = StateSolution(state, expr, dependent)
@@ -429,12 +441,16 @@ class ODEComponent(ODEObject):
         state = self._expect_state(state)
 
         if "d{0}_dt".format(state.name) in self.ode_objects:
-            error("Cannot registered an algebraic expression for a state "\
-                  "that has a state derivative registered.")
+            error(
+                "Cannot registered an algebraic expression for a state "
+                "that has a state derivative registered."
+            )
 
         if state.is_solved:
-            error("Cannot registered an algebraic expression for a state "\
-                  "which is registered solved.")
+            error(
+                "Cannot registered an algebraic expression for a state "
+                "which is registered solved."
+            )
 
         # Create an AlgebraicExpression in the present component
         obj = AlgebraicExpression(state, expr, dependent)
@@ -446,8 +462,7 @@ class ODEComponent(ODEObject):
         """
         Return a list of all states in the component and its children
         """
-        return [state for state in iter_objects(self, False, False, False, \
-                                                State)]
+        return [state for state in iter_objects(self, False, False, False, State)]
 
     @property
     def full_states(self):
@@ -455,8 +470,9 @@ class ODEComponent(ODEObject):
         Return a list of all states in the component and its children that are
         not solved and determined by a state expression
         """
-        return [expr.state for expr in self.state_expressions \
-                if not expr.state.is_solved]
+        return [
+            expr.state for expr in self.state_expressions if not expr.state.is_solved
+        ]
 
     @property
     def full_state_vector(self):
@@ -479,24 +495,23 @@ class ODEComponent(ODEObject):
         """
         Return a list of all intermediates
         """
-        return [obj for obj in iter_objects(self, False, False, False,
-                                            Intermediate)]
+        return [obj for obj in iter_objects(self, False, False, False, Intermediate)]
 
     @property
     def state_expressions(self):
         """
         Return a list of state expressions
         """
-        return sorted((obj for obj in iter_objects(self, False, False,
-                                                   False, StateExpression)))
+        return sorted(
+            (obj for obj in iter_objects(self, False, False, False, StateExpression))
+        )
 
     @property
     def rate_expressions(self):
         """
         Return a list of rate expressions
         """
-        return [obj for obj in iter_objects(self, False, False, False, \
-                                            RateExpression)]
+        return [obj for obj in iter_objects(self, False, False, False, RateExpression)]
 
     @property
     def components(self):
@@ -507,8 +522,7 @@ class ODEComponent(ODEObject):
 
     @property
     def comments(self):
-        return [com for comp in ode_components(self) \
-                for com in comp._local_comments]
+        return [com for comp in ode_components(self) for com in comp._local_comments]
 
     @property
     def root(self):
@@ -579,8 +593,9 @@ class ODEComponent(ODEObject):
         """
         True if the component and all its children are locally complete
         """
-        return self.is_locally_complete and all(child.is_complete for child \
-                                                in list(self.children.values()))
+        return self.is_locally_complete and all(
+            child.is_complete for child in list(self.children.values())
+        )
 
     @property
     def is_locally_complete(self):
@@ -588,8 +603,11 @@ class ODEComponent(ODEObject):
         True if the number of non-solved states are the same as the number
         of registered state expressions
         """
-        num_local_states = sum(1 for obj in self.ode_objects \
-                               if isinstance(obj, State) and not obj.is_solved)
+        num_local_states = sum(
+            1
+            for obj in self.ode_objects
+            if isinstance(obj, State) and not obj.is_solved
+        )
 
         return num_local_states == len(self._local_state_expressions)
 
@@ -600,6 +618,7 @@ class ODEComponent(ODEObject):
         """
 
         from modelparameters.sympytools import symbols_from_expr
+
         # If we are registering a protected attribute or an attribute
         # during construction, just add it to the dict
         if name[0] == "_" or not self._allow_magic_attributes:
@@ -607,10 +626,13 @@ class ODEComponent(ODEObject):
             return
 
         # If no expression is registered
-        if (not isinstance(value, scalars+(sp.Number,))) \
-               and not (isinstance(value, sp.Basic) and symbols_from_expr(value)):
-            debug("Not registering: {0} as attribut. It does not contain "\
-                  "any symbols or scalars.".format(name))
+        if (not isinstance(value, scalars + (sp.Number,))) and not (
+            isinstance(value, sp.Basic) and symbols_from_expr(value)
+        ):
+            debug(
+                "Not registering: {0} as attribut. It does not contain "
+                "any symbols or scalars.".format(name)
+            )
 
             # FIXME: Should we raise an error?
             return
@@ -671,8 +693,7 @@ class ODEComponent(ODEObject):
 
         return comp
 
-    def _expect_state(self, state, allow_state_solution=False,
-                      only_local_states=False):
+    def _expect_state(self, state, allow_state_solution=False, only_local_states=False):
         """
         Help function to check an argument which should be expected
         to be a state
@@ -690,17 +711,19 @@ class ODEComponent(ODEObject):
             if state is None:
                 error("{} is not registered in this ODE".format(name))
 
-            if only_local_states and not (state in self.states or \
-                                          (state in self.intermediates and \
-                                           allow_state_solution)):
-                error("{} is not registered in component {}".format(\
-                    name, self.name))
+            if only_local_states and not (
+                state in self.states
+                or (state in self.intermediates and allow_state_solution)
+            ):
+                error("{} is not registered in component {}".format(name, self.name))
 
         check_arg(state, allowed, 0)
 
-        if isinstance(state, State) and  state.is_solved:
-            error("Cannot registered a state expression for a state "\
-                  "which is registered solved.")
+        if isinstance(state, State) and state.is_solved:
+            error(
+                "Cannot registered a state expression for a state "
+                "which is registered solved."
+            )
 
         return state
 
@@ -710,9 +733,10 @@ class ODEComponent(ODEObject):
         """
 
         if self._is_finalized:
-            error("Cannot add {0} {1} to component {2} it is "\
-                  "already finalized.".format(\
-                      obj.__class__.__name__, obj, self))
+            error(
+                "Cannot add {0} {1} to component {2} it is "
+                "already finalized.".format(obj.__class__.__name__, obj, self)
+            )
 
         self._check_reserved_wordings(obj)
 
@@ -724,20 +748,25 @@ class ODEComponent(ODEObject):
         if isinstance(obj, StateExpression):
 
             if self.rates and not self._is_finalizing:
-                error("A component cannot have both state expressions "\
-                      "(derivative and algebraic expressions) and rate "\
-                      "expressions.")
+                error(
+                    "A component cannot have both state expressions "
+                    "(derivative and algebraic expressions) and rate "
+                    "expressions."
+                )
 
             if obj.state in self._local_state_expressions:
-                error("A StateExpression for state {0} is already registered "\
-                      "in this component.")
+                error(
+                    "A StateExpression for state {0} is already registered "
+                    "in this component."
+                )
 
             # Check that the state is registered in this component
             state_obj = self.ode_objects.get(obj.state.name)
             if not isinstance(state_obj, State):
-                error("The state expression {0} defines state {1}, which is "\
-                      "not registered in the {2} component.".format(\
-                          obj, obj.state, self))
+                error(
+                    "The state expression {0} defines state {1}, which is "
+                    "not registered in the {2} component.".format(obj, obj.state, self)
+                )
 
             self._local_state_expressions[obj.state] = obj
 
@@ -747,12 +776,13 @@ class ODEComponent(ODEObject):
 
             # If indexed expression or object register the basename as a dict
             if isinstance(obj, (IndexedExpression, IndexedObject)):
-                if obj.basename in self.__dict__ and isinstance(\
-                    self.__dict__[obj.basename], dict):
+                if obj.basename in self.__dict__ and isinstance(
+                    self.__dict__[obj.basename], dict
+                ):
                     self.__dict__[obj.basename][obj.indices] = obj.sym
                 else:
                     # FIXME: Initialize unused indices with zero
-                    self.__dict__[obj.basename] = {obj.indices:obj.sym}
+                    self.__dict__[obj.basename] = {obj.indices: obj.sym}
 
             # Register symbol, overwrite any already excisting symbol
             else:
@@ -763,12 +793,13 @@ class ODEComponent(ODEObject):
 
     def _check_reserved_wordings(self, obj):
         if obj.name in _all_keywords:
-            error("Cannot register a {0} with a computer language "\
-                  "keyword name: {1}".format(obj.__class__.__name__,
-                                             obj.name))
+            error(
+                "Cannot register a {0} with a computer language "
+                "keyword name: {1}".format(obj.__class__.__name__, obj.name)
+            )
 
         # Check for reserved Expression wordings
-        #if isinstance(obj, Expression):
+        # if isinstance(obj, Expression):
         #    if re.search(_derivative_name_template, obj.name) \
         #           and not isinstance(obj, Derivatives):
         #        error("The pattern d{{name}}_dt is reserved for derivatives. "
@@ -779,7 +810,6 @@ class ODEComponent(ODEObject):
         #        error("The pattern {alg_{{name}}_0 is reserved for algebraic "\
         #              "expressions, however {1} is not an AlgebraicExpression."\
         #              .format(obj.name))
-
 
     def _add_rates(self, states, rate_matrix):
         """
@@ -805,16 +835,16 @@ class ODEComponent(ODEObject):
             states = (states, states)
 
         # else tuple
-        elif len(states) != 2 and not all(isinstance(list_of_states, list) \
-                                          for list_of_states in states):
-            error("expected a tuple of 2 lists with states as the "\
-                  "states argument")
+        elif len(states) != 2 and not all(
+            isinstance(list_of_states, list) for list_of_states in states
+        ):
+            error("expected a tuple of 2 lists with states as the " "states argument")
 
         # Get all states associated with this Markov model
         local_states = self.states
 
         # Check index arguments
-        #for list_of_states in states:
+        # for list_of_states in states:
         #    print list_of_states, local_states
         #    if not all(state in local_states for state in list_of_states):
         #        error("Expected the states arguments to be States in "\
@@ -822,21 +852,23 @@ class ODEComponent(ODEObject):
 
         # Check that the length of the state lists corresponds with the shape of
         # the rate matrix
-        if rate_matrix.shape[0] != len(states[0]) or rate_matrix.shape[1] != len(states[1]):
+        if rate_matrix.shape[0] != len(states[0]) or rate_matrix.shape[1] != len(
+            states[1]
+        ):
             error("Shape of rates does not match given states")
 
         for i, state_i in enumerate(states[0]):
             for j, state_j in enumerate(states[1]):
-                value = rate_matrix[i,j]
+                value = rate_matrix[i, j]
 
                 # If 0 as rate
-                if (isinstance(value, scalars) and value == 0) or \
-                    (isinstance(value, sp.Basic) and value.is_zero):
+                if (isinstance(value, scalars) and value == 0) or (
+                    isinstance(value, sp.Basic) and value.is_zero
+                ):
                     continue
 
                 if state_i == state_j:
-                    error("Cannot have a nonzero rate value between the "\
-                          "same states")
+                    error("Cannot have a nonzero rate value between the " "same states")
 
                 # Assign the rate
                 self._add_single_rate(state_i, state_j, value)
@@ -847,32 +879,38 @@ class ODEComponent(ODEObject):
         """
 
         if self.state_expressions:
-            error("A component cannot have both state expressions (derivative "\
-                  "and algebraic expressions) and rate expressions.")
+            error(
+                "A component cannot have both state expressions (derivative "
+                "and algebraic expressions) and rate expressions."
+            )
 
-        check_arg(expr, scalars + (sp.Basic,), 2, \
-                  ODEComponent._add_single_rate)
+        check_arg(expr, scalars + (sp.Basic,), 2, ODEComponent._add_single_rate)
 
         expr = sp.sympify(expr)
 
-        to_state = self._expect_state(to_state, allow_state_solution=True,
-                                      only_local_states=True)
-        from_state = self._expect_state(from_state, allow_state_solution=True,
-                                        only_local_states=True)
+        to_state = self._expect_state(
+            to_state, allow_state_solution=True, only_local_states=True
+        )
+        from_state = self._expect_state(
+            from_state, allow_state_solution=True, only_local_states=True
+        )
 
         if to_state == from_state:
             error("The two states cannot be the same.")
 
         if (to_state.sym, from_state.sym) in self.rates:
-            error("Rate between state {0} and {1} is already "\
-                  "registered.".format(from_state, to_state))
+            error(
+                "Rate between state {0} and {1} is already "
+                "registered.".format(from_state, to_state)
+            )
 
         # FIXME: It should also not be possible to include other
         # states in the markov model, right?
         syms_expr = symbols_from_expr(expr)
         if to_state.sym in syms_expr or from_state.sym in syms_expr:
-            error("The rate expression cannot be dependent on the "\
-                  "states it connects.")
+            error(
+                "The rate expression cannot be dependent on the " "states it connects."
+            )
 
         # Create a RateExpression
         obj = RateExpression(to_state, from_state, expr)
@@ -897,8 +935,9 @@ class ODEComponent(ODEObject):
             self._finalize_markov_model()
 
         if not self.is_locally_complete:
-            error("Cannot finalize component '{0}'. It is "\
-                  "not complete.".format(self))
+            error(
+                "Cannot finalize component '{0}'. It is " "not complete.".format(self)
+            )
 
         self._is_finalizing = False
         self._is_finalized = True
@@ -910,20 +949,20 @@ class ODEComponent(ODEObject):
 
         # Derivatives
         states = self.states
-        derivatives = defaultdict(lambda : sp.sympify(0.0))
-        rate_check = defaultdict(lambda : 0)
+        derivatives = defaultdict(lambda: sp.sympify(0.0))
+        rate_check = defaultdict(lambda: 0)
 
         # Build rate information and check that each rate is added in a
         # symetric way
-        used_states = [0]*self.num_states
+        used_states = [0] * self.num_states
         for rate in self.rate_expressions:
 
             # Get the states
             to_state, from_state = rate.states
 
             # Add to derivatives of the two states
-            derivatives[from_state] -= rate.sym*from_state.sym
-            derivatives[to_state] += rate.sym*from_state.sym
+            derivatives[from_state] -= rate.sym * from_state.sym
+            derivatives[to_state] += rate.sym * from_state.sym
 
             if isinstance(from_state, StateSolution):
                 from_state = from_state.state
@@ -942,15 +981,17 @@ class ODEComponent(ODEObject):
 
         # Check used states
         if 0 in used_states:
-            error("No rate registered for state {0}".format(\
-                states[used_states.find(0)]))
+            error(
+                "No rate registered for state {0}".format(states[used_states.find(0)])
+            )
 
         # Check rate symetry
         for (ind_from, ind_to), times in list(rate_check.items()):
             if times != 2:
-                error("Only one rate between the states {0} and {1} was "\
-                      "registered, expected two.".format(\
-                          states[ind_from], states[ind_to]))
+                error(
+                    "Only one rate between the states {0} and {1} was "
+                    "registered, expected two.".format(states[ind_from], states[ind_to])
+                )
 
         # Add derivatives
         for state in states:
