@@ -156,6 +156,11 @@ class BaseCodeGenerator(object):
             try:
                 code["states_enum"] = self.states_enum_code(ode, indent)
                 code["parameters_enum"] = self.parameters_enum_code(ode, indent)
+                if monitored is not None:
+                    code["monitor_enum"] = self.monitored_enum_code(monitored, indent)
+                    self._monitored_index_to_name = {
+                        i: m for i, m in enumerate(monitored)
+                    }
             except NotImplementedError as e:
                 pass
 
@@ -1314,6 +1319,11 @@ class CCodeGenerator(BaseCodeGenerator):
         return prototype
 
     @classmethod
+    def _monitored_enum_val(cls, monitored):
+        # TODO: Check that state.name is valid suffix to an identifier in C
+        return "MONITOR_{0}".format(monitored)
+
+    @classmethod
     def _state_enum_val(cls, state):
         # TODO: Check that state.name is valid suffix to an identifier in C
         return "STATE_{0}".format(state.name)
@@ -1477,6 +1487,20 @@ class CCodeGenerator(BaseCodeGenerator):
         enum.append("};")
         return "\n".join(enum)
 
+    def monitored_enum_code(self, monitored, indent=0):
+        """
+        Generate enum for model parameters
+        """
+        indent_str = self.indent * " "
+        member_lines = [
+            "{0}{1},".format(indent_str, self._monitored_enum_val(m)) for m in monitored
+        ]
+        enum = ["enum monitored {"]
+        enum.extend(member_lines)
+        enum.append("{0}{1},".format(indent_str, "NUM_MONITORED"))
+        enum.append("};")
+        return "\n".join(enum)
+
     def init_states_code(self, ode, indent=0):
         """
         Generate code for setting initial condition
@@ -1634,21 +1658,33 @@ class CCodeGenerator(BaseCodeGenerator):
         """
         max_length = max(len(monitor) for monitor in monitored)
 
-        body_lines = ["\\ Monitored names"]
-        body_lines.append(
-            "char names[][{0}] = {{{1}}}".format(
-                max_length + 1,
-                ", ".join('"{0}"'.format(monitor) for monitor in monitored),
+        if self.params.code["body"]["use_enum"]:
+
+            body_lines = []
+            for i, param in enumerate(monitored):
+                pre = "if" if i == 0 else "else if"
+
+                body_lines.append('{0} (strcmp(name, "{1}")==0)'.format(pre, param))
+                body_lines.append(
+                    ["return {0}".format(self._monitored_enum_val(param))]
+                )
+        else:
+
+            body_lines = ["// Monitored names"]
+            body_lines.append(
+                "char names[][{0}] = {{{1}}}".format(
+                    max_length + 1,
+                    ", ".join('"{0}"'.format(monitor) for monitor in monitored),
+                )
             )
-        )
-        body_lines.append("")
-        body_lines.append("for (int i=0; i<{0}; i++)".format(len(parameters)))
-        body_lines.append(["if (strcmp(names[i], name)==0)", ["return i"]])
+            body_lines.append("")
+            body_lines.append("for (int i=0; i<{0}; i++)".format(len(parameters)))
+            body_lines.append(["if (strcmp(names[i], name)==0)", ["return i"]])
         body_lines.append("return -1")
 
         # Add function prototype
         function = self.wrap_body_with_function_prototype(
-            body_lines, "monitored_index", "const char name[]", "Monitor index"
+            body_lines, "monitored_index", "const char name[]", "int"
         )
 
         return "\n".join(self.indent_and_split_lines(function, indent=indent))
@@ -1699,12 +1735,28 @@ class CCodeGenerator(BaseCodeGenerator):
                 if params["body"]["use_enum"]:
 
                     if isinstance(expr, StateIndexedExpression):
-                        name = "{0}[{1}]".format(
-                            expr.basename, self._state_enum_val(expr.state)
-                        )
+
+                        if expr.basename == "monitored":
+                            name = "{0}[{1}]".format(
+                                expr.basename,
+                                self._monitored_enum_val(
+                                    self._monitored_index_to_name[expr.indices[0]]
+                                ),
+                            )
+                        else:
+                            name = "{0}[{1}]".format(
+                                expr.basename, self._state_enum_val(expr.state)
+                            )
                     elif isinstance(expr, ParameterIndexedExpression):
                         name = "{0}[{1}]".format(
                             expr.basename, self._parameter_enum_val(expr.parameter)
+                        )
+                    elif isinstance(expr, IndexedExpression):
+                        name = "{0}[{1}]".format(
+                            expr.basename,
+                            self._monitored_enum_val(
+                                self._monitored_index_to_name[expr.indices[0]]
+                            ),
                         )
                     else:
                         warning(
@@ -4418,3 +4470,4 @@ class JuliaCodeGenerator(BaseCodeGenerator):
 """.format(
             ode.name, "\n\n".join(code_list)
         )
+
