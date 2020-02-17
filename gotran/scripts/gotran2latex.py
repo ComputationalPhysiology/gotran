@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 
-from gotran.codegeneration.latexcodegenerator import LatexCodeGenerator,\
-     _default_latex_params
+from gotran.codegeneration.latexcodegenerator import (
+    LatexCodeGenerator,
+    _default_latex_params,
+)
 from gotran.model.loadmodel import load_ode
 from gotran import info
 
-def main(filename, params):
+
+def gotran2latex(filename, params):
     """
     Create LaTeX code from a gotran model
     """
-
 
     if not params.sympy_contraction:
         # A hack to avoid sympy contractions
@@ -21,7 +23,7 @@ def main(filename, params):
     # Check for completeness
     # TODO: Should raise a more descriptive exception?
     if not ode.is_complete:
-        raise Exception('Incomplete ODE')
+        raise Exception("Incomplete ODE")
 
     # Create a gotran -> LaTeX document generator
     gen = LatexCodeGenerator(ode, params)
@@ -32,16 +34,20 @@ def main(filename, params):
     info("  done.")
 
 
-if __name__ == '__main__':
+def main():
     import os
     import sys
     from modelparameters.parameterdict import ParameterDict, Param
 
     params = _default_latex_params()
-    params = ParameterDict(\
-        sympy_contraction = Param(True, description="If True sympy contraction"\
-                                  " will be used, turning (V-3)/2 into V/2-3/2"),\
-        **params)
+    params = ParameterDict(
+        sympy_contraction=Param(
+            True,
+            description="If True sympy contraction"
+            " will be used, turning (V-3)/2 into V/2-3/2",
+        ),
+        **params
+    )
     params.parse_args(usage="usage: %prog FILE [options]")
 
     if len(sys.argv) < 2:
@@ -51,4 +57,8 @@ if __name__ == '__main__':
         raise IOError("Expected the argument to be a file")
 
     filename = sys.argv[1]
-    main(filename, params)
+    gotran2latex(filename, params)
+
+
+if __name__ == "__main__":
+    main()

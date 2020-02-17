@@ -31,6 +31,8 @@ from . import codegeneration
 from . import input
 from . import solver
 
+# from . import scripts
+
 # Import classes and routines from gotran modules
 from .common import (
     DEBUG,

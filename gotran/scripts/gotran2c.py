@@ -6,8 +6,10 @@ from gotran.model.loadmodel import load_ode
 from gotran.codegeneration.codegenerators import CCodeGenerator
 from gotran.common.options import parameters
 from gotran.common import error, list_timings, Timer, info
+from modelparameters.parameterdict import *
 
-def main(filename, params):
+
+def gotran2c(filename, params):
     """
     Create a C header file from a gotran model
     """
@@ -15,6 +17,12 @@ def main(filename, params):
 
     # Load Gotran model
     ode = load_ode(filename)
+
+    # Collect monitored
+    if params.functions.monitored.generate:
+        monitored = [expr.name for expr in ode.intermediates + ode.state_expressions]
+    else:
+        monitored = None
 
     # Create a C code generator
     gen = CCodeGenerator(params)
@@ -25,11 +33,11 @@ def main(filename, params):
         if not (output.endswith(".c") or output.endswith(".h")):
             output += ".h"
     else:
-        output = filename.replace(".ode", "")+".h"
+        output = filename.replace(".ode", "") + ".h"
 
     info("")
     info("Generating C code for the {0} ode...".format(ode.name))
-    code = gen.module_code(ode)
+    code = gen.module_code(ode, monitored=monitored)
     info("  done.")
     with open(output, "w") as f:
         if params.system_headers:
@@ -43,22 +51,32 @@ def main(filename, params):
     if params.list_timings:
         list_timings()
 
-if __name__ == "__main__":
+
+def main():
     import sys, os
-    from modelparameters.parameterdict import *
 
-    generation_params=CCodeGenerator.default_parameters()
+    generation_params = CCodeGenerator.default_parameters()
 
-    params = ParameterDict(\
-        list_timings = Param(False, description="If true timings for reading "\
-                             "and evaluating the model is listed."),
-        system_headers = Param(True, description="If true system "\
-                               "headers needed to compile moudle is "\
-                               "included."),\
-        output = Param("", description="Specify output file name"),\
-        **dict((name, param) for name, param in list(generation_params.items()) \
-        if name not in ["class_code"]))
-    params.parse_args(usage="usage: %prog FILE [options]")#sys.argv[2:])
+    params = ParameterDict(
+        list_timings=Param(
+            False,
+            description="If true timings for reading "
+            "and evaluating the model is listed.",
+        ),
+        system_headers=Param(
+            True,
+            description="If true system "
+            "headers needed to compile moudle is "
+            "included.",
+        ),
+        output=Param("", description="Specify output file name"),
+        **dict(
+            (name, param)
+            for name, param in list(generation_params.items())
+            if name not in ["class_code"]
+        )
+    )
+    params.parse_args(usage="usage: %prog FILE [options]")  # sys.argv[2:])
 
     if len(sys.argv) < 2:
         raise RuntimeError("Expected a single gotran file argument")
@@ -67,4 +85,8 @@ if __name__ == "__main__":
         raise IOError("Expected the argument to be a file")
 
     file_name = sys.argv[1]
-    main(file_name, params)
+    gotran2c(file_name, params)
+
+
+if __name__ == "__main__":
+    main()
