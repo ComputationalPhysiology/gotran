@@ -76,11 +76,22 @@ def define_parser(change_state_names):
         default=True,
         dest="strip_parent_name",
     )
+
+    parser.add_option(
+        "-o",
+        "--output",
+        help="""Name of output file. If not provided 
+        then the same name as the name of the cellml file will be used""",
+        default="",
+        type=str,
+        dest="output",
+    )
     return parser
 
 
 def main():
     import sys
+    import os
 
     change_state_names = []
     parser = define_parser(change_state_names)
@@ -99,7 +110,13 @@ def main():
 
     cellml = CellMLParser(args[0], param)
     gotran_code = cellml.to_gotran()
-    open("{0}.ode".format(cellml.name), "w").write(gotran_code)
+
+    if options.output == "":
+        output = cellml.name
+    else:
+        output = os.path.splitext(options.output)[0]
+
+    open("{0}.ode".format(output), "w").write(gotran_code)
 
 
 if __name__ == "__main__":
