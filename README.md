@@ -17,6 +17,32 @@ Gotran:
 
 - can load models from external ODE description files such as CellML
 
+## Install
+
+You can install gotran through pip
+
+```
+python -m pip install gotran
+```
+
+or conda
+
+```
+conda install -c comphy gotran
+```
+
+or if you want to work with the latest version you can install the developement version by either cloning the repository and run
+
+```
+python -m pip install .
+```
+
+inside the root directory or run
+
+```
+python -m pip install git+https://github.com/ComputationalPhysiology/gotran.git
+```
+
 ## Documentation
 
 Documentation can be found here: <http://computationalphysiology.github.io/gotran/>
@@ -37,3 +63,7 @@ You should have received a copy of the GNU Lesser General Public License along w
 
 Gotran is developed by Johan Hake.
 The version of gotran found in this repository is maintained by Henrik Finsberg and Kristian Hustad.
+
+```
+
+```
