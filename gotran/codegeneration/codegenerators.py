@@ -1501,6 +1501,14 @@ class CCodeGenerator(BaseCodeGenerator):
         enum.append("};")
         return "\n".join(enum)
 
+    def _float_literal_str(self, val):
+        s = "{}".format(val)
+        if not "." in s:
+            s += ".0"
+        if self.params.code.float_precision == "single":
+            s += "f"
+        return s
+
     def init_states_code(self, ode, indent=0):
         """
         Generate code for setting initial condition
@@ -1512,16 +1520,20 @@ class CCodeGenerator(BaseCodeGenerator):
             if self.params.code.states.add_offset
             else ""
         )
-        float_str = "" if self.params.code.float_precision == "double" else "f"
 
         enum_based_indexing = self.params.code["body"]["use_enum"]
         body_lines = []
 
         for i, state in enumerate(ode.full_states):
             index = self._state_enum_val(state) if enum_based_indexing else i
-            line = "{0}[{1}{2}] = {3}".format(states_name, offset, index, state.init)
+            line = "{0}[{1}{2}] = {3}".format(
+                states_name,
+                offset,
+                index,
+                self._float_literal_str(state.init)
+            )
             if not enum_based_indexing:
-                line += " // {0}".format(state.name)
+                line += "; // {0}".format(state.name)
             body_lines.append(line)
 
         # Add function prototype
@@ -1546,17 +1558,19 @@ class CCodeGenerator(BaseCodeGenerator):
             if self.params.code.parameters.add_offset
             else ""
         )
-        float_str = "" if self.params.code.float_precision == "double" else "f"
         enum_based_indexing = self.params.code["body"]["use_enum"]
         body_lines = []
 
         for i, param in enumerate(ode.parameters):
             index = self._parameter_enum_val(param) if enum_based_indexing else i
-            line = "{0}[{1}{2}] = {3}{4}".format(
-                parameter_name, offset, index, param.init, float_str
+            line = "{0}[{1}{2}] = {3}".format(
+                parameter_name,
+                offset,
+                index,
+                self._float_literal_str(param.init)
             )
             if not enum_based_indexing:
-                line += " // {0}".format(param.name)
+                line += "; // {0}".format(param.name)
             body_lines.append(line)
 
         # Add function prototype
@@ -2094,7 +2108,6 @@ class CUDACodeGenerator(CCodeGenerator):
         """
 
         array_name = self.params.code.states.array_name
-        float_str = "" if self.params.code.float_precision == "double" else "f"
         body_lines = ["const int thread_ind = blockIdx.x*blockDim.x + threadIdx.x"]
         n_nodes = self.params.code.n_nodes
         if n_nodes > 0:
@@ -2106,8 +2119,10 @@ class CUDACodeGenerator(CCodeGenerator):
 
         # Main body
         body_lines.extend(
-            "{0}[n_nodes * {1} + thread_ind] = {2}{3}".format(
-                array_name, self._state_enum_val(state), state.init, float_str
+            "{0}[n_nodes * {1} + thread_ind] = {2}".format(
+                array_name,
+                self._state_enum_val(state),
+                self._float_literal_str(state.init)
             )
             for i, state in enumerate(ode.full_states)
         )
@@ -2146,7 +2161,6 @@ class CUDACodeGenerator(CCodeGenerator):
             field_parameters = []
 
         array_name = self.params.code.parameters.array_name
-        float_str = "" if self.params.code.float_precision == "double" else "f"
         base_array_name = array_name[2:] if array_name[:2] == "d_" else array_name
         field_array_name = "d_field_" + base_array_name
 
@@ -2174,12 +2188,11 @@ class CUDACodeGenerator(CCodeGenerator):
 
         # Main body
         body_lines.extend(
-            "{0}[field_{1}_offset + {2}] = {3}{4}; //{5}".format(
+            "{0}[field_{1}_offset + {2}] = {3}; //{5}".format(
                 field_array_name,
                 base_array_name,
                 i,
-                parameters[field_parameter_indices[i]].init,
-                float_str,
+                self._float_literal_str(parameters[field_parameter_indices[i]].init),
                 field_parameter,
             )
             for i, field_parameter in enumerate(field_parameters)
@@ -2767,7 +2780,6 @@ class OpenCLCodeGenerator(CCodeGenerator):
         """
 
         array_name = self.params.code.states.array_name
-        float_str = "" if self.params.code.float_precision == "double" else "f"
         body_lines = ["const unsigned int thread_ind = get_global_id(0)"]
         n_nodes = self.params.code.n_nodes
         if n_nodes > 0:
@@ -2780,7 +2792,9 @@ class OpenCLCodeGenerator(CCodeGenerator):
         # Main body
         body_lines.extend(
             "{0}[n_nodes * {1} + thread_ind] = {2}{3}".format(
-                array_name, self._state_enum_val(state), state.init, float_str
+                array_name,
+                self._state_enum_val(state),
+                self._float_literal_str(state.init),
             )
             for i, state in enumerate(ode.full_states)
         )
@@ -2830,7 +2844,6 @@ class OpenCLCodeGenerator(CCodeGenerator):
             field_parameters = []
 
         array_name = self.params.code.parameters.array_name
-        float_str = "" if self.params.code.float_precision == "double" else "f"
         base_array_name = array_name[2:] if array_name[:2] == "d_" else array_name
         field_array_name = "d_field_" + base_array_name
 
@@ -2862,8 +2875,7 @@ class OpenCLCodeGenerator(CCodeGenerator):
                 field_array_name,
                 base_array_name,
                 i,
-                parameters[field_parameter_indices[i]].init,
-                float_str,
+                self._float_literal_str(parameters[field_parameter_indices[i]].init),
                 field_parameter,
             )
             for i, field_parameter in enumerate(field_parameters)
