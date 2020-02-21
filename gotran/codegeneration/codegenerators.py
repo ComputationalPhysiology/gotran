@@ -2188,7 +2188,7 @@ class CUDACodeGenerator(CCodeGenerator):
 
         # Main body
         body_lines.extend(
-            "{0}[field_{1}_offset + {2}] = {3}; //{5}".format(
+            "{0}[field_{1}_offset + {2}] = {3}; //{4}".format(
                 field_array_name,
                 base_array_name,
                 i,
@@ -2791,7 +2791,7 @@ class OpenCLCodeGenerator(CCodeGenerator):
 
         # Main body
         body_lines.extend(
-            "{0}[n_nodes * {1} + thread_ind] = {2}{3}".format(
+            "{0}[n_nodes * {1} + thread_ind] = {2}".format(
                 array_name,
                 self._state_enum_val(state),
                 self._float_literal_str(state.init),
@@ -2871,7 +2871,7 @@ class OpenCLCodeGenerator(CCodeGenerator):
 
         # Main body
         body_lines.extend(
-            "{0}[field_{1}_offset + {2}] = {3}{4}; //{5}".format(
+            "{0}[field_{1}_offset + {2}] = {3}; //{4}".format(
                 field_array_name,
                 base_array_name,
                 i,
