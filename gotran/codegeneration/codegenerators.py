@@ -1503,7 +1503,7 @@ class CCodeGenerator(BaseCodeGenerator):
 
     def _float_literal_str(self, val):
         s = "{}".format(val)
-        if not "." in s:
+        if not "." in s and not "e" in s and not "E" in s:
             s += ".0"
         if self.params.code.float_precision == "single":
             s += "f"
