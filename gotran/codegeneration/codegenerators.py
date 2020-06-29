@@ -959,7 +959,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
                 [
                     "if param_name not in param_ind:",
                     ['raise ValueError("{0} is not a parameter.".format(param_name))'],
-                    "ind = param_ind[state_name]",
+                    "ind = param_ind[param_name]",
                     "",
                     "# Assign value",
                     "init_values[ind] = value",
