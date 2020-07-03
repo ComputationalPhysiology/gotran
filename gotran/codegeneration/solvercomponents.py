@@ -468,7 +468,7 @@ class RushLarsenOneStep(CodeComponent):
 
 class GeneralizedRushLarsen(CodeComponent):
     """
-    An ODEComponent which compute one step of the Rush Larsen algorithm
+    An ODEComponent which compute one step of the Generalized Rush Larsen (GRL1) algorithm
     """
 
     def __init__(
