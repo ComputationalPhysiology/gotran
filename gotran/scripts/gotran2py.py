@@ -25,7 +25,11 @@ def gotran2py(filename, params):
         monitored = None
 
     # Create a C code generator
-    gen = PythonCodeGenerator(params, ns=params.namespace)
+    gen = PythonCodeGenerator(
+        params,
+        ns=params.namespace,
+        import_inside_functions=params.import_inside_functions,
+    )
 
     output = params.output
 
@@ -63,9 +67,12 @@ def main():
             "and evaluating the model is listed.",
         ),
         output=Param("", description="Specify output file name"),
+        import_inside_functions=Param(
+            False, description="Perform imports inside functions"
+        ),
         namespace=OptionParam(
             "math",
-            ["math", "numpy", "ufl"],
+            ["math", "np", "numpy", "ufl"],
             description="The math namespace of the generated code",
         ),
         **generation_params

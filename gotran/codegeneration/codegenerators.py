@@ -465,11 +465,12 @@ class PythonCodeGenerator(BaseCodeGenerator):
     to_code = lambda self, expr, name: pythoncode(expr, name, self.ns)
     float_types = dict(single="float32", double="float_")
 
-    def __init__(self, params=None, ns="math"):
+    def __init__(self, params=None, ns="math", import_inside_functions=True):
 
         check_arg(ns, str)
         assert ns in ["math", "np", "numpy", "", "ufl"]
         self.ns = ns
+        self.import_inside_functions = import_inside_functions
         super(PythonCodeGenerator, self).__init__(params)
 
     def args(self, comp):
@@ -736,9 +737,12 @@ class PythonCodeGenerator(BaseCodeGenerator):
         check_arg(comp, CodeComponent)
         check_kwarg(indent, "indent", int)
 
-        body_lines = ["# Imports", "import numpy as np"]
-        if self.ns:
-            body_lines.append("import {0}".format(self.ns))
+        body_lines = []
+        if self.import_inside_functions:
+            body_lines.extend(["# Imports", "import numpy as np"])
+
+            if self.ns and self.ns != "np":
+                body_lines.append("import {0}".format(self.ns))
 
         body_lines += self._init_arguments(comp)
 
@@ -789,10 +793,15 @@ class PythonCodeGenerator(BaseCodeGenerator):
         states = ode.full_states
 
         # Start building body
-        body_lines = ["# Imports", "import numpy as np"]
+        body_lines = []
+        if self.import_inside_functions:
+            body_lines.extend(["# Imports", "import numpy as np"])
         if perform_range_check:
             body_lines.append("from modelparameters.utils import Range")
-        body_lines += ["", "# Init values"]
+        if len(body_lines) > 0:
+            body_lines.append("")
+
+        body_lines += ["# Init values"]
         body_lines.append(
             "# {0}".format(
                 ", ".join("{0}={1}".format(state.name, state.init) for state in states)
@@ -889,10 +898,15 @@ class PythonCodeGenerator(BaseCodeGenerator):
         parameters = ode.parameters
 
         # Start building body
-        body_lines = ["# Imports", "import numpy as np"]
+        body_lines = []
+        if self.import_inside_functions:
+            body_lines.extend(["# Imports", "import numpy as np"])
         if perform_range_check:
-            body_lines.append("from modelparameters.utils import Range")
-        body_lines += ["", "# Param values"]
+            body_lines.extend(["from modelparameters.utils import Range"])
+        if len(body_lines) > 0:
+            body_lines.append("")
+
+        body_lines += ["# Param values"]
         body_lines.append(
             "# {0}".format(
                 ", ".join(
@@ -1175,12 +1189,21 @@ class {0}:
         code_list = list(self.code_dict(ode, monitored).values())
         self.params.class_code = class_code_param
 
-        return """# Gotran generated code for the  "{0}" model
-from __future__ import division
+        import_lines = [
+            "from __future__ import division",
+            "",
+        ]
+        if not self.import_inside_functions:
+            import_lines.append("import numpy as np")
+            if self.ns != "np":
+                import_lines.append("import {}".format(self.ns))
 
+        return """# Gotran generated code for the  "{0}" model
 {1}
+
+{2}
 """.format(
-            ode.name, "\n\n".join(code_list)
+            ode.name, "\n".join(import_lines) + "\n", "\n\n".join(code_list)
         )
 
 
