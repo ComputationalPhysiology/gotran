@@ -651,6 +651,8 @@ class HybridGeneralizedRushLarsen(CodeComponent):
             stiff_state_variables = stiff_state_variables.split(",")
 
         for s in stiff_state_variables:
+            if s == "":
+                continue
             assert s in state_names, "Unknown state '{}'".format(s)
 
         # Recount the expressions if representation of states are "array" as
