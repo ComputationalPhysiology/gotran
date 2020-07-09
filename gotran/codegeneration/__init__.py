@@ -51,6 +51,8 @@ from .solvercomponents import (
     rush_larsen_solver,
     GeneralizedRushLarsen,
     generalized_rush_larsen_solver,
+    HybridGeneralizedRushLarsen,
+    hybrid_generalized_rush_larsen_solver,
     SimplifiedImplicitEuler,
     simplified_implicit_euler_solver,
     get_solver_fn,

@@ -22,6 +22,8 @@ __all__ = [
     "rush_larsen_solver",
     "GeneralizedRushLarsen",
     "generalized_rush_larsen_solver",
+    "HybridGeneralizedRushLarsen",
+    "hybrid_generalized_rush_larsen_solver",
     "SimplifiedImplicitEuler",
     "simplified_implicit_euler_solver",
     "get_solver_fn",
@@ -122,6 +124,36 @@ def generalized_rush_larsen_solver(
         ode, function_name=function_name, delta=delta, params=params
     )
 
+def hybrid_generalized_rush_larsen_solver(
+    ode,
+    function_name="forward_hybrid_generalized_rush_larsen",
+    delta=1e-8,
+    params=None,
+    stiff_states=None,
+):
+    """
+    Return an ODEComponent holding expressions for the generalized Rush Larsen method
+
+    Arguments
+    ---------
+    ode : gotran.ODE
+        The ODE for which the jacobian expressions should be computed
+    function_name : str
+        The name of the function which should be generated
+    delta : float
+        Value to safeguard the evaluation of the rush larsen step.
+    params : dict
+        Parameters determining how the code should be generated
+    stiff_state_variables : list of str
+        States that are stiff and should be solved with GRL1. The remaining states are solved with explicit euler
+    """
+    if not ode.is_finalized:
+        error("The ODE is not finalized")
+
+    return HybridGeneralizedRushLarsen(
+        ode, function_name=function_name, delta=delta, params=params, stiff_state_variables=stiff_states
+    )
+
 
 def simplified_implicit_euler_solver(
     ode,
@@ -160,6 +192,7 @@ def get_solver_fn(solver_type):
         "explicit_euler": explicit_euler_solver,
         "rush_larsen": rush_larsen_solver,
         "generalized_rush_larsen": generalized_rush_larsen_solver,
+        "hybrid_generalized_rush_larsen": hybrid_generalized_rush_larsen_solver,
         "simplified_implicit_euler": simplified_implicit_euler_solver,
     }[solver_type]
 
@@ -532,6 +565,119 @@ class GeneralizedRushLarsen(CodeComponent):
             expr_diff = expr.expr.diff(expr.state.sym)
             dependent = expr if recount else None
             if expr_diff.is_zero:
+                self.add_indexed_expression(
+                    result_name,
+                    (i,),
+                    expr.state.sym + dt * expr.sym,
+                    offset_str,
+                    dependent=dependent,
+                    enum=expr.state,
+                )
+                continue
+
+            linearized = self.add_intermediate(
+                expr.name + "_linearized", expr_diff, dependent=dependent
+            )
+
+            # Solve "exact" using exp
+            self.add_indexed_expression(
+                result_name,
+                (i,),
+                expr.state.sym
+                + Conditional(
+                    abs(linearized) > delta,
+                    expr.sym / linearized * (sp.exp(linearized * dt) - 1.0),
+                    dt * expr.sym,
+                ),
+                offset_str,
+                dependent=dependent,
+                enum=expr.state,
+            )
+
+        # Call recreate body with the solver expressions as the result
+        # expressions
+        results = {result_name: self.indexed_objects(result_name)}
+        results, body_expressions = self._body_from_results(**results)
+        self.body_expressions = self._recreate_body(body_expressions, **results)
+
+class HybridGeneralizedRushLarsen(CodeComponent):
+    """
+    An ODEComponent which compute one step of the hybrid explicit Euler / Generalized Rush Larsen (GRL1) scheme
+    """
+
+    def __init__(
+        self,
+        ode,
+        function_name="forward_hybrid_generalized_rush_larsen",
+        delta=1e-8,
+        params=None,
+        stiff_state_variables=None
+    ):
+        """
+        Create a HybridGeneralizedRushLarsen Solver component
+
+        Arguments
+        ---------
+        ode : gotran.ODE
+            The parent component of this ODEComponent
+        function_name : str
+            The name of the function which should be generated
+        delta : float
+            Value to safeguard the evaluation of the rush larsen step.
+        params : dict
+            Parameters determining how the code should be generated
+
+        """
+        check_arg(ode, ODE)
+
+        # Call base class using empty result_expressions
+        descr = (
+            "Compute a forward step using the rush larsen algorithm to the "
+            "{0} ODE".format(ode)
+        )
+        super(HybridGeneralizedRushLarsen, self).__init__(
+            "HybridGeneralizedRushLarsen",
+            ode,
+            function_name,
+            descr,
+            params=params,
+            additional_arguments=["dt"],
+        )
+
+        state_names = [s.name for s in self.root.full_states]
+        if stiff_state_variables is None:
+            stiff_state_variables = []
+        elif type(stiff_state_variables) is str:
+            stiff_state_variables = stiff_state_variables.split(",")
+
+        for s in stiff_state_variables:
+            assert s in state_names, "Unknown state '{}'".format(s)
+
+        # Recount the expressions if representation of states are "array" as
+        # then the method is not full explcit
+        recount = self._params.states.representation != "array"
+
+        # Gather state expressions and states
+        state_exprs = self.root.state_expressions
+        states = self.root.full_states
+        result_name = self._params.states.array_name
+        state_offset = self._params.states.add_offset
+
+        self.shapes[result_name] = (len(states),)
+
+        # Get time step and start creating the update algorithm
+        if self._params.states.add_offset:
+            offset_str = "{0}_offset".format(result_name)
+        else:
+            offset_str = ""
+
+        dt = self.root._dt.sym
+        for i, expr in enumerate(state_exprs):
+            state_is_stiff = state_names[i] in stiff_state_variables
+
+            expr_diff = expr.expr.diff(expr.state.sym)
+            dependent = expr if recount else None
+            if not state_is_stiff or expr_diff.is_zero:
                 self.add_indexed_expression(
                     result_name,
                     (i,),

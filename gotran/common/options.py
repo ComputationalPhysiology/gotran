@@ -328,6 +328,32 @@ parameters = ParameterDict(
                     "step.",
                 ),
             ),
+            hybrid_generalized_rush_larsen=ParameterDict(
+                generate=Param(
+                    False,
+                    description="If true, generate code for "
+                    "solving an ODE using a hybrid generalized Rush Larsen method.",
+                ),
+                function_name=Param(
+                    "forward_hybrid_generalized_rush_larsen",
+                    description="The name of the generated " "function.",
+                ),
+                delta=ScalarParam(
+                    1e-8,
+                    gt=0,
+                    lt=1.0,
+                    description="Value to "
+                    "safeguard the evaluation of the rush larsen "
+                    "step.",
+                ),
+                stiff_states=Param(
+                    "",
+                    name="stiff_states",
+                    description="List of names of state variables that should "
+                    "be solved with the GRL1 scheme that has better stability"
+                    "than explicit Euler",
+                ),
+            ),
             simplified_implicit_euler=ParameterDict(
                 generate=Param(
                     False,
