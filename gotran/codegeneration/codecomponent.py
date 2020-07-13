@@ -438,9 +438,11 @@ class CodeComponent(ODEComponent):
 
     def _only_result_expressions(self, **results):
 
-        orig_result_expressions, result_names, expanded_result_exprs = self._expanded_result_expressions(
-            **results
-        )
+        (
+            orig_result_expressions,
+            result_names,
+            expanded_result_exprs,
+        ) = self._expanded_result_expressions(**results)
 
         body_expressions = []
         new_results = defaultdict(list)
@@ -449,9 +451,11 @@ class CodeComponent(ODEComponent):
 
         timer = Timer("Compute common sub expressions for {0}".format(self.name))
 
-        orig_result_expressions, result_names, expanded_result_exprs = self._expanded_result_expressions(
-            **results
-        )
+        (
+            orig_result_expressions,
+            result_names,
+            expanded_result_exprs,
+        ) = self._expanded_result_expressions(**results)
 
         state_offset = self._params["states"]["add_offset"]
 

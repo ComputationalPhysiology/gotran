@@ -24,7 +24,7 @@ def gotran2py(filename, params):
     else:
         monitored = None
 
-    # Create a C code generator
+    # Create a Python code generator
     gen = PythonCodeGenerator(
         params,
         ns=params.namespace,

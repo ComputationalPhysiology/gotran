@@ -124,6 +124,7 @@ def generalized_rush_larsen_solver(
         ode, function_name=function_name, delta=delta, params=params
     )
 
+
 def hybrid_generalized_rush_larsen_solver(
     ode,
     function_name="forward_hybrid_generalized_rush_larsen",
@@ -151,7 +152,11 @@ def hybrid_generalized_rush_larsen_solver(
         error("The ODE is not finalized")
 
     return HybridGeneralizedRushLarsen(
-        ode, function_name=function_name, delta=delta, params=params, stiff_state_variables=stiff_states
+        ode,
+        function_name=function_name,
+        delta=delta,
+        params=params,
+        stiff_state_variables=stiff_states,
     )
 
 
@@ -600,6 +605,7 @@ class GeneralizedRushLarsen(CodeComponent):
         results, body_expressions = self._body_from_results(**results)
         self.body_expressions = self._recreate_body(body_expressions, **results)
 
+
 class HybridGeneralizedRushLarsen(CodeComponent):
     """
     An ODEComponent which compute one step of the hybrid explicit Euler / Generalized Rush Larsen (GRL1) scheme
@@ -611,7 +617,7 @@ class HybridGeneralizedRushLarsen(CodeComponent):
         function_name="forward_hybrid_generalized_rush_larsen",
         delta=1e-8,
         params=None,
-        stiff_state_variables=None
+        stiff_state_variables=None,
     ):
         """
         Create a HybridGeneralizedRushLarsen Solver component
