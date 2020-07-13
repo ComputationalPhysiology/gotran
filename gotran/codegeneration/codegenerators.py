@@ -119,6 +119,18 @@ class BaseCodeGenerator(object):
         )
         raise NotImplementedError(msg)
 
+    def state_names_list_code(self, ode, indent=0):
+        msg = "{0} has no implementation of state names list".format(
+            self.__class__.__name__
+        )
+        raise NotImplementedError(msg)
+
+    def parameter_names_list_code(self, ode, indent=0):
+        msg = "{0} has no implementation of parameter names list".format(
+            self.__class__.__name__
+        )
+        raise NotImplementedError(msg)
+
     def code_dict(
         self, ode, monitored=None, include_init=True, include_index_map=True, indent=0
     ):
@@ -163,6 +175,11 @@ class BaseCodeGenerator(object):
                     }
             except NotImplementedError as e:
                 pass
+
+        if self.params.lists.state_names.generate:
+            code["state_names_list"] = self.state_names_list_code(ode, indent)
+        if self.params.lists.parameter_names.generate:
+            code["parameter_names_list"] = self.parameter_names_list_code(ode, indent)
 
         # If generate init code
         if include_init:
@@ -782,6 +799,21 @@ class PythonCodeGenerator(BaseCodeGenerator):
 
         return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
 
+    def state_names_list_code(self, ode, indent=0):
+
+        state_names = [s.name for s in ode.full_states]
+        state_names_str = "{} = {}".format(self.params.lists.state_names.name, repr(state_names))
+
+        body_lines = [state_names_str]
+        return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
+
+    def parameter_names_list_code(self, ode, indent=0):
+        parameter_names = [p.name for p in ode.parameters]
+        parameter_names_str = "{} = {}".format(self.params.lists.parameter_names.name, repr(parameter_names))
+
+        body_lines = [parameter_names_str]
+        return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
+
     def init_states_code(self, ode, indent=0, perform_range_check=False):
         """
         Generate code for setting initial condition
@@ -1198,12 +1230,17 @@ class {0}:
             if self.ns != "np":
                 import_lines.append("import {}".format(self.ns))
 
-        return """# Gotran generated code for the  "{0}" model
-{1}
 
-{2}
-""".format(
-            ode.name, "\n".join(import_lines) + "\n", "\n\n".join(code_list)
+        fmt_str = """# Gotran generated code for the "{model_name}" model
+{imports}
+
+{main_body}
+"""
+
+        return fmt_str.format(
+            model_name = ode.name,
+            imports="\n".join(import_lines) + "\n",
+            main_body="\n\n".join(code_list),
         )
 
 
@@ -1550,10 +1587,7 @@ class CCodeGenerator(BaseCodeGenerator):
         for i, state in enumerate(ode.full_states):
             index = self._state_enum_val(state) if enum_based_indexing else i
             line = "{0}[{1}{2}] = {3}".format(
-                states_name,
-                offset,
-                index,
-                self._float_literal_str(state.init)
+                states_name, offset, index, self._float_literal_str(state.init)
             )
             if not enum_based_indexing:
                 line += "; // {0}".format(state.name)
@@ -1587,10 +1621,7 @@ class CCodeGenerator(BaseCodeGenerator):
         for i, param in enumerate(ode.parameters):
             index = self._parameter_enum_val(param) if enum_based_indexing else i
             line = "{0}[{1}{2}] = {3}".format(
-                parameter_name,
-                offset,
-                index,
-                self._float_literal_str(param.init)
+                parameter_name, offset, index, self._float_literal_str(param.init)
             )
             if not enum_based_indexing:
                 line += "; // {0}".format(param.name)
@@ -2145,7 +2176,7 @@ class CUDACodeGenerator(CCodeGenerator):
             "{0}[n_nodes * {1} + thread_ind] = {2}".format(
                 array_name,
                 self._state_enum_val(state),
-                self._float_literal_str(state.init)
+                self._float_literal_str(state.init),
             )
             for i, state in enumerate(ode.full_states)
         )
@@ -4505,4 +4536,3 @@ class JuliaCodeGenerator(BaseCodeGenerator):
 """.format(
             ode.name, "\n\n".join(code_list)
         )
-
