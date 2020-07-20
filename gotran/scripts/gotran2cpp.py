@@ -25,7 +25,7 @@ def gotran2cpp(filename, params):
     output = params.output
 
     if output:
-        if not (len(output) > 2 and output[-2:] == ".h"):
+        if not (output.endswith(".cpp") or output.endswith(".h")):
             output += ".h"
     else:
         output = filename.replace(".ode", "") + ".h"

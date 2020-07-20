@@ -30,7 +30,7 @@ def gotran2julia(filename, params):
     output = params.output
 
     if output:
-        if not (len(output) > 2 and output[-2:] == ".jl"):
+        if not output.endswith(".jl"):
             output += ".jl"
     else:
         output = filename.replace(".ode", "") + ".jl"

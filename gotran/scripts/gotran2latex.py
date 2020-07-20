@@ -30,7 +30,8 @@ def gotran2latex(filename, params):
 
     info("")
     info("Generating LaTeX files for the {0} ode...".format(ode.name))
-    open(gen.output_file, "w").write(gen.generate())
+    with open(gen.output_file, "w") as f:
+        f.write(gen.generate())
     info("  done.")
 
 

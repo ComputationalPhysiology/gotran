@@ -22,7 +22,7 @@ def gotran2dolfin(filename, params):
     output = params.output
 
     if output:
-        if not (len(output) > 3 and output[-3:] == ".py"):
+        if not output.endswith(".py"):
             output += ".py"
     else:
         output = filename.replace(".ode", "") + ".py"
