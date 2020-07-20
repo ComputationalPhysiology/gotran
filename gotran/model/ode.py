@@ -631,7 +631,9 @@ class ODE(ODEComponent):
             # Expand and add any derivatives in the expressions
             expression_added = False
             replace_dict = {}
-            for der_expr in obj.expr.atoms(sp.Derivative):
+            derivative_expression_list = list(obj.expr.atoms(sp.Derivative))
+            derivative_expression_list.sort(key=lambda e: e.sort_key())
+            for der_expr in derivative_expression_list:
                 expression_added |= self._expand_single_derivative(
                     comp, obj, der_expr, replace_dict, dependent
                 )
