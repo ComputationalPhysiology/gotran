@@ -637,8 +637,6 @@ class CodeComponent(ODEComponent):
         used_states = set()
         used_parameters = set()
 
-        exprs_not_in_body = []
-
         for expr in result_expressions:
             check_arg(
                 expr, (Expression, Comment), context=CodeComponent._body_from_results
@@ -656,15 +654,18 @@ class CodeComponent(ODEComponent):
                 elif isinstance(obj, Parameter):
                     used_parameters.add(obj)
 
-        # Collect all dependencies
-        while not_checked:
+        # use list to make the order consistent
+        not_checked_list = sorted(not_checked)
 
-            dep_expr = not_checked.pop()
+        # Collect all dependencies
+        while len(not_checked_list) > 0:
+            dep_expr = not_checked_list.pop()
             exprs.add(dep_expr)
             for obj in ode_expr_deps[dep_expr]:
                 if isinstance(obj, (Expression, Comment)):
                     if obj not in exprs:
-                        not_checked.add(obj)
+                        if not obj in not_checked_list:
+                            not_checked_list.append(obj)
                 elif isinstance(obj, State):
                     used_states.add(obj)
                 elif isinstance(obj, Parameter):
