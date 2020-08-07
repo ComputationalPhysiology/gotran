@@ -1714,15 +1714,17 @@ class CellMLParser(object):
             if comp.equations:
                 equation_lines.append("")
                 equation_lines.append("expressions({0})".format(comp_name))
-
+                """
                 for eq in comp.equations:
                     expr = []
                     for eqi in eq.expr:
                         if eqi.isdigit():
+                            # This converts integers to floats
                             expr.append(str(float(eqi)))
                         else:
                             expr.append(eqi)
                     eq.expr = expr
+                """
 
                 equation_lines.extend(
                     "{0} = {1}{2}".format(
