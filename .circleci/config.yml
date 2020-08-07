@@ -58,3 +58,8 @@ jobs:
           name: run demos
           command: |
             python3 utils/test_scripts.py
+
+general:
+  branches:
+    only:
+      - circle
