@@ -1329,18 +1329,16 @@ class CellMLParser(object):
         # CellML compoents
         sort_again = False
         try:
-            sorted_components = nx.topological_sort(G)
+            sorted_components = list(nx.topological_sort(G))
             components.sort(
-                lambda n0, n1: cmp(
-                    sorted_components.index(n0.name), sorted_components.index(n1.name)
-                )
+                key = lambda n0: sorted_components.index(n0.name)
             )
             message = (
                 "To avoid circular dependency the following equations "
                 "has been moved:"
             )
 
-        except Exception as e:
+        except nx.NetworkXUnfeasible as e:
             warning("Topological sort failed: " + str(e))
             message = (
                 "In a try to avoid circular dependency the following equations "
@@ -1362,12 +1360,7 @@ class CellMLParser(object):
 
         end_log()
 
-        if 0:  # sort_again:
-
-            from IPython import embed
-
-            embed()
-            exit()
+        if sort_again:
             # Try rebuild the graph and make another topological sort
             G = nx.MultiDiGraph()
             G.add_nodes_from([comp.name for comp in components])
@@ -1381,14 +1374,11 @@ class CellMLParser(object):
                 ]
 
             try:
-                pass
-                # sorted_components = nx.topological_sort(G)
-                # components = nx.topological_sort(G)
-                # components.sort(lambda n0, n1: cmp(list(sorted_components)[n0.name],list(sorted_components)[n1.name]))
-
-                # components.sort(lambda n0, n1: cmp(sorted_components.index(n0.name), \
-                #                                    sorted_components.index(n1.name)))
-            except Exception as e:
+                sorted_components = list(nx.topological_sort(G))
+                components.sort(
+                    key = lambda n0: sorted_components.index(n0.name)
+                )
+            except nx.NetworkXUnfeasible as e:
                 warning("Topological sort failed a second time: " + str(e))
 
         return components
