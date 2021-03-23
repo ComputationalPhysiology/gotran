@@ -1282,11 +1282,11 @@ class CCodeGenerator(BaseCodeGenerator):
                 if params.states.array_name in comp.results:
                     skip_result.append(params.states.array_name)
                     ret_args.append(
-                        "{0}* {1}".format(self.float_type, params.states.array_name)
+                        "{0} *__restrict {1}".format(self.float_type, params.states.array_name)
                     )
                 else:
                     ret_args.append(
-                        "const {0}* {1}".format(
+                        "const {0} *__restrict {1}".format(
                             self.float_type, params.states.array_name
                         )
                     )
@@ -1309,11 +1309,11 @@ class CCodeGenerator(BaseCodeGenerator):
                 if params.parameters.array_name in comp.results:
                     skip_result.append(params.parameters.array_name)
                     ret_args.append(
-                        "{0}* {1}".format(self.float_type, params.parameters.array_name)
+                        "{0} *__restrict {1}".format(self.float_type, params.parameters.array_name)
                     )
                 else:
                     ret_args.append(
-                        "const {0}* {1}".format(
+                        "const {0} *__restrict {1}".format(
                             self.float_type, params.parameters.array_name
                         )
                     )
