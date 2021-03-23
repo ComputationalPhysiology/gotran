@@ -935,9 +935,18 @@ class ODEComponent(ODEObject):
             self._finalize_markov_model()
 
         if not self.is_locally_complete:
-            error(
-                "Cannot finalize component '{0}'. It is " "not complete.".format(self)
-            )
+            incomplete_states = []
+            for obj in self.ode_objects:
+                if isinstance(obj, State):
+                    if not obj in self._local_state_expressions:
+                        incomplete_states.append(obj)
+
+            incomplete_state_names = [s.name for s in incomplete_states]
+
+            msg = "Cannot finalize component '{0}'. ".format(self)
+            msg += "Missing time derivatives for the following states: {}".format(', '.join(incomplete_state_names))
+
+            error(msg)
 
         self._is_finalizing = False
         self._is_finalized = True
