@@ -757,7 +757,7 @@ class ODEComponent(ODEObject):
             if obj.state in self._local_state_expressions:
                 error(
                     "A StateExpression for state {0} is already registered "
-                    "in this component."
+                    "in this component.".format(obj.state.name)
                 )
 
             # Check that the state is registered in this component
