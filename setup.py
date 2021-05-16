@@ -45,7 +45,7 @@ requirements = [
     "six",
     "future",
     "modelparameters",
-    "instant",
+    "instant2",
 ]
 
 if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
