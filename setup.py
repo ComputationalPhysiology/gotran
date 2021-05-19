@@ -13,7 +13,7 @@ import platform
 import sys
 
 # Version number
-VERSION = "2021.0.1"
+VERSION = "2021.0.2"
 
 DESCRIPTION = "A declarative language describing ordinary differential equations."
 
