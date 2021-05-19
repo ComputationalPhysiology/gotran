@@ -928,7 +928,7 @@ class CodeComponent(ODEComponent):
                 else:
 
                     # Get index based on the original ordering
-                    index = (result_expressions.index(expr),)
+                    index = (results[result_name].index(expr),)
                     # Create the IndexedExpression
                     # NOTE: First replace any derivative expression replaces, then state and
                     # NOTE: params
