@@ -98,3 +98,6 @@ dev: clean ## Just need to make sure that libfiles remains
 	python -m pip install -r requirements-dev.txt
 	python -m pip install -e .
 	pre-commit install
+
+bump:
+	bump2version patch
