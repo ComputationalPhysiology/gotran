@@ -274,6 +274,29 @@ class ExplicitEuler(CodeComponent):
         results, body_expressions = self._body_from_results(**results)
         self.body_expressions = self._recreate_body(body_expressions, **results)
 
+def fraction_numerator_is_nonzero(expr):
+    """Perform a very cheap check to detect if a fraction is definitely non-zero."""
+    expr_type = type(expr)
+    if expr_type == sp.Pow:
+        # check if the expression is on the form a**-1
+        a, b = expr.args
+        if type(b) is sp.numbers.NegativeOne:
+            return True
+        else:
+            # we won't do any further checks
+            return False
+    elif expr_type == sp.Mul:
+        args = expr.args
+        potentially_nonzero_args = []
+        for e in args:
+            if not (len(e.free_symbols) == 0 and e.is_nonzero):
+                potentially_nonzero_args.append(e)
+
+        if len(potentially_nonzero_args) > 1:
+            return False
+        return fraction_numerator_is_nonzero(*potentially_nonzero_args)
+    else:
+        return False
 
 class RushLarsen(CodeComponent):
     """
@@ -359,20 +382,28 @@ class RushLarsen(CodeComponent):
             # print expr.state.sym, expr_diff, expr_diff.args
             if expr_diff and expr.state.sym not in expr_diff.args:
 
+                linearized_name = expr.name + "_linearized"
                 linearized = self.add_intermediate(
-                    expr.name + "_linearized", expr_diff, dependent=dependent
+                    linearized_name, expr_diff, dependent=dependent
                 )
+
+                need_zero_div_check = not fraction_numerator_is_nonzero(expr_diff)
+                if not need_zero_div_check:
+                    debug("{} cannot be zero. Skipping zero division check".format(linearized_name))
+
+                RL_term = expr.sym / linearized * (sp.exp(linearized * dt) - 1)
+                if need_zero_div_check:
+                    RL_term = Conditional(
+                        abs(linearized) > delta,
+                        RL_term,
+                        dt * expr.sym,
+                    )
 
                 # Solve "exact" using exp
                 self.add_indexed_expression(
                     result_name,
                     (i,),
-                    expr.state.sym
-                    + Conditional(
-                        abs(linearized) > delta,
-                        expr.sym / linearized * (sp.exp(linearized * dt) - 1.0),
-                        dt * expr.sym,
-                    ),
+                    expr.state.sym + RL_term,
                     offset_str,
                     dependent=dependent,
                     enum=expr.state,
@@ -479,7 +510,7 @@ class RushLarsenOneStep(CodeComponent):
                 self.add_indexed_expression(
                     result_name,
                     (i,),
-                    prev + expr.sym / linearized * (sp.exp(linearized * dt) - 1.0),
+                    prev + expr.sym / linearized * (sp.exp(linearized * dt) - 1),
                     offset_str,
                     dependent=dependent,
                     enum=expr.state,
@@ -580,20 +611,28 @@ class GeneralizedRushLarsen(CodeComponent):
                 )
                 continue
 
+            linearized_name = expr.name + "_linearized"
             linearized = self.add_intermediate(
-                expr.name + "_linearized", expr_diff, dependent=dependent
+                linearized_name, expr_diff, dependent=dependent
             )
+
+            need_zero_div_check = not fraction_numerator_is_nonzero(expr_diff)
+            if not need_zero_div_check:
+                debug("{} cannot be zero. Skipping zero division check".format(linearized_name))
+
+            RL_term = expr.sym / linearized * (sp.exp(linearized * dt) - 1)
+            if need_zero_div_check:
+                RL_term = Conditional(
+                    abs(linearized) > delta,
+                    RL_term,
+                    dt * expr.sym,
+                )
 
             # Solve "exact" using exp
             self.add_indexed_expression(
                 result_name,
                 (i,),
-                expr.state.sym
-                + Conditional(
-                    abs(linearized) > delta,
-                    expr.sym / linearized * (sp.exp(linearized * dt) - 1.0),
-                    dt * expr.sym,
-                ),
+                expr.state.sym + RL_term,
                 offset_str,
                 dependent=dependent,
                 enum=expr.state,
@@ -686,6 +725,7 @@ class HybridGeneralizedRushLarsen(CodeComponent):
             expr_diff = expr.expr.diff(expr.state.sym)
             dependent = expr if recount else None
             if not state_is_stiff or expr_diff.is_zero:
+                # FE scheme
                 self.add_indexed_expression(
                     result_name,
                     (i,),
@@ -696,20 +736,28 @@ class HybridGeneralizedRushLarsen(CodeComponent):
                 )
                 continue
 
+            linearized_name = expr.name + "_linearized"
             linearized = self.add_intermediate(
-                expr.name + "_linearized", expr_diff, dependent=dependent
+                linearized_name, expr_diff, dependent=dependent
             )
+
+            need_zero_div_check = not fraction_numerator_is_nonzero(expr_diff)
+            if not need_zero_div_check:
+                debug("{} cannot be zero. Skipping zero division check".format(linearized_name))
+
+            RL_term = expr.sym / linearized * (sp.exp(linearized * dt) - 1)
+            if need_zero_div_check:
+                RL_term = Conditional(
+                    abs(linearized) > delta,
+                    RL_term,
+                    dt * expr.sym,
+                )
 
             # Solve "exact" using exp
             self.add_indexed_expression(
                 result_name,
                 (i,),
-                expr.state.sym
-                + Conditional(
-                    abs(linearized) > delta,
-                    expr.sym / linearized * (sp.exp(linearized * dt) - 1.0),
-                    dt * expr.sym,
-                ),
+                expr.state.sym + RL_term,
                 offset_str,
                 dependent=dependent,
                 enum=expr.state,
