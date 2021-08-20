@@ -81,7 +81,7 @@ def rush_larsen_solver(
     ode, function_name="forward_rush_larsen", delta=1e-8, params=None
 ):
     """
-    Return an ODEComponent holding expressions for the Rush Larsen method
+    Return an ODEComponent holding expressions for the Rush-Larsen method
 
     Arguments
     ---------
@@ -90,7 +90,7 @@ def rush_larsen_solver(
     function_name : str
         The name of the function which should be generated
     delta : float
-        Value to safeguard the evaluation of the rush larsen step.
+        Value to safeguard the evaluation of the Rush-Larsen step.
     params : dict
         Parameters determining how the code should be generated
     """
@@ -104,7 +104,7 @@ def generalized_rush_larsen_solver(
     ode, function_name="forward_generalized_rush_larsen", delta=1e-8, params=None
 ):
     """
-    Return an ODEComponent holding expressions for the generalized Rush Larsen method
+    Return an ODEComponent holding expressions for the generalized Rush-Larsen method
 
     Arguments
     ---------
@@ -113,7 +113,7 @@ def generalized_rush_larsen_solver(
     function_name : str
         The name of the function which should be generated
     delta : float
-        Value to safeguard the evaluation of the rush larsen step.
+        Value to safeguard the evaluation of the Rush-Larsen step.
     params : dict
         Parameters determining how the code should be generated
     """
@@ -133,7 +133,7 @@ def hybrid_generalized_rush_larsen_solver(
     stiff_states=None,
 ):
     """
-    Return an ODEComponent holding expressions for the generalized Rush Larsen method
+    Return an ODEComponent holding expressions for the generalized Rush-Larsen method
 
     Arguments
     ---------
@@ -142,7 +142,7 @@ def hybrid_generalized_rush_larsen_solver(
     function_name : str
         The name of the function which should be generated
     delta : float
-        Value to safeguard the evaluation of the rush larsen step.
+        Value to safeguard the evaluation of the Rush-Larsen step.
     params : dict
         Parameters determining how the code should be generated
     stiff_state_variables : list of str
@@ -204,7 +204,7 @@ def get_solver_fn(solver_type):
 
 class ExplicitEuler(CodeComponent):
     """
-    An ODEComponent which compute one step of the explicit Euler algorithm
+    An ODEComponent which compute one step of the explicit Euler scheme
     """
 
     def __init__(self, ode, function_name="forward_explicit_euler", params=None):
@@ -227,7 +227,7 @@ class ExplicitEuler(CodeComponent):
 
         # Call base class using empty result_expressions
         descr = (
-            "Compute a forward step using the explicit Euler algorithm to the "
+            "Compute a forward step using the explicit Euler scheme to the "
             "{0} ODE".format(ode)
         )
         super(ExplicitEuler, self).__init__(
@@ -286,21 +286,32 @@ def fraction_numerator_is_nonzero(expr):
             # we won't do any further checks
             return False
     elif expr_type == sp.Mul:
+        # check if all factors are non-zero
         args = expr.args
+        certainly_nonzero_args = []
         potentially_nonzero_args = []
         for e in args:
-            if not (len(e.free_symbols) == 0 and e.is_nonzero):
+            if len(e.free_symbols) == 0 and e.is_nonzero:
+                certainly_nonzero_args.append(e)
+            else:
                 potentially_nonzero_args.append(e)
 
-        if len(potentially_nonzero_args) > 1:
-            return False
-        return fraction_numerator_is_nonzero(*potentially_nonzero_args)
+        if len(potentially_nonzero_args) == 0:
+            # all factors are certainly nonzero
+            return True
+
+        # check all potentially non-zero factors
+        for e in potentially_nonzero_args:
+            if not fraction_numerator_is_nonzero(e):
+                return False
+        else:
+            return True
     else:
         return False
 
 class RushLarsen(CodeComponent):
     """
-    An ODEComponent which compute one step of the Rush Larsen algorithm
+    An ODEComponent which compute one step of the Rush-Larsen scheme
     """
 
     def __init__(
@@ -316,7 +327,7 @@ class RushLarsen(CodeComponent):
         function_name : str
             The name of the function which should be generated
         delta : float
-            Value to safeguard the evaluation of the rush larsen step.
+            Value to safeguard the evaluation of the Rush-Larsen step.
         params : dict
             Parameters determining how the code should be generated
         """
@@ -325,11 +336,11 @@ class RushLarsen(CodeComponent):
         check_arg(ode, ODE)
 
         if ode.is_dae:
-            error("Cannot generate a Rush Larsen forward step for a DAE.")
+            error("Cannot generate a Rush-Larsen forward step for a DAE.")
 
         # Call base class using empty result_expressions
         descr = (
-            "Compute a forward step using the rush larsen algorithm to the "
+            "Compute a forward step using the Rush-Larsen scheme to the "
             "{0} ODE".format(ode)
         )
         super(RushLarsen, self).__init__(
@@ -434,7 +445,7 @@ class RushLarsen(CodeComponent):
 
 class RushLarsenOneStep(CodeComponent):
     """
-    An ODEComponent which compute one step of the Rush Larsen algorithm
+    An ODEComponent which compute one step of the Rush-Larsen scheme
     """
 
     def __init__(self, ode, function_name="forward_rush_larsen", params=None):
@@ -453,11 +464,11 @@ class RushLarsenOneStep(CodeComponent):
         check_arg(ode, ODE)
 
         if ode.is_dae:
-            error("Cannot generate a Rush Larsen forward step for a DAE.")
+            error("Cannot generate a Rush-Larsen forward step for a DAE.")
 
         # Call base class using empty result_expressions
         descr = (
-            "Compute a forward step using the rush larsen algorithm to the "
+            "Compute a forward step using the Rush-Larsen scheme to the "
             "{0} ODE".format(ode)
         )
         state_name = params.states.array_name
@@ -537,7 +548,7 @@ class RushLarsenOneStep(CodeComponent):
 
 class GeneralizedRushLarsen(CodeComponent):
     """
-    An ODEComponent which compute one step of the Generalized Rush Larsen (GRL1) algorithm
+    An ODEComponent which compute one step of the Generalized Rush-Larsen (GRL1) scheme
     """
 
     def __init__(
@@ -557,7 +568,7 @@ class GeneralizedRushLarsen(CodeComponent):
         function_name : str
             The name of the function which should be generated
         delta : float
-            Value to safeguard the evaluation of the rush larsen step.
+            Value to safeguard the evaluation of the Rush-Larsen step.
         params : dict
             Parameters determining how the code should be generated
         """
@@ -565,7 +576,7 @@ class GeneralizedRushLarsen(CodeComponent):
 
         # Call base class using empty result_expressions
         descr = (
-            "Compute a forward step using the rush larsen algorithm to the "
+            "Compute a forward step using the generalised Rush-Larsen (GRL1) scheme to the "
             "{0} ODE".format(ode)
         )
         super(GeneralizedRushLarsen, self).__init__(
@@ -647,7 +658,7 @@ class GeneralizedRushLarsen(CodeComponent):
 
 class HybridGeneralizedRushLarsen(CodeComponent):
     """
-    An ODEComponent which compute one step of the hybrid explicit Euler / Generalized Rush Larsen (GRL1) scheme
+    An ODEComponent which compute one step of the hybrid explicit Euler / Generalized Rush-Larsen (GRL1) scheme
     """
 
     def __init__(
@@ -668,7 +679,7 @@ class HybridGeneralizedRushLarsen(CodeComponent):
         function_name : str
             The name of the function which should be generated
         delta : float
-            Value to safeguard the evaluation of the rush larsen step.
+            Value to safeguard the evaluation of the Rush-Larsen step.
         params : dict
             Parameters determining how the code should be generated
 
@@ -677,7 +688,7 @@ class HybridGeneralizedRushLarsen(CodeComponent):
 
         # Call base class using empty result_expressions
         descr = (
-            "Compute a forward step using the rush larsen algorithm to the "
+            "Compute a forward step using the FE / GRL1 scheme to the "
             "{0} ODE".format(ode)
         )
         super(HybridGeneralizedRushLarsen, self).__init__(
@@ -773,7 +784,7 @@ class HybridGeneralizedRushLarsen(CodeComponent):
 class SimplifiedImplicitEuler(CodeComponent):
     """
     An ODEComponent which compute one step of a simplified Implicit Euler
-    algorithm
+    scheme
     """
 
     def __init__(
@@ -805,7 +816,7 @@ class SimplifiedImplicitEuler(CodeComponent):
         # Call base class using empty result_expressions
         descr = (
             "Compute a forward step using the simplified implicit Euler"
-            "algorithm to the {0} ODE".format(ode)
+            "scheme to the {0} ODE".format(ode)
         )
         super(SimplifiedImplicitEuler, self).__init__(
             "SimplifiedImplicitEuler",
