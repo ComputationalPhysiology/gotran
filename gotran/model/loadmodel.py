@@ -18,6 +18,7 @@
 __all__ = ["load_ode", "exec_ode", "load_cell"]
 
 # System imports
+from pathlib import Path
 import inspect
 import os
 import shutil
@@ -254,24 +255,21 @@ def _load(filename, name, **arguments):
         Optional arguments which can control loading of model
     """
     timer = Timer("Load ODE")
+    filename = Path(filename).with_suffix(".ode")
     # Extract name from filename
-    if len(filename) < 4 or filename[-4:] != ".ode":
-        name = name or filename
-        filename = filename + ".ode"
-    elif name is None:
-        name = filename[:-4]
+    name = filename.stem
 
     # Execute the file
-    if not os.path.isfile(filename):
+    if not filename.is_file():
         error("Could not find '{0}'".format(filename))
 
     # Copy file temporary to current directory
-    basename = os.path.basename(filename)
+    basename = Path(filename.name)
     copyfile = False
-    if not basename == filename:
+    if basename != filename:
         shutil.copy(filename, basename)
         filename = basename
-        name = filename[:-4]
+        name = filename.stem
         copyfile = True
 
     # If a Param is provided turn it into its value
