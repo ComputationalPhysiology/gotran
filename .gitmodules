@@ -1,3 +1,0 @@
-[submodule "doc/build/html"]
-	path = doc/build/html
-	url = https://github.com/finsberg/docs.gotran.git
