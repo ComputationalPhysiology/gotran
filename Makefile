@@ -72,9 +72,9 @@ conda:
 	conda build
 
 docs: ## generate Sphinx HTML documentation, including API docs
-	rm -f docs/gotran.rst
-	rm -f docs/modules.rst
-	sphinx-apidoc -o docs/ gotran
+	rm -f docs/source/gotran.rst
+	rm -f docs/source/modules.rst
+	sphinx-apidoc -o docs/source gotran
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 	# $(BROWSER) docs/build/html/index.html
