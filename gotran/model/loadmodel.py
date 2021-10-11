@@ -255,7 +255,7 @@ def _load(filename, name, **arguments):
         Optional arguments which can control loading of model
     """
     timer = Timer("Load ODE")
-    filename = Path(filename).with_suffix(".ode")
+    filename = Path(filename).with_suffix(".ode").absolute()
     # Extract name from filename
     name = filename.stem
 
@@ -264,7 +264,7 @@ def _load(filename, name, **arguments):
         error("Could not find '{0}'".format(filename))
 
     # Copy file temporary to current directory
-    basename = Path(filename.name)
+    basename = Path(filename.name).absolute()
     copyfile = False
     if basename != filename:
         shutil.copy(filename, basename)

@@ -1,0 +1,99 @@
+# Saved Gotran model
+
+parameters(Cm=ScalarParam(0.185),
+           F=ScalarParam(96485.3415),
+           V_c=ScalarParam(0.016404),
+           E_K=ScalarParam(-86.6334279933),
+           i_Stim=ScalarParam(0.0),
+           i_NaK=ScalarParam(0.125322662069),
+           E_Ks=ScalarParam(-71.3304225125),
+           V=ScalarParam(-86.2))
+
+parameters("Rapid time dependent potassium current",
+           g_Kr=ScalarParam(0.096))
+
+states("Rapid time dependent potassium current", "xr1 gate",
+       Xr1=ScalarParam(0))
+
+states("Rapid time dependent potassium current", "xr2 gate",
+       Xr2=ScalarParam(1))
+
+parameters("Slow time dependent potassium current",
+           g_Ks=ScalarParam(0.062))
+
+states("Slow time dependent potassium current", "xs gate",
+       Xs=ScalarParam(0))
+
+parameters("Transient outward current",
+           g_to=ScalarParam(0.294))
+
+states("Transient outward current", "s gate",
+       s=ScalarParam(1))
+
+states("Transient outward current", "r gate",
+       r=ScalarParam(0))
+
+states("Potassium dynamics",
+       K_i=ScalarParam(138.3))
+
+parameters("Potassium dynamics",
+           K_o=ScalarParam(5.4))
+
+parameters("Inward rectifier potassium current",
+           g_K1=ScalarParam(5.405))
+
+parameters("Potassium pump current",
+           g_pK=ScalarParam(0.0146))
+
+component("Inward rectifier potassium current")
+alpha_K1 = 0.1/(1 + 6.14421235333e-06*exp(-0.06*E_K + 0.06*V))
+beta_K1 = (0.367879441171*exp(-0.1*E_K + 0.1*V) +\
+    3.06060402008*exp(-0.0002*E_K + 0.0002*V))/(1 + exp(0.5*E_K - 0.5*V))
+xK1_inf = alpha_K1/(beta_K1 + alpha_K1)
+i_K1 = 0.430331482912*g_K1*sqrt(K_o)*(V - E_K)*xK1_inf
+
+component("Rapid time dependent potassium current")
+i_Kr = 0.430331482912*g_Kr*sqrt(K_o)*(V - E_K)*Xr1*Xr2
+
+component("Rapid time dependent potassium current", "xr1 gate")
+xr1_inf = 1.0/(1 + 0.0243728440733*exp(-0.142857142857*V))
+alpha_xr1 = 450.0/(1 + exp(-9/2 - V/10))
+beta_xr1 = 6.0/(1 + 13.5813245226*exp(0.0869565217391*V))
+tau_xr1 = alpha_xr1*beta_xr1
+dXr1_dt = (xr1_inf - Xr1)/tau_xr1
+
+component("Rapid time dependent potassium current", "xr2 gate")
+xr2_inf = 1.0/(1 + 39.1212839982*exp(0.0416666666667*V))
+alpha_xr2 = 3/(1 + 0.0497870683679*exp(-0.05*V))
+beta_xr2 = 1.12/(1 + 0.0497870683679*exp(0.05*V))
+tau_xr2 = alpha_xr2*beta_xr2
+dXr2_dt = (-Xr2 + xr2_inf)/tau_xr2
+
+component("Slow time dependent potassium current")
+i_Ks = g_Ks*(Xs*Xs)*(V - E_Ks)
+
+component("Slow time dependent potassium current", "xs gate")
+xs_inf = 1.0/(1 + 0.699672537375*exp(-0.0714285714286*V))
+alpha_xs = 1100.0/sqrt(1 + 0.188875602838*exp(-0.166666666667*V))
+beta_xs = 1.0/(1 + 0.0497870683679*exp(0.05*V))
+tau_xs = alpha_xs*beta_xs
+dXs_dt = (-Xs + xs_inf)/tau_xs
+
+component("Transient outward current")
+i_to = g_to*(V - E_K)*r*s
+
+component("Transient outward current", "s gate")
+s_inf = 1.0/(1 + exp(4 + V/5))
+tau_s = 3 + 85*exp(-0.003125*((45 + V)*(45 + V))) + 5/(1 + exp(-4 + V/5))
+ds_dt = (-s + s_inf)/tau_s
+
+component("Transient outward current", "r gate")
+r_inf = 1.0/(1 + 28.0316248945*exp(-0.166666666667*V))
+tau_r = 0.8 + 9.5*exp(-0.000555555555556*((40 + V)*(40 + V)))
+dr_dt = (-r + r_inf)/tau_r
+
+component("Potassium pump current")
+i_p_K = g_pK*(V - E_K)/(1 + 65.4052157419*exp(-0.167224080268*V))
+
+component("Potassium dynamics")
+dK_i_dt = Cm*(-i_Ks - i_to - i_Stim + 2*i_NaK - i_K1 - i_Kr - i_p_K)/(F*V_c)
