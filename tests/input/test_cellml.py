@@ -99,7 +99,8 @@ def test_cellml(path):
     ref_data = data[state_name]
 
     # Compile ODE
-    module = compile_module(ode, language="Python", generation_params=generation)
+    module = compile_module(ode, language="C", generation_params=generation)
+
     rhs = module.rhs
     jac = None  # module.compute_jacobian
     y0 = module.init_state_values()

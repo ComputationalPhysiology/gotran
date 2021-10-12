@@ -17,20 +17,16 @@
 
 import sys
 import os
-import re
 import numpy
 import instant
 import hashlib
-import types
+
 
 import gotran
 from gotran.common import (
     check_arg,
     check_kwarg,
-    push_log_level,
-    pop_log_level,
     info,
-    INFO,
     value_error,
 )
 from gotran.model.ode import ODE
@@ -42,14 +38,33 @@ from gotran.codegeneration.codegenerators import (
     class_name,
     DOLFINCodeGenerator,
 )
-from gotran.codegeneration.algorithmcomponents import (
-    rhs_expressions,
-    monitored_expressions,
-    jacobian_expressions,
+
+import numpy as np
+import ctypes
+import dijitso
+
+float64_array = np.ctypeslib.ndpointer(
+    dtype=ctypes.c_double, ndim=1, flags="contiguous"
 )
 
-# Set log level of instant
-instant.set_log_level("WARNING")
+rhs_template = """def {rhs_function_name}({args},{rhs_name} = None):
+    '''
+    Evaluates the right hand side of the model
+
+    Arguments
+    ---------
+{args_doc}
+    {rhs_name} : np.ndarray (optional)
+        The computed result
+    '''
+    import numpy as np
+    if {rhs_name} is None:
+        {rhs_name} = np.zeros_like({states_name})
+
+    _{rhs_function_name}({args}, {rhs_name})
+    return {rhs_name}
+"""
+
 
 __all__ = ["compile_module"]
 
@@ -409,7 +424,225 @@ def compile_module(
     return getattr(python_module, class_name(ode.name))()
 
 
+def jit_generate(class_data, module_name, signature, parameters):
+    """TODO: document"""
+
+    template_code = """
+{includes}
+// Based on https://gcc.gnu.org/wiki/Visibility
+#if defined _WIN32 || defined __CYGWIN__
+    #ifdef __GNUC__
+        #define DLL_EXPORT __attribute__ ((dllexport))
+    #else
+        #define DLL_EXPORT __declspec(dllexport)
+    #endif
+#else
+    #define DLL_EXPORT __attribute__ ((visibility ("default")))
+#endif
+
+{code}
+"""
+    code_c = template_code.format(
+        code="\n\n".join(list(class_data["code_dict"].values())),
+        includes="\n".join(class_data["includes"]),
+    )
+    code_h = ""
+    depends = []
+
+    return code_h, code_c, depends
+
+
+def add_dll_export(code_dict):
+    d = {}
+    for k, v in code_dict.items():
+        d[k] = """extern "C" DLL_EXPORT""" + v
+    return d
+
+
+def parse_rhs_arguments(params):
+    # Add function prototype
+    args = []
+    args_doc = []
+    for arg in params.code.default_arguments:
+        if arg == "s":
+            args.append("states")
+            args_doc.append(
+                """    {0} : np.ndarray
+        The state values""".format(
+                    params.code.states.array_name
+                )
+            )
+        elif arg == "t":
+            args.append("time")
+            args_doc.append(
+                """    time : scalar
+        The present time"""
+            )
+        elif arg == "p" and params.code.parameters.representation != "numerals":
+            args.append("parameters")
+            args_doc.append(
+                """    {0} : np.ndarray
+        The parameter values""".format(
+                    params.code.parameters.array_name
+                )
+            )
+        elif arg == "b" and params.code.body.representation != "named":
+            args.append("body")
+            args_doc.append(
+                """    {0} : np.ndarray
+        The body values""".format(
+                    params.code.body.array_name
+                )
+            )
+
+    args = ", ".join(args)
+    args_doc = "\n".join(args_doc)
+    return args, args_doc
+
+
+def parse_jacobian_declarations(
+    ode, args, args_doc, params, jacobian_declaration_template=None
+):
+
+    jacobian_declaration = ""
+    if not params.functions.jacobian.generate:
+        return jacobian_declaration
+
+    # Flatten jacobian params
+    if not params.code.array.flatten:
+        debug("Generating jacobian C-code, forcing jacobian array " "to be flattened.")
+        params.code.array.flatten = True
+
+    jacobian_declaration_template = (
+        jacobian_declaration_template_
+        if jacobian_declaration_template is None
+        else jacobian_declaration_template
+    )
+
+    jacobian_declaration = jacobian_declaration_template.format(
+        num_states=ode.num_full_states,
+        args=args,
+        args_doc=args_doc,
+        jac_name=params.functions.jacobian.result_name,
+        jacobian_function_name=params.functions.jacobian.function_name,
+    )
+    return jacobian_declaration
+
+
+def parse_monitor_declaration(ode, args, args_doc, params, monitored):
+    monitor_declaration = ""
+    if monitored and params.functions.monitored.generate:
+        monitor_declaration = monitor_declaration_template.format(
+            num_states=ode.num_full_states,
+            num_monitored=len(monitored),
+            args=args,
+            args_doc=args_doc,
+            monitored_name=params.functions.monitored.result_name,
+            monitored_function_name=params.functions.monitored.function_name,
+        )
+    return monitor_declaration
+
+
+class GotranModule:
+    pass
+
+
 def compile_extension_module(
+    ode,
+    monitored,
+    params,
+    additional_declarations=None,
+    jacobian_declaration_template=None,
+):
+    """
+    Compile an extension module, based on the C code from the ode
+    """
+
+    args, args_doc = parse_rhs_arguments(params)
+
+    # Create unique module name for this application run
+    modulename = "gotran_compiled_module_{0}_{1}".format(
+        class_name(ode.name),
+        hashlib.sha1(
+            str(
+                ode.signature()
+                + str(monitored)
+                + repr(params)
+                + gotran.__version__
+                + instant.__version__
+            ).encode("utf-8")
+        ).hexdigest(),
+    )
+
+    # Do not generate any Python functions
+    python_params = params.copy()
+    for name in python_params.functions:
+        if name == "monitored":
+            continue
+        python_params.functions[name].generate = False
+
+    jacobian_declaration = parse_jacobian_declarations(
+        ode, args, args_doc, params, jacobian_declaration_template
+    )
+    monitor_declaration = parse_monitor_declaration(
+        ode, args, args_doc, params, monitored
+    )
+
+    pgen = PythonCodeGenerator(python_params)
+    cgen = CCodeGenerator(params)
+    code_dict = cgen.code_dict(
+        ode, monitored=monitored, include_init=False, include_index_map=False
+    )
+
+    pcode = "\n\n".join(list(pgen.code_dict(ode, monitored=monitored).values()))
+
+    cpp_data = {
+        "code_dict": add_dll_export(code_dict),
+        "includes": ["#include <math.h>"],
+        "exports": ["rhs"],
+        "argtypes": {
+            "rhs": [float64_array, ctypes.c_double, float64_array, float64_array]
+        },
+        "restypes": {"rhs": None},
+    }
+
+    rhs_code = rhs_template.format(
+        rhs_function_name=params.functions.rhs.function_name,
+        args=args,
+        rhs_name=params.functions.rhs.result_name,
+        args_doc=args_doc,
+        states_name=params.code.states.array_name,
+    )
+
+    compiled_module = GotranModule()
+    exec(rhs_code, compiled_module.__dict__)
+    exec(pcode, compiled_module.__dict__)
+    params = dijitso.params.default_params()
+
+    module, signature = dijitso.jit(
+        cpp_data,
+        modulename,
+        params,
+        generate=jit_generate,
+    )
+
+    for funcname in cpp_data["exports"]:
+        func = getattr(module, funcname)
+        func.argtypes = cpp_data["argtypes"][funcname]
+        func.restype = cpp_data["restypes"][funcname]
+        compiled_module.__dict__[f"_{funcname}"] = getattr(module, funcname)
+
+    # push_log_level(INFO)
+    info("Calling GOTRAN just-in-time (JIT) compiler, this may take some " "time...")
+    sys.stdout.flush()
+
+    info(" done")
+    # pop_log_level()
+    sys.stdout.flush()
+    return compiled_module
+
+
+def compile_extension_module_old(
     ode,
     monitored,
     params,
@@ -565,7 +798,7 @@ def compile_extension_module(
         code=ccode,
         additional_declarations=additional_declarations.format(**declaration_form),
         signature=modulename,
-        **instant_kwargs
+        **instant_kwargs,
     )
 
     info(" done")
