@@ -295,7 +295,7 @@ def test_subode():
     assert Na_i in ode.expression_dependencies[E_Na]
     assert E_Na in ode.object_used_in[Na_i]
 
-    ode.import_ode("Sodium")
+    ode.import_ode(_here.joinpath("Sodium"))
 
     # Check dependencies after sub ode has been loaded
     E_Na = ode.present_ode_objects["E_Na"]

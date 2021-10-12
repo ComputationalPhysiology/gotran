@@ -396,9 +396,9 @@ def _namespace_binder(namespace, ode, load_arguments):
             Optional arguments which can control loading of model
         """
 
-        check_arg(subode, str, 0)
+        check_arg(subode, (str, Path), 0)
 
-        # Add the subode and update namespace
+        # Add the 'subode and update namespace
         ode().import_ode(subode, prefix=prefix, components=components, **arguments)
 
     def timeunit(*args, **kwargs):
