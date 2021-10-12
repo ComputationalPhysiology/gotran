@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gotran.model.odeobjects &mdash; gotran 2019.0.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> gotran
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Programmers reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gotran.html">gotran package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">gotran</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>gotran.model.odeobjects</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gotran.model.odeobjects</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (C) 2011-2012 Johan Hake</span>
+<span class="c1">#</span>
+<span class="c1"># This file is part of Gotran.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU Lesser General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1"># (at your option) any later version.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the</span>
+<span class="c1"># GNU Lesser General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1"># You should have received a copy of the GNU Lesser General Public License</span>
+<span class="c1"># along with Gotran. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;ODEObject&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Comment&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ODEValueObject&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Parameter&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;State&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;SingleODEObjects&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Time&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Dt&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;IndexedObject&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;StateIndexedObject&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ParameterIndexedObject&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cmp_to_key&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cmp&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="c1"># System imports</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">defaultdict</span>
+<span class="kn">import</span> <span class="nn">types</span>
+
+<span class="c1"># ModelParameters imports</span>
+<span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">sp</span>
+<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">sympycode</span><span class="p">,</span> <span class="n">latex</span>
+<span class="kn">from</span> <span class="nn">modelparameters.parameters</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">modelparameters.parameterdict</span> <span class="kn">import</span> <span class="n">cmp_to_key</span>
+
+<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">error</span><span class="p">,</span>
+    <span class="n">check_arg</span><span class="p">,</span>
+    <span class="n">scalars</span><span class="p">,</span>
+    <span class="n">debug</span><span class="p">,</span>
+    <span class="n">DEBUG</span><span class="p">,</span>
+    <span class="n">get_log_level</span><span class="p">,</span>
+    <span class="n">Timer</span><span class="p">,</span>
+    <span class="n">parameters</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">reduce</span><span class="p">,</span> <span class="n">cmp_to_key</span>
+
+
+<div class="viewcode-block" id="cmp"><a class="viewcode-back" href="../../../gotran.model.html#gotran.cmp">[docs]</a><span class="k">def</span> <span class="nf">cmp</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">a</span> <span class="o">&gt;</span> <span class="n">b</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">a</span> <span class="o">&lt;</span> <span class="n">b</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ODEObject"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODEObject">[docs]</a><span class="k">class</span> <span class="nc">ODEObject</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base container class for all ODEObjects</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">__count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">__dependent_counts</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create ODEObject instance</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        name : str</span>
+<span class="sd">            The name of the ODEObject</span>
+<span class="sd">        dependent : ODEObject</span>
+<span class="sd">            If given the count of this ODEObject will follow as a</span>
+<span class="sd">            fractional count based on the count of the dependent object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">)</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">dependent</span><span class="p">,</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="n">ODEObject</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="c1"># Unique identifyer</span>
+        <span class="k">if</span> <span class="n">dependent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_count</span> <span class="o">=</span> <span class="n">ODEObject</span><span class="o">.</span><span class="n">__count</span>
+            <span class="n">ODEObject</span><span class="o">.</span><span class="n">__count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ODEObject</span><span class="o">.</span><span class="n">__dependent_counts</span><span class="p">[</span><span class="n">dependent</span><span class="o">.</span><span class="n">_count</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="c1"># FIXME: Do not hardcode the fractional increase</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_count</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">dependent</span><span class="o">.</span><span class="n">_count</span>
+                <span class="o">+</span> <span class="n">ODEObject</span><span class="o">.</span><span class="n">__dependent_counts</span><span class="p">[</span><span class="n">dependent</span><span class="o">.</span><span class="n">_count</span><span class="p">]</span> <span class="o">*</span> <span class="mf">0.00001</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__cmp__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">):</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">return</span> <span class="n">cmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_count</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">_count</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">cmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_count</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">_count</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="fm">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">cmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_count</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">_count</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">cmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_count</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">_count</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="fm">__le__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">cmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_count</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">_count</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="fm">__ge__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">cmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_count</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">_count</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="fm">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">cmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_count</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">_count</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        x.__repr__() &lt;==&gt; repr(x)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">(</span><span class="si">{1}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_args_str</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        x.__str__() &lt;==&gt; str(x)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+
+    <span class="k">def</span> <span class="nf">_args_str</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a formatted str of __init__ arguments</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;&#39;</span><span class="si">{0}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ODEObject.rename"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODEObject.rename">[docs]</a>    <span class="k">def</span> <span class="nf">rename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Rename the ODEObject</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_check_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check the name</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+
+        <span class="c1"># Check for underscore in name</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;_&quot;</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;No ODEObject names can start with an underscore: &quot;</span> <span class="s2">&quot;&#39;</span><span class="si">{0}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">name</span>
+
+    <span class="k">def</span> <span class="nf">_recount</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_count</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method called when an object need to get a new count</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">old_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_count</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_count</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+            <span class="n">check_arg</span><span class="p">(</span><span class="n">new_count</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="n">ODEObject</span><span class="o">.</span><span class="n">__count</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_count</span> <span class="o">=</span> <span class="n">new_count</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dependent</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">):</span>
+            <span class="n">ODEObject</span><span class="o">.</span><span class="n">__dependent_counts</span><span class="p">[</span><span class="n">dependent</span><span class="o">.</span><span class="n">_count</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="c1"># FIXME: Do not hardcode the fractional increase</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_count</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">dependent</span><span class="o">.</span><span class="n">_count</span>
+                <span class="o">+</span> <span class="n">ODEObject</span><span class="o">.</span><span class="n">__dependent_counts</span><span class="p">[</span><span class="n">dependent</span><span class="o">.</span><span class="n">_count</span><span class="p">]</span> <span class="o">*</span> <span class="mf">0.00001</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_count</span> <span class="o">=</span> <span class="n">ODEObject</span><span class="o">.</span><span class="n">__count</span>
+            <span class="n">ODEObject</span><span class="o">.</span><span class="n">__count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">debug</span><span class="p">(</span>
+            <span class="s2">&quot;Change count of </span><span class="si">{0}</span><span class="s2"> from </span><span class="si">{1}</span><span class="s2"> to </span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">old_count</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_count</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Comment"><a class="viewcode-back" href="../../../gotran.model.html#gotran.Comment">[docs]</a><span class="k">class</span> <span class="nc">Comment</span><span class="p">(</span><span class="n">ODEObject</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A Comment. To keep track of user comments in an ODE</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comment</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a comment</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        comment : str</span>
+<span class="sd">            The comment</span>
+<span class="sd">        dependent : ODEObject</span>
+<span class="sd">            If given the count of this comment will follow as a</span>
+<span class="sd">            fractional count based on the count of the dependent object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Call super class</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Comment</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">comment</span><span class="p">,</span> <span class="n">dependent</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_repr_latex_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;$</span><span class="se">\\</span><span class="s2">mathbf{{</span><span class="si">{0}</span><span class="s2">}}$&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">;&quot;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ODEValueObject"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODEValueObject">[docs]</a><span class="k">class</span> <span class="nc">ODEValueObject</span><span class="p">(</span><span class="n">ODEObject</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class for all ODE objects which has a value</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create ODEObject instance</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        name : str</span>
+<span class="sd">            The name of the ODEObject</span>
+<span class="sd">        value : scalar, ScalarParam, np.ndarray, sp. Basic</span>
+<span class="sd">            The value of this ODEObject</span>
+<span class="sd">        dependent : ODEObject</span>
+<span class="sd">            If given the count of this ODEValueObject will follow as a</span>
+<span class="sd">            fractional count based on the count of the dependent object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ODEValueObject</span><span class="p">)</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">scalars</span> <span class="o">+</span> <span class="p">(</span><span class="n">ScalarParam</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Basic</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">ODEValueObject</span><span class="p">)</span>
+
+        <span class="c1"># Init super class</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ODEValueObject</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">dependent</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ScalarParam</span><span class="p">):</span>
+
+            <span class="c1"># Re-create one with correct name</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">include_name</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">value</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">scalars</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">ScalarParam</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">ConstParam</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">SlaveParam</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="c1"># Debug</span>
+        <span class="c1"># if get_log_level() &lt;= DEBUG:</span>
+        <span class="c1">#    if isinstance(value, SlaveParam):</span>
+        <span class="c1">#        debug(&quot;{0}: {1} {2:.3f}&quot;.format(self.name, value.expr, value.value))</span>
+        <span class="c1">#    else:</span>
+        <span class="c1">#        debug(&quot;{0}: {1}&quot;.format(name, value.value))</span>
+
+        <span class="c1"># Store the Param</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_param</span> <span class="o">=</span> <span class="n">value</span>
+
+<div class="viewcode-block" id="ODEValueObject.rename"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODEValueObject.rename">[docs]</a>    <span class="k">def</span> <span class="nf">rename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Rename the ODEValueObject</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ODEValueObject</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="c1"># Re-create param with changed name</span>
+        <span class="n">param</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_param</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">include_name</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">param</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_param</span> <span class="o">=</span> <span class="n">param</span></div>
+
+    <span class="k">def</span> <span class="nf">_check_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check the name</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Check for underscore in name</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;_&quot;</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;No ODEObject names can start with an underscore: &quot;</span> <span class="s2">&quot;&#39;</span><span class="si">{0}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_param</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
+
+<div class="viewcode-block" id="ODEValueObject.update"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODEValueObject.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_param</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
+
+    <span class="nd">@value</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_param</span><span class="o">.</span><span class="n">setvalue</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">sym</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_param</span><span class="o">.</span><span class="n">sym</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">unit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_param</span><span class="o">.</span><span class="n">unit</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">param</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_param</span>
+
+    <span class="k">def</span> <span class="nf">_args_str</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a formatted str of __init__ arguments</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;&#39;</span><span class="si">{0}</span><span class="s2">&#39;, </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_param</span><span class="o">.</span><span class="n">repr</span><span class="p">(</span><span class="n">include_name</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_repr_latex_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a pretty latex representation of the ODEValue object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">latex_unit</span>
+
+        <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">unit_str</span> <span class="o">=</span> <span class="n">latex_unit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;$</span><span class="si">{0}{1}</span><span class="s2">$&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">latex</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">;</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">unit_str</span><span class="p">)</span> <span class="k">if</span> <span class="n">unit_str</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__truediv__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="c1"># Python 3</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="fm">__truediv__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__rtruediv__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="c1"># Python 3</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="fm">__rtruediv__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__div__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="c1"># Python 2</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="n">__div__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__rdiv__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="c1"># Python 2</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="n">__rdiv__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="fm">__mul__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__rmul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="fm">__rmul__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="fm">__add__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__radd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="fm">__radd__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__sub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="fm">__sub__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__rsub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="fm">__rsub__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__pow__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="fm">__pow__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="State"><a class="viewcode-back" href="../../../gotran.model.html#gotran.State">[docs]</a><span class="k">class</span> <span class="nc">State</span><span class="p">(</span><span class="n">ODEValueObject</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    class for a State variable</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">init</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a state variable with an associated initial value</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        name : str</span>
+<span class="sd">            The name of the State</span>
+<span class="sd">        init : scalar, ScalarParam</span>
+<span class="sd">            The initial value of this state</span>
+<span class="sd">        time : Time</span>
+<span class="sd">            The time variable</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Call super class</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">init</span><span class="p">,</span> <span class="n">scalars</span> <span class="o">+</span> <span class="p">(</span><span class="n">ScalarParam</span><span class="p">,),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">State</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">State</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">init</span><span class="p">)</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">Time</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">time</span>
+
+        <span class="c1"># Add previous value symbol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sym_0</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_0&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))(</span><span class="n">time</span><span class="o">.</span><span class="n">sym</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sym_0</span><span class="o">.</span><span class="n">_assumptions</span><span class="p">[</span><span class="s2">&quot;real&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sym_0</span><span class="o">.</span><span class="n">_assumptions</span><span class="p">[</span><span class="s2">&quot;imaginary&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sym_0</span><span class="o">.</span><span class="n">_assumptions</span><span class="p">[</span><span class="s2">&quot;commutative&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sym_0</span><span class="o">.</span><span class="n">_assumptions</span><span class="p">[</span><span class="s2">&quot;hermitian&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sym_0</span><span class="o">.</span><span class="n">_assumptions</span><span class="p">[</span><span class="s2">&quot;complex&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sym</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_param</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">sym</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sym</span><span class="o">.</span><span class="n">_assumptions</span><span class="p">[</span><span class="s2">&quot;real&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sym</span><span class="o">.</span><span class="n">_assumptions</span><span class="p">[</span><span class="s2">&quot;imaginary&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sym</span><span class="o">.</span><span class="n">_assumptions</span><span class="p">[</span><span class="s2">&quot;commutative&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sym</span><span class="o">.</span><span class="n">_assumptions</span><span class="p">[</span><span class="s2">&quot;hermitian&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sym</span><span class="o">.</span><span class="n">_assumptions</span><span class="p">[</span><span class="s2">&quot;complex&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># Flag to determine if State is solved or not</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_solved</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="n">init</span> <span class="o">=</span> <span class="n">ODEValueObject</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">sym</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sym</span>
+
+    <span class="k">def</span> <span class="nf">_args_str</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a formatted str of __init__ arguments</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;&#39;</span><span class="si">{0}</span><span class="s2">&#39;, </span><span class="si">{1}</span><span class="s2">, </span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_param</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">include_name</span><span class="o">=</span><span class="kc">False</span><span class="p">)),</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_solved</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_solved</span></div>
+
+
+<div class="viewcode-block" id="Parameter"><a class="viewcode-back" href="../../../gotran.model.html#gotran.Parameter">[docs]</a><span class="k">class</span> <span class="nc">Parameter</span><span class="p">(</span><span class="n">ODEValueObject</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    class for a Parameter</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">init</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a Parameter with an associated initial value</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        name : str</span>
+<span class="sd">            The name of the State</span>
+<span class="sd">        init : scalar, ScalarParam</span>
+<span class="sd">            The initial value of this parameter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Call super class</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">init</span><span class="p">,</span> <span class="n">scalars</span> <span class="o">+</span> <span class="p">(</span><span class="n">ScalarParam</span><span class="p">,),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">)</span>
+
+        <span class="c1"># Call super class</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Parameter</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">init</span><span class="p">)</span>
+
+    <span class="n">init</span> <span class="o">=</span> <span class="n">ODEValueObject</span><span class="o">.</span><span class="n">value</span></div>
+
+
+<div class="viewcode-block" id="IndexedObject"><a class="viewcode-back" href="../../../gotran.model.html#gotran.IndexedObject">[docs]</a><span class="k">class</span> <span class="nc">IndexedObject</span><span class="p">(</span><span class="n">ODEObject</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An object with a fixed index associated with it</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IndexedObject.default_parameters"><a class="viewcode-back" href="../../../gotran.model.html#gotran.IndexedObject.default_parameters">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">default_parameters</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the default parameters for formating the array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">parameters</span><span class="o">.</span><span class="n">generation</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">basename</span><span class="p">,</span>
+        <span class="n">indices</span><span class="p">,</span>
+        <span class="n">shape</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">array_params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">add_offset</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">dependent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">enum</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create an IndexedExpression with an associated basename</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        basename : str</span>
+<span class="sd">            The basename of the multi index Expression</span>
+<span class="sd">        indices : tuple of ints</span>
+<span class="sd">            The indices</span>
+<span class="sd">        shape : tuple (optional)</span>
+<span class="sd">            A tuple with the shape of the indexed object</span>
+<span class="sd">        array_params : dict</span>
+<span class="sd">            Parameters to create the array name for the indexed object</span>
+<span class="sd">        add_offset : bool, str</span>
+<span class="sd">            If True a fixed offset is added to the indices</span>
+<span class="sd">        dependent : ODEObject</span>
+<span class="sd">            If given the count of this IndexedObject will follow as a</span>
+<span class="sd">            fractional count based on the count of the dependent object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">array_params</span> <span class="o">=</span> <span class="n">array_params</span> <span class="ow">or</span> <span class="p">{}</span>
+
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="n">tuplewrap</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">itemtypes</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">check_kwarg</span><span class="p">(</span><span class="n">array_params</span><span class="p">,</span> <span class="s2">&quot;array_params&quot;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+
+        <span class="c1"># Get index format and index offset from global parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_array_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_parameters</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_array_params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">array_params</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_enum</span> <span class="o">=</span> <span class="n">enum</span>
+
+        <span class="n">index_format</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_array_params</span><span class="o">.</span><span class="n">index_format</span>
+        <span class="n">index_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_array_params</span><span class="o">.</span><span class="n">index_offset</span>
+        <span class="n">flatten</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_array_params</span><span class="o">.</span><span class="n">flatten</span>
+        <span class="k">if</span> <span class="n">add_offset</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">add_offset</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="n">add_offset</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_offset&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">basename</span><span class="p">)</span> <span class="k">if</span> <span class="n">add_offset</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_offset_str</span> <span class="o">=</span> <span class="n">offset_str</span>
+
+        <span class="k">if</span> <span class="n">offset_str</span><span class="p">:</span>
+            <span class="n">offset_str</span> <span class="o">+=</span> <span class="s2">&quot;+&quot;</span>
+
+        <span class="c1"># If trying to flatten indices, with a rank larger than 1 a shape needs</span>
+        <span class="c1"># to be provided</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">flatten</span> <span class="ow">and</span> <span class="n">shape</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;A &#39;shape&#39; need to be provided to generate flatten indices &quot;</span>
+                <span class="s2">&quot;for index expressions with rank larger than 1.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Create index format</span>
+        <span class="k">if</span> <span class="n">index_format</span> <span class="o">==</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="p">:</span>
+            <span class="n">index_format</span> <span class="o">=</span> <span class="s2">&quot;{{</span><span class="si">{0}</span><span class="s2">}}&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">index_format</span> <span class="o">=</span> <span class="n">index_format</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">index_format</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">orig_indices</span> <span class="o">=</span> <span class="n">indices</span>
+        <span class="c1"># If flatten indices</span>
+        <span class="k">if</span> <span class="n">flatten</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">indices</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="nb">sum</span><span class="p">(</span>
+                    <span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="n">i</span> <span class="o">*</span> <span class="n">j</span><span class="p">,</span> <span class="n">shape</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:],</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="o">*</span> <span class="p">(</span><span class="n">index</span> <span class="o">+</span> <span class="n">index_offset</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">indices</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">index</span> <span class="o">+</span> <span class="n">index_offset</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">)</span>
+
+        <span class="n">index_str</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">offset_str</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">basename</span> <span class="o">+</span> <span class="n">index_format</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">index_str</span><span class="p">)</span>
+
+        <span class="n">ODEObject</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">dependent</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_basename</span> <span class="o">=</span> <span class="n">basename</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_indices</span> <span class="o">=</span> <span class="n">orig_indices</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sym</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span>
+            <span class="n">name</span><span class="p">,</span>
+            <span class="n">real</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">imaginary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">commutative</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">hermitian</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="nb">complex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_shape</span> <span class="o">=</span> <span class="n">shape</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">offset_str</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_offset_str</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">basename</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_basename</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">indices</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_indices</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">enum</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_enum</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">sym</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sym</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shape</span></div>
+
+
+<div class="viewcode-block" id="StateIndexedObject"><a class="viewcode-back" href="../../../gotran.model.html#gotran.StateIndexedObject">[docs]</a><span class="k">class</span> <span class="nc">StateIndexedObject</span><span class="p">(</span><span class="n">IndexedObject</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">basename</span><span class="p">,</span>
+        <span class="n">indices</span><span class="p">,</span>
+        <span class="n">state</span><span class="p">,</span>
+        <span class="n">shape</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">array_params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">add_offset</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">dependent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Create an IndexedExpression with an associated basename</span>
+
+<span class="sd">            Arguments</span>
+<span class="sd">            ---------</span>
+<span class="sd">            basename : str</span>
+<span class="sd">                The basename of the multi index Expression</span>
+<span class="sd">            indices : tuple of ints</span>
+<span class="sd">                The indices</span>
+<span class="sd">            state : State</span>
+<span class="sd">                The state corresponding to the index</span>
+<span class="sd">            shape : tuple (optional)</span>
+<span class="sd">                A tuple with the shape of the indexed object</span>
+<span class="sd">            array_params : dict</span>
+<span class="sd">                Parameters to create the array name for the indexed object</span>
+<span class="sd">            add_offset : bool, str</span>
+<span class="sd">                If True a fixed offset is added to the indices</span>
+<span class="sd">            dependent : ODEObject</span>
+<span class="sd">                If given the count of this IndexedObject will follow as a</span>
+<span class="sd">                fractional count based on the count of the dependent object</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">StateIndexedObject</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">basename</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">array_params</span><span class="p">,</span> <span class="n">add_offset</span><span class="p">,</span> <span class="n">dependent</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">=</span> <span class="n">state</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span></div>
+
+
+<div class="viewcode-block" id="ParameterIndexedObject"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ParameterIndexedObject">[docs]</a><span class="k">class</span> <span class="nc">ParameterIndexedObject</span><span class="p">(</span><span class="n">IndexedObject</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">basename</span><span class="p">,</span>
+        <span class="n">indices</span><span class="p">,</span>
+        <span class="n">parameter</span><span class="p">,</span>
+        <span class="n">shape</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">array_params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">add_offset</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">dependent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Create an IndexedExpression with an associated basename</span>
+
+<span class="sd">            Arguments</span>
+<span class="sd">            ---------</span>
+<span class="sd">            basename : str</span>
+<span class="sd">                The basename of the multi index Expression</span>
+<span class="sd">            indices : tuple of ints</span>
+<span class="sd">                The indices</span>
+<span class="sd">            parameter : Parameter</span>
+<span class="sd">                The state corresponding to the index</span>
+<span class="sd">            shape : tuple (optional)</span>
+<span class="sd">                A tuple with the shape of the indexed object</span>
+<span class="sd">            array_params : dict</span>
+<span class="sd">                Parameters to create the array name for the indexed object</span>
+<span class="sd">            add_offset : bool, str</span>
+<span class="sd">                If True a fixed offset is added to the indices</span>
+<span class="sd">            dependent : ODEObject</span>
+<span class="sd">                If given the count of this IndexedObject will follow as a</span>
+<span class="sd">                fractional count based on the count of the dependent object</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ParameterIndexedObject</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">basename</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">array_params</span><span class="p">,</span> <span class="n">add_offset</span><span class="p">,</span> <span class="n">dependent</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parameter</span> <span class="o">=</span> <span class="n">parameter</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameter</span></div>
+
+
+<span class="k">class</span> <span class="nc">Argument</span><span class="p">(</span><span class="n">ODEValueObject</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    class for an arbitrary argument used to add arguments to CodeComponents</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a Parameter with an associated initial value</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        name : str</span>
+<span class="sd">            The name of the argument</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Call super class</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Argument</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Time"><a class="viewcode-back" href="../../../gotran.model.html#gotran.Time">[docs]</a><span class="k">class</span> <span class="nc">Time</span><span class="p">(</span><span class="n">ODEValueObject</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Specialization for a Time class</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;ms&quot;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Time</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">ScalarParam</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">))</span>
+
+        <span class="c1"># Add previous value symbol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sym_0</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span>
+            <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_0&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">),</span>
+            <span class="n">real</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">imaginary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">commutative</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">hermitian</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="nb">complex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="Time.update_unit"><a class="viewcode-back" href="../../../gotran.model.html#gotran.Time.update_unit">[docs]</a>    <span class="k">def</span> <span class="nf">update_unit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update unit. For example if time has unit</span>
+<span class="sd">        seconds in stead of milliseconds</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">unit</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ms&quot;</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_param</span> <span class="o">=</span> <span class="n">ScalarParam</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">info</span><span class="p">(</span><span class="s2">&quot;Unknow time unit </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">unit</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="Dt"><a class="viewcode-back" href="../../../gotran.model.html#gotran.Dt">[docs]</a><span class="k">class</span> <span class="nc">Dt</span><span class="p">(</span><span class="n">ODEValueObject</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Specialization for a time step class</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;ms&quot;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Dt</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">ScalarParam</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">))</span>
+
+<div class="viewcode-block" id="Dt.update_unit"><a class="viewcode-back" href="../../../gotran.model.html#gotran.Dt.update_unit">[docs]</a>    <span class="k">def</span> <span class="nf">update_unit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update unit. For example if time has unit</span>
+<span class="sd">        seconds in stead of milliseconds</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">unit</span> <span class="o">==</span> <span class="s2">&quot;ms&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_param</span> <span class="o">=</span> <span class="n">ScalarParam</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="s2">&quot;s&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_param</span> <span class="o">=</span> <span class="n">ScalarParam</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">info</span><span class="p">(</span><span class="s2">&quot;Unknow time unit </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">unit</span><span class="p">))</span></div></div>
+
+
+<span class="c1"># Tuple with single ODE Objects, for type checking</span>
+<span class="n">SingleODEObjects</span> <span class="o">=</span> <span class="p">(</span><span class="n">State</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">Time</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

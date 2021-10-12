@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gotran.codegeneration.solvercomponents &mdash; gotran 2019.0.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> gotran
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Programmers reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gotran.html">gotran package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">gotran</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>gotran.codegeneration.solvercomponents</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gotran.codegeneration.solvercomponents</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (C) 2013 Johan Hake</span>
+<span class="c1">#</span>
+<span class="c1"># This file is part of Gotran.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU Lesser General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1"># (at your option) any later version.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the</span>
+<span class="c1"># GNU Lesser General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1"># You should have received a copy of the GNU Lesser General Public License</span>
+<span class="c1"># along with Gotran. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;ExplicitEuler&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;explicit_euler_solver&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;RushLarsen&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;rush_larsen_solver&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GeneralizedRushLarsen&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;generalized_rush_larsen_solver&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;HybridGeneralizedRushLarsen&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hybrid_generalized_rush_larsen_solver&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;SimplifiedImplicitEuler&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;simplified_implicit_euler_solver&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get_solver_fn&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="c1"># System imports</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="c1"># ModelParameters imports</span>
+<span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">sp</span><span class="p">,</span> <span class="n">Conditional</span>
+<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">sympycode</span>
+
+<span class="c1"># Local imports</span>
+<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">error</span><span class="p">,</span>
+    <span class="n">info</span><span class="p">,</span>
+    <span class="n">debug</span><span class="p">,</span>
+    <span class="n">check_arg</span><span class="p">,</span>
+    <span class="n">check_kwarg</span><span class="p">,</span>
+    <span class="n">scalars</span><span class="p">,</span>
+    <span class="n">Timer</span><span class="p">,</span>
+    <span class="n">warning</span><span class="p">,</span>
+    <span class="n">tuplewrap</span><span class="p">,</span>
+    <span class="n">parameters</span><span class="p">,</span>
+    <span class="n">warning</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="n">listwrap</span>
+<span class="kn">from</span> <span class="nn">gotran.model.utils</span> <span class="kn">import</span> <span class="n">ode_primitives</span>
+<span class="kn">from</span> <span class="nn">gotran.model.odeobjects</span> <span class="kn">import</span> <span class="n">State</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">IndexedObject</span><span class="p">,</span> <span class="n">Comment</span>
+<span class="kn">from</span> <span class="nn">gotran.model.expressions</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">gotran.model.ode</span> <span class="kn">import</span> <span class="n">ODE</span>
+<span class="kn">from</span> <span class="nn">gotran.codegeneration.codecomponent</span> <span class="kn">import</span> <span class="n">CodeComponent</span>
+
+
+<div class="viewcode-block" id="explicit_euler_solver"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.solvercomponents.explicit_euler_solver">[docs]</a><span class="k">def</span> <span class="nf">explicit_euler_solver</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_explicit_euler&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return an ODEComponent holding expressions for the explicit Euler method</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    ode : gotran.ODE</span>
+<span class="sd">        The ODE for which the jacobian expressions should be computed</span>
+<span class="sd">    function_name : str</span>
+<span class="sd">        The name of the function which should be generated</span>
+<span class="sd">    params : dict</span>
+<span class="sd">        Parameters determining how the code should be generated</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ode</span><span class="o">.</span><span class="n">is_finalized</span><span class="p">:</span>
+        <span class="n">error</span><span class="p">(</span><span class="s2">&quot;The ODE is not finalized&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ExplicitEuler</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="n">function_name</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="rush_larsen_solver"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.solvercomponents.rush_larsen_solver">[docs]</a><span class="k">def</span> <span class="nf">rush_larsen_solver</span><span class="p">(</span>
+    <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_rush_larsen&quot;</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return an ODEComponent holding expressions for the Rush-Larsen method</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    ode : gotran.ODE</span>
+<span class="sd">        The ODE for which the jacobian expressions should be computed</span>
+<span class="sd">    function_name : str</span>
+<span class="sd">        The name of the function which should be generated</span>
+<span class="sd">    delta : float</span>
+<span class="sd">        Value to safeguard the evaluation of the Rush-Larsen step.</span>
+<span class="sd">    params : dict</span>
+<span class="sd">        Parameters determining how the code should be generated</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ode</span><span class="o">.</span><span class="n">is_finalized</span><span class="p">:</span>
+        <span class="n">error</span><span class="p">(</span><span class="s2">&quot;The ODE is not finalized&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">RushLarsen</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="n">function_name</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="n">delta</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="generalized_rush_larsen_solver"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.solvercomponents.generalized_rush_larsen_solver">[docs]</a><span class="k">def</span> <span class="nf">generalized_rush_larsen_solver</span><span class="p">(</span>
+    <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_generalized_rush_larsen&quot;</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return an ODEComponent holding expressions for the generalized Rush-Larsen method</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    ode : gotran.ODE</span>
+<span class="sd">        The ODE for which the jacobian expressions should be computed</span>
+<span class="sd">    function_name : str</span>
+<span class="sd">        The name of the function which should be generated</span>
+<span class="sd">    delta : float</span>
+<span class="sd">        Value to safeguard the evaluation of the Rush-Larsen step.</span>
+<span class="sd">    params : dict</span>
+<span class="sd">        Parameters determining how the code should be generated</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ode</span><span class="o">.</span><span class="n">is_finalized</span><span class="p">:</span>
+        <span class="n">error</span><span class="p">(</span><span class="s2">&quot;The ODE is not finalized&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">GeneralizedRushLarsen</span><span class="p">(</span>
+        <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="n">function_name</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="n">delta</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="hybrid_generalized_rush_larsen_solver"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.solvercomponents.hybrid_generalized_rush_larsen_solver">[docs]</a><span class="k">def</span> <span class="nf">hybrid_generalized_rush_larsen_solver</span><span class="p">(</span>
+    <span class="n">ode</span><span class="p">,</span>
+    <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_hybrid_generalized_rush_larsen&quot;</span><span class="p">,</span>
+    <span class="n">delta</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span>
+    <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">stiff_states</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return an ODEComponent holding expressions for the generalized Rush-Larsen method</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    ode : gotran.ODE</span>
+<span class="sd">        The ODE for which the jacobian expressions should be computed</span>
+<span class="sd">    function_name : str</span>
+<span class="sd">        The name of the function which should be generated</span>
+<span class="sd">    delta : float</span>
+<span class="sd">        Value to safeguard the evaluation of the Rush-Larsen step.</span>
+<span class="sd">    params : dict</span>
+<span class="sd">        Parameters determining how the code should be generated</span>
+<span class="sd">    stiff_state_variables : list of str</span>
+<span class="sd">        States that are stiff and should be solved with GRL1. The remaining states are solved with explicit euler</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ode</span><span class="o">.</span><span class="n">is_finalized</span><span class="p">:</span>
+        <span class="n">error</span><span class="p">(</span><span class="s2">&quot;The ODE is not finalized&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">HybridGeneralizedRushLarsen</span><span class="p">(</span>
+        <span class="n">ode</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="o">=</span><span class="n">function_name</span><span class="p">,</span>
+        <span class="n">delta</span><span class="o">=</span><span class="n">delta</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+        <span class="n">stiff_state_variables</span><span class="o">=</span><span class="n">stiff_states</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="simplified_implicit_euler_solver"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.solvercomponents.simplified_implicit_euler_solver">[docs]</a><span class="k">def</span> <span class="nf">simplified_implicit_euler_solver</span><span class="p">(</span>
+    <span class="n">ode</span><span class="p">,</span>
+    <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_simplified_implicit_euler&quot;</span><span class="p">,</span>
+    <span class="n">numeric_jacobian</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return an ODEComponent holding expressions for the simplified</span>
+<span class="sd">    implicit Euler method</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    ode : gotran.ODE</span>
+<span class="sd">        The ODE for which the jacobian expressions should be computed</span>
+<span class="sd">    function_name : str</span>
+<span class="sd">        The name of the function which should be generated</span>
+<span class="sd">    numeric_jacobian : bool</span>
+<span class="sd">        If True use numeric calculated diagonal jacobian.</span>
+<span class="sd">    params : dict</span>
+<span class="sd">        Parameters determining how the code should be generated</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ode</span><span class="o">.</span><span class="n">is_finalized</span><span class="p">:</span>
+        <span class="n">error</span><span class="p">(</span><span class="s2">&quot;The ODE is not finalized&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">SimplifiedImplicitEuler</span><span class="p">(</span>
+        <span class="n">ode</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="o">=</span><span class="n">function_name</span><span class="p">,</span>
+        <span class="n">numeric_jacobian</span><span class="o">=</span><span class="n">numeric_jacobian</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_solver_fn"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.solvercomponents.get_solver_fn">[docs]</a><span class="k">def</span> <span class="nf">get_solver_fn</span><span class="p">(</span><span class="n">solver_type</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;explicit_euler&quot;</span><span class="p">:</span> <span class="n">explicit_euler_solver</span><span class="p">,</span>
+        <span class="s2">&quot;rush_larsen&quot;</span><span class="p">:</span> <span class="n">rush_larsen_solver</span><span class="p">,</span>
+        <span class="s2">&quot;generalized_rush_larsen&quot;</span><span class="p">:</span> <span class="n">generalized_rush_larsen_solver</span><span class="p">,</span>
+        <span class="s2">&quot;hybrid_generalized_rush_larsen&quot;</span><span class="p">:</span> <span class="n">hybrid_generalized_rush_larsen_solver</span><span class="p">,</span>
+        <span class="s2">&quot;simplified_implicit_euler&quot;</span><span class="p">:</span> <span class="n">simplified_implicit_euler_solver</span><span class="p">,</span>
+    <span class="p">}[</span><span class="n">solver_type</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="ExplicitEuler"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.solvercomponents.ExplicitEuler">[docs]</a><span class="k">class</span> <span class="nc">ExplicitEuler</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An ODEComponent which compute one step of the explicit Euler scheme</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_explicit_euler&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create an ExplicitEuler CodeComponent</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        ode : gotran.ODE</span>
+<span class="sd">            The parent component of this ODEComponent</span>
+<span class="sd">        function_name : str</span>
+<span class="sd">            The name of the function which should be generated</span>
+<span class="sd">        params : dict</span>
+<span class="sd">            Parameters determining how the code should be generated</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">ode</span><span class="o">.</span><span class="n">is_dae</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Cannot generate an explicit Euler forward step for a DAE.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Call base class using empty result_expressions</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;Compute a forward step using the explicit Euler scheme to the &quot;</span>
+            <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ExplicitEuler</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="s2">&quot;ExplicitEuler&quot;</span><span class="p">,</span>
+            <span class="n">ode</span><span class="p">,</span>
+            <span class="n">function_name</span><span class="p">,</span>
+            <span class="n">descr</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+            <span class="n">additional_arguments</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;dt&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Recount the expressions if representation of states are &quot;array&quot; as</span>
+        <span class="c1"># then the method is not full explicit</span>
+        <span class="n">recount</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">representation</span> <span class="o">!=</span> <span class="s2">&quot;array&quot;</span>
+
+        <span class="c1"># Gather state expressions and states</span>
+        <span class="n">state_exprs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">state_expressions</span>
+        <span class="n">states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">full_states</span>
+        <span class="n">result_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">array_name</span>
+        <span class="n">state_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">),)</span>
+
+        <span class="c1"># Get time step and start creating the update algorithm</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span><span class="p">:</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_offset&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result_name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="n">dt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">_dt</span><span class="o">.</span><span class="n">sym</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">expr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">state_exprs</span><span class="p">):</span>
+            <span class="n">dependent</span> <span class="o">=</span> <span class="n">expr</span> <span class="k">if</span> <span class="n">recount</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
+                <span class="n">result_name</span><span class="p">,</span>
+                <span class="p">(</span><span class="n">i</span><span class="p">,),</span>
+                <span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">expr</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span>
+                <span class="n">offset_str</span><span class="p">,</span>
+                <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span><span class="p">,</span>
+                <span class="n">enum</span><span class="o">=</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Call recreate body with the solver expressions as the result</span>
+        <span class="c1"># expressions</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">indexed_objects</span><span class="p">(</span><span class="n">result_name</span><span class="p">)}</span>
+        <span class="n">results</span><span class="p">,</span> <span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_body_from_results</span><span class="p">(</span><span class="o">**</span><span class="n">results</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recreate_body</span><span class="p">(</span><span class="n">body_expressions</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">)</span></div>
+
+<span class="k">def</span> <span class="nf">fraction_numerator_is_nonzero</span><span class="p">(</span><span class="n">expr</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Perform a very cheap check to detect if a fraction is definitely non-zero.&quot;&quot;&quot;</span>
+    <span class="n">expr_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">expr_type</span> <span class="o">==</span> <span class="n">sp</span><span class="o">.</span><span class="n">Pow</span><span class="p">:</span>
+        <span class="c1"># check if the expression is on the form a**-1</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">args</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="ow">is</span> <span class="n">sp</span><span class="o">.</span><span class="n">numbers</span><span class="o">.</span><span class="n">NegativeOne</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># we won&#39;t do any further checks</span>
+            <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">elif</span> <span class="n">expr_type</span> <span class="o">==</span> <span class="n">sp</span><span class="o">.</span><span class="n">Mul</span><span class="p">:</span>
+        <span class="c1"># check if all factors are non-zero</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">args</span>
+        <span class="n">certainly_nonzero_args</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">potentially_nonzero_args</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">free_symbols</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">e</span><span class="o">.</span><span class="n">is_nonzero</span><span class="p">:</span>
+                <span class="n">certainly_nonzero_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">potentially_nonzero_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">potentially_nonzero_args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># all factors are certainly nonzero</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="c1"># check all potentially non-zero factors</span>
+        <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">potentially_nonzero_args</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">fraction_numerator_is_nonzero</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="RushLarsen"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.solvercomponents.RushLarsen">[docs]</a><span class="k">class</span> <span class="nc">RushLarsen</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An ODEComponent which compute one step of the Rush-Larsen scheme</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_rush_larsen&quot;</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a RushLarsen Solver component</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        ode : gotran.ODE</span>
+<span class="sd">            The parent component of this ODEComponent</span>
+<span class="sd">        function_name : str</span>
+<span class="sd">            The name of the function which should be generated</span>
+<span class="sd">        delta : float</span>
+<span class="sd">            Value to safeguard the evaluation of the Rush-Larsen step.</span>
+<span class="sd">        params : dict</span>
+<span class="sd">            Parameters determining how the code should be generated</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Create RushLarsen expressions&quot;</span><span class="p">)</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">ode</span><span class="o">.</span><span class="n">is_dae</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Cannot generate a Rush-Larsen forward step for a DAE.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Call base class using empty result_expressions</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;Compute a forward step using the Rush-Larsen scheme to the &quot;</span>
+            <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RushLarsen</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="s2">&quot;RushLarsen&quot;</span><span class="p">,</span>
+            <span class="n">ode</span><span class="p">,</span>
+            <span class="n">function_name</span><span class="p">,</span>
+            <span class="n">descr</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+            <span class="n">additional_arguments</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;dt&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Recount the expressions if representation of states are &quot;array&quot; as</span>
+        <span class="c1"># then the method is not full explcit</span>
+        <span class="n">recount</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">representation</span> <span class="o">!=</span> <span class="s2">&quot;array&quot;</span>
+
+        <span class="c1"># Gather state expressions and states</span>
+        <span class="n">state_exprs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">state_expressions</span>
+        <span class="n">states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">full_states</span>
+
+        <span class="n">result_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">array_name</span>
+        <span class="n">state_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">),)</span>
+
+        <span class="c1"># Get time step and start creating the update algorithm</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span><span class="p">:</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_offset&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result_name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="n">might_take_time</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">10</span>
+
+        <span class="k">if</span> <span class="n">might_take_time</span><span class="p">:</span>
+            <span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Calculating derivatives of </span><span class="si">{0}</span><span class="s2">. Might take some time...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">ode</span><span class="o">.</span><span class="n">name</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+        <span class="n">dt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">_dt</span><span class="o">.</span><span class="n">sym</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">expr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">state_exprs</span><span class="p">):</span>
+
+            <span class="n">dependent</span> <span class="o">=</span> <span class="n">expr</span> <span class="k">if</span> <span class="n">recount</span> <span class="k">else</span> <span class="kc">None</span>
+
+            <span class="c1"># Diagonal jacobian value</span>
+            <span class="n">time_diff</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Differentiate state_expressions for RushLarsen&quot;</span><span class="p">)</span>
+            <span class="n">expr_diff</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span><span class="p">)</span>
+            <span class="k">del</span> <span class="n">time_diff</span>
+
+            <span class="c1"># print expr.state.sym, expr_diff, expr_diff.args</span>
+            <span class="k">if</span> <span class="n">expr_diff</span> <span class="ow">and</span> <span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">expr_diff</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
+
+                <span class="n">linearized_name</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_linearized&quot;</span>
+                <span class="n">linearized</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_intermediate</span><span class="p">(</span>
+                    <span class="n">linearized_name</span><span class="p">,</span> <span class="n">expr_diff</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span>
+                <span class="p">)</span>
+
+                <span class="n">need_zero_div_check</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">fraction_numerator_is_nonzero</span><span class="p">(</span><span class="n">expr_diff</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">need_zero_div_check</span><span class="p">:</span>
+                    <span class="n">debug</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> cannot be zero. Skipping zero division check&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">linearized_name</span><span class="p">))</span>
+
+                <span class="n">RL_term</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">sym</span> <span class="o">/</span> <span class="n">linearized</span> <span class="o">*</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">linearized</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">need_zero_div_check</span><span class="p">:</span>
+                    <span class="n">RL_term</span> <span class="o">=</span> <span class="n">Conditional</span><span class="p">(</span>
+                        <span class="nb">abs</span><span class="p">(</span><span class="n">linearized</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">delta</span><span class="p">,</span>
+                        <span class="n">RL_term</span><span class="p">,</span>
+                        <span class="n">dt</span> <span class="o">*</span> <span class="n">expr</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                <span class="c1"># Solve &quot;exact&quot; using exp</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
+                    <span class="n">result_name</span><span class="p">,</span>
+                    <span class="p">(</span><span class="n">i</span><span class="p">,),</span>
+                    <span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span> <span class="o">+</span> <span class="n">RL_term</span><span class="p">,</span>
+                    <span class="n">offset_str</span><span class="p">,</span>
+                    <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span><span class="p">,</span>
+                    <span class="n">enum</span><span class="o">=</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+
+                <span class="c1"># Explicit Euler step</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
+                    <span class="n">result_name</span><span class="p">,</span>
+                    <span class="p">(</span><span class="n">i</span><span class="p">,),</span>
+                    <span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">expr</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span>
+                    <span class="n">offset_str</span><span class="p">,</span>
+                    <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span><span class="p">,</span>
+                    <span class="n">enum</span><span class="o">=</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">might_take_time</span><span class="p">:</span>
+            <span class="n">info</span><span class="p">(</span><span class="s2">&quot; done&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Call recreate body with the solver expressions as the result</span>
+        <span class="c1"># expressions</span>
+        <span class="k">del</span> <span class="n">timer</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">indexed_objects</span><span class="p">(</span><span class="n">result_name</span><span class="p">)}</span>
+        <span class="n">results</span><span class="p">,</span> <span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_body_from_results</span><span class="p">(</span><span class="o">**</span><span class="n">results</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recreate_body</span><span class="p">(</span><span class="n">body_expressions</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">)</span></div>
+
+
+<span class="k">class</span> <span class="nc">RushLarsenOneStep</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An ODEComponent which compute one step of the Rush-Larsen scheme</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_rush_larsen&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a RushLarsen Solver component</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        ode : gotran.ODE</span>
+<span class="sd">            The parent component of this ODEComponent</span>
+<span class="sd">        function_name : str</span>
+<span class="sd">            The name of the function which should be generated</span>
+<span class="sd">        params : dict</span>
+<span class="sd">            Parameters determining how the code should be generated</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">ode</span><span class="o">.</span><span class="n">is_dae</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Cannot generate a Rush-Larsen forward step for a DAE.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Call base class using empty result_expressions</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;Compute a forward step using the Rush-Larsen scheme to the &quot;</span>
+            <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">state_name</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">array_name</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RushLarsen</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="s2">&quot;RushLarsen&quot;</span><span class="p">,</span>
+            <span class="n">ode</span><span class="p">,</span>
+            <span class="n">function_name</span><span class="p">,</span>
+            <span class="n">descr</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+            <span class="n">additional_arguments</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;dt&quot;</span><span class="p">,</span> <span class="n">state_name</span> <span class="o">+</span> <span class="s2">&quot;_0&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Recount the expressions if representation of states are &quot;array&quot; as</span>
+        <span class="c1"># then the method is not full explcit</span>
+        <span class="n">recount</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">representation</span> <span class="o">!=</span> <span class="s2">&quot;array&quot;</span>
+
+        <span class="c1"># Gather state expressions and states</span>
+        <span class="n">state_exprs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">state_expressions</span>
+        <span class="n">states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">full_states</span>
+
+        <span class="n">result_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">array_name</span> <span class="o">+</span> <span class="s2">&quot;_1&quot;</span>
+        <span class="n">previous_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">array_name</span> <span class="o">+</span> <span class="s2">&quot;_0&quot;</span>
+        <span class="n">state_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">),)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">previous_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">),)</span>
+
+        <span class="c1"># Get time step and start creating the update algorithm</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span><span class="p">:</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_offset&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result_name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="n">dt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">_dt</span><span class="o">.</span><span class="n">sym</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">expr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">state_exprs</span><span class="p">):</span>
+
+            <span class="n">prev</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_object</span><span class="p">(</span><span class="n">previous_name</span><span class="p">,</span> <span class="p">(</span><span class="n">i</span><span class="p">,),</span> <span class="n">offset_str</span><span class="p">)</span>
+
+            <span class="n">dependent</span> <span class="o">=</span> <span class="n">expr</span> <span class="k">if</span> <span class="n">recount</span> <span class="k">else</span> <span class="kc">None</span>
+
+            <span class="c1"># Diagonal jacobian value</span>
+            <span class="n">expr_diff</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">expr_diff</span> <span class="ow">and</span> <span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">expr_diff</span><span class="p">:</span>
+
+                <span class="n">linearized</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_intermediate</span><span class="p">(</span>
+                    <span class="n">expr</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_linearized&quot;</span><span class="p">,</span> <span class="n">expr_diff</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span>
+                <span class="p">)</span>
+
+                <span class="c1"># Solve &quot;exact&quot; using exp</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
+                    <span class="n">result_name</span><span class="p">,</span>
+                    <span class="p">(</span><span class="n">i</span><span class="p">,),</span>
+                    <span class="n">prev</span> <span class="o">+</span> <span class="n">expr</span><span class="o">.</span><span class="n">sym</span> <span class="o">/</span> <span class="n">linearized</span> <span class="o">*</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">linearized</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span>
+                    <span class="n">offset_str</span><span class="p">,</span>
+                    <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span><span class="p">,</span>
+                    <span class="n">enum</span><span class="o">=</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+
+                <span class="c1"># Explicit Euler step</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
+                    <span class="n">result_name</span><span class="p">,</span>
+                    <span class="p">(</span><span class="n">i</span><span class="p">,),</span>
+                    <span class="n">prev</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">expr</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span>
+                    <span class="n">offset_str</span><span class="p">,</span>
+                    <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span><span class="p">,</span>
+                    <span class="n">enum</span><span class="o">=</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Call recreate body with the solver expressions as the result</span>
+        <span class="c1"># expressions</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">indexed_objects</span><span class="p">(</span><span class="n">result_name</span><span class="p">)}</span>
+        <span class="n">results</span><span class="p">,</span> <span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_body_from_results</span><span class="p">(</span><span class="o">**</span><span class="n">results</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recreate_body</span><span class="p">(</span><span class="n">body_expressions</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="GeneralizedRushLarsen"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.solvercomponents.GeneralizedRushLarsen">[docs]</a><span class="k">class</span> <span class="nc">GeneralizedRushLarsen</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An ODEComponent which compute one step of the Generalized Rush-Larsen (GRL1) scheme</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ode</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_generalized_rush_larsen&quot;</span><span class="p">,</span>
+        <span class="n">delta</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a GeneralizedRushLarsen Solver component</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        ode : gotran.ODE</span>
+<span class="sd">            The parent component of this ODEComponent</span>
+<span class="sd">        function_name : str</span>
+<span class="sd">            The name of the function which should be generated</span>
+<span class="sd">        delta : float</span>
+<span class="sd">            Value to safeguard the evaluation of the Rush-Larsen step.</span>
+<span class="sd">        params : dict</span>
+<span class="sd">            Parameters determining how the code should be generated</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">)</span>
+
+        <span class="c1"># Call base class using empty result_expressions</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;Compute a forward step using the generalised Rush-Larsen (GRL1) scheme to the &quot;</span>
+            <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">GeneralizedRushLarsen</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="s2">&quot;GeneralizedRushLarsen&quot;</span><span class="p">,</span>
+            <span class="n">ode</span><span class="p">,</span>
+            <span class="n">function_name</span><span class="p">,</span>
+            <span class="n">descr</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+            <span class="n">additional_arguments</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;dt&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Recount the expressions if representation of states are &quot;array&quot; as</span>
+        <span class="c1"># then the method is not full explcit</span>
+        <span class="n">recount</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">representation</span> <span class="o">!=</span> <span class="s2">&quot;array&quot;</span>
+
+        <span class="c1"># Gather state expressions and states</span>
+        <span class="n">state_exprs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">state_expressions</span>
+        <span class="n">states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">full_states</span>
+        <span class="n">result_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">array_name</span>
+        <span class="n">state_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">),)</span>
+
+        <span class="c1"># Get time step and start creating the update algorithm</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span><span class="p">:</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_offset&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result_name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="n">dt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">_dt</span><span class="o">.</span><span class="n">sym</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">expr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">state_exprs</span><span class="p">):</span>
+
+            <span class="n">expr_diff</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span><span class="p">)</span>
+            <span class="n">dependent</span> <span class="o">=</span> <span class="n">expr</span> <span class="k">if</span> <span class="n">recount</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">expr_diff</span><span class="o">.</span><span class="n">is_zero</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
+                    <span class="n">result_name</span><span class="p">,</span>
+                    <span class="p">(</span><span class="n">i</span><span class="p">,),</span>
+                    <span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">expr</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span>
+                    <span class="n">offset_str</span><span class="p">,</span>
+                    <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span><span class="p">,</span>
+                    <span class="n">enum</span><span class="o">=</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="n">linearized_name</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_linearized&quot;</span>
+            <span class="n">linearized</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_intermediate</span><span class="p">(</span>
+                <span class="n">linearized_name</span><span class="p">,</span> <span class="n">expr_diff</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span>
+            <span class="p">)</span>
+
+            <span class="n">need_zero_div_check</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">fraction_numerator_is_nonzero</span><span class="p">(</span><span class="n">expr_diff</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">need_zero_div_check</span><span class="p">:</span>
+                <span class="n">debug</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> cannot be zero. Skipping zero division check&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">linearized_name</span><span class="p">))</span>
+
+            <span class="n">RL_term</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">sym</span> <span class="o">/</span> <span class="n">linearized</span> <span class="o">*</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">linearized</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">need_zero_div_check</span><span class="p">:</span>
+                <span class="n">RL_term</span> <span class="o">=</span> <span class="n">Conditional</span><span class="p">(</span>
+                    <span class="nb">abs</span><span class="p">(</span><span class="n">linearized</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">delta</span><span class="p">,</span>
+                    <span class="n">RL_term</span><span class="p">,</span>
+                    <span class="n">dt</span> <span class="o">*</span> <span class="n">expr</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Solve &quot;exact&quot; using exp</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
+                <span class="n">result_name</span><span class="p">,</span>
+                <span class="p">(</span><span class="n">i</span><span class="p">,),</span>
+                <span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span> <span class="o">+</span> <span class="n">RL_term</span><span class="p">,</span>
+                <span class="n">offset_str</span><span class="p">,</span>
+                <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span><span class="p">,</span>
+                <span class="n">enum</span><span class="o">=</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Call recreate body with the solver expressions as the result</span>
+        <span class="c1"># expressions</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">indexed_objects</span><span class="p">(</span><span class="n">result_name</span><span class="p">)}</span>
+        <span class="n">results</span><span class="p">,</span> <span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_body_from_results</span><span class="p">(</span><span class="o">**</span><span class="n">results</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recreate_body</span><span class="p">(</span><span class="n">body_expressions</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="HybridGeneralizedRushLarsen"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.solvercomponents.HybridGeneralizedRushLarsen">[docs]</a><span class="k">class</span> <span class="nc">HybridGeneralizedRushLarsen</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An ODEComponent which compute one step of the hybrid explicit Euler / Generalized Rush-Larsen (GRL1) scheme</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ode</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_hybrid_generalized_rush_larsen&quot;</span><span class="p">,</span>
+        <span class="n">delta</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">stiff_state_variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a HybridGeneralizedRushLarsen Solver component</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        ode : gotran.ODE</span>
+<span class="sd">            The parent component of this ODEComponent</span>
+<span class="sd">        function_name : str</span>
+<span class="sd">            The name of the function which should be generated</span>
+<span class="sd">        delta : float</span>
+<span class="sd">            Value to safeguard the evaluation of the Rush-Larsen step.</span>
+<span class="sd">        params : dict</span>
+<span class="sd">            Parameters determining how the code should be generated</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">)</span>
+
+        <span class="c1"># Call base class using empty result_expressions</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;Compute a forward step using the FE / GRL1 scheme to the &quot;</span>
+            <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">HybridGeneralizedRushLarsen</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="s2">&quot;HybridGeneralizedRushLarsen&quot;</span><span class="p">,</span>
+            <span class="n">ode</span><span class="p">,</span>
+            <span class="n">function_name</span><span class="p">,</span>
+            <span class="n">descr</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+            <span class="n">additional_arguments</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;dt&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="n">state_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">full_states</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">stiff_state_variables</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">stiff_state_variables</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">stiff_state_variables</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="n">stiff_state_variables</span> <span class="o">=</span> <span class="n">stiff_state_variables</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">stiff_state_variables</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">s</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">assert</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">state_names</span><span class="p">,</span> <span class="s2">&quot;Unknown state &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+
+        <span class="c1"># Recount the expressions if representation of states are &quot;array&quot; as</span>
+        <span class="c1"># then the method is not full explcit</span>
+        <span class="n">recount</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">representation</span> <span class="o">!=</span> <span class="s2">&quot;array&quot;</span>
+
+        <span class="c1"># Gather state expressions and states</span>
+        <span class="n">state_exprs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">state_expressions</span>
+        <span class="n">states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">full_states</span>
+        <span class="n">result_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">array_name</span>
+        <span class="n">state_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">),)</span>
+
+        <span class="c1"># Get time step and start creating the update algorithm</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span><span class="p">:</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_offset&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result_name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="n">dt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">_dt</span><span class="o">.</span><span class="n">sym</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">expr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">state_exprs</span><span class="p">):</span>
+            <span class="n">state_is_stiff</span> <span class="o">=</span> <span class="n">state_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">in</span> <span class="n">stiff_state_variables</span>
+
+            <span class="n">expr_diff</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span><span class="p">)</span>
+            <span class="n">dependent</span> <span class="o">=</span> <span class="n">expr</span> <span class="k">if</span> <span class="n">recount</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">state_is_stiff</span> <span class="ow">or</span> <span class="n">expr_diff</span><span class="o">.</span><span class="n">is_zero</span><span class="p">:</span>
+                <span class="c1"># FE scheme</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
+                    <span class="n">result_name</span><span class="p">,</span>
+                    <span class="p">(</span><span class="n">i</span><span class="p">,),</span>
+                    <span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">expr</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span>
+                    <span class="n">offset_str</span><span class="p">,</span>
+                    <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span><span class="p">,</span>
+                    <span class="n">enum</span><span class="o">=</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="n">linearized_name</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_linearized&quot;</span>
+            <span class="n">linearized</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_intermediate</span><span class="p">(</span>
+                <span class="n">linearized_name</span><span class="p">,</span> <span class="n">expr_diff</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span>
+            <span class="p">)</span>
+
+            <span class="n">need_zero_div_check</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">fraction_numerator_is_nonzero</span><span class="p">(</span><span class="n">expr_diff</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">need_zero_div_check</span><span class="p">:</span>
+                <span class="n">debug</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> cannot be zero. Skipping zero division check&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">linearized_name</span><span class="p">))</span>
+
+            <span class="n">RL_term</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">sym</span> <span class="o">/</span> <span class="n">linearized</span> <span class="o">*</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">linearized</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">need_zero_div_check</span><span class="p">:</span>
+                <span class="n">RL_term</span> <span class="o">=</span> <span class="n">Conditional</span><span class="p">(</span>
+                    <span class="nb">abs</span><span class="p">(</span><span class="n">linearized</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">delta</span><span class="p">,</span>
+                    <span class="n">RL_term</span><span class="p">,</span>
+                    <span class="n">dt</span> <span class="o">*</span> <span class="n">expr</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Solve &quot;exact&quot; using exp</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
+                <span class="n">result_name</span><span class="p">,</span>
+                <span class="p">(</span><span class="n">i</span><span class="p">,),</span>
+                <span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span> <span class="o">+</span> <span class="n">RL_term</span><span class="p">,</span>
+                <span class="n">offset_str</span><span class="p">,</span>
+                <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span><span class="p">,</span>
+                <span class="n">enum</span><span class="o">=</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Call recreate body with the solver expressions as the result</span>
+        <span class="c1"># expressions</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">indexed_objects</span><span class="p">(</span><span class="n">result_name</span><span class="p">)}</span>
+        <span class="n">results</span><span class="p">,</span> <span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_body_from_results</span><span class="p">(</span><span class="o">**</span><span class="n">results</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recreate_body</span><span class="p">(</span><span class="n">body_expressions</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SimplifiedImplicitEuler"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.solvercomponents.SimplifiedImplicitEuler">[docs]</a><span class="k">class</span> <span class="nc">SimplifiedImplicitEuler</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An ODEComponent which compute one step of a simplified Implicit Euler</span>
+<span class="sd">    scheme</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ode</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_simplified_implicit_euler&quot;</span><span class="p">,</span>
+        <span class="n">numeric_jacobian</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a SimplifiedImplicitEuler CodeComponent</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        ode : gotran.ODE</span>
+<span class="sd">            The parent component of this ODEComponent</span>
+<span class="sd">        function_name : str</span>
+<span class="sd">            The name of the function which should be generated</span>
+<span class="sd">        numeric_jacobian : bool</span>
+<span class="sd">            If True use numeric calculated diagonal jacobian.</span>
+<span class="sd">        params : dict</span>
+<span class="sd">            Parameters determining how the code should be generated</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">ode</span><span class="o">.</span><span class="n">is_dae</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Cannot generate an explicit Euler forward step for a DAE.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Call base class using empty result_expressions</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;Compute a forward step using the simplified implicit Euler&quot;</span>
+            <span class="s2">&quot;scheme to the </span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SimplifiedImplicitEuler</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="s2">&quot;SimplifiedImplicitEuler&quot;</span><span class="p">,</span>
+            <span class="n">ode</span><span class="p">,</span>
+            <span class="n">function_name</span><span class="p">,</span>
+            <span class="n">descr</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+            <span class="n">additional_arguments</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;dt&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Recount the expressions if representation of states are &quot;array&quot; as</span>
+        <span class="c1"># then the method is not full explcit</span>
+        <span class="n">recount</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">representation</span> <span class="o">!=</span> <span class="s2">&quot;array&quot;</span>
+
+        <span class="c1"># Gather state expressions and states</span>
+        <span class="n">state_exprs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">state_expressions</span>
+        <span class="n">states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">full_states</span>
+
+        <span class="n">result_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">array_name</span>
+        <span class="n">state_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">),)</span>
+
+        <span class="c1"># Get time step and start creating the update algorithm</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span><span class="p">:</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_offset&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result_name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="n">dt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">_dt</span><span class="o">.</span><span class="n">sym</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">expr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">state_exprs</span><span class="p">):</span>
+
+            <span class="n">dependent</span> <span class="o">=</span> <span class="n">expr</span> <span class="k">if</span> <span class="n">recount</span> <span class="k">else</span> <span class="kc">None</span>
+
+            <span class="c1"># Diagonal jacobian value</span>
+            <span class="n">diag_jac_expr</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">diag_jac_expr</span><span class="o">.</span><span class="n">is_zero</span><span class="p">:</span>
+                <span class="n">diag_jac</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_intermediate</span><span class="p">(</span>
+                    <span class="n">expr</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_diag_jac&quot;</span><span class="p">,</span> <span class="n">diag_jac_expr</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">diag_jac</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+            <span class="c1"># Add simplified single Implicit Euler step</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
+                <span class="n">result_name</span><span class="p">,</span>
+                <span class="p">(</span><span class="n">i</span><span class="p">,),</span>
+                <span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">expr</span><span class="o">.</span><span class="n">sym</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">diag_jac</span><span class="p">),</span>
+                <span class="n">offset_str</span><span class="p">,</span>
+                <span class="n">enum</span><span class="o">=</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Call recreate body with the solver expressions as the result</span>
+        <span class="c1"># expressions</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">indexed_objects</span><span class="p">(</span><span class="n">result_name</span><span class="p">)}</span>
+        <span class="n">results</span><span class="p">,</span> <span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_body_from_results</span><span class="p">(</span><span class="o">**</span><span class="n">results</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recreate_body</span><span class="p">(</span><span class="n">body_expressions</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

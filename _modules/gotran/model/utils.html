@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gotran.model.utils &mdash; gotran 2019.0.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> gotran
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Programmers reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gotran.html">gotran package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">gotran</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>gotran.model.utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gotran.model.utils</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (C) 2013-2014 Johan Hake</span>
+<span class="c1">#</span>
+<span class="c1"># This file is part of Gotran.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU Lesser General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1"># (at your option) any later version.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the</span>
+<span class="c1"># GNU Lesser General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1"># You should have received a copy of the GNU Lesser General Public License</span>
+<span class="c1"># along with Gotran. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;ode_primitives&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;INTERMEDIATE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ALGEBRAIC_EXPRESSION&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;DERIVATIVE_EXPRESSION&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;STATE_SOLUTION_EXPRESSION&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;special_expression&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;iter_objects&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ode_objects&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ode_components&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ODEObjectList&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;RateDict&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="c1"># System imports</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">import</span> <span class="nn">weakref</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="kn">from</span> <span class="nn">sympy.core.function</span> <span class="kn">import</span> <span class="n">AppliedUndef</span>
+<span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">preorder_traversal</span><span class="p">,</span> <span class="n">Symbol</span>
+
+<span class="c1"># ModelParameters imports</span>
+<span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">sp</span>
+<span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">tuplewrap</span>
+
+<span class="c1"># Local imports</span>
+<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="n">error</span><span class="p">,</span> <span class="n">debug</span><span class="p">,</span> <span class="n">check_arg</span><span class="p">,</span> <span class="n">check_kwarg</span><span class="p">,</span> <span class="n">scalars</span>
+<span class="kn">from</span> <span class="nn">gotran.model.odeobjects</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">gotran.model.expressions</span> <span class="kn">import</span> <span class="o">*</span>
+
+
+<div class="viewcode-block" id="ode_primitives"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.ode_primitives">[docs]</a><span class="k">def</span> <span class="nf">ode_primitives</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return all ODE primitives</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    expr : sympy.expression</span>
+<span class="sd">        A sympy expression of ode symbols</span>
+<span class="sd">    time : sympy.Symbol</span>
+<span class="sd">        A Symbol representing time in the ODE</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">symbols</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="n">pt</span> <span class="o">=</span> <span class="n">preorder_traversal</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">pt</span><span class="p">:</span>
+
+        <span class="c1"># Collect AppliedUndefs which are functions of time</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">AppliedUndef</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+            <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">time</span>
+        <span class="p">):</span>
+            <span class="n">pt</span><span class="o">.</span><span class="n">skip</span><span class="p">()</span>
+            <span class="n">symbols</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">Symbol</span><span class="p">):</span>
+            <span class="n">symbols</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">symbols</span></div>
+
+
+<span class="n">_derivative_name_template</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s2">&quot;\Ad([a-zA-Z]\w*)_d([a-zA-Z]\w*)\Z&quot;</span><span class="p">)</span>
+<span class="n">_algebraic_name_template</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s2">&quot;\Aalg_([a-zA-Z]\w*)_0\Z&quot;</span><span class="p">)</span>
+
+<span class="c1"># Flags for determine special expressions</span>
+<span class="n">INTERMEDIATE</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">ALGEBRAIC_EXPRESSION</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">DERIVATIVE_EXPRESSION</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">STATE_SOLUTION_EXPRESSION</span> <span class="o">=</span> <span class="mi">3</span>
+
+
+<div class="viewcode-block" id="special_expression"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.special_expression">[docs]</a><span class="k">def</span> <span class="nf">special_expression</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">root</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check if an expression name corresponds to a special expression</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">alg_expr</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">_algebraic_name_template</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">alg_expr</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">alg_expr</span><span class="p">,</span> <span class="n">ALGEBRAIC_EXPRESSION</span>
+
+    <span class="n">der_expr</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">_derivative_name_template</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">der_expr</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">der_expr</span><span class="p">,</span> <span class="n">DERIVATIVE_EXPRESSION</span>
+
+    <span class="n">state</span> <span class="o">=</span> <span class="n">root</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">state</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">State</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">state</span><span class="p">,</span> <span class="n">STATE_SOLUTION_EXPRESSION</span>
+
+    <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="n">INTERMEDIATE</span></div>
+
+
+<div class="viewcode-block" id="iter_objects"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.iter_objects">[docs]</a><span class="k">class</span> <span class="nc">iter_objects</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A recursive iterator over all objects of a component including its</span>
+<span class="sd">    childrens</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    comp : gotran.ODEComponent</span>
+<span class="sd">        The root ODEComponent of the iteration</span>
+<span class="sd">    reverse : bool</span>
+<span class="sd">        If True the iteration is done from the last component added</span>
+<span class="sd">    types : gotran.ODEObject types (optional)</span>
+<span class="sd">        Only iterate over particular types</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    ode_object : gotran.ODEObject</span>
+<span class="sd">        All ODEObjects of a component</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">comp</span><span class="p">,</span> <span class="n">return_comp</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">only_return_comp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">*</span><span class="n">types</span>
+    <span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">.odecomponent</span> <span class="kn">import</span> <span class="n">ODEComponent</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">ODEComponent</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_types</span> <span class="o">=</span> <span class="n">tuplewrap</span><span class="p">(</span><span class="n">types</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">ODEObject</span><span class="p">,)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_return_comp</span> <span class="o">=</span> <span class="n">return_comp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_only_return_comp</span> <span class="o">=</span> <span class="n">only_return_comp</span>
+        <span class="k">if</span> <span class="n">reverse</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_object_iterator</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reverse_iter_objects</span><span class="p">(</span><span class="n">comp</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_object_iterator</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iter_objects</span><span class="p">(</span><span class="n">comp</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="nb">issubclass</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">)</span> <span class="k">for</span> <span class="n">T</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_types</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_reverse_iter_objects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comp</span><span class="p">):</span>
+
+        <span class="c1"># First all children components in reversed order</span>
+        <span class="k">for</span> <span class="n">sub_comp</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">values</span><span class="p">())):</span>
+            <span class="k">for</span> <span class="n">sub_tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reverse_iter_objects</span><span class="p">(</span><span class="n">sub_comp</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="n">sub_tree</span>
+
+        <span class="c1"># Secondly return component</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_return_comp</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_only_return_comp</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">comp</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_only_return_comp</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Last all objects</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">ode_objects</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_types</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="n">obj</span>
+
+    <span class="k">def</span> <span class="nf">_iter_objects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comp</span><span class="p">):</span>
+
+        <span class="c1"># First return component</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_return_comp</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">comp</span>
+
+        <span class="c1"># Secondly all objects</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_only_return_comp</span><span class="p">:</span>
+
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">comp</span><span class="o">.</span><span class="n">ode_objects</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_types</span><span class="p">):</span>
+                    <span class="k">yield</span> <span class="n">obj</span>
+
+        <span class="c1"># Thrirdly all children components</span>
+        <span class="k">for</span> <span class="n">sub_comp</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="k">for</span> <span class="n">sub_tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iter_objects</span><span class="p">(</span><span class="n">sub_comp</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="n">sub_tree</span>
+
+    <span class="k">def</span> <span class="fm">__next__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_object_iterator</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+<div class="viewcode-block" id="iter_objects.next"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.iter_objects.next">[docs]</a>    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__next__</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="ode_objects"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.ode_objects">[docs]</a><span class="k">def</span> <span class="nf">ode_objects</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="o">*</span><span class="n">types</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a list of ode objects</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    comp : gotran.ODEComponent</span>
+<span class="sd">        The root ODEComponent of the list</span>
+<span class="sd">    types : gotran.ODEObject types (optional)</span>
+<span class="sd">        Only include objects of type given in types</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">obj</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">iter_objects</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="o">*</span><span class="n">types</span><span class="p">)]</span></div>
+
+
+<div class="viewcode-block" id="ode_components"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.ode_components">[docs]</a><span class="k">def</span> <span class="nf">ode_components</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">include_self</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a list of ode components</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    comp : gotran.ODEComponent</span>
+<span class="sd">        The root ODEComponent of the list</span>
+<span class="sd">    return_self : bool (optional)</span>
+<span class="sd">        The list will include the passed component if True</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">comps</span> <span class="o">=</span> <span class="p">[</span><span class="n">obj</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">iter_objects</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">)]</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">include_self</span><span class="p">:</span>
+        <span class="n">comps</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">comp</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">comps</span></div>
+
+
+<div class="viewcode-block" id="ODEObjectList"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.ODEObjectList">[docs]</a><span class="k">class</span> <span class="nc">ODEObjectList</span><span class="p">(</span><span class="nb">list</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Specialized container for ODEObjects. It is a list but adds dict</span>
+<span class="sd">    access through the name attribute of an ODEObjects</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize ODEObjectList. Only empty such.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ODEObjectList</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_objects</span> <span class="o">=</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="ODEObjectList.keys"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.ODEObjectList.keys">[docs]</a>    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_objects</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="ODEObjectList.append"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.ODEObjectList.append">[docs]</a>    <span class="k">def</span> <span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ODEObjectList</span><span class="o">.</span><span class="n">append</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ODEObjectList</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_objects</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span></div>
+
+<div class="viewcode-block" id="ODEObjectList.insert"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.ODEObjectList.insert">[docs]</a>    <span class="k">def</span> <span class="nf">insert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">ODEObjectList</span><span class="o">.</span><span class="n">insert</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ODEObjectList</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_objects</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span></div>
+
+<div class="viewcode-block" id="ODEObjectList.extend"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.ODEObjectList.extend">[docs]</a>    <span class="k">def</span> <span class="nf">extend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterable</span><span class="p">):</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ODEObjectList</span><span class="o">.</span><span class="n">extend</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ODEObjectList</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">iterable</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">iterable</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_objects</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span></div>
+
+<div class="viewcode-block" id="ODEObjectList.get"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.ODEObjectList.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+    <span class="k">def</span> <span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">item</span> <span class="o">==</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">ODEObjectList</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__contains__</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="ODEObjectList.count"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.ODEObjectList.count">[docs]</a>    <span class="k">def</span> <span class="nf">count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">item</span> <span class="o">==</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">ODEObjectList</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="ODEObjectList.index"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.ODEObjectList.index">[docs]</a>    <span class="k">def</span> <span class="nf">index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">ind</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">ind</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="n">obj</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">ind</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Item &#39;</span><span class="si">{0}</span><span class="s2">&#39; not part of this ODEObjectList.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="ODEObjectList.sort"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.ODEObjectList.sort">[docs]</a>    <span class="k">def</span> <span class="nf">sort</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Cannot sort ODEObjectList.&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ODEObjectList.pop"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.ODEObjectList.pop">[docs]</a>    <span class="k">def</span> <span class="nf">pop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">index</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s2">&quot;pop index out of range&quot;</span><span class="p">)</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">ODEObjectList</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_objects</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ODEObjectList.remove"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.ODEObjectList.remove">[docs]</a>    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;ODEObjectList.remove(x): x not in list&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">index</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ODEObjectList.reverse"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.ODEObjectList.reverse">[docs]</a>    <span class="k">def</span> <span class="nf">reverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Cannot alter ODEObjectList, other than adding ODEObjects.&quot;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="RateDict"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.RateDict">[docs]</a><span class="k">class</span> <span class="nc">RateDict</span><span class="p">(</span><span class="n">OrderedDict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A storage class for Markov model rates</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comp</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">.odecomponent</span> <span class="kn">import</span> <span class="n">ODEComponent</span>
+
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">ODEComponent</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_comp</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">ref</span><span class="p">(</span><span class="n">comp</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RateDict</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">expr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Register rate(s) between states</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        states : tuple of two states, list of States, tuple of two lists of States</span>
+<span class="sd">            If tuple of two states is given a single rate is expected.</span>
+<span class="sd">            If one list is passed the rate expression should be a square matrix</span>
+<span class="sd">            and the states list determines the order of the row and column of</span>
+<span class="sd">            the matrix. If two lists are passed the first determines the states</span>
+<span class="sd">            in the row and the second the states in the column of the Matrix</span>
+<span class="sd">        expr : sympy.Basic, scalar, sympy.MatrixBase</span>
+<span class="sd">            A sympy.Basic and scalars is expected for a single rate between</span>
+<span class="sd">            two states.</span>
+<span class="sd">            A sympy.Matrix is expected if several rate expressions are given,</span>
+<span class="sd">            see explaination in for states argument for how the columns and</span>
+<span class="sd">            rows are interpreted.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Matrix</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_comp</span><span class="p">()</span><span class="o">.</span><span class="n">_add_rates</span><span class="p">(</span><span class="n">states</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">states</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">error</span><span class="p">(</span>
+                    <span class="s2">&quot;Expected a tuple of size 2 with states when &quot;</span>
+                    <span class="s2">&quot;registering a single rate.&quot;</span>
+                <span class="p">)</span>
+
+            <span class="c1"># NOTE: the actuall item is set by the component while calling this</span>
+            <span class="c1"># function, using _register_single_rate. See below.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_comp</span><span class="p">()</span><span class="o">.</span><span class="n">_add_single_rate</span><span class="p">(</span><span class="n">states</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">states</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">expr</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_register_single_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">to_state</span><span class="p">,</span> <span class="n">from_state</span><span class="p">,</span> <span class="n">expr_sym</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Actually setting an item</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">OrderedDict</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="n">to_state</span><span class="p">,</span> <span class="n">from_state</span><span class="p">),</span> <span class="n">expr_sym</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

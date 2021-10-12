@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gotran.codegeneration.codecomponent &mdash; gotran 2019.0.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> gotran
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Programmers reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gotran.html">gotran package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">gotran</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>gotran.codegeneration.codecomponent</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gotran.codegeneration.codecomponent</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (C) 2013 Johan Hake</span>
+<span class="c1">#</span>
+<span class="c1"># This file is part of Gotran.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU Lesser General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1"># (at your option) any later version.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the</span>
+<span class="c1"># GNU Lesser General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1"># You should have received a copy of the GNU Lesser General Public License</span>
+<span class="c1"># along with Gotran. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;CodeComponent&quot;</span><span class="p">]</span>
+
+<span class="c1"># System imports</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">deque</span><span class="p">,</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">sympy.core.function</span> <span class="kn">import</span> <span class="n">AppliedUndef</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">cmp_to_key</span>
+
+<span class="c1"># ModelParameters imports</span>
+<span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">sp</span>
+<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">sympycode</span>
+
+<span class="c1"># Local imports</span>
+<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">error</span><span class="p">,</span>
+    <span class="n">info</span><span class="p">,</span>
+    <span class="n">debug</span><span class="p">,</span>
+    <span class="n">check_arg</span><span class="p">,</span>
+    <span class="n">check_kwarg</span><span class="p">,</span>
+    <span class="n">scalars</span><span class="p">,</span>
+    <span class="n">Timer</span><span class="p">,</span>
+    <span class="n">warning</span><span class="p">,</span>
+    <span class="n">tuplewrap</span><span class="p">,</span>
+    <span class="n">parameters</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">gotran.model.odeobjects</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">State</span><span class="p">,</span>
+    <span class="n">Parameter</span><span class="p">,</span>
+    <span class="n">IndexedObject</span><span class="p">,</span>
+    <span class="n">StateIndexedObject</span><span class="p">,</span>
+    <span class="n">ParameterIndexedObject</span><span class="p">,</span>
+    <span class="n">Comment</span><span class="p">,</span>
+    <span class="n">cmp</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">gotran.model.expressions</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">gotran.model.odecomponent</span> <span class="kn">import</span> <span class="n">ODEComponent</span>
+<span class="kn">from</span> <span class="nn">gotran.model.ode</span> <span class="kn">import</span> <span class="n">ODE</span>
+
+<span class="c1"># FIXME: Remove our own cse, or move to this module?</span>
+<span class="kn">from</span> <span class="nn">gotran.codegeneration.sympy_cse</span> <span class="kn">import</span> <span class="n">cse</span>
+
+<span class="c1"># from sympy import cse</span>
+
+
+<div class="viewcode-block" id="CodeComponent"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.CodeComponent">[docs]</a><span class="k">class</span> <span class="nc">CodeComponent</span><span class="p">(</span><span class="n">ODEComponent</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A wrapper class around an ODE. Its primary purpose is to help</span>
+<span class="sd">    generate code.</span>
+
+<span class="sd">    The class alows extraction and manipulation of the ODE expressions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="CodeComponent.default_parameters"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.CodeComponent.default_parameters">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">default_parameters</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the default parameters for code generation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">parameters</span><span class="o">.</span><span class="n">generation</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">,</span>
+        <span class="n">ode</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="p">,</span>
+        <span class="n">description</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_default_arguments</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">additional_arguments</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">results</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a CodeComponent</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        name : str</span>
+<span class="sd">            The name of the component. This str serves as the unique</span>
+<span class="sd">            identifier of the Component.</span>
+<span class="sd">        ode : gotran.ODE</span>
+<span class="sd">            The parent component which need to be a ODE</span>
+<span class="sd">        function_name : str</span>
+<span class="sd">            The name of the generated function</span>
+<span class="sd">        description : str</span>
+<span class="sd">            A short description of what the code component are computing</span>
+<span class="sd">        params : dict</span>
+<span class="sd">            Parameters determining how the code should be generated</span>
+<span class="sd">        use_default_arguments : bool</span>
+<span class="sd">            If true state, time and parameters are expected to be used in the</span>
+<span class="sd">            code component</span>
+<span class="sd">        additional_arguments : list</span>
+<span class="sd">            A list of str for additional arguments included in the signature.</span>
+<span class="sd">        results : kwargs</span>
+<span class="sd">            A dict of result expressions. The result expressions will</span>
+<span class="sd">            be used to extract the body expressions for the code component.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">params</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">additional_arguments</span> <span class="o">=</span> <span class="n">additional_arguments</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">)</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">description</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">function_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="n">check_kwarg</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="s2">&quot;params&quot;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+        <span class="n">check_kwarg</span><span class="p">(</span><span class="n">use_default_arguments</span><span class="p">,</span> <span class="s2">&quot;use_default_arguments&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
+        <span class="n">check_kwarg</span><span class="p">(</span><span class="n">additional_arguments</span><span class="p">,</span> <span class="s2">&quot;additional_arguments&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">ode</span><span class="p">)</span>
+
+        <span class="c1"># Turn off magic attributes, see ODEComponent.__setattr__</span>
+        <span class="c1"># method</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_allow_magic_attributes</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">result_name</span><span class="p">,</span> <span class="n">result_expressions</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="n">check_kwarg</span><span class="p">(</span>
+                <span class="n">result_expressions</span><span class="p">,</span> <span class="n">result_name</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="n">itemtypes</span><span class="o">=</span><span class="p">(</span><span class="n">Expression</span><span class="p">,</span> <span class="n">Comment</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Store parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_parameters</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+
+        <span class="c1"># Store function name and description</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">function_name</span> <span class="o">=</span> <span class="n">function_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">description</span>
+
+        <span class="c1"># Shapes for any indexed expressions or objects</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+
+        <span class="c1"># A map between expressions and recreated IndexedExpressions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">indexed_map</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+
+        <span class="c1"># Init parameter or state replace dict</span>
+        <span class="k">if</span> <span class="n">use_default_arguments</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">param_state_replace_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_param_state_replace_dict</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">param_state_replace_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="c1"># Recreate body expressions based on the given result_expressions</span>
+        <span class="k">if</span> <span class="n">results</span><span class="p">:</span>
+            <span class="n">results</span><span class="p">,</span> <span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_body_from_results</span><span class="p">(</span><span class="o">**</span><span class="n">results</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recreate_body</span><span class="p">(</span><span class="n">body_expressions</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">body_expressions</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Store for later usage</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_default_arguments</span> <span class="o">=</span> <span class="n">use_default_arguments</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">additional_arguments</span> <span class="o">=</span> <span class="n">additional_arguments</span>
+
+<div class="viewcode-block" id="CodeComponent.add_indexed_expression"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.CodeComponent.add_indexed_expression">[docs]</a>    <span class="k">def</span> <span class="nf">add_indexed_expression</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">basename</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">add_offset</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enum</span><span class="o">=</span><span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add an indexed expression using a basename and the indices</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        basename : str</span>
+<span class="sd">            The basename of the indexed expression</span>
+<span class="sd">        indices : int, tuple of int</span>
+<span class="sd">            The fixed indices identifying the expression</span>
+<span class="sd">        expr : sympy.Basic, scalar</span>
+<span class="sd">            The expression.</span>
+<span class="sd">        add_offset : bool</span>
+<span class="sd">            Add offset to indices</span>
+<span class="sd">        dependent : gotran.ODEObject</span>
+<span class="sd">            If given the count of this expression will follow as a</span>
+<span class="sd">            fractional count based on the count of the dependent object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Create an IndexedExpression in the present component</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Add indexed expression&quot;</span><span class="p">)</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="n">tuplewrap</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
+
+        <span class="c1"># Check that provided indices fit with the registered shape</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">])</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">):</span>
+            <span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;Shape mismatch between indices </span><span class="si">{0}</span><span class="s2"> and registered &quot;</span>
+                <span class="s2">&quot;shape for </span><span class="si">{1}{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="n">basename</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">])</span>
+            <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">shape_ind</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">])):</span>
+            <span class="k">if</span> <span class="n">index</span> <span class="o">&gt;=</span> <span class="n">shape_ind</span><span class="p">:</span>
+                <span class="n">error</span><span class="p">(</span>
+                    <span class="s2">&quot;Indices must be smaller or equal to the shape. Mismatch &quot;</span>
+                    <span class="s2">&quot;in dim </span><span class="si">{0}</span><span class="s2">: </span><span class="si">{1}</span><span class="s2">&gt;=</span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">shape_ind</span><span class="p">)</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Create the indexed expression</span>
+        <span class="k">if</span> <span class="n">enum</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">expr</span> <span class="o">=</span> <span class="n">IndexedExpression</span><span class="p">(</span>
+                <span class="n">basename</span><span class="p">,</span>
+                <span class="n">indices</span><span class="p">,</span>
+                <span class="n">expr</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">],</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">array</span><span class="p">,</span>
+                <span class="n">add_offset</span><span class="p">,</span>
+                <span class="n">dependent</span><span class="p">,</span>
+                <span class="n">enum</span><span class="o">=</span><span class="n">enum</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">enum</span><span class="p">,</span> <span class="n">State</span><span class="p">):</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="n">enum</span>
+            <span class="n">expr</span> <span class="o">=</span> <span class="n">StateIndexedExpression</span><span class="p">(</span>
+                <span class="n">basename</span><span class="p">,</span>
+                <span class="n">indices</span><span class="p">,</span>
+                <span class="n">expr</span><span class="p">,</span>
+                <span class="n">state</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">],</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">array</span><span class="p">,</span>
+                <span class="n">add_offset</span><span class="p">,</span>
+                <span class="n">dependent</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">enum</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">):</span>
+            <span class="n">parameter</span> <span class="o">=</span> <span class="n">enum</span>
+            <span class="n">expr</span> <span class="o">=</span> <span class="n">ParameterIndexedExpression</span><span class="p">(</span>
+                <span class="n">basename</span><span class="p">,</span>
+                <span class="n">indices</span><span class="p">,</span>
+                <span class="n">expr</span><span class="p">,</span>
+                <span class="n">parameter</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">],</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">array</span><span class="p">,</span>
+                <span class="n">add_offset</span><span class="p">,</span>
+                <span class="n">dependent</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;enum must be State or Parameter. Was </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">enum</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_register_component_object</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">dependent</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">expr</span><span class="o">.</span><span class="n">sym</span></div>
+
+<div class="viewcode-block" id="CodeComponent.add_indexed_object"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.CodeComponent.add_indexed_object">[docs]</a>    <span class="k">def</span> <span class="nf">add_indexed_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basename</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">add_offset</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add an indexed object using a basename and the indices</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        basename : str</span>
+<span class="sd">            The basename of the indexed expression</span>
+<span class="sd">        indices : int, tuple of int</span>
+<span class="sd">            The fixed indices identifying the expression</span>
+<span class="sd">        add_offset : bool</span>
+<span class="sd">            Add offset to indices</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Add indexed object&quot;</span><span class="p">)</span>
+
+        <span class="n">indices</span> <span class="o">=</span> <span class="n">tuplewrap</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
+
+        <span class="c1"># Check that provided indices fit with the registered shape</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">])</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">):</span>
+            <span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;Shape mismatch between indices </span><span class="si">{0}</span><span class="s2"> and registered &quot;</span>
+                <span class="s2">&quot;shape for </span><span class="si">{1}{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="n">basename</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">])</span>
+            <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">shape_ind</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">])):</span>
+            <span class="k">if</span> <span class="n">index</span> <span class="o">&gt;=</span> <span class="n">shape_ind</span><span class="p">:</span>
+                <span class="n">error</span><span class="p">(</span>
+                    <span class="s2">&quot;Indices must be smaller or equal to the shape. Mismatch &quot;</span>
+                    <span class="s2">&quot;in dim </span><span class="si">{0}</span><span class="s2">: </span><span class="si">{1}</span><span class="s2">&gt;=</span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">shape_ind</span><span class="p">)</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Create IndexedObject</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">IndexedObject</span><span class="p">(</span>
+            <span class="n">basename</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">add_offset</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_register_component_object</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+        <span class="c1"># Return the sympy version of the object</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">sym</span></div>
+
+<div class="viewcode-block" id="CodeComponent.indexed_objects"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.CodeComponent.indexed_objects">[docs]</a>    <span class="k">def</span> <span class="nf">indexed_objects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">basenames</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a list of all indexed objects with the given basename,</span>
+<span class="sd">        if no base names give all indexed objects are returned</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">basenames</span><span class="p">:</span>
+            <span class="n">basenames</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">obj</span>
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ode_objects</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">IndexedObject</span><span class="p">)</span> <span class="ow">and</span> <span class="n">obj</span><span class="o">.</span><span class="n">basename</span> <span class="ow">in</span> <span class="n">basenames</span>
+        <span class="p">]</span></div>
+
+    <span class="k">def</span> <span class="nf">_init_param_state_replace_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a parameter state replace dict based on the values in the</span>
+<span class="sd">        global parameters</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">param_state_replace_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">array_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">[</span><span class="s2">&quot;array&quot;</span><span class="p">]</span>
+        <span class="n">param_repr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">][</span><span class="s2">&quot;representation&quot;</span><span class="p">]</span>
+        <span class="n">param_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">][</span><span class="s2">&quot;array_name&quot;</span><span class="p">]</span>
+        <span class="n">param_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">][</span><span class="s2">&quot;add_offset&quot;</span><span class="p">]</span>
+        <span class="n">field_param_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">][</span><span class="s2">&quot;field_array_name&quot;</span><span class="p">]</span>
+        <span class="n">field_param_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">][</span><span class="s2">&quot;add_field_offset&quot;</span><span class="p">]</span>
+        <span class="n">field_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">][</span><span class="s2">&quot;field_parameters&quot;</span><span class="p">]</span>
+
+        <span class="c1"># If empty</span>
+        <span class="c1"># FIXME: Get rid of this by introducing a ListParam type in modelparameters</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">field_parameters</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">field_parameters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+            <span class="n">field_parameters</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">field_parameters</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="p">[</span><span class="n">param</span><span class="p">],</span> <span class="n">Parameter</span><span class="p">):</span>
+                <span class="n">error</span><span class="p">(</span>
+                    <span class="s2">&quot;Field parameter &#39;</span><span class="si">{0}</span><span class="s2">&#39; is not a parameter in the &quot;</span>
+                    <span class="s2">&quot;&#39;</span><span class="si">{1}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">)</span>
+                <span class="p">)</span>
+
+        <span class="n">state_repr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">[</span><span class="s2">&quot;states&quot;</span><span class="p">][</span><span class="s2">&quot;representation&quot;</span><span class="p">]</span>
+        <span class="n">state_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">[</span><span class="s2">&quot;states&quot;</span><span class="p">][</span><span class="s2">&quot;array_name&quot;</span><span class="p">]</span>
+        <span class="n">state_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">[</span><span class="s2">&quot;states&quot;</span><span class="p">][</span><span class="s2">&quot;add_offset&quot;</span><span class="p">]</span>
+        <span class="n">time_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">][</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+        <span class="n">dt_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">[</span><span class="s2">&quot;dt&quot;</span><span class="p">][</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Create a map between states, parameters and the corresponding</span>
+        <span class="c1"># IndexedObjects</span>
+        <span class="n">param_state_map</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
+            <span class="p">[(</span><span class="s2">&quot;states&quot;</span><span class="p">,</span> <span class="n">OrderedDict</span><span class="p">()),</span> <span class="p">(</span><span class="s2">&quot;parameters&quot;</span><span class="p">,</span> <span class="n">OrderedDict</span><span class="p">())]</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Add states</span>
+        <span class="n">states</span> <span class="o">=</span> <span class="n">param_state_map</span><span class="p">[</span><span class="s2">&quot;states&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">state</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">full_states</span><span class="p">):</span>
+            <span class="n">states</span><span class="p">[</span><span class="n">state</span><span class="p">]</span> <span class="o">=</span> <span class="n">StateIndexedObject</span><span class="p">(</span>
+                <span class="n">state_name</span><span class="p">,</span>
+                <span class="n">ind</span><span class="p">,</span>
+                <span class="n">state</span><span class="p">,</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">num_full_states</span><span class="p">,),</span>
+                <span class="n">array_params</span><span class="p">,</span>
+                <span class="n">state_offset</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Add parameters</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">param_state_map</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">parameters</span><span class="p">):</span>
+
+            <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">field_parameters</span><span class="p">:</span>
+                <span class="n">basename</span> <span class="o">=</span> <span class="n">field_param_name</span>
+                <span class="n">index</span> <span class="o">=</span> <span class="n">field_parameters</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">field_parameters</span><span class="p">),)</span>
+                <span class="n">offset</span> <span class="o">=</span> <span class="n">field_param_offset</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">basename</span> <span class="o">=</span> <span class="n">param_name</span>
+                <span class="n">index</span> <span class="o">=</span> <span class="n">ind</span>
+                <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_parameters</span><span class="p">,)</span>
+                <span class="n">offset</span> <span class="o">=</span> <span class="n">param_offset</span>
+
+            <span class="n">parameters</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">=</span> <span class="n">ParameterIndexedObject</span><span class="p">(</span>
+                <span class="n">basename</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">array_params</span><span class="p">,</span> <span class="n">offset</span>
+            <span class="p">)</span>
+
+        <span class="c1"># If not having named parameters</span>
+        <span class="k">if</span> <span class="n">param_repr</span> <span class="o">==</span> <span class="s2">&quot;numerals&quot;</span><span class="p">:</span>
+            <span class="n">param_state_replace_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">init</span><span class="p">)</span> <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">parameters</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">param_repr</span> <span class="o">==</span> <span class="s2">&quot;array&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">param_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">num_parameters</span><span class="p">,)</span>
+            <span class="k">if</span> <span class="n">field_parameters</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="s2">&quot;field_&quot;</span> <span class="o">+</span> <span class="n">param_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">field_parameters</span><span class="p">),)</span>
+            <span class="n">param_state_replace_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span> <span class="n">indexed</span><span class="o">.</span><span class="n">sym</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">indexed</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">param_state_map</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">state_repr</span> <span class="o">==</span> <span class="s2">&quot;array&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">state_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">num_full_states</span><span class="p">,)</span>
+            <span class="n">param_state_replace_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span> <span class="n">indexed</span><span class="o">.</span><span class="n">sym</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">state</span><span class="p">,</span> <span class="n">indexed</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">param_state_map</span><span class="p">[</span><span class="s2">&quot;states&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+            <span class="p">)</span>
+
+        <span class="n">param_state_replace_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">_time</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="n">time_name</span><span class="p">)</span>
+        <span class="n">param_state_replace_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">_dt</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="n">dt_name</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">indexed_map</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">param_state_map</span><span class="p">)</span>
+
+        <span class="c1"># return  dicts</span>
+        <span class="k">return</span> <span class="n">param_state_replace_dict</span>
+
+    <span class="k">def</span> <span class="nf">_body_from_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a sorted list of body expressions all used in the result expressions</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Store results</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">results</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{},</span> <span class="p">[]</span>
+
+        <span class="c1"># Check if we are using common sub expressions for body</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">[</span><span class="s2">&quot;body&quot;</span><span class="p">][</span><span class="s2">&quot;use_cse&quot;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_body_from_cse</span><span class="p">(</span><span class="o">**</span><span class="n">results</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_body_from_dependencies</span><span class="p">(</span><span class="o">**</span><span class="n">results</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_expanded_result_expressions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">):</span>
+
+        <span class="c1"># Extract all result expressions</span>
+        <span class="n">orig_result_expressions</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="p">[])</span>
+
+        <span class="c1"># A map between result expression and result name</span>
+        <span class="n">result_names</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">result_expr</span><span class="p">,</span> <span class="n">result_name</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">result_name</span><span class="p">,</span> <span class="n">result_exprs</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">result_expr</span> <span class="ow">in</span> <span class="n">result_exprs</span>
+        <span class="p">)</span>
+
+        <span class="c1"># The expanded result expressions</span>
+        <span class="n">expanded_result_exprs</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">expanded_expression</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">orig_result_expressions</span>
+        <span class="p">]</span>
+
+        <span class="c1"># Set shape for result expressions</span>
+        <span class="k">for</span> <span class="n">result_name</span><span class="p">,</span> <span class="n">result_expressions</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">result_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">result_expressions</span><span class="p">),)</span>
+
+        <span class="k">return</span> <span class="n">orig_result_expressions</span><span class="p">,</span> <span class="n">result_names</span><span class="p">,</span> <span class="n">expanded_result_exprs</span>
+
+    <span class="k">def</span> <span class="nf">_only_result_expressions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">):</span>
+
+        <span class="p">(</span>
+            <span class="n">orig_result_expressions</span><span class="p">,</span>
+            <span class="n">result_names</span><span class="p">,</span>
+            <span class="n">expanded_result_exprs</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expanded_result_expressions</span><span class="p">(</span><span class="o">**</span><span class="n">results</span><span class="p">)</span>
+
+        <span class="n">body_expressions</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">new_results</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_body_from_cse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">):</span>
+
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Compute common sub expressions for </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="p">(</span>
+            <span class="n">orig_result_expressions</span><span class="p">,</span>
+            <span class="n">result_names</span><span class="p">,</span>
+            <span class="n">expanded_result_exprs</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expanded_result_expressions</span><span class="p">(</span><span class="o">**</span><span class="n">results</span><span class="p">)</span>
+
+        <span class="n">state_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">[</span><span class="s2">&quot;states&quot;</span><span class="p">][</span><span class="s2">&quot;add_offset&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Collect results and body_expressions</span>
+        <span class="n">body_expressions</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">new_results</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+
+        <span class="n">might_take_time</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">orig_result_expressions</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">40</span>
+
+        <span class="k">if</span> <span class="n">might_take_time</span><span class="p">:</span>
+            <span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Computing common sub expressions for </span><span class="si">{0}</span><span class="s2">. Might take &quot;</span>
+                <span class="s2">&quot;some time...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+        <span class="c1"># Call sympy common sub expression reduction</span>
+        <span class="n">cse_exprs</span><span class="p">,</span> <span class="n">cse_result_exprs</span> <span class="o">=</span> <span class="n">cse</span><span class="p">(</span>
+            <span class="n">expanded_result_exprs</span><span class="p">,</span> <span class="n">symbols</span><span class="o">=</span><span class="n">sp</span><span class="o">.</span><span class="n">numbered_symbols</span><span class="p">(</span><span class="s2">&quot;cse_&quot;</span><span class="p">),</span> <span class="n">optimizations</span><span class="o">=</span><span class="p">[]</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Map the cse_expr to an OrderedDict</span>
+        <span class="n">cse_exprs</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">cse_expr</span> <span class="k">for</span> <span class="n">cse_expr</span> <span class="ow">in</span> <span class="n">cse_exprs</span><span class="p">)</span>
+
+        <span class="c1"># Extract the symbols into a set for fast comparison</span>
+        <span class="n">cse_syms</span> <span class="o">=</span> <span class="nb">set</span><span class="p">((</span><span class="n">sym</span> <span class="k">for</span> <span class="n">sym</span> <span class="ow">in</span> <span class="n">cse_exprs</span><span class="p">))</span>
+
+        <span class="c1"># Create maps between cse_expr and result expressions trying</span>
+        <span class="c1"># to optimized the code by weaving in the result expressions</span>
+        <span class="c1"># in between the cse_expr</span>
+
+        <span class="c1"># A map between result expr and name and indices so we can</span>
+        <span class="c1"># construct IndexedExpressions</span>
+        <span class="n">result_expr_map</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+
+        <span class="c1"># A map between last cse_expr used in a particular result expr</span>
+        <span class="c1"># so that we can put the result expression right after the</span>
+        <span class="c1"># last cse_expr it uses.</span>
+        <span class="n">last_cse_expr_used_in_result_expr</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+
+        <span class="c1"># A map between replaced cse_sym and result_expressions</span>
+        <span class="n">cse_sym_to_result_expr</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Result expressions that does not contain any cse_sym</span>
+        <span class="n">result_expr_without_cse_syms</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># A map between cse_sym and its substitutes</span>
+        <span class="n">cse_subs</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="p">(</span><span class="n">orig_result_expr</span><span class="p">,</span> <span class="n">result_expr</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+            <span class="nb">zip</span><span class="p">(</span><span class="n">orig_result_expressions</span><span class="p">,</span> <span class="n">cse_result_exprs</span><span class="p">)</span>
+        <span class="p">):</span>
+
+            <span class="c1"># Collect information so that we can recreate the result</span>
+            <span class="c1"># expression from</span>
+            <span class="n">result_expr_map</span><span class="p">[</span><span class="n">result_expr</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="n">result_names</span><span class="p">[</span><span class="n">orig_result_expr</span><span class="p">],</span>
+                    <span class="n">orig_result_expr</span><span class="o">.</span><span class="n">indices</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">orig_result_expr</span><span class="p">,</span> <span class="n">IndexedExpression</span><span class="p">)</span>
+                    <span class="k">else</span> <span class="n">ind</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="c1"># If result_expr does not contain any cse_sym</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">cse_sym</span> <span class="ow">in</span> <span class="n">cse_syms</span> <span class="k">for</span> <span class="n">cse_sym</span> <span class="ow">in</span> <span class="n">result_expr</span><span class="o">.</span><span class="n">atoms</span><span class="p">()):</span>
+                <span class="n">result_expr_without_cse_syms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result_expr</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+
+                <span class="c1"># Get last cse_sym used in result expression</span>
+                <span class="n">last_cse_sym</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">cse_sym</span> <span class="k">for</span> <span class="n">cse_sym</span> <span class="ow">in</span> <span class="n">result_expr</span><span class="o">.</span><span class="n">atoms</span><span class="p">()</span> <span class="k">if</span> <span class="n">cse_sym</span> <span class="ow">in</span> <span class="n">cse_syms</span><span class="p">),</span>
+                    <span class="n">key</span><span class="o">=</span><span class="n">cmp_to_key</span><span class="p">(</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">cmp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="mi">4</span><span class="p">:]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="mi">4</span><span class="p">:]))),</span>
+                <span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="n">result_expr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">last_cse_expr_used_in_result_expr</span><span class="p">[</span><span class="n">last_cse_sym</span><span class="p">]:</span>
+                    <span class="n">last_cse_expr_used_in_result_expr</span><span class="p">[</span><span class="n">last_cse_sym</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result_expr</span><span class="p">)</span>
+
+        <span class="n">debug</span><span class="p">(</span>
+            <span class="s2">&quot;Found </span><span class="si">{0}</span><span class="s2"> result expressions without any cse_syms.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">result_expr_without_cse_syms</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># print &quot;&quot;</span>
+        <span class="c1"># print &quot;LAST cse_syms:&quot;, last_cse_expr_used_in_result_expr.keys()</span>
+
+        <span class="n">cse_cnt</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">atoms</span> <span class="o">=</span> <span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">full_states</span><span class="p">]</span>
+        <span class="n">atoms</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">sym</span> <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+
+        <span class="c1"># Collecte what states and parameters has been used</span>
+        <span class="n">used_states</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">used_parameters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span>
+            <span class="s2">&quot;Common sub expressions for the body and the &quot;</span> <span class="s2">&quot;result expressions&quot;</span>
+        <span class="p">)</span>
+        <span class="n">body_expressions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ode_objects</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># Register the common sub expressions as Intermediates</span>
+        <span class="k">for</span> <span class="n">cse_sym</span><span class="p">,</span> <span class="n">expr</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">cse_exprs</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+
+            <span class="c1"># print cse_sym, expr</span>
+
+            <span class="c1"># If the expression is just one of the atoms of the ODE we</span>
+            <span class="c1"># skip the cse expressions but add a subs for the atom We</span>
+            <span class="c1"># also skip Relationals and Piecewise as the type checking</span>
+            <span class="c1"># in Piecewise otherwise kicks in and destroys things for</span>
+            <span class="c1"># us.</span>
+            <span class="k">if</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">atoms</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span>
+                <span class="n">expr</span><span class="p">,</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">Piecewise</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">relational</span><span class="o">.</span><span class="n">Relational</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">relational</span><span class="o">.</span><span class="n">Boolean</span><span class="p">)</span>
+            <span class="p">):</span>
+                <span class="n">cse_subs</span><span class="p">[</span><span class="n">cse_sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">cse_subs</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Add body expression as an intermediate expression</span>
+                <span class="n">sym</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_intermediate</span><span class="p">(</span>
+                    <span class="s2">&quot;cse_</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cse_cnt</span><span class="p">),</span> <span class="n">expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">cse_subs</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ode_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">sympycode</span><span class="p">(</span><span class="n">sym</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">expression_dependencies</span><span class="p">[</span><span class="n">obj</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dep</span><span class="p">,</span> <span class="n">State</span><span class="p">):</span>
+                        <span class="n">used_states</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dep</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">):</span>
+                        <span class="n">used_parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span>
+                <span class="n">cse_subs</span><span class="p">[</span><span class="n">cse_sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">sym</span>
+                <span class="n">cse_cnt</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">body_expressions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+            <span class="c1"># Check if we should add a result expressions</span>
+            <span class="k">if</span> <span class="n">last_cse_expr_used_in_result_expr</span><span class="p">[</span><span class="n">cse_sym</span><span class="p">]:</span>
+
+                <span class="c1"># Iterate over all registered result expr for this cse_sym</span>
+                <span class="k">for</span> <span class="n">result_expr</span> <span class="ow">in</span> <span class="n">last_cse_expr_used_in_result_expr</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">cse_sym</span><span class="p">):</span>
+
+                    <span class="k">for</span> <span class="n">result_name</span><span class="p">,</span> <span class="n">indices</span> <span class="ow">in</span> <span class="n">result_expr_map</span><span class="p">[</span><span class="n">result_expr</span><span class="p">]:</span>
+
+                        <span class="c1"># Replace pure state and param expressions</span>
+                        <span class="c1"># print cse_subs, result_expr</span>
+                        <span class="n">exp_expr</span> <span class="o">=</span> <span class="n">result_expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">cse_subs</span><span class="p">)</span>
+
+                        <span class="n">sym</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
+                            <span class="n">result_name</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">exp_expr</span><span class="p">,</span> <span class="n">add_offset</span><span class="o">=</span><span class="n">state_offset</span>
+                        <span class="p">)</span>
+
+                        <span class="n">expr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ode_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">sympycode</span><span class="p">(</span><span class="n">sym</span><span class="p">))</span>
+
+                        <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">expression_dependencies</span><span class="p">[</span><span class="n">expr</span><span class="p">]:</span>
+                            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dep</span><span class="p">,</span> <span class="n">State</span><span class="p">):</span>
+                                <span class="n">used_states</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span>
+                            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dep</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">):</span>
+                                <span class="n">used_parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span>
+
+                        <span class="c1"># Register the new result expression</span>
+                        <span class="n">new_results</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+                        <span class="n">body_expressions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">might_take_time</span><span class="p">:</span>
+            <span class="n">info</span><span class="p">(</span><span class="s2">&quot; done&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Sort used state, parameters and expr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">used_states</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">used_states</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">used_parameters</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">used_parameters</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">new_results</span><span class="p">,</span> <span class="n">body_expressions</span>
+
+    <span class="k">def</span> <span class="nf">_body_from_dependencies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">):</span>
+
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Compute dependencies for </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="c1"># Extract all result expressions</span>
+        <span class="n">result_expressions</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="p">[])</span>
+
+        <span class="c1"># Check passed expressions</span>
+        <span class="n">ode_expr_deps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">expression_dependencies</span>
+        <span class="n">exprs</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">result_expressions</span><span class="p">)</span>
+        <span class="n">not_checked</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">used_states</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">used_parameters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">result_expressions</span><span class="p">:</span>
+            <span class="n">check_arg</span><span class="p">(</span>
+                <span class="n">expr</span><span class="p">,</span> <span class="p">(</span><span class="n">Expression</span><span class="p">,</span> <span class="n">Comment</span><span class="p">),</span> <span class="n">context</span><span class="o">=</span><span class="n">CodeComponent</span><span class="o">.</span><span class="n">_body_from_results</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">Comment</span><span class="p">):</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># Collect dependencies</span>
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">ode_expr_deps</span><span class="p">[</span><span class="n">expr</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="n">Expression</span><span class="p">,</span> <span class="n">Comment</span><span class="p">)):</span>
+                    <span class="n">not_checked</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">State</span><span class="p">):</span>
+                    <span class="n">used_states</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">):</span>
+                    <span class="n">used_parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+        <span class="c1"># use list to make the order consistent</span>
+        <span class="n">not_checked_list</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">not_checked</span><span class="p">)</span>
+
+        <span class="c1"># Collect all dependencies</span>
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">not_checked_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">dep_expr</span> <span class="o">=</span> <span class="n">not_checked_list</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="n">exprs</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">dep_expr</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">ode_expr_deps</span><span class="p">[</span><span class="n">dep_expr</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="n">Expression</span><span class="p">,</span> <span class="n">Comment</span><span class="p">)):</span>
+                    <span class="k">if</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exprs</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">not_checked_list</span><span class="p">:</span>
+                            <span class="n">not_checked_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">State</span><span class="p">):</span>
+                    <span class="n">used_states</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">):</span>
+                    <span class="n">used_parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+        <span class="c1"># Sort used state, parameters and expr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">used_states</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">used_states</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">used_parameters</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">used_parameters</span><span class="p">)</span>
+
+        <span class="c1"># Return a sorted list of all collected expressions</span>
+        <span class="k">return</span> <span class="n">results</span><span class="p">,</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">exprs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_recreate_body</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">body_expressions</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create body expressions based on the given result_expressions</span>
+
+<span class="sd">        In this method are all expressions replaced with something that should</span>
+<span class="sd">        be used to generate code. The parameters in:</span>
+
+<span class="sd">            parameters[&quot;generation&quot;][&quot;code&quot;]</span>
+
+<span class="sd">        decides how parameters, states, body expressions and indexed expressions</span>
+<span class="sd">        are represented.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">results</span> <span class="ow">or</span> <span class="n">body_expressions</span><span class="p">):</span>
+            <span class="k">return</span>
+
+        <span class="k">for</span> <span class="n">result_name</span><span class="p">,</span> <span class="n">result_expressions</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="n">check_kwarg</span><span class="p">(</span>
+                <span class="n">result_expressions</span><span class="p">,</span>
+                <span class="n">result_name</span><span class="p">,</span>
+                <span class="nb">list</span><span class="p">,</span>
+                <span class="n">context</span><span class="o">=</span><span class="n">CodeComponent</span><span class="o">.</span><span class="n">_recreate_body</span><span class="p">,</span>
+                <span class="n">itemtypes</span><span class="o">=</span><span class="p">(</span><span class="n">Expression</span><span class="p">,</span> <span class="n">Comment</span><span class="p">),</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Extract all result expressions</span>
+        <span class="n">result_expressions</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="p">[])</span>
+
+        <span class="c1"># A map between result expression and result name</span>
+        <span class="n">result_names</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">result_expr</span><span class="p">,</span> <span class="n">result_name</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">result_name</span><span class="p">,</span> <span class="n">result_exprs</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">result_expr</span> <span class="ow">in</span> <span class="n">result_exprs</span>
+        <span class="p">)</span>
+
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Recreate body expressions for </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="c1"># Initialize the replace_dictionaries</span>
+        <span class="n">replace_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_state_replace_dict</span>
+        <span class="n">der_replace_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Get a copy of the map of where objects are used in and their</span>
+        <span class="c1"># present dependencies so any updates done in these dictionaries does not</span>
+        <span class="c1"># affect the original dicts</span>
+        <span class="n">object_used_in</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">expr</span><span class="p">,</span> <span class="n">used</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">object_used_in</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="n">object_used_in</span><span class="p">[</span><span class="n">expr</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">used</span><span class="p">)</span>
+
+        <span class="n">expression_dependencies</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">expr</span><span class="p">,</span> <span class="n">deps</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">expression_dependencies</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="n">expression_dependencies</span><span class="p">[</span><span class="n">expr</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">deps</span><span class="p">)</span>
+
+        <span class="c1"># Get body parameters</span>
+        <span class="n">body_repr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">[</span><span class="s2">&quot;body&quot;</span><span class="p">][</span><span class="s2">&quot;representation&quot;</span><span class="p">]</span>
+        <span class="n">optimize_exprs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">[</span><span class="s2">&quot;body&quot;</span><span class="p">][</span><span class="s2">&quot;optimize_exprs&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Set body related variables if the body should be represented by an array</span>
+        <span class="k">if</span> <span class="s2">&quot;array&quot;</span> <span class="ow">in</span> <span class="n">body_repr</span><span class="p">:</span>
+            <span class="n">body_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">[</span><span class="s2">&quot;body&quot;</span><span class="p">][</span><span class="s2">&quot;array_name&quot;</span><span class="p">]</span>
+            <span class="n">available_indices</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>
+            <span class="n">body_indices</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">max_index</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">body_ind</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">index_available_at</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">body_name</span> <span class="o">==</span> <span class="n">result_name</span><span class="p">:</span>
+                <span class="n">error</span><span class="p">(</span><span class="s2">&quot;body and result cannot have the same name.&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Initiate shapes with inf</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">body_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">),)</span>
+
+        <span class="c1"># Iterate over body expressions and recreate the different expressions</span>
+        <span class="c1"># according to state, parameters, body and result expressions</span>
+        <span class="n">replaced_expr_map</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="n">new_body_expressions</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">present_ode_objects</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">full_states</span>
+        <span class="p">)</span>
+        <span class="n">present_ode_objects</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">param</span><span class="p">)</span> <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="p">)</span>
+        <span class="n">old_present_ode_objects</span> <span class="o">=</span> <span class="n">present_ode_objects</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="k">def</span> <span class="nf">store_expressions</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">new_expr</span><span class="p">):</span>
+            <span class="s2">&quot;Help function to store new expressions&quot;</span>
+
+            <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span>
+                <span class="s2">&quot;Store expression while recreating body of </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Update sym replace dict</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">Derivatives</span><span class="p">):</span>
+                <span class="n">der_replace_dict</span><span class="p">[</span><span class="n">expr</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_expr</span><span class="o">.</span><span class="n">sym</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">replace_dict</span><span class="p">[</span><span class="n">expr</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_expr</span><span class="o">.</span><span class="n">sym</span>
+
+            <span class="c1"># Store the new expression for later references</span>
+            <span class="n">present_ode_objects</span><span class="p">[</span><span class="n">expr</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_expr</span>
+            <span class="n">replaced_expr_map</span><span class="p">[</span><span class="n">expr</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_expr</span>
+
+            <span class="c1"># Append the new expression</span>
+            <span class="n">new_body_expressions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_expr</span><span class="p">)</span>
+
+            <span class="c1"># Update dependency information</span>
+            <span class="k">if</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">object_used_in</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">object_used_in</span><span class="p">[</span><span class="n">expr</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">expression_dependencies</span><span class="p">:</span>
+                        <span class="n">expression_dependencies</span><span class="p">[</span><span class="n">dep</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+                        <span class="n">expression_dependencies</span><span class="p">[</span><span class="n">dep</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">new_expr</span><span class="p">)</span>
+
+                <span class="n">object_used_in</span><span class="p">[</span><span class="n">new_expr</span><span class="p">]</span> <span class="o">=</span> <span class="n">object_used_in</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">expression_dependencies</span><span class="p">:</span>
+                <span class="n">expression_dependencies</span><span class="p">[</span><span class="n">new_expr</span><span class="p">]</span> <span class="o">=</span> <span class="n">expression_dependencies</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span><span class="s2">&quot;Recreated body expressions&quot;</span><span class="p">)</span>
+
+        <span class="c1"># The main iteration over all body_expressions</span>
+        <span class="k">for</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">body_expressions</span><span class="p">:</span>
+
+            <span class="c1"># 1) Comments</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">Comment</span><span class="p">):</span>
+                <span class="n">new_body_expressions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">Expression</span><span class="p">)</span>
+
+            <span class="c1"># 2) Check for expression optimizations</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">optimize_exprs</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span> <span class="ow">or</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">result_expressions</span><span class="p">):</span>
+
+                <span class="n">timer_opt</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span>
+                    <span class="s2">&quot;Handle expression optimization for </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="p">)</span>
+
+                <span class="c1"># If expr is just a number we exchange the expression with the</span>
+                <span class="c1"># number</span>
+                <span class="k">if</span> <span class="s2">&quot;numerals&quot;</span> <span class="ow">in</span> <span class="n">optimize_exprs</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Number</span><span class="p">):</span>
+                    <span class="n">replace_dict</span><span class="p">[</span><span class="n">expr</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">expr</span>
+
+                    <span class="c1"># Remove information about this expr beeing used</span>
+                    <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">object_used_in</span><span class="p">[</span><span class="n">expr</span><span class="p">]:</span>
+                        <span class="n">expression_dependencies</span><span class="p">[</span><span class="n">dep</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+                    <span class="n">object_used_in</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+                    <span class="k">continue</span>
+
+                <span class="c1"># If the expr is just a symbol (symbol multiplied with a scalar)</span>
+                <span class="c1"># we exchange the expression with the sympy expressions</span>
+                <span class="k">elif</span> <span class="s2">&quot;symbols&quot;</span> <span class="ow">in</span> <span class="n">optimize_exprs</span> <span class="ow">and</span> <span class="p">(</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="p">,</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">,</span> <span class="n">AppliedUndef</span><span class="p">))</span>
+                    <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Mul</span><span class="p">)</span>
+                    <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+                    <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">,</span> <span class="n">AppliedUndef</span><span class="p">))</span>
+                    <span class="ow">and</span> <span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">is_number</span>
+                <span class="p">):</span>
+
+                    <span class="c1"># Add a replace rule based on the stored sympy expression</span>
+                    <span class="n">sympy_expr</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">der_replace_dict</span><span class="p">)</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span>
+                        <span class="n">replace_dict</span>
+                    <span class="p">)</span>
+
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Derivative</span><span class="p">):</span>
+                        <span class="n">der_replace_dict</span><span class="p">[</span><span class="n">expr</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">sympy_expr</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">replace_dict</span><span class="p">[</span><span class="n">expr</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">sympy_expr</span>
+
+                    <span class="c1"># Get exchanged repr</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="p">,</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">,</span> <span class="n">AppliedUndef</span><span class="p">)):</span>
+                        <span class="n">name</span> <span class="o">=</span> <span class="n">sympycode</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">name</span> <span class="o">=</span> <span class="n">sympycode</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+                    <span class="n">dep_expr</span> <span class="o">=</span> <span class="n">present_ode_objects</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+                    <span class="c1"># If using reused body expressions we need to update the</span>
+                    <span class="c1"># index information so that the index previously available</span>
+                    <span class="c1"># for this expressions gets available at the last expressions</span>
+                    <span class="c1"># the present expression is used in.</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="nb">isinstance</span><span class="p">(</span><span class="n">dep_expr</span><span class="p">,</span> <span class="n">IndexedExpression</span><span class="p">)</span>
+                        <span class="ow">and</span> <span class="n">dep_expr</span><span class="o">.</span><span class="n">basename</span> <span class="o">==</span> <span class="n">body_name</span>
+                        <span class="ow">and</span> <span class="s2">&quot;reused&quot;</span> <span class="ow">in</span> <span class="n">body_repr</span>
+                    <span class="p">):</span>
+                        <span class="n">ind</span> <span class="o">=</span> <span class="n">dep_expr</span><span class="o">.</span><span class="n">indices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+                        <span class="c1"># Remove available index information</span>
+                        <span class="n">dep_used_in</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">object_used_in</span><span class="p">[</span><span class="n">dep_expr</span><span class="p">])</span>
+                        <span class="k">for</span> <span class="n">used_expr</span> <span class="ow">in</span> <span class="n">dep_used_in</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">index_available_at</span><span class="p">[</span><span class="n">used_expr</span><span class="p">]:</span>
+                                <span class="n">index_available_at</span><span class="p">[</span><span class="n">used_expr</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">ind</span><span class="p">)</span>
+
+                        <span class="c1"># Update with new indices</span>
+                        <span class="n">all_used_in</span> <span class="o">=</span> <span class="n">object_used_in</span><span class="p">[</span><span class="n">expr</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                        <span class="n">all_used_in</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dep_used_in</span><span class="p">)</span>
+
+                        <span class="k">for</span> <span class="n">used_expr</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">all_used_in</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                            <span class="k">if</span> <span class="n">used_expr</span> <span class="ow">in</span> <span class="n">body_expressions</span><span class="p">:</span>
+                                <span class="n">index_available_at</span><span class="p">[</span><span class="n">used_expr</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ind</span><span class="p">)</span>
+                                <span class="k">break</span>
+
+                    <span class="c1"># Update information about this expr beeing used</span>
+                    <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">object_used_in</span><span class="p">[</span><span class="n">expr</span><span class="p">]:</span>
+                        <span class="n">expression_dependencies</span><span class="p">[</span><span class="n">dep</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+                        <span class="n">expression_dependencies</span><span class="p">[</span><span class="n">dep</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">dep_expr</span><span class="p">)</span>
+
+                    <span class="n">object_used_in</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+                    <span class="k">continue</span>
+
+                <span class="k">del</span> <span class="n">timer_opt</span>
+
+            <span class="c1"># 3) General operations for all Expressions that are kept</span>
+
+            <span class="c1"># Before we process the expression we check if any indices gets</span>
+            <span class="c1"># available with the expr (Only applies for the &quot;reused&quot; option for</span>
+            <span class="c1"># body_repr.)</span>
+            <span class="k">if</span> <span class="s2">&quot;reused&quot;</span> <span class="ow">in</span> <span class="n">body_repr</span><span class="p">:</span>
+
+                <span class="c1"># Check if any indices are available at this expression ind</span>
+                <span class="n">available_indices</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">index_available_at</span><span class="p">[</span><span class="n">expr</span><span class="p">])</span>
+
+            <span class="c1"># Store a map of old name this will preserve the ordering of</span>
+            <span class="c1"># expressions with the same name, similar to how this is treated in</span>
+            <span class="c1"># the actual ODE.</span>
+            <span class="n">present_ode_objects</span><span class="p">[</span><span class="n">expr</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">expr</span>
+            <span class="n">old_present_ode_objects</span><span class="p">[</span><span class="n">expr</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">expr</span>
+
+            <span class="c1"># 4) Handle result expression</span>
+            <span class="k">if</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">result_expressions</span><span class="p">:</span>
+
+                <span class="n">timer_result</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span>
+                    <span class="s2">&quot;Handle result expressions for </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="p">)</span>
+
+                <span class="c1"># Get the result name</span>
+                <span class="n">result_name</span> <span class="o">=</span> <span class="n">result_names</span><span class="p">[</span><span class="n">expr</span><span class="p">]</span>
+
+                <span class="c1"># If the expression is an IndexedExpression with the same basename</span>
+                <span class="c1"># as the result name we just recreate it</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">IndexedExpression</span><span class="p">)</span>
+                    <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">StateIndexedExpression</span><span class="p">)</span>
+                    <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">ParameterIndexedExpression</span><span class="p">)</span>
+                <span class="p">)</span> <span class="ow">and</span> <span class="n">result_name</span> <span class="o">==</span> <span class="n">expr</span><span class="o">.</span><span class="n">basename</span><span class="p">:</span>
+
+                    <span class="n">new_expr</span> <span class="o">=</span> <span class="n">recreate_expression</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">der_replace_dict</span><span class="p">,</span> <span class="n">replace_dict</span><span class="p">)</span>
+
+                <span class="c1"># Not an indexed expression</span>
+                <span class="k">else</span><span class="p">:</span>
+
+                    <span class="c1"># Get index based on the original ordering</span>
+                    <span class="n">index</span> <span class="o">=</span> <span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">expr</span><span class="p">),)</span>
+                    <span class="c1"># Create the IndexedExpression</span>
+                    <span class="c1"># NOTE: First replace any derivative expression replaces, then state and</span>
+                    <span class="c1"># NOTE: params</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">StateDerivative</span><span class="p">):</span>
+                        <span class="n">new_expr</span> <span class="o">=</span> <span class="n">StateIndexedExpression</span><span class="p">(</span>
+                            <span class="n">result_name</span><span class="p">,</span>
+                            <span class="n">index</span><span class="p">,</span>
+                            <span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">der_replace_dict</span><span class="p">)</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">replace_dict</span><span class="p">),</span>
+                            <span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+                            <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="n">result_name</span><span class="p">]),),</span>
+                            <span class="n">array_params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">array</span><span class="p">,</span>
+                        <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">new_expr</span> <span class="o">=</span> <span class="n">IndexedExpression</span><span class="p">(</span>
+                            <span class="n">result_name</span><span class="p">,</span>
+                            <span class="n">index</span><span class="p">,</span>
+                            <span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">der_replace_dict</span><span class="p">)</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">replace_dict</span><span class="p">),</span>
+                            <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="n">result_name</span><span class="p">]),),</span>
+                            <span class="n">array_params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">array</span><span class="p">,</span>
+                        <span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">new_expr</span><span class="o">.</span><span class="n">basename</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">indexed_map</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">indexed_map</span><span class="p">[</span><span class="n">new_expr</span><span class="o">.</span><span class="n">basename</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">indexed_map</span><span class="p">[</span><span class="n">new_expr</span><span class="o">.</span><span class="n">basename</span><span class="p">][</span><span class="n">expr</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_expr</span>
+
+                    <span class="c1"># Copy counter from old expression so it sort properly</span>
+                    <span class="n">new_expr</span><span class="o">.</span><span class="n">_recount</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">_count</span><span class="p">)</span>
+
+                <span class="c1"># Store the expressions</span>
+                <span class="n">store_expressions</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">new_expr</span><span class="p">)</span>
+
+                <span class="k">del</span> <span class="n">timer_result</span>
+
+            <span class="c1"># 4) Handle indexed expression</span>
+            <span class="c1"># All indexed expressions are just kept but recreated with updated</span>
+            <span class="c1"># sympy expressions</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">IndexedExpression</span><span class="p">):</span>
+
+                <span class="n">timer_indexed</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span>
+                    <span class="s2">&quot;Handle indexed expressions for </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="p">)</span>
+
+                <span class="n">new_expr</span> <span class="o">=</span> <span class="n">recreate_expression</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">der_replace_dict</span><span class="p">,</span> <span class="n">replace_dict</span><span class="p">)</span>
+
+                <span class="c1"># Store the expressions</span>
+                <span class="n">store_expressions</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">new_expr</span><span class="p">)</span>
+
+                <span class="k">del</span> <span class="n">timer_indexed</span>
+
+            <span class="c1"># 5) If replacing all body exressions with an indexed expression</span>
+            <span class="k">elif</span> <span class="s2">&quot;array&quot;</span> <span class="ow">in</span> <span class="n">body_repr</span><span class="p">:</span>
+
+                <span class="n">timer_body</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Handle body expressions for </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+                <span class="c1"># 5a) If we reuse array indices</span>
+                <span class="k">if</span> <span class="s2">&quot;reused&quot;</span> <span class="ow">in</span> <span class="n">body_repr</span><span class="p">:</span>
+
+                    <span class="k">if</span> <span class="n">available_indices</span><span class="p">:</span>
+                        <span class="n">ind</span> <span class="o">=</span> <span class="n">available_indices</span><span class="o">.</span><span class="n">popleft</span><span class="p">()</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">max_index</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">ind</span> <span class="o">=</span> <span class="n">max_index</span>
+
+                    <span class="c1"># Check when present ind gets available again</span>
+                    <span class="k">for</span> <span class="n">used_expr</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">object_used_in</span><span class="p">[</span><span class="n">expr</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">used_expr</span> <span class="ow">in</span> <span class="n">body_expressions</span><span class="p">:</span>
+                            <span class="n">index_available_at</span><span class="p">[</span><span class="n">used_expr</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ind</span><span class="p">)</span>
+                            <span class="k">break</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">warning</span><span class="p">(</span><span class="s2">&quot;SHOULD NOT COME HERE!&quot;</span><span class="p">)</span>
+
+                <span class="c1"># 5b) No reuse of array indices. Here each index corresponds to</span>
+                <span class="c1">#     a distinct body expression</span>
+                <span class="k">else</span><span class="p">:</span>
+
+                    <span class="n">ind</span> <span class="o">=</span> <span class="n">body_ind</span>
+
+                    <span class="c1"># Increase body_ind</span>
+                    <span class="n">body_ind</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                <span class="c1"># Create the IndexedExpression</span>
+                <span class="n">new_expr</span> <span class="o">=</span> <span class="n">IndexedExpression</span><span class="p">(</span>
+                    <span class="n">body_name</span><span class="p">,</span>
+                    <span class="n">ind</span><span class="p">,</span>
+                    <span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">der_replace_dict</span><span class="p">)</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">replace_dict</span><span class="p">),</span>
+                    <span class="n">array_params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">array</span><span class="p">,</span>
+                    <span class="n">enum</span><span class="o">=</span><span class="n">expr</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">body_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">indexed_map</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">indexed_map</span><span class="p">[</span><span class="n">body_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">indexed_map</span><span class="p">[</span><span class="n">body_name</span><span class="p">][</span><span class="n">expr</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_expr</span>
+
+                <span class="c1"># Copy counter from old expression so they sort properly</span>
+                <span class="n">new_expr</span><span class="o">.</span><span class="n">_recount</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">_count</span><span class="p">)</span>
+
+                <span class="c1"># Store the expressions</span>
+                <span class="n">store_expressions</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">new_expr</span><span class="p">)</span>
+
+                <span class="k">del</span> <span class="n">timer_body</span>
+
+            <span class="c1"># 6) If the expression is just an ordinary body expression and we</span>
+            <span class="c1">#    are using named representation of body</span>
+            <span class="k">else</span><span class="p">:</span>
+
+                <span class="n">timer_expr</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Handle expressions for </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                <span class="c1"># If the expression is a state derivative we need to add a</span>
+                <span class="c1"># replacement for the Derivative symbol</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">StateDerivative</span><span class="p">):</span>
+                    <span class="n">new_expr</span> <span class="o">=</span> <span class="n">Intermediate</span><span class="p">(</span>
+                        <span class="n">sympycode</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">sym</span><span class="p">),</span>
+                        <span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">der_replace_dict</span><span class="p">)</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">replace_dict</span><span class="p">),</span>
+                    <span class="p">)</span>
+                    <span class="n">new_expr</span><span class="o">.</span><span class="n">_recount</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">_count</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">new_expr</span> <span class="o">=</span> <span class="n">recreate_expression</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">der_replace_dict</span><span class="p">,</span> <span class="n">replace_dict</span><span class="p">)</span>
+
+                <span class="k">del</span> <span class="n">timer_expr</span>
+
+                <span class="c1"># Store the expressions</span>
+                <span class="n">store_expressions</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">new_expr</span><span class="p">)</span>
+
+        <span class="c1"># Store indices for any added arrays</span>
+        <span class="k">if</span> <span class="s2">&quot;reused_array&quot;</span> <span class="o">==</span> <span class="n">body_repr</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="n">max_index</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">body_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">max_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">body_name</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="s2">&quot;array&quot;</span> <span class="o">==</span> <span class="n">body_repr</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="n">body_ind</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">body_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">body_ind</span><span class="p">,)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">body_name</span><span class="p">)</span>
+
+        <span class="c1"># Store the shape of the added result expressions</span>
+        <span class="k">for</span> <span class="n">result_name</span><span class="p">,</span> <span class="n">result_expressions</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">result_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">result_expressions</span><span class="p">),)</span>
+
+        <span class="k">return</span> <span class="n">new_body_expressions</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

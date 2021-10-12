@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gotran.codegeneration.algorithmcomponents &mdash; gotran 2019.0.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> gotran
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Programmers reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gotran.html">gotran package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">gotran</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>gotran.codegeneration.algorithmcomponents</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gotran.codegeneration.algorithmcomponents</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (C) 2013 Johan Hake</span>
+<span class="c1">#</span>
+<span class="c1"># This file is part of Gotran.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU Lesser General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1"># (at your option) any later version.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the</span>
+<span class="c1"># GNU Lesser General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1"># You should have received a copy of the GNU Lesser General Public License</span>
+<span class="c1"># along with Gotran. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;JacobianComponent&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;JacobianActionComponent&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;FactorizedJacobianComponent&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ForwardBackwardSubstitutionComponent&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;LinearizedDerivativeComponent&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CommonSubExpressionODE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;componentwise_derivative&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;linearized_derivatives&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jacobian_expressions&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jacobian_action_expressions&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;factorized_jacobian_expressions&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;forward_backward_subst_expressions&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;diagonal_jacobian_expressions&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;rhs_expressions&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;diagonal_jacobian_action_expressions&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;monitored_expressions&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="c1"># System imports</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="c1"># ModelParameters imports</span>
+<span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">sp</span>
+<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">sympycode</span>
+
+<span class="c1"># Local imports</span>
+<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">error</span><span class="p">,</span>
+    <span class="n">info</span><span class="p">,</span>
+    <span class="n">debug</span><span class="p">,</span>
+    <span class="n">check_arg</span><span class="p">,</span>
+    <span class="n">check_kwarg</span><span class="p">,</span>
+    <span class="n">scalars</span><span class="p">,</span>
+    <span class="n">Timer</span><span class="p">,</span>
+    <span class="n">warning</span><span class="p">,</span>
+    <span class="n">tuplewrap</span><span class="p">,</span>
+    <span class="n">parameters</span><span class="p">,</span>
+    <span class="n">warning</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="n">listwrap</span>
+<span class="kn">from</span> <span class="nn">gotran.model.utils</span> <span class="kn">import</span> <span class="n">ode_primitives</span>
+<span class="kn">from</span> <span class="nn">gotran.model.odeobjects</span> <span class="kn">import</span> <span class="n">State</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">IndexedObject</span><span class="p">,</span> <span class="n">Comment</span>
+<span class="kn">from</span> <span class="nn">gotran.model.expressions</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">gotran.model.ode</span> <span class="kn">import</span> <span class="n">ODE</span>
+<span class="kn">from</span> <span class="nn">gotran.codegeneration.codecomponent</span> <span class="kn">import</span> <span class="n">CodeComponent</span>
+
+<span class="c1"># FIXME: Remove our own cse, or move to this module?</span>
+<span class="kn">from</span> <span class="nn">gotran.codegeneration.sympy_cse</span> <span class="kn">import</span> <span class="n">cse</span>
+
+
+<div class="viewcode-block" id="rhs_expressions"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.rhs_expressions">[docs]</a><span class="k">def</span> <span class="nf">rhs_expressions</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;rhs&quot;</span><span class="p">,</span> <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;dy&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a code component with body expressions for the right hand side</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    ode : gotran.ODE</span>
+<span class="sd">        The finalized ODE</span>
+<span class="sd">    function_name : str</span>
+<span class="sd">        The name of the function which should be generated</span>
+<span class="sd">    result_name : str</span>
+<span class="sd">        The name of the variable storing the rhs result</span>
+<span class="sd">    params : dict</span>
+<span class="sd">        Parameters determining how the code should be generated</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ode</span><span class="o">.</span><span class="n">is_finalized</span><span class="p">:</span>
+        <span class="n">error</span><span class="p">(</span>
+            <span class="s2">&quot;Cannot compute right hand side expressions if the ODE is &quot;</span> <span class="s2">&quot;not finalized&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">descr</span> <span class="o">=</span> <span class="s2">&quot;Compute the right hand side of the </span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">CodeComponent</span><span class="p">(</span>
+        <span class="s2">&quot;RHSComponent&quot;</span><span class="p">,</span>
+        <span class="n">ode</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="p">,</span>
+        <span class="n">descr</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+        <span class="o">**</span><span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="n">ode</span><span class="o">.</span><span class="n">state_expressions</span><span class="p">}</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="monitored_expressions"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.monitored_expressions">[docs]</a><span class="k">def</span> <span class="nf">monitored_expressions</span><span class="p">(</span>
+    <span class="n">ode</span><span class="p">,</span>
+    <span class="n">monitored</span><span class="p">,</span>
+    <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;monitored_expressions&quot;</span><span class="p">,</span>
+    <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;monitored&quot;</span><span class="p">,</span>
+    <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a code component with body expressions to calculate monitored expressions</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    ode : gotran.ODE</span>
+<span class="sd">        The finalized ODE for which the monitored expression should be computed</span>
+<span class="sd">    monitored : tuple, list</span>
+<span class="sd">        A tuple/list of strings containing the name of the monitored expressions</span>
+<span class="sd">    function_name : str</span>
+<span class="sd">        The name of the function which should be generated</span>
+<span class="sd">    result_name : str</span>
+<span class="sd">        The name of the variable storing the rhs result</span>
+<span class="sd">    params : dict</span>
+<span class="sd">        Parameters determining how the code should be generated</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ode</span><span class="o">.</span><span class="n">is_finalized</span><span class="p">:</span>
+        <span class="n">error</span><span class="p">(</span>
+            <span class="s2">&quot;Cannot compute right hand side expressions if the ODE is &quot;</span> <span class="s2">&quot;not finalized&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">check_arg</span><span class="p">(</span><span class="n">monitored</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span> <span class="n">itemtypes</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    <span class="n">monitored_exprs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">expr_str</span> <span class="ow">in</span> <span class="n">monitored</span><span class="p">:</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">ode</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">expr_str</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Expression</span><span class="p">):</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> is not an expression in the </span><span class="si">{1}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">expr_str</span><span class="p">,</span> <span class="n">ode</span><span class="p">))</span>
+
+        <span class="n">monitored_exprs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+    <span class="n">descr</span> <span class="o">=</span> <span class="s2">&quot;Computes monitored expressions of the </span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">CodeComponent</span><span class="p">(</span>
+        <span class="s2">&quot;MonitoredExpressions&quot;</span><span class="p">,</span>
+        <span class="n">ode</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="p">,</span>
+        <span class="n">descr</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+        <span class="o">**</span><span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="n">monitored_exprs</span><span class="p">}</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="componentwise_derivative"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.componentwise_derivative">[docs]</a><span class="k">def</span> <span class="nf">componentwise_derivative</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;dy&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return an ODEComponent holding the expressions for the ith</span>
+<span class="sd">    state derivative</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    ode : gotran.ODE</span>
+<span class="sd">        The finalized ODE for which the ith derivative should be computed</span>
+<span class="sd">    indices : int, list of ints</span>
+<span class="sd">        The index</span>
+<span class="sd">    params : dict</span>
+<span class="sd">        Parameters determining how the code should be generated</span>
+<span class="sd">    result_name : str</span>
+<span class="sd">        The name of the result variable</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ode</span><span class="o">.</span><span class="n">is_finalized</span><span class="p">:</span>
+        <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Cannot compute component wise derivatives if ODE is &quot;</span> <span class="s2">&quot;not finalized&quot;</span><span class="p">)</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="n">listwrap</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
+
+    <span class="n">check_arg</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="n">itemtypes</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">check_arg</span><span class="p">(</span><span class="n">result_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">error</span><span class="p">(</span><span class="s2">&quot;expected at least on index&quot;</span><span class="p">)</span>
+
+    <span class="n">registered</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">index</span> <span class="o">&gt;=</span> <span class="n">ode</span><span class="o">.</span><span class="n">num_full_states</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;Expected the passed indices to be between 0 and the &quot;</span>
+                <span class="s2">&quot;number of states in the ode, got </span><span class="si">{0}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">registered</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Index </span><span class="si">{0}</span><span class="s2"> appeared twice.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">index</span><span class="p">))</span>
+
+        <span class="n">registered</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+
+    <span class="c1"># Get state expression</span>
+    <span class="n">exprs</span> <span class="o">=</span> <span class="p">[</span><span class="n">ode</span><span class="o">.</span><span class="n">state_expressions</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">]</span>
+
+    <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="n">exprs</span><span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">CodeComponent</span><span class="p">(</span>
+        <span class="s2">&quot;componentwise_derivatives_</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">exprs</span><span class="p">)</span>
+        <span class="p">),</span>
+        <span class="n">ode</span><span class="p">,</span>
+        <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">results</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="linearized_derivatives"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.linearized_derivatives">[docs]</a><span class="k">def</span> <span class="nf">linearized_derivatives</span><span class="p">(</span>
+    <span class="n">ode</span><span class="p">,</span>
+    <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;linear_derivatives&quot;</span><span class="p">,</span>
+    <span class="n">result_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;linearized&quot;</span><span class="p">,</span> <span class="s2">&quot;dy&quot;</span><span class="p">],</span>
+    <span class="n">only_linear</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">include_rhs</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">nonlinear_last</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return an ODEComponent holding the linearized derivative expressions</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    ode : gotran.ODE</span>
+<span class="sd">        The ODE for which derivatives should be linearized</span>
+<span class="sd">    function_name : str</span>
+<span class="sd">        The name of the function which should be generated</span>
+<span class="sd">    result_names : str</span>
+<span class="sd">        The name of the variable storing the linearized derivatives and the</span>
+<span class="sd">        rhs evaluation if that is included.</span>
+<span class="sd">    only_linear : bool</span>
+<span class="sd">        If True, only linear terms will be linearized</span>
+<span class="sd">    include_rhs : bool</span>
+<span class="sd">        If True, rhs evaluation will be included in the generated code.</span>
+<span class="sd">    nonlinear_last : bool</span>
+<span class="sd">        If True the nonlinear expressions are added last after a comment</span>
+<span class="sd">    params : dict</span>
+<span class="sd">        Parameters determining how the code should be generated</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ode</span><span class="o">.</span><span class="n">is_finalized</span><span class="p">:</span>
+        <span class="n">error</span><span class="p">(</span><span class="s2">&quot;The ODE is not finalized&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">LinearizedDerivativeComponent</span><span class="p">(</span>
+        <span class="n">ode</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="p">,</span>
+        <span class="n">result_names</span><span class="p">,</span>
+        <span class="n">only_linear</span><span class="p">,</span>
+        <span class="n">include_rhs</span><span class="p">,</span>
+        <span class="n">nonlinear_last</span><span class="p">,</span>
+        <span class="n">params</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="jacobian_expressions"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.jacobian_expressions">[docs]</a><span class="k">def</span> <span class="nf">jacobian_expressions</span><span class="p">(</span>
+    <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;compute_jacobian&quot;</span><span class="p">,</span> <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;jac&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return an ODEComponent holding expressions for the jacobian</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    ode : gotran.ODE</span>
+<span class="sd">        The ODE for which the jacobian expressions should be computed</span>
+<span class="sd">    function_name : str</span>
+<span class="sd">        The name of the function which should be generated</span>
+<span class="sd">    result_name : str</span>
+<span class="sd">        The name of the variable storing the jacobian result</span>
+<span class="sd">    params : dict</span>
+<span class="sd">        Parameters determining how the code should be generated</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ode</span><span class="o">.</span><span class="n">is_finalized</span><span class="p">:</span>
+        <span class="n">error</span><span class="p">(</span><span class="s2">&quot;The ODE is not finalized&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">JacobianComponent</span><span class="p">(</span>
+        <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="n">function_name</span><span class="p">,</span> <span class="n">result_name</span><span class="o">=</span><span class="n">result_name</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="jacobian_action_expressions"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.jacobian_action_expressions">[docs]</a><span class="k">def</span> <span class="nf">jacobian_action_expressions</span><span class="p">(</span>
+    <span class="n">jacobian</span><span class="p">,</span>
+    <span class="n">with_body</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;compute_jacobian_action&quot;</span><span class="p">,</span>
+    <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;jac_action&quot;</span><span class="p">,</span>
+    <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return an ODEComponent holding expressions for the jacobian action</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    jacobian : gotran.JacobianComponent</span>
+<span class="sd">        The ODEComponent holding expressions for the jacobian</span>
+<span class="sd">    with_body : bool</span>
+<span class="sd">        If true, the body for computing the jacobian will be included</span>
+<span class="sd">    function_name : str</span>
+<span class="sd">        The name of the function which should be generated</span>
+<span class="sd">    result_name : str</span>
+<span class="sd">        The name of the variable storing the jacobian diagonal result</span>
+<span class="sd">    params : dict</span>
+<span class="sd">        Parameters determining how the code should be generated</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">check_arg</span><span class="p">(</span><span class="n">jacobian</span><span class="p">,</span> <span class="n">JacobianComponent</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">JacobianActionComponent</span><span class="p">(</span>
+        <span class="n">jacobian</span><span class="p">,</span> <span class="n">with_body</span><span class="p">,</span> <span class="n">function_name</span><span class="p">,</span> <span class="n">result_name</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="diagonal_jacobian_expressions"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.diagonal_jacobian_expressions">[docs]</a><span class="k">def</span> <span class="nf">diagonal_jacobian_expressions</span><span class="p">(</span>
+    <span class="n">jacobian</span><span class="p">,</span>
+    <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;compute_diagonal_jacobian&quot;</span><span class="p">,</span>
+    <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;diag_jac&quot;</span><span class="p">,</span>
+    <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return an ODEComponent holding expressions for the diagonal jacobian</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    jacobian : gotran.JacobianComponent</span>
+<span class="sd">        The Jacobian of the ODE</span>
+<span class="sd">    function_name : str</span>
+<span class="sd">        The name of the function which should be generated</span>
+<span class="sd">    result_name : str</span>
+<span class="sd">        The name of the variable storing the jacobian diagonal result</span>
+<span class="sd">    params : dict</span>
+<span class="sd">        Parameters determining how the code should be generated</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">DiagonalJacobianComponent</span><span class="p">(</span>
+        <span class="n">jacobian</span><span class="p">,</span> <span class="n">function_name</span><span class="p">,</span> <span class="n">result_name</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="diagonal_jacobian_action_expressions"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.diagonal_jacobian_action_expressions">[docs]</a><span class="k">def</span> <span class="nf">diagonal_jacobian_action_expressions</span><span class="p">(</span>
+    <span class="n">diagonal_jacobian</span><span class="p">,</span>
+    <span class="n">with_body</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;compute_diagonal_jacobian_action&quot;</span><span class="p">,</span>
+    <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;diag_jac_action&quot;</span><span class="p">,</span>
+    <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return an ODEComponent holding expressions for the diagonal jacobian action</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    diagonal_jacobian : gotran.DiagonalJacobianComponent</span>
+<span class="sd">        The ODEComponent holding expressions for the diagonal jacobian</span>
+<span class="sd">    with_body : bool</span>
+<span class="sd">        If true, the body for computing the jacobian will be included</span>
+<span class="sd">    function_name : str</span>
+<span class="sd">        The name of the function which should be generated</span>
+<span class="sd">    result_name : str</span>
+<span class="sd">        The name of the variable storing the jacobian diagonal result</span>
+<span class="sd">    params : dict</span>
+<span class="sd">        Parameters determining how the code should be generated</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">check_arg</span><span class="p">(</span><span class="n">diagonal_jacobian</span><span class="p">,</span> <span class="n">DiagonalJacobianComponent</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">DiagonalJacobianActionComponent</span><span class="p">(</span>
+        <span class="n">diagonal_jacobian</span><span class="p">,</span> <span class="n">with_body</span><span class="p">,</span> <span class="n">function_name</span><span class="p">,</span> <span class="n">result_name</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="factorized_jacobian_expressions"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.factorized_jacobian_expressions">[docs]</a><span class="k">def</span> <span class="nf">factorized_jacobian_expressions</span><span class="p">(</span>
+    <span class="n">jacobian</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;lu_factorize&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return an ODEComponent holding expressions for the factorized jacobian</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    jacobian : gotran.JacobianComponent</span>
+<span class="sd">        The ODEComponent holding expressions for the jacobian</span>
+<span class="sd">    params : dict</span>
+<span class="sd">        Parameters determining how the code should be generated</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">check_arg</span><span class="p">(</span><span class="n">jacobian</span><span class="p">,</span> <span class="n">JacobianComponent</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">FactorizedJacobianComponent</span><span class="p">(</span><span class="n">jacobian</span><span class="p">,</span> <span class="n">function_name</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="forward_backward_subst_expressions"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.forward_backward_subst_expressions">[docs]</a><span class="k">def</span> <span class="nf">forward_backward_subst_expressions</span><span class="p">(</span>
+    <span class="n">factorized</span><span class="p">,</span>
+    <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_backward_subst&quot;</span><span class="p">,</span>
+    <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;dx&quot;</span><span class="p">,</span>
+    <span class="n">residual_name</span><span class="o">=</span><span class="s2">&quot;F&quot;</span><span class="p">,</span>
+    <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return an ODEComponent holding expressions for the forward backward</span>
+<span class="sd">    substitions for a factorized jacobian</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    factorized : gotran.FactorizedJacobianComponent</span>
+<span class="sd">        The ODEComponent holding expressions for the factorized jacobian</span>
+<span class="sd">    function_name : str</span>
+<span class="sd">        The name of the function which should be generated</span>
+<span class="sd">    result_name : str</span>
+<span class="sd">        The name of the result (increment)</span>
+<span class="sd">    residual_name : str</span>
+<span class="sd">        The name of the residual</span>
+<span class="sd">    params : dict</span>
+<span class="sd">        Parameters determining how the code should be generated</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">check_arg</span><span class="p">(</span><span class="n">factorized</span><span class="p">,</span> <span class="n">FactorizedJacobianComponent</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ForwardBackwardSubstitutionComponent</span><span class="p">(</span>
+        <span class="n">factorized</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="o">=</span><span class="n">function_name</span><span class="p">,</span>
+        <span class="n">result_name</span><span class="o">=</span><span class="n">result_name</span><span class="p">,</span>
+        <span class="n">residual_name</span><span class="o">=</span><span class="n">residual_name</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="JacobianComponent"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.JacobianComponent">[docs]</a><span class="k">class</span> <span class="nc">JacobianComponent</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An ODEComponent which keeps all expressions for the Jacobian of the rhs</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;compute_jacobian&quot;</span><span class="p">,</span> <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;jac&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a JacobianComponent</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        ode : gotran.ODE</span>
+<span class="sd">            The parent component of this ODEComponent</span>
+<span class="sd">        function_name : str</span>
+<span class="sd">            The name of the function which should be generated</span>
+<span class="sd">        result_name : str</span>
+<span class="sd">            The name of the variable storing the jacobian result</span>
+<span class="sd">        params : dict</span>
+<span class="sd">            Parameters determining how the code should be generated</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">)</span>
+
+        <span class="c1"># Call base class using empty result_expressions</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="s2">&quot;Compute the jacobian of the right hand side of the &quot;</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">ode</span>
+        <span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">JacobianComponent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="s2">&quot;Jacobian&quot;</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="p">,</span> <span class="n">descr</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+        <span class="p">)</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">result_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Computing jacobian&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Gather state expressions and states</span>
+        <span class="n">state_exprs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">state_expressions</span>
+        <span class="n">states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">full_states</span>
+
+        <span class="c1"># Create Jacobian matrix</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">jacobian</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Matrix</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_nonzero</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
+
+        <span class="n">state_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span> <span class="n">ind</span><span class="p">)</span> <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">state</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">states</span><span class="p">))</span>
+        <span class="n">time_sym</span> <span class="o">=</span> <span class="n">states</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">sym</span>
+
+        <span class="n">might_take_time</span> <span class="o">=</span> <span class="n">N</span> <span class="o">&gt;=</span> <span class="mi">10</span>
+
+        <span class="k">if</span> <span class="n">might_take_time</span><span class="p">:</span>
+            <span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Calculating Jacobian of </span><span class="si">{0}</span><span class="s2">. Might take some time...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">expr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">state_exprs</span><span class="p">):</span>
+
+            <span class="n">states_syms</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">state_dict</span><span class="p">[</span><span class="n">sym</span><span class="p">],</span> <span class="n">sym</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">sym</span> <span class="ow">in</span> <span class="n">ode_primitives</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="p">,</span> <span class="n">time_sym</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">sym</span> <span class="ow">in</span> <span class="n">state_dict</span>
+            <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span>
+                <span class="s2">&quot;Expressions for the sparse jacobian of &quot;</span>
+                <span class="s2">&quot;state </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+                <span class="n">dependent</span><span class="o">=</span><span class="n">expr</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">sym</span> <span class="ow">in</span> <span class="n">states_syms</span><span class="p">:</span>
+                <span class="n">time_diff</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Differentiate state_expressions&quot;</span><span class="p">)</span>
+                <span class="n">jac_ij</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">sym</span><span class="p">)</span>
+                <span class="k">del</span> <span class="n">time_diff</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">num_nonzero</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">jac_ij</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
+                    <span class="n">result_name</span><span class="p">,</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">),</span> <span class="n">jac_ij</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="n">expr</span>
+                <span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">jacobian</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">jac_ij</span>
+
+        <span class="k">if</span> <span class="n">might_take_time</span><span class="p">:</span>
+            <span class="n">info</span><span class="p">(</span><span class="s2">&quot; done&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Call recreate body with the jacobian expressions as the result</span>
+        <span class="c1"># expressions</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">indexed_objects</span><span class="p">(</span><span class="n">result_name</span><span class="p">)}</span>
+        <span class="n">results</span><span class="p">,</span> <span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_body_from_results</span><span class="p">(</span><span class="o">**</span><span class="n">results</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recreate_body</span><span class="p">(</span><span class="n">body_expressions</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">)</span></div>
+
+
+<span class="k">class</span> <span class="nc">DiagonalJacobianComponent</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An ODEComponent which keeps all expressions for the Jacobian of the rhs</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">jacobian</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;compute_diagonal_jacobian&quot;</span><span class="p">,</span>
+        <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;diag_jac&quot;</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a DiagonalJacobianComponent</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        jacobian : gotran.JacobianComponent</span>
+<span class="sd">            The Jacobian of the ODE</span>
+<span class="sd">        function_name : str</span>
+<span class="sd">            The name of the function which should be generated</span>
+<span class="sd">        result_name : str (optional)</span>
+<span class="sd">            The basename of the indexed result expression</span>
+<span class="sd">        params : dict</span>
+<span class="sd">            Parameters determining how the code should be generated</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">jacobian</span><span class="p">,</span> <span class="n">JacobianComponent</span><span class="p">)</span>
+
+        <span class="n">descr</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;Compute the diagonal jacobian of the right hand side of the &quot;</span>
+            <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">jacobian</span><span class="o">.</span><span class="n">root</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DiagonalJacobianComponent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="s2">&quot;DiagonalJacobian&quot;</span><span class="p">,</span> <span class="n">jacobian</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">function_name</span><span class="p">,</span> <span class="n">descr</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+        <span class="p">)</span>
+
+        <span class="n">what</span> <span class="o">=</span> <span class="s2">&quot;Computing diagonal jacobian&quot;</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="n">what</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span><span class="n">what</span><span class="p">)</span>
+
+        <span class="n">N</span> <span class="o">=</span> <span class="n">jacobian</span><span class="o">.</span><span class="n">jacobian</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">N</span><span class="p">,)</span>
+        <span class="n">jacobian_name</span> <span class="o">=</span> <span class="n">jacobian</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Create IndexExpressions of the diagonal Jacobian</span>
+        <span class="k">for</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">jacobian</span><span class="o">.</span><span class="n">indexed_objects</span><span class="p">(</span><span class="n">jacobian_name</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">expr</span><span class="o">.</span><span class="n">indices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">expr</span><span class="o">.</span><span class="n">indices</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span><span class="n">result_name</span><span class="p">,</span> <span class="n">expr</span><span class="o">.</span><span class="n">indices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">diagonal_jacobian</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Matrix</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">diagonal_jacobian</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">jacobian</span><span class="o">.</span><span class="n">jacobian</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span>
+
+        <span class="c1"># Call recreate body with the jacobian diagonal expressions as the</span>
+        <span class="c1"># result expressions</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">indexed_objects</span><span class="p">(</span><span class="n">result_name</span><span class="p">)}</span>
+        <span class="n">results</span><span class="p">,</span> <span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_body_from_results</span><span class="p">(</span><span class="o">**</span><span class="n">results</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recreate_body</span><span class="p">(</span><span class="n">body_expressions</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="JacobianActionComponent"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.JacobianActionComponent">[docs]</a><span class="k">class</span> <span class="nc">JacobianActionComponent</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Jacobian action component which returns the expressions for Jac*x</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">jacobian</span><span class="p">,</span>
+        <span class="n">with_body</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;compute_jacobian_action&quot;</span><span class="p">,</span>
+        <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;jac_action&quot;</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a JacobianActionComponent</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        jacobian : gotran.JacobianComponent</span>
+<span class="sd">            The Jacobian of the ODE</span>
+<span class="sd">        with_body : bool</span>
+<span class="sd">            If true, the body for computing the jacobian will be included</span>
+<span class="sd">        function_name : str</span>
+<span class="sd">            The name of the function which should be generated</span>
+<span class="sd">        result_name : str</span>
+<span class="sd">            The basename of the indexed result expression</span>
+<span class="sd">        params : dict</span>
+<span class="sd">            Parameters determining how the code should be generated</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Computing jacobian action component&quot;</span><span class="p">)</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">jacobian</span><span class="p">,</span> <span class="n">JacobianComponent</span><span class="p">)</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;Compute the jacobian action of the right hand side of the &quot;</span>
+            <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">jacobian</span><span class="o">.</span><span class="n">root</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">JacobianActionComponent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="s2">&quot;JacobianAction&quot;</span><span class="p">,</span> <span class="n">jacobian</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">function_name</span><span class="p">,</span> <span class="n">descr</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+        <span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">full_state_vector</span>
+        <span class="n">jac</span> <span class="o">=</span> <span class="n">jacobian</span><span class="o">.</span><span class="n">jacobian</span>
+        <span class="n">jacobian_name</span> <span class="o">=</span> <span class="n">jacobian</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Create Jacobian action vector</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">action_vector</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Matrix</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span><span class="s2">&quot;Computing the action of the jacobian&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">jacobian_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">jacobian</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">jacobian_name</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">expr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">jac</span> <span class="o">*</span> <span class="n">x</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">action_vector</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span><span class="n">result_name</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
+
+        <span class="c1"># Call recreate body with the jacobian action expressions as the</span>
+        <span class="c1"># result expressions</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">indexed_objects</span><span class="p">(</span><span class="n">result_name</span><span class="p">)}</span>
+        <span class="k">if</span> <span class="n">with_body</span><span class="p">:</span>
+            <span class="n">results</span><span class="p">,</span> <span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_body_from_results</span><span class="p">(</span><span class="o">**</span><span class="n">results</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">body_expressions</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recreate_body</span><span class="p">(</span><span class="n">body_expressions</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">)</span></div>
+
+
+<span class="k">class</span> <span class="nc">DiagonalJacobianActionComponent</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Jacobian action component which returns the expressions for Jac*x</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">diagonal_jacobian</span><span class="p">,</span>
+        <span class="n">with_body</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;compute_diagonal_jacobian_action&quot;</span><span class="p">,</span>
+        <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;diag_jac_action&quot;</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a DiagonalJacobianActionComponent</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        jacobian : gotran.JacobianComponent</span>
+<span class="sd">            The Jacobian of the ODE</span>
+<span class="sd">        with_body : bool</span>
+<span class="sd">            If true, the body for computing the jacobian will be included</span>
+<span class="sd">        function_name : str</span>
+<span class="sd">            The name of the function which should be generated</span>
+<span class="sd">        result_name : str</span>
+<span class="sd">            The basename of the indexed result expression</span>
+<span class="sd">        params : dict</span>
+<span class="sd">            Parameters determining how the code should be generated</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Computing jacobian action component&quot;</span><span class="p">)</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">diagonal_jacobian</span><span class="p">,</span> <span class="n">DiagonalJacobianComponent</span><span class="p">)</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;Compute the diagonal jacobian action of the right hand side &quot;</span>
+            <span class="s2">&quot;of the </span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">diagonal_jacobian</span><span class="o">.</span><span class="n">root</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DiagonalJacobianActionComponent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="s2">&quot;DiagonalJacobianAction&quot;</span><span class="p">,</span>
+            <span class="n">diagonal_jacobian</span><span class="o">.</span><span class="n">root</span><span class="p">,</span>
+            <span class="n">function_name</span><span class="p">,</span>
+            <span class="n">descr</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">full_state_vector</span>
+        <span class="n">jac</span> <span class="o">=</span> <span class="n">diagonal_jacobian</span><span class="o">.</span><span class="n">diagonal_jacobian</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_action_vector</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Matrix</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span><span class="s2">&quot;Computing the action of the jacobian&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Create Jacobian matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">expr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">jac</span> <span class="o">*</span> <span class="n">x</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_action_vector</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span><span class="n">result_name</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
+
+        <span class="c1"># Call recreate body with the jacobian action expressions as the</span>
+        <span class="c1"># result expressions</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">indexed_objects</span><span class="p">(</span><span class="n">result_name</span><span class="p">)}</span>
+        <span class="k">if</span> <span class="n">with_body</span><span class="p">:</span>
+            <span class="n">results</span><span class="p">,</span> <span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_body_from_results</span><span class="p">(</span><span class="o">**</span><span class="n">results</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">body_expressions</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recreate_body</span><span class="p">(</span><span class="n">body_expressions</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="FactorizedJacobianComponent"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.FactorizedJacobianComponent">[docs]</a><span class="k">class</span> <span class="nc">FactorizedJacobianComponent</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class to generate expressions for symbolicaly factorizing a jacobian</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">jacobian</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;lu_factorize&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a FactorizedJacobianComponent</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        jacobian : gotran.JacobianComponent</span>
+<span class="sd">            The Jacobian of the ODE</span>
+<span class="sd">        function_name : str</span>
+<span class="sd">            The name of the function which should be generated</span>
+<span class="sd">        params : dict</span>
+<span class="sd">            Parameters determining how the code should be generated</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Computing factorization of jacobian&quot;</span><span class="p">)</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">jacobian</span><span class="p">,</span> <span class="n">JacobianComponent</span><span class="p">)</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="s2">&quot;Symbolically factorize the jacobian of the </span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">jacobian</span><span class="o">.</span><span class="n">root</span>
+        <span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">FactorizedJacobianComponent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="s2">&quot;FactorizedJacobian&quot;</span><span class="p">,</span>
+            <span class="n">jacobian</span><span class="o">.</span><span class="n">root</span><span class="p">,</span>
+            <span class="n">function_name</span><span class="p">,</span>
+            <span class="n">descr</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+            <span class="n">use_default_arguments</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">additional_arguments</span><span class="o">=</span><span class="n">jacobian</span><span class="o">.</span><span class="n">results</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span><span class="s2">&quot;Factorizing jacobian of </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="n">jacobian_name</span> <span class="o">=</span> <span class="n">jacobian</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Recreate jacobian using only sympy Symbols</span>
+        <span class="n">jac_orig</span> <span class="o">=</span> <span class="n">jacobian</span><span class="o">.</span><span class="n">jacobian</span>
+
+        <span class="c1"># Size of system</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">jac_orig</span><span class="o">.</span><span class="n">rows</span>
+        <span class="n">jac</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Matrix</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="n">sp</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">Zero</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                <span class="c1"># print jac_orig[i,j]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">jac_orig</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">is_zero</span><span class="p">:</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">sympycode</span><span class="p">(</span><span class="n">jac_orig</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span>
+                    <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span>
+                        <span class="n">name</span><span class="p">,</span>
+                        <span class="n">real</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">imaginary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                        <span class="n">commutative</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">hermitian</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="nb">complex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">jacobian_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">add_intermediate_if_changed</span><span class="p">(</span><span class="n">jac</span><span class="p">,</span> <span class="n">jac_ij</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+            <span class="c1"># If item has changed</span>
+            <span class="k">if</span> <span class="n">jac_ij</span> <span class="o">!=</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;jac&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">jac_ij</span><span class="p">)</span>
+                <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span><span class="n">jacobian_name</span><span class="p">,</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">),</span> <span class="n">jac_ij</span><span class="p">)</span>
+
+        <span class="c1"># Do the factorization</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">j</span><span class="p">):</span>
+
+                <span class="c1"># Get sympy expr of A_ij</span>
+                <span class="n">jac_ij</span> <span class="o">=</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+
+                <span class="c1"># Build sympy expression</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+                    <span class="n">jac_ij</span> <span class="o">-=</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">jac</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+
+                <span class="n">add_intermediate_if_changed</span><span class="p">(</span><span class="n">jac</span><span class="p">,</span> <span class="n">jac_ij</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+
+            <span class="n">pivot</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+
+                <span class="c1"># Get sympy expr of A_ij</span>
+                <span class="n">jac_ij</span> <span class="o">=</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+
+                <span class="c1"># Build sympy expression</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">j</span><span class="p">):</span>
+                    <span class="n">jac_ij</span> <span class="o">-=</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">jac</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+
+                <span class="n">add_intermediate_if_changed</span><span class="p">(</span><span class="n">jac</span><span class="p">,</span> <span class="n">jac_ij</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+
+                <span class="c1"># find the first non-zero pivot, includes any expression</span>
+                <span class="k">if</span> <span class="n">pivot</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]:</span>
+                    <span class="n">pivot</span> <span class="o">=</span> <span class="n">i</span>
+
+            <span class="k">if</span> <span class="n">pivot</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># this result is based on iszerofunc&#39;s analysis of the</span>
+                <span class="c1"># possible pivots, so even though the element may not be</span>
+                <span class="c1"># strictly zero, the supplied iszerofunc&#39;s evaluation gave</span>
+                <span class="c1"># True</span>
+                <span class="n">error</span><span class="p">(</span><span class="s2">&quot;No nonzero pivot found; symbolic inversion failed.&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">pivot</span> <span class="o">!=</span> <span class="n">j</span><span class="p">:</span>  <span class="c1"># row must be swapped</span>
+                <span class="n">jac</span><span class="o">.</span><span class="n">row_swap</span><span class="p">(</span><span class="n">pivot</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">pivot</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Pivoting!!&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Scale with diagonal</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">jac</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">j</span><span class="p">]:</span>
+                <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Diagonal element of the jacobian is zero. &quot;</span> <span class="s2">&quot;Inversion failed&quot;</span><span class="p">)</span>
+
+            <span class="n">scale</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">jac</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+
+                <span class="c1"># Get sympy expr of A_ij</span>
+                <span class="n">jac_ij</span> <span class="o">=</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                <span class="n">jac_ij</span> <span class="o">*=</span> <span class="n">scale</span>
+                <span class="n">add_intermediate_if_changed</span><span class="p">(</span><span class="n">jac</span><span class="p">,</span> <span class="n">jac_ij</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+
+        <span class="c1"># Store factorized jacobian</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">factorized_jacobian</span> <span class="o">=</span> <span class="n">jac</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_nonzero</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="ow">not</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">is_zero</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># No need to call recreate body expressions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ode_objects</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">used_states</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">used_parameters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ForwardBackwardSubstitutionComponent"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.ForwardBackwardSubstitutionComponent">[docs]</a><span class="k">class</span> <span class="nc">ForwardBackwardSubstitutionComponent</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class to generate a forward backward substiution algorithm for</span>
+<span class="sd">    symbolically factorized jacobian</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">factorized</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_backward_subst&quot;</span><span class="p">,</span>
+        <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;dx&quot;</span><span class="p">,</span>
+        <span class="n">residual_name</span><span class="o">=</span><span class="s2">&quot;F&quot;</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a JacobianForwardBackwardSubstComponent</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        factorized : gotran.FactorizedJacobianComponent</span>
+<span class="sd">            The factorized jacobian of the ODE</span>
+<span class="sd">        function_name : str</span>
+<span class="sd">            The name of the function which should be generated</span>
+<span class="sd">        result_name : str</span>
+<span class="sd">            The name of the result (increment)</span>
+<span class="sd">        residual_name : str</span>
+<span class="sd">            The name of the residual</span>
+<span class="sd">        params : dict</span>
+<span class="sd">            Parameters determining how the code should be generated</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Computing forward backward substituion component&quot;</span><span class="p">)</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">factorized</span><span class="p">,</span> <span class="n">FactorizedJacobianComponent</span><span class="p">)</span>
+        <span class="n">jacobian_name</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">factorized</span><span class="o">.</span><span class="n">shapes</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">additional_indexed_arguments</span> <span class="o">=</span> <span class="n">factorized</span><span class="o">.</span><span class="n">additional_arguments</span> <span class="o">+</span> <span class="p">[</span><span class="n">residual_name</span><span class="p">]</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;Symbolically forward backward substitute linear system &quot;</span>
+            <span class="s2">&quot;of </span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">factorized</span><span class="o">.</span><span class="n">root</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ForwardBackwardSubstitutionComponent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="s2">&quot;ForwardBackwardSubst&quot;</span><span class="p">,</span>
+            <span class="n">factorized</span><span class="o">.</span><span class="n">root</span><span class="p">,</span>
+            <span class="n">function_name</span><span class="p">,</span>
+            <span class="n">descr</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+            <span class="n">use_default_arguments</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">additional_arguments</span><span class="o">=</span><span class="p">[</span><span class="n">residual_name</span><span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span>
+            <span class="s2">&quot;Forward backward substituting factorized &quot;</span>
+            <span class="s2">&quot;linear system </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Recreate jacobian using only sympy Symbols</span>
+        <span class="n">jac_orig</span> <span class="o">=</span> <span class="n">factorized</span><span class="o">.</span><span class="n">factorized_jacobian</span>
+
+        <span class="c1"># Size of system</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">jac_orig</span><span class="o">.</span><span class="n">rows</span>
+        <span class="n">jac</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Matrix</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="n">sp</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">Zero</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                <span class="c1"># print jac_orig[i,j]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">jac_orig</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">is_zero</span><span class="p">:</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">sympycode</span><span class="p">(</span><span class="n">jac_orig</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span>
+                    <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span>
+                        <span class="n">name</span><span class="p">,</span>
+                        <span class="n">real</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">imaginary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                        <span class="n">commutative</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">hermitian</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="nb">complex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">jacobian_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">residual_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span><span class="p">,)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span><span class="p">,)</span>
+
+        <span class="n">F</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">dx</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># forward substitution, all diag entries are scaled to 1</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+
+            <span class="n">F</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_object</span><span class="p">(</span><span class="n">residual_name</span><span class="p">,</span> <span class="n">i</span><span class="p">))</span>
+            <span class="n">dx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span><span class="n">result_name</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">F</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">is_zero</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">dx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
+                    <span class="n">result_name</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">dx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">dx</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                <span class="p">)</span>
+
+        <span class="c1"># backward substitution</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">is_zero</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">dx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
+                    <span class="n">result_name</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">dx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">dx</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                <span class="p">)</span>
+
+            <span class="n">dx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span><span class="n">result_name</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">dx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">])</span>
+
+        <span class="c1"># No need to call recreate body expressions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">body_expressions</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">obj</span>
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ode_objects</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="n">IndexedExpression</span><span class="p">,</span> <span class="n">Comment</span><span class="p">))</span>
+        <span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">result_name</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">used_states</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">used_parameters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="LinearizedDerivativeComponent"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LinearizedDerivativeComponent">[docs]</a><span class="k">class</span> <span class="nc">LinearizedDerivativeComponent</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A component for all linear and linearized derivatives</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ode</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;linear_derivatives&quot;</span><span class="p">,</span>
+        <span class="n">result_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;linearized&quot;</span><span class="p">,</span> <span class="s2">&quot;rhs&quot;</span><span class="p">],</span>
+        <span class="n">only_linear</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">include_rhs</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">nonlinear_last</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return an ODEComponent holding the linearized derivative expressions</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        ode : gotran.ODE</span>
+<span class="sd">            The ODE for which derivatives should be linearized</span>
+<span class="sd">        function_name : str</span>
+<span class="sd">            The name of the function which should be generated</span>
+<span class="sd">        result_names : str</span>
+<span class="sd">            The name of the variable storing the linearized derivatives and the</span>
+<span class="sd">            rhs evaluation if that is included.</span>
+<span class="sd">        only_linear : bool</span>
+<span class="sd">            If True, only linear terms will be linearized</span>
+<span class="sd">        include_rhs : bool</span>
+<span class="sd">            If True, rhs evaluation will be included in the generated code.</span>
+<span class="sd">        params : dict</span>
+<span class="sd">            Parameters determining how the code should be generated</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">check_kwarg</span><span class="p">(</span><span class="n">result_names</span><span class="p">,</span> <span class="s2">&quot;result_names&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="n">itemtypes</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">result_names</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;expected the length of &#39;result_names&#39; to be 2&quot;</span><span class="p">)</span>
+
+        <span class="n">descr</span> <span class="o">=</span> <span class="s2">&quot;Computes the linearized derivatives for all linear derivatives&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LinearizedDerivativeComponent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="s2">&quot;LinearizedDerivatives&quot;</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="p">,</span> <span class="n">descr</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+        <span class="p">)</span>
+
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">ode</span><span class="o">.</span><span class="n">is_finalized</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">linear_derivative_indices</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">num_full_states</span>
+        <span class="n">linearized_name</span><span class="p">,</span> <span class="n">rhs_name</span> <span class="o">=</span> <span class="n">result_names</span>
+
+        <span class="n">state_exprs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">state_expressions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">linearized_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">num_full_states</span><span class="p">,)</span>
+        <span class="k">if</span> <span class="n">include_rhs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">rhs_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">num_full_states</span><span class="p">,)</span>
+
+        <span class="n">nonlinear_exprs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">expr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">state_exprs</span><span class="p">):</span>
+
+            <span class="n">expr_diff</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">expr_diff</span> <span class="ow">and</span> <span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">expr_diff</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">linear_derivative_indices</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">elif</span> <span class="n">only_linear</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># Append nonlinear expressions for later addition</span>
+            <span class="k">if</span> <span class="n">nonlinear_last</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_derivative_indices</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">nonlinear_exprs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">linearized_name</span><span class="p">,</span> <span class="n">ind</span><span class="p">,</span> <span class="n">expr_diff</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
+                    <span class="n">linearized_name</span><span class="p">,</span> <span class="n">ind</span><span class="p">,</span> <span class="n">expr_diff</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="n">expr</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">nonlinear_exprs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span><span class="s2">&quot;Nonlinear linearized expressions&quot;</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="n">expr</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">linearized_name</span><span class="p">,</span> <span class="n">ind</span><span class="p">,</span> <span class="n">expr_diff</span> <span class="ow">in</span> <span class="n">nonlinear_exprs</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
+                    <span class="n">linearized_name</span><span class="p">,</span> <span class="n">ind</span><span class="p">,</span> <span class="n">expr_diff</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="n">expr</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Call recreate body with the jacobian action expressions as the</span>
+        <span class="c1"># result expressions</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">linearized_name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">indexed_objects</span><span class="p">(</span><span class="n">linearized_name</span><span class="p">)}</span>
+        <span class="k">if</span> <span class="n">include_rhs</span><span class="p">:</span>
+            <span class="n">results</span><span class="p">[</span><span class="n">rhs_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">state_exprs</span>
+        <span class="n">results</span><span class="p">,</span> <span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_body_from_results</span><span class="p">(</span><span class="o">**</span><span class="n">results</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recreate_body</span><span class="p">(</span><span class="n">body_expressions</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CommonSubExpressionODE"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.CommonSubExpressionODE">[docs]</a><span class="k">class</span> <span class="nc">CommonSubExpressionODE</span><span class="p">(</span><span class="n">ODE</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class which flattens the component structue of an ODE to just one.</span>
+<span class="sd">    It uses common sub expressions as intermediates to reduce complexity</span>
+<span class="sd">    of the derivative expressions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ode</span><span class="p">):</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">ode</span><span class="o">.</span><span class="n">is_finalized</span>
+
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Extract common sub expressions&quot;</span><span class="p">)</span>
+
+        <span class="n">newname</span> <span class="o">=</span> <span class="n">ode</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_CSE&quot;</span>
+
+        <span class="c1"># Call super class</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CommonSubExpressionODE</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">newname</span><span class="p">,</span> <span class="n">ode</span><span class="o">.</span><span class="n">ns</span><span class="p">)</span>
+
+        <span class="c1"># Add states and parameters</span>
+        <span class="n">atoms</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">ode</span><span class="o">.</span><span class="n">full_states</span><span class="p">:</span>
+            <span class="n">atoms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">add_state</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">param</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">ode</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+            <span class="n">atoms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">param</span><span class="p">))</span>
+
+        <span class="c1"># Collect all expanded state expressions</span>
+        <span class="n">org_state_expressions</span> <span class="o">=</span> <span class="n">ode</span><span class="o">.</span><span class="n">state_expressions</span>
+        <span class="n">expanded_state_exprs</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">ode</span><span class="o">.</span><span class="n">expanded_expressions</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">org_state_expressions</span>
+        <span class="p">]</span>
+
+        <span class="c1"># Call sympy common sub expression reduction</span>
+        <span class="n">cse_exprs</span><span class="p">,</span> <span class="n">cse_state_exprs</span> <span class="o">=</span> <span class="n">cse</span><span class="p">(</span>
+            <span class="n">expanded_state_exprs</span><span class="p">,</span> <span class="n">symbols</span><span class="o">=</span><span class="n">sp</span><span class="o">.</span><span class="n">numbered_symbols</span><span class="p">(</span><span class="s2">&quot;cse_&quot;</span><span class="p">),</span> <span class="n">optimizations</span><span class="o">=</span><span class="p">[]</span>
+        <span class="p">)</span>
+        <span class="n">cse_cnt</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">cse_subs</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Register the common sub expressions as Intermediates</span>
+        <span class="k">for</span> <span class="n">sub</span><span class="p">,</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">cse_exprs</span><span class="p">:</span>
+
+            <span class="c1"># If the expression is just one of the atoms of the ODE we skip</span>
+            <span class="c1"># the cse expressions but add a subs for the atom</span>
+            <span class="k">if</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">atoms</span><span class="p">:</span>
+                <span class="n">cse_subs</span><span class="p">[</span><span class="n">sub</span><span class="p">]</span> <span class="o">=</span> <span class="n">expr</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cse_subs</span><span class="p">[</span><span class="n">sub</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_intermediate</span><span class="p">(</span>
+                    <span class="s2">&quot;cse_</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cse_cnt</span><span class="p">),</span> <span class="n">expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">cse_subs</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">cse_cnt</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># Register the state expressions</span>
+        <span class="k">for</span> <span class="n">org_state_expr</span><span class="p">,</span> <span class="n">state_expr</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">org_state_expressions</span><span class="p">,</span> <span class="n">cse_state_exprs</span><span class="p">):</span>
+
+            <span class="n">exp_expr</span> <span class="o">=</span> <span class="n">state_expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">cse_subs</span><span class="p">)</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_object</span><span class="p">(</span><span class="n">org_state_expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">name</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="c1"># If state derivative</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">org_state_expr</span><span class="p">,</span> <span class="n">StateDerivative</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_derivative</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span> <span class="n">exp_expr</span><span class="p">)</span>
+
+            <span class="c1"># If algebraic</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">org_state_expr</span><span class="p">,</span> <span class="n">AlgebraicExpression</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_algebraic</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">exp_expr</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Should not come here!&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">finalize</span><span class="p">()</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gotran.codegeneration.latexcodegenerator &mdash; gotran 2019.0.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> gotran
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Programmers reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gotran.html">gotran package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">gotran</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>gotran.codegeneration.latexcodegenerator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gotran.codegeneration.latexcodegenerator</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (C) 2014 George Bahij / Johan Hake</span>
+<span class="c1">#</span>
+<span class="c1"># This file is part of Gotran.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU Lesser General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1"># (at your option) any later version.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the</span>
+<span class="c1"># GNU Lesser General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1"># You should have received a copy of the GNU Lesser General Public License</span>
+<span class="c1"># along with Gotran. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c1"># System imports</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="c1"># Gotran imports</span>
+<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="n">warning</span>
+<span class="kn">from</span> <span class="nn">gotran.model.odeobjects</span> <span class="kn">import</span> <span class="n">SingleODEObjects</span>
+<span class="kn">from</span> <span class="nn">gotran.model.expressions</span> <span class="kn">import</span> <span class="n">Expression</span><span class="p">,</span> <span class="n">StateDerivative</span>
+
+<span class="c1"># Model parameters imports</span>
+<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">latex</span> <span class="k">as</span> <span class="n">mp_latex</span>
+<span class="kn">from</span> <span class="nn">modelparameters.parameters</span> <span class="kn">import</span> <span class="n">Param</span><span class="p">,</span> <span class="n">ScalarParam</span><span class="p">,</span> <span class="n">ArrayParam</span>
+<span class="kn">from</span> <span class="nn">modelparameters.parameterdict</span> <span class="kn">import</span> <span class="n">ParameterDict</span>
+
+<span class="c1"># Other imports</span>
+<span class="kn">import</span> <span class="nn">string</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">StringIO</span>
+<span class="kn">import</span> <span class="nn">sympy</span>
+<span class="kn">import</span> <span class="nn">tokenize</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;LatexCodeGenerator&quot;</span><span class="p">]</span>
+
+<span class="c1"># Latex templates</span>
+<span class="n">_global_opts</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span><span class="se">\\</span><span class="s2">setkeys{{breqn}}{{breakdepth={{1}}}}</span>
+<span class="si">{GLOBALOPTS}</span><span class="s2">&quot;&quot;&quot;</span>
+
+<span class="n">_latex_template</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span><span class="se">\\</span><span class="s2">documentclass[a4paper,</span><span class="si">{FONTSIZE}</span><span class="s2">pt]{{article}}</span>
+<span class="si">{PKGS}</span><span class="s2"></span>
+<span class="si">{PREOPTS}</span><span class="s2"></span>
+
+<span class="se">\\</span><span class="s2">begin{{document}}</span>
+<span class="si">{OPTS}</span><span class="s2"></span>
+<span class="si">{BODY}</span><span class="s2"></span>
+<span class="si">{ENDOPTS}</span><span class="s2"></span>
+
+<span class="se">\\</span><span class="s2">end{{document}}&quot;&quot;&quot;</span>
+
+<span class="n">_param_table_template</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">% ---------------- BEGIN PARAMETERS ---------------- %</span>
+
+<span class="se">\\</span><span class="si">{SECTIONTYPE}</span><span class="s2">*{{Parameters}}</span><span class="se">\n</span><span class="s2"></span>
+<span class="se">\\</span><span class="s2">label{{sec:ODE_Parameters}}</span>
+<span class="si">{OPTS}</span><span class="s2"></span>
+<span class="se">\\</span><span class="s2">begin{{longtabu}}{{| l l </span><span class="si">{PDESCCELLSTYLE}</span><span class="s2"> |}}</span>
+<span class="se">\\</span><span class="s2">caption[Parameter Table]{{</span><span class="se">\\</span><span class="s2">textbf{{Parameter Table}}}}</span><span class="se">\\\\</span><span class="s2"></span>
+<span class="se">\\</span><span class="s2">hline</span>
+<span class="se">\\</span><span class="s2">multicolumn{{1}}{{|c}}{{</span><span class="se">\\</span><span class="s2">textbf{{Parameter</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}} &amp;</span>
+<span class="se">\\</span><span class="s2">multicolumn{{1}}{{c}}{{</span><span class="se">\\</span><span class="s2">textbf{{Value</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}} &amp;</span>
+<span class="se">\\</span><span class="s2">multicolumn{{1}}{{c|}}{{</span><span class="se">\\</span><span class="s2">textbf{{Description</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}}</span><span class="se">\\\\</span><span class="s2"> </span><span class="se">\\</span><span class="s2">hline</span>
+<span class="se">\\</span><span class="s2">endfirsthead</span>
+<span class="se">\\</span><span class="s2">multicolumn{{3}}{{c}}%</span>
+<span class="s2">{{{{</span><span class="se">\\</span><span class="s2">bfseries</span><span class="se">\\</span><span class="s2">tablename</span><span class="se">\\</span><span class="s2"> </span><span class="se">\\</span><span class="s2">thetable{{}} --- continued from previous page}}}}</span>
+<span class="se">\\\\</span><span class="s2"> \hline</span>
+<span class="se">\\</span><span class="s2">multicolumn{{1}}{{|c}}{{</span><span class="se">\\</span><span class="s2">textbf{{Parameter</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}} &amp;</span>
+<span class="se">\\</span><span class="s2">multicolumn{{1}}{{c}}{{</span><span class="se">\\</span><span class="s2">textbf{{Value</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}} &amp;</span>
+<span class="se">\\</span><span class="s2">multicolumn{{1}}{{c|}}{{</span><span class="se">\\</span><span class="s2">textbf{{Description</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}}</span><span class="se">\\\\</span><span class="s2"> </span><span class="se">\\</span><span class="s2">hline</span>
+<span class="se">\\</span><span class="s2">endhead</span>
+<span class="se">\\</span><span class="s2">hline</span>
+<span class="se">\\</span><span class="s2">multicolumn{{3}}{{|r|}}{{{{Continued on next page}}}}</span><span class="se">\\\\</span><span class="s2"> </span><span class="se">\\</span><span class="s2">hline</span>
+<span class="se">\\</span><span class="s2">endfoot</span>
+<span class="se">\\</span><span class="s2">hline </span><span class="se">\\</span><span class="s2">hline</span>
+<span class="se">\\</span><span class="s2">endlastfoot</span>
+<span class="si">{BODY}</span><span class="se">\\\\</span><span class="s2"></span>
+<span class="se">\\</span><span class="s2">hline</span>
+<span class="se">\\</span><span class="s2">end{{longtabu}}</span>
+<span class="si">{ENDOPTS}</span><span class="s2"></span>
+
+<span class="si">% ----------------- E</span><span class="s2">ND PARAMETERS ----------------- %</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+<span class="n">_state_table_template</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">% ---------------- BEGIN STATES ---------------- %</span>
+
+<span class="se">\\</span><span class="si">{SECTIONTYPE}</span><span class="s2">*{{Initial Values}}</span><span class="se">\n</span><span class="s2"></span>
+<span class="se">\\</span><span class="s2">label{{sec:ODE_States}}</span>
+<span class="si">{OPTS}</span><span class="s2"></span>
+<span class="se">\\</span><span class="s2">begin{{longtabu}}{{| l l </span><span class="si">{SDESCCELLSTYLE}</span><span class="s2"> |}}</span>
+<span class="se">\\</span><span class="s2">caption[State Table]{{</span><span class="se">\\</span><span class="s2">textbf{{State Table}}}}</span><span class="se">\\\\</span><span class="s2"></span>
+<span class="se">\\</span><span class="s2">hline</span>
+<span class="se">\\</span><span class="s2">multicolumn{{1}}{{|c}}{{</span><span class="se">\\</span><span class="s2">textbf{{State</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}} &amp;</span>
+<span class="se">\\</span><span class="s2">multicolumn{{1}}{{c}}{{</span><span class="se">\\</span><span class="s2">textbf{{Value</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}} &amp;</span>
+<span class="se">\\</span><span class="s2">multicolumn{{1}}{{c|}}{{</span><span class="se">\\</span><span class="s2">textbf{{Description</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}}</span><span class="se">\\\\</span><span class="s2"> </span><span class="se">\\</span><span class="s2">hline</span>
+<span class="se">\\</span><span class="s2">endfirsthead</span>
+<span class="se">\\</span><span class="s2">multicolumn{{3}}{{c}}%</span>
+<span class="s2">{{{{</span><span class="se">\\</span><span class="s2">bfseries</span><span class="se">\\</span><span class="s2">tablename</span><span class="se">\\</span><span class="s2"> </span><span class="se">\\</span><span class="s2">thetable{{}} --- continued from previous page}}}}</span>
+<span class="se">\\\\</span><span class="s2"> \hline</span>
+<span class="se">\\</span><span class="s2">multicolumn{{1}}{{|c}}{{</span><span class="se">\\</span><span class="s2">textbf{{State</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}} &amp;</span>
+<span class="se">\\</span><span class="s2">multicolumn{{1}}{{c}}{{</span><span class="se">\\</span><span class="s2">textbf{{Value</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}} &amp;</span>
+<span class="se">\\</span><span class="s2">multicolumn{{1}}{{c|}}{{</span><span class="se">\\</span><span class="s2">textbf{{Description</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}}</span><span class="se">\\\\</span><span class="s2"> </span><span class="se">\\</span><span class="s2">hline</span>
+<span class="se">\\</span><span class="s2">endhead</span>
+<span class="se">\\</span><span class="s2">hline</span>
+<span class="se">\\</span><span class="s2">multicolumn{{3}}{{|r|}}{{{{Continued on next page}}}}</span><span class="se">\\\\</span><span class="s2"> </span><span class="se">\\</span><span class="s2">hline</span>
+<span class="se">\\</span><span class="s2">endfoot</span>
+<span class="se">\\</span><span class="s2">hline </span><span class="se">\\</span><span class="s2">hline</span>
+<span class="se">\\</span><span class="s2">endlastfoot</span>
+<span class="si">{BODY}</span><span class="se">\\\\</span><span class="s2"></span>
+<span class="se">\\</span><span class="s2">hline</span>
+<span class="se">\\</span><span class="s2">end{{longtabu}}</span>
+<span class="si">{ENDOPTS}</span><span class="s2"></span>
+
+<span class="si">% ----------------- E</span><span class="s2">ND STATES ----------------- %</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+<span class="n">_components_template</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">% ---------------- BEGIN COMPONENTS ---------------- %</span>
+
+<span class="se">\\</span><span class="si">{SECTIONTYPE}</span><span class="s2">*{{Components}}</span>
+<span class="se">\\</span><span class="s2">label{{sec:ODE_Components}}</span>
+<span class="si">{OPTS}</span><span class="s2"></span>
+<span class="si">{BODY}</span><span class="s2"></span>
+<span class="si">{ENDOPTS}</span><span class="s2"></span>
+
+<span class="si">% ----------------- E</span><span class="s2">ND COMPONENTS ----------------- %</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+<span class="n">_greek</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">&quot;alpha beta gamma delta epsilon zeta eta theta iota kappa lamda &quot;</span>
+    <span class="s2">&quot;mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega&quot;</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_default_latex_params</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Initializes default parameters.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+    <span class="c1"># Specify output file</span>
+    <span class="n">params</span><span class="p">[</span><span class="s2">&quot;output&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Specify LaTeX output file&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Set number of columns per page</span>
+    <span class="c1"># FIXME: ScalarParam might cause parse_args() to crash due to non-ASCII</span>
+    <span class="c1"># symbols.</span>
+    <span class="c1"># params[&quot;page_columns&quot;] = ScalarParam(</span>
+    <span class="c1">#     1, ge=1, description=&quot;Set number of columns per page in &quot;</span>
+    <span class="c1">#     &quot;LaTeX document&quot;)</span>
+    <span class="n">params</span><span class="p">[</span><span class="s2">&quot;page_columns&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
+        <span class="mi">1</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Set number of columns per page in &quot;</span> <span class="s2">&quot;LaTeX document&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Set equation font size</span>
+    <span class="c1"># FIXME: ScalarParam might cause parse_args() to crash due to non-ASCII</span>
+    <span class="c1"># symbols.</span>
+    <span class="c1"># params[&quot;font_size&quot;] = ScalarParam(</span>
+    <span class="c1">#     10, ge=1, description=&quot;Set global font size for LaTeX document&quot;)</span>
+    <span class="n">params</span><span class="p">[</span><span class="s2">&quot;font_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
+        <span class="mf">10.0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Set global font size for LaTeX document&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Set font size for mathematical expressions.</span>
+    <span class="c1"># FIXME: ScalarParam might cause parse_args() to crash due to non-ASCII</span>
+    <span class="c1"># symbols.</span>
+    <span class="c1"># params[&quot;math_font_size&quot;] = ScalarParam(</span>
+    <span class="c1">#    1, ge=1, description=&quot;Set font size for mathematical &quot;</span>
+    <span class="c1">#    &quot;expressions in LaTeX document. Uses global font size if left &quot;</span>
+    <span class="c1">#    &quot;blank&quot;)</span>
+    <span class="n">params</span><span class="p">[</span><span class="s2">&quot;math_font_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
+        <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Set font size for mathematical expressions in &quot;</span>
+        <span class="s2">&quot;LaTeX document. Uses global font size if left blank&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Toggle bold equation labels</span>
+    <span class="n">params</span><span class="p">[</span><span class="s2">&quot;bold_equation_labels&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
+        <span class="kc">True</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Give equation labels a bold typeface in &quot;</span> <span class="s2">&quot;LaTeX document&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># If set to False, does not generate the preamble</span>
+    <span class="n">params</span><span class="p">[</span><span class="s2">&quot;preamble&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
+        <span class="kc">True</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;If set to False, LaTeX document will be &quot;</span>
+        <span class="s2">&quot;be generated without the preamble&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># If set to true, sets document to a landscape page layout</span>
+    <span class="n">params</span><span class="p">[</span><span class="s2">&quot;landscape&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
+        <span class="kc">False</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Set LaTeX document to landscape layout&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Latex separator between factors in products</span>
+    <span class="n">params</span><span class="p">[</span><span class="s2">&quot;mul_symbol&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
+        <span class="s2">&quot;dot&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Multiplication symbol for Sympy LatexPrinter&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Flag to enable page numbers</span>
+    <span class="n">params</span><span class="p">[</span><span class="s2">&quot;page_numbers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Enable page numbers&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Flag to disable state table (currently unused)</span>
+    <span class="c1"># params[&quot;no_state_descriptions&quot;] = Param(</span>
+    <span class="c1">#     False, description=&quot;Disable table column for state descriptions&quot;)</span>
+
+    <span class="c1"># Flag to disable parameter table (currently unused)</span>
+    <span class="c1"># params[&quot;no_parameter_descriptions&quot;] = Param(</span>
+    <span class="c1">#     False, description=&quot;Disable table column for parameter descriptions&quot;)</span>
+
+    <span class="c1"># Set headline types for States, Parameters and Components</span>
+    <span class="n">params</span><span class="p">[</span><span class="s2">&quot;section_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
+        <span class="s2">&quot;section&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Section type (e.g. &#39;section&#39;, &#39;subsection&#39;)&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Set page margins</span>
+    <span class="n">params</span><span class="p">[</span><span class="s2">&quot;margins&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
+        <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Set page margins (e.g. &#39;0.75in&#39;). Uses LaTeX &quot;</span>
+        <span class="s2">&quot;defaults if left blank&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Set column seperator distance</span>
+    <span class="n">params</span><span class="p">[</span><span class="s2">&quot;columnsep&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
+        <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Set column separator distance (e.g. &#39;0.25cm&#39;). &quot;</span>
+        <span class="s2">&quot;Uses LaTeX default if left blank&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Set column separator line width</span>
+    <span class="n">params</span><span class="p">[</span><span class="s2">&quot;columnseprule&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
+        <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Set column separator line width (e.g. &#39;0.2pt&#39;). &quot;</span>
+        <span class="s2">&quot;Uses LaTeX default if left blank&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Flag to let the code generator attempt automatically converting</span>
+    <span class="c1"># state and parameter names in descriptions to math-mode</span>
+    <span class="n">params</span><span class="p">[</span><span class="s2">&quot;auto_format_description&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
+        <span class="kc">False</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Automatically format state and parameter &quot;</span> <span class="s2">&quot;descriptions&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Flag to toggle numbering style for equations.</span>
+    <span class="n">params</span><span class="p">[</span><span class="s2">&quot;equation_subnumbering&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
+        <span class="kc">True</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Use component-wise equation subnumbering&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">params</span><span class="p">[</span><span class="s2">&quot;parameter_description_cell_style&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
+        <span class="s2">&quot;l&quot;</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Set description cell type for the parameter table. &quot;</span>
+        <span class="s2">&quot;Use &#39;X&#39; for long descriptions, or &#39;p</span><span class="si">{5cm}</span><span class="s2">&#39; to set a fixed 5 cm&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">params</span><span class="p">[</span><span class="s2">&quot;state_description_cell_style&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
+        <span class="s2">&quot;l&quot;</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Set description cell type for the state table. &quot;</span>
+        <span class="s2">&quot;Use &#39;X&#39; for long descriptions, or &#39;p</span><span class="si">{5cm}</span><span class="s2">&#39; to set a fixed 5 cm&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Return the ParameterDict</span>
+    <span class="k">return</span> <span class="n">ParameterDict</span><span class="p">(</span><span class="o">**</span><span class="n">params</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="LatexCodeGenerator"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator">[docs]</a><span class="k">class</span> <span class="nc">LatexCodeGenerator</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="n">packages</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s2">&quot;fullpage&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;longtable,tabu&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;multicol&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;amsmath&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;mathpazo&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;flexisym&quot;</span><span class="p">,</span> <span class="s2">&quot;[mathpazo]&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;breqn&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+    <span class="p">]</span>
+    <span class="n">print_settings</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ode</span> <span class="o">=</span> <span class="n">ode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">ode</span><span class="o">.</span><span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">params</span> <span class="k">if</span> <span class="n">params</span> <span class="k">else</span> <span class="n">_default_latex_params</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_file</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">output</span> <span class="ow">or</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">.tex&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="c1"># Verify valid multiplication symbol</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">mul_symbol</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;dot&quot;</span><span class="p">,</span> <span class="s2">&quot;ldot&quot;</span><span class="p">,</span> <span class="s2">&quot;times&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">print_settings</span><span class="p">[</span><span class="s2">&quot;mul_symbol&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">mul_symbol</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">print_settings</span><span class="p">[</span><span class="s2">&quot;mul_symbol&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">margins</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">packages</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;geometry&quot;</span><span class="p">,</span> <span class="s2">&quot;[margin=&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">margins</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span><span class="p">))</span>
+
+<div class="viewcode-block" id="LatexCodeGenerator.generate"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.generate">[docs]</a>    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate a LaTeX-formatted document describing a Gotran ODE.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">params</span> <span class="k">if</span> <span class="n">params</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span>
+        <span class="n">latex_output</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="n">global_opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_global_options</span><span class="p">(</span><span class="n">_global_opts</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">params</span><span class="o">.</span><span class="n">preamble</span><span class="p">:</span>
+            <span class="n">latex_output</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">generate_parameter_table</span><span class="p">()</span>
+                <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_state_table</span><span class="p">()</span>
+                <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_components</span><span class="p">()</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">document_opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_options</span><span class="p">(</span>
+                <span class="n">override</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;font_size&quot;</span><span class="p">,</span> <span class="s2">&quot;landscape&quot;</span><span class="p">,</span> <span class="s2">&quot;page_numbers&quot;</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="n">latex_output</span> <span class="o">=</span> <span class="n">_latex_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">FONTSIZE</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">font_size</span><span class="p">,</span>
+                <span class="n">PKGS</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">format_packages</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">packages</span><span class="p">),</span>
+                <span class="n">PREOPTS</span><span class="o">=</span><span class="n">global_opts</span><span class="p">,</span>
+                <span class="n">OPTS</span><span class="o">=</span><span class="n">document_opts</span><span class="p">[</span><span class="s2">&quot;begin&quot;</span><span class="p">],</span>
+                <span class="n">BODY</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">generate_parameter_table</span><span class="p">()</span>
+                <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_state_table</span><span class="p">()</span>
+                <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_components</span><span class="p">(),</span>
+                <span class="n">ENDOPTS</span><span class="o">=</span><span class="n">document_opts</span><span class="p">[</span><span class="s2">&quot;end&quot;</span><span class="p">],</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">latex_output</span></div>
+
+<div class="viewcode-block" id="LatexCodeGenerator.generate_parameter_table"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.generate_parameter_table">[docs]</a>    <span class="k">def</span> <span class="nf">generate_parameter_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a LaTeX-formatted string for a longtable describing the ODE&#39;s</span>
+<span class="sd">        parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">params</span> <span class="k">if</span> <span class="n">params</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span>
+        <span class="n">param_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\\\\\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">format_param_table_row</span><span class="p">(</span><span class="n">par</span><span class="p">)</span> <span class="k">for</span> <span class="n">par</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="p">)</span>
+        <span class="n">param_table_opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_options</span><span class="p">(</span><span class="n">exclude</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;page_columns&quot;</span><span class="p">])</span>
+        <span class="n">param_table_output</span> <span class="o">=</span> <span class="n">_param_table_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">SECTIONTYPE</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;section_type&quot;</span><span class="p">],</span>
+            <span class="n">PDESCCELLSTYLE</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;parameter_description_cell_style&quot;</span><span class="p">],</span>
+            <span class="n">OPTS</span><span class="o">=</span><span class="n">param_table_opts</span><span class="p">[</span><span class="s2">&quot;begin&quot;</span><span class="p">],</span>
+            <span class="n">BODY</span><span class="o">=</span><span class="n">param_str</span><span class="p">,</span>
+            <span class="n">ENDOPTS</span><span class="o">=</span><span class="n">param_table_opts</span><span class="p">[</span><span class="s2">&quot;end&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">param_table_output</span></div>
+
+<div class="viewcode-block" id="LatexCodeGenerator.generate_state_table"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.generate_state_table">[docs]</a>    <span class="k">def</span> <span class="nf">generate_state_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a LaTeX-formatted string for a longtable describing the ode&#39;s</span>
+<span class="sd">        states.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">params</span> <span class="k">if</span> <span class="n">params</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span>
+        <span class="n">state_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\\\\\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">format_state_table_row</span><span class="p">(</span><span class="n">state</span><span class="p">)</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="o">.</span><span class="n">full_states</span>
+        <span class="p">)</span>
+        <span class="n">state_table_opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_options</span><span class="p">(</span><span class="n">exclude</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;page_columns&quot;</span><span class="p">])</span>
+        <span class="n">state_table_output</span> <span class="o">=</span> <span class="n">_state_table_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">SECTIONTYPE</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;section_type&quot;</span><span class="p">],</span>
+            <span class="n">SDESCCELLSTYLE</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;state_description_cell_style&quot;</span><span class="p">],</span>
+            <span class="n">OPTS</span><span class="o">=</span><span class="n">state_table_opts</span><span class="p">[</span><span class="s2">&quot;begin&quot;</span><span class="p">],</span>
+            <span class="n">BODY</span><span class="o">=</span><span class="n">state_str</span><span class="p">,</span>
+            <span class="n">ENDOPTS</span><span class="o">=</span><span class="n">state_table_opts</span><span class="p">[</span><span class="s2">&quot;end&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">state_table_output</span></div>
+
+<div class="viewcode-block" id="LatexCodeGenerator.generate_components"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.generate_components">[docs]</a>    <span class="k">def</span> <span class="nf">generate_components</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a LaTeX-formatted string of the ODE&#39;s derivative components and</span>
+<span class="sd">        intermediate calculations.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">params</span> <span class="k">if</span> <span class="n">params</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span>
+        <span class="n">components_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">comp_template</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;</span><span class="si">{LABEL}</span><span class="se">\n\\</span><span class="s2">label{{comp:</span><span class="si">{LABELID}</span><span class="s2">}}</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">begin{{dgroup</span><span class="si">{SUBNUM}</span><span class="s2">}}</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;</span><span class="si">{BODY}</span><span class="se">\\</span><span class="s2">end{{dgroup</span><span class="si">{SUBNUM}</span><span class="s2">}}</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="n">eqn_template</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;  </span><span class="se">\\</span><span class="s2">begin{{dmath}}</span><span class="se">\n</span><span class="s2">    </span><span class="se">\\</span><span class="s2">label{{eq:</span><span class="si">{0}</span><span class="s2">}}</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;    </span><span class="si">{1}</span><span class="s2"> = </span><span class="si">{2}</span><span class="se">\\\\\n</span><span class="s2">  </span><span class="se">\\</span><span class="s2">end{{dmath}}</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">subnumbering</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;equation_subnumbering&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="s2">&quot;*&quot;</span>
+
+        <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="o">.</span><span class="n">components</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">comp</span><span class="o">.</span><span class="n">rates</span><span class="p">:</span>
+                <span class="n">body</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">obj</span>
+                    <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">comp</span><span class="o">.</span><span class="n">ode_objects</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Expression</span><span class="p">)</span>
+                    <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">StateDerivative</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">body</span> <span class="o">=</span> <span class="p">[</span><span class="n">obj</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">comp</span><span class="o">.</span><span class="n">ode_objects</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Expression</span><span class="p">)]</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">body</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">format_label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_component_label</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">label_id</span> <span class="o">=</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+            <span class="n">format_body</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+            <span class="c1"># Iterate over all objects of the component</span>
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">body</span><span class="p">:</span>
+                <span class="n">format_body</span> <span class="o">+=</span> <span class="n">eqn_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">_repr_latex_name</span><span class="p">(),</span> <span class="n">obj</span><span class="o">.</span><span class="n">_repr_latex_expr</span><span class="p">()</span>
+                <span class="p">)</span>
+
+            <span class="n">components_str</span> <span class="o">+=</span> <span class="n">comp_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">LABEL</span><span class="o">=</span><span class="n">format_label</span><span class="p">,</span>
+                <span class="n">LABELID</span><span class="o">=</span><span class="n">label_id</span><span class="p">,</span>
+                <span class="n">BODY</span><span class="o">=</span><span class="n">format_body</span><span class="p">,</span>
+                <span class="n">SUBNUM</span><span class="o">=</span><span class="n">subnumbering</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">components_opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_options</span><span class="p">(</span>
+            <span class="n">override</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;page_columns&quot;</span><span class="p">,</span> <span class="s2">&quot;math_font_size&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">components_output</span> <span class="o">=</span> <span class="n">_components_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">SECTIONTYPE</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;section_type&quot;</span><span class="p">],</span>
+            <span class="n">OPTS</span><span class="o">=</span><span class="n">components_opts</span><span class="p">[</span><span class="s2">&quot;begin&quot;</span><span class="p">],</span>
+            <span class="n">BODY</span><span class="o">=</span><span class="n">components_str</span><span class="p">,</span>
+            <span class="n">ENDOPTS</span><span class="o">=</span><span class="n">components_opts</span><span class="p">[</span><span class="s2">&quot;end&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">components_output</span></div>
+
+<div class="viewcode-block" id="LatexCodeGenerator.format_param_table_row"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.format_param_table_row">[docs]</a>    <span class="k">def</span> <span class="nf">format_param_table_row</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a LaTeX-formatted string for a longtable row describing a</span>
+<span class="sd">        parameter.</span>
+<span class="sd">        E.g.:</span>
+<span class="sd">        &gt;&gt;&gt; LatexCodeGenerator.format_param_table_row(</span>
+<span class="sd">        ...     Parameter(&quot;g_earth&quot;,</span>
+<span class="sd">        ...         ScalarParam(9.81, unit=&quot;m/s**2&quot;,</span>
+<span class="sd">        ...                     description=&quot;Surface gravity&quot;))</span>
+<span class="sd">        &#39;  $g_{earth}$\\hspace{0.5cm} &amp; $9.81 \\mathrm{\\frac{m}{s^{2}}}$</span>
+<span class="sd">        \\hspace{0.5cm} &amp; Surface gravity&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">&quot;  $</span><span class="si">{NAME}</span><span class="s2">$</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}} &amp; </span><span class="si">{VAL}</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}} &amp; </span><span class="si">{DESC}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">NAME</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">format_expr</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+                <span class="n">VAL</span><span class="o">=</span><span class="n">param</span><span class="o">.</span><span class="n">_repr_latex_</span><span class="p">(),</span>
+                <span class="n">DESC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">format_description</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="n">description</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="LatexCodeGenerator.format_state_table_row"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.format_state_table_row">[docs]</a>    <span class="k">def</span> <span class="nf">format_state_table_row</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a LaTeX-formatted string for a longtable row describing a</span>
+<span class="sd">        state&#39;s initial value.</span>
+<span class="sd">        E.g.:</span>
+<span class="sd">        &gt;&gt;&gt; LatexCodeGenerator.format_state_table_row(&quot;amu&quot;,</span>
+<span class="sd">        ... &quot;Atomic mass unit&quot;, 931.46, &quot;MeV/c**2&quot;)</span>
+<span class="sd">        &#39;  $amu$\\hspace{0.5cm} &amp; $931.46 \\mathrm{\\frac{MeV}{c^{2}}}$</span>
+<span class="sd">        \\hspace{0.5cm} &amp; Atomic mass unit&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">&quot;  $</span><span class="si">{NAME}</span><span class="s2">$</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}} &amp; </span><span class="si">{VAL}</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}} &amp; </span><span class="si">{DESC}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">NAME</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">format_expr</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+                <span class="n">VAL</span><span class="o">=</span><span class="n">state</span><span class="o">.</span><span class="n">_repr_latex_</span><span class="p">(),</span>
+                <span class="n">DESC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">format_description</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="n">description</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="LatexCodeGenerator.format_component_label"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.format_component_label">[docs]</a>    <span class="k">def</span> <span class="nf">format_component_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a LaTeX-formatted string of an ODE component group label.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">label_opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_options</span><span class="p">(</span><span class="n">override</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;bold_equation_labels&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{0}{1}{2}</span><span class="se">\\\\</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">label_opts</span><span class="p">[</span><span class="s2">&quot;begin&quot;</span><span class="p">],</span> <span class="n">label</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">_&quot;</span><span class="p">),</span> <span class="n">label_opts</span><span class="p">[</span><span class="s2">&quot;end&quot;</span><span class="p">]</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="LatexCodeGenerator.format_description"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.format_description">[docs]</a>    <span class="k">def</span> <span class="nf">format_description</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        If auto-format flag is set, attempt to automatically format description,</span>
+<span class="sd">        setting references to states and parameters in math mode.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;auto_format_description&quot;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">description</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">hspace</span><span class="si">{0.5cm}</span><span class="s2">&quot;</span>
+
+        <span class="n">formatted_description</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">first</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">for</span> <span class="n">ttype</span><span class="p">,</span> <span class="n">token</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">tokenize</span><span class="o">.</span><span class="n">generate_tokens</span><span class="p">(</span>
+            <span class="n">StringIO</span><span class="p">(</span><span class="n">description</span><span class="p">)</span><span class="o">.</span><span class="n">readline</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="n">tokenize</span><span class="o">.</span><span class="n">ISEOF</span><span class="p">(</span><span class="n">ttype</span><span class="p">):</span>
+                <span class="k">break</span>
+
+            <span class="n">formatted_token</span> <span class="o">=</span> <span class="n">token</span>
+            <span class="n">mathmode</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">c</span> <span class="ow">in</span> <span class="n">token</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;^&quot;</span><span class="p">)])</span> <span class="ow">or</span> <span class="n">token</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
+                <span class="c1"># or token in [state.name for state in self.ode.full_states] \</span>
+                <span class="c1"># or token in [par.name for par in self.ode.parameters]:</span>
+                <span class="n">mathmode</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="k">if</span> <span class="n">mathmode</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;^&quot;</span><span class="p">):</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="n">formatted_token</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+                    <span class="k">while</span> <span class="n">i</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                        <span class="n">formatted_token</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="n">formatted_token</span><span class="p">[:</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+                            <span class="o">+</span> <span class="s2">&quot;{&quot;</span>
+                            <span class="o">+</span> <span class="n">formatted_token</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
+                            <span class="o">+</span> <span class="s2">&quot;}&quot;</span>
+                        <span class="p">)</span>
+                        <span class="n">i</span> <span class="o">=</span> <span class="n">formatted_token</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">formatted_token</span> <span class="o">=</span> <span class="s2">&quot;$&quot;</span> <span class="o">+</span> <span class="n">formatted_token</span> <span class="o">+</span> <span class="s2">&quot;$&quot;</span>
+
+            <span class="k">if</span> <span class="n">token</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">string</span><span class="o">.</span><span class="n">punctuation</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">first</span><span class="p">:</span>
+                <span class="n">formatted_token</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="n">formatted_token</span>
+
+            <span class="n">formatted_description</span> <span class="o">+=</span> <span class="n">formatted_token</span>
+            <span class="n">first</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="n">formatted_description</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">hspace</span><span class="si">{0.5cm}</span><span class="s2">&quot;</span></div>
+
+<div class="viewcode-block" id="LatexCodeGenerator.format_options"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.format_options">[docs]</a>    <span class="k">def</span> <span class="nf">format_options</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">override</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Wrap options around a LaTeX string, excluding specified elements.</span>
+<span class="sd">        If override is not empty, only those elements will be used, ignoring</span>
+<span class="sd">        exclude.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">exclude</span> <span class="o">=</span> <span class="n">exclude</span> <span class="k">if</span> <span class="n">exclude</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">override</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="n">override</span> <span class="o">=</span> <span class="n">override</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="n">opts</span> <span class="o">=</span> <span class="n">_default_latex_params</span><span class="p">()</span>
+        <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">params</span> <span class="k">if</span> <span class="n">params</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+
+        <span class="n">begin_str</span> <span class="o">=</span> <span class="n">end_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">page_columns</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="p">(</span>
+            <span class="p">(</span><span class="s2">&quot;page_columns&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exclude</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">override</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="s2">&quot;page_columns&quot;</span> <span class="ow">in</span> <span class="n">override</span>
+        <span class="p">):</span>
+            <span class="n">begin_str</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">begin{{multicols}}{{</span><span class="si">{0}</span><span class="s2">}}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">opts</span><span class="o">.</span><span class="n">page_columns</span><span class="p">)</span> <span class="o">+</span> <span class="n">begin_str</span>
+            <span class="p">)</span>
+            <span class="n">end_str</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">end</span><span class="si">{multicols}</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+        <span class="c1"># Non-standard options -- only include if specified in override:</span>
+
+        <span class="k">if</span> <span class="s2">&quot;font_size&quot;</span> <span class="ow">in</span> <span class="n">override</span><span class="p">:</span>
+            <span class="n">begin_str</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">&quot;{{</span><span class="se">\\</span><span class="s2">fontsize{{</span><span class="si">{0}</span><span class="s2">}}{{</span><span class="si">{1:.1f}</span><span class="s2">}}</span><span class="se">\\</span><span class="s2">selectfont</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">opts</span><span class="o">.</span><span class="n">font_size</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">font_size</span> <span class="o">*</span> <span class="mf">1.2</span>
+                <span class="p">)</span>
+                <span class="o">+</span> <span class="n">begin_str</span>
+            <span class="p">)</span>
+            <span class="n">end_str</span> <span class="o">+=</span> <span class="s2">&quot;}</span><span class="si">% e</span><span class="s2">nd fontsize</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+        <span class="k">if</span> <span class="s2">&quot;math_font_size&quot;</span> <span class="ow">in</span> <span class="n">override</span> <span class="ow">and</span> <span class="n">opts</span><span class="o">.</span><span class="n">math_font_size</span><span class="p">:</span>
+            <span class="n">begin_str</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">&quot;{{</span><span class="se">\\</span><span class="s2">fontsize{{</span><span class="si">{0}</span><span class="s2">}}{{</span><span class="si">{1:.1f}</span><span class="s2">}}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">opts</span><span class="o">.</span><span class="n">math_font_size</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">math_font_size</span> <span class="o">*</span> <span class="mf">1.2</span>
+                <span class="p">)</span>
+                <span class="o">+</span> <span class="n">begin_str</span>
+            <span class="p">)</span>
+            <span class="n">end_str</span> <span class="o">+=</span> <span class="s2">&quot;}</span><span class="si">% e</span><span class="s2">nd fontsize</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+        <span class="k">if</span> <span class="s2">&quot;bold_equation_labels&quot;</span> <span class="ow">in</span> <span class="n">override</span> <span class="ow">and</span> <span class="n">opts</span><span class="o">.</span><span class="n">bold_equation_labels</span><span class="p">:</span>
+            <span class="n">begin_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">textbf{&quot;</span> <span class="o">+</span> <span class="n">begin_str</span>
+            <span class="n">end_str</span> <span class="o">+=</span> <span class="s2">&quot;}&quot;</span>
+
+        <span class="k">if</span> <span class="s2">&quot;landscape&quot;</span> <span class="ow">in</span> <span class="n">override</span> <span class="ow">and</span> <span class="n">opts</span><span class="o">.</span><span class="n">landscape</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;pdflscape&quot;</span> <span class="ow">in</span> <span class="p">(</span><span class="n">package_name</span> <span class="k">for</span> <span class="n">package_name</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">packages</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">packages</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;pdflscape&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+            <span class="n">begin_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">begin</span><span class="si">{landscape}</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">begin_str</span>
+            <span class="n">end_str</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">end</span><span class="si">{landscape}</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+        <span class="k">if</span> <span class="s2">&quot;page_numbers&quot;</span> <span class="ow">in</span> <span class="n">override</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">opts</span><span class="o">.</span><span class="n">page_numbers</span><span class="p">:</span>
+            <span class="n">begin_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">pagenumbering</span><span class="si">{gobble}</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">begin_str</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;begin&quot;</span><span class="p">:</span> <span class="n">begin_str</span><span class="p">,</span> <span class="s2">&quot;end&quot;</span><span class="p">:</span> <span class="n">end_str</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="LatexCodeGenerator.format_global_options"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.format_global_options">[docs]</a>    <span class="k">def</span> <span class="nf">format_global_options</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">option_template</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Inject additional options into the global option template</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">opts</span> <span class="o">=</span> <span class="n">_default_latex_params</span><span class="p">()</span>
+        <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">params</span> <span class="k">if</span> <span class="n">params</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+
+        <span class="n">additional_options</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">columnsep</span><span class="p">:</span>
+            <span class="n">additional_options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">setlength{{</span><span class="se">\\</span><span class="s2">columnsep}}{{</span><span class="si">{COLSEP}</span><span class="s2">}}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">COLSEP</span><span class="o">=</span><span class="n">opts</span><span class="o">.</span><span class="n">columnsep</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">columnseprule</span><span class="p">:</span>
+            <span class="n">additional_options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">setlength{{</span><span class="se">\\</span><span class="s2">columnseprule}}{{</span><span class="si">{COLSEPR}</span><span class="s2">}}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">COLSEPR</span><span class="o">=</span><span class="n">opts</span><span class="o">.</span><span class="n">columnseprule</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="n">global_options</span> <span class="o">=</span> <span class="n">option_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">GLOBALOPTS</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">additional_options</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">global_options</span></div>
+
+<div class="viewcode-block" id="LatexCodeGenerator.format_expr"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.format_expr">[docs]</a>    <span class="k">def</span> <span class="nf">format_expr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a LaTeX-formatted string for a sympy expression.</span>
+<span class="sd">        E.g.:</span>
+<span class="sd">        &gt;&gt;&gt; LatexCodeGenerator.format_expr(&quot;exp(i*pi) + 1&quot;)</span>
+<span class="sd">        &#39;e^{i \\pi} + 1&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">_greek</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+        <span class="c1"># Some values are treated as special cases by sympy.sympify.</span>
+        <span class="c1"># Return these as they are.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">expr</span> <span class="ow">in</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">sympy</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">expr</span>
+        <span class="k">return</span> <span class="n">mp_latex</span><span class="p">(</span><span class="n">sympy</span><span class="o">.</span><span class="n">sympify</span><span class="p">(</span><span class="n">expr</span><span class="p">),</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">print_settings</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LatexCodeGenerator.format_unit"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.format_unit">[docs]</a>    <span class="k">def</span> <span class="nf">format_unit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return sympified and LaTeX-formatted string describing given unit.</span>
+<span class="sd">        E.g.:</span>
+<span class="sd">        &gt;&gt;&gt; LatexCodeGenerator.format_unit(&quot;m/s**2&quot;)</span>
+<span class="sd">        &#39;\\mathrm{\\frac{m}{s^{2}}}&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">atomic_units</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;([a-zA-Z]+)&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span>
+        <span class="n">atomic_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">au</span><span class="p">,</span> <span class="n">sympy</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="n">au</span><span class="p">))</span> <span class="k">for</span> <span class="n">au</span> <span class="ow">in</span> <span class="n">atomic_units</span><span class="p">)</span>
+        <span class="n">sympified_unit</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="n">atomic_dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">mathrm{{</span><span class="si">{0}</span><span class="s2">}}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mp_latex</span><span class="p">(</span><span class="n">sympified_unit</span><span class="p">),</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">print_settings</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LatexCodeGenerator.format_packages"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.format_packages">[docs]</a>    <span class="k">def</span> <span class="nf">format_packages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">package_list</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return list of packages and options as a LaTeX-formatted string.</span>
+<span class="sd">        Assumes package list is on the form ((&quot;package1&quot;, &quot;[options1]&quot;), ...).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">usepackage</span><span class="si">{0}</span><span class="s2">{{</span><span class="si">{1}</span><span class="s2">}}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">option</span><span class="p">,</span> <span class="n">package</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">package</span><span class="p">,</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">package_list</span>
+        <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">(</span><span class="si">{1}</span><span class="s2">, </span><span class="si">{2}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="p">),</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gotran.common.disk &mdash; gotran 2019.0.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> gotran
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Programmers reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gotran.html">gotran package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">gotran</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+          <li><a href="../common.html">gotran.common</a> &raquo;</li>
+      <li>gotran.common.disk</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gotran.common.disk</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (C) 2011-2012 Johan Hake</span>
+<span class="c1">#</span>
+<span class="c1"># This file is part of Gotran.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU Lesser General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1"># (at your option) any later version.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the</span>
+<span class="c1"># GNU Lesser General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1"># You should have received a copy of the GNU Lesser General Public License</span>
+<span class="c1"># along with Gotran. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;load&quot;</span><span class="p">,</span> <span class="s2">&quot;save&quot;</span><span class="p">,</span> <span class="s2">&quot;present_time_str&quot;</span><span class="p">]</span>
+
+<span class="c1"># System imports</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="kn">from</span> <span class="nn">pickle</span> <span class="kn">import</span> <span class="n">Unpickler</span><span class="p">,</span> <span class="n">Pickler</span>
+<span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">isdir</span><span class="p">,</span> <span class="n">join</span>
+
+<span class="c1"># gotran imports</span>
+<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">TIME_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;%Y.%m.</span><span class="si">%d</span><span class="s2">-%H.%M.%S&quot;</span>
+
+
+<div class="viewcode-block" id="present_time_str"><a class="viewcode-back" href="../../../gotran.common.html#gotran.common.disk.present_time_str">[docs]</a><span class="k">def</span> <span class="nf">present_time_str</span><span class="p">():</span>
+    <span class="s2">&quot;Returns the present time nicely formated&quot;</span>
+    <span class="k">return</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">TIME_FORMAT</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="save"><a class="viewcode-back" href="../../../gotran.common.html#gotran.common.disk.save">[docs]</a><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span> <span class="o">**</span><span class="n">data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Save data using cPickle</span>
+
+<span class="sd">    @type basename : str</span>
+<span class="sd">    @param basename : The name of the file to save the data in, .cpickle</span>
+<span class="sd">    will be appended to the file name if not provided</span>
+<span class="sd">    @param data : The actuall data to be saved.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">check_arg</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># If zero data size just return</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">basename</span> <span class="k">if</span> <span class="s2">&quot;.cpickle&quot;</span> <span class="ow">in</span> <span class="n">basename</span> <span class="k">else</span> <span class="n">basename</span> <span class="o">+</span> <span class="s2">&quot;.cpickle&quot;</span>
+
+    <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+
+    <span class="n">p</span> <span class="o">=</span> <span class="n">Pickler</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+    <span class="c1"># Dump the dictionary kwarg</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<span class="k">def</span> <span class="nf">compare_dicts</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">):</span>
+    <span class="s2">&quot;Recursively compares a dict of values&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p2</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">p1</span> <span class="o">==</span> <span class="n">p2</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">p1</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">ret</span> <span class="ow">and</span> <span class="p">(</span><span class="n">value</span> <span class="o">==</span> <span class="n">p2</span><span class="p">[</span><span class="n">key</span><span class="p">])</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">ret</span> <span class="ow">and</span> <span class="n">compare_dicts</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">p2</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">ret</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">==</span> <span class="n">p2</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">ret</span>
+
+
+<div class="viewcode-block" id="load"><a class="viewcode-back" href="../../../gotran.common.html#gotran.common.disk.load">[docs]</a><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span> <span class="n">latest_timestamp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">collect</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Load data using cPickle</span>
+
+<span class="sd">    @type basename : str</span>
+<span class="sd">    @param basename : The name of the file where the data will be loaded from,</span>
+<span class="sd">    &#39;.cpickle&#39; will be appended to the file name if not provided</span>
+<span class="sd">    @type latest_timestamp : bool</span>
+<span class="sd">    @param latest_timestamp : If true return the data from latest version of</span>
+<span class="sd">    saved data with the same basename</span>
+<span class="sd">    @type collect : bool</span>
+<span class="sd">    @param collect : If True collect all data with the same basename and</span>
+<span class="sd">    the same parameters</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">check_arg</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">latest_timestamp</span> <span class="ow">and</span> <span class="n">collect</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;&#39;collect&#39; and &#39;latest_timestamp&#39; cannot both be True&quot;</span><span class="p">)</span>
+
+    <span class="c1"># If not collect just return the data froma single data file</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">collect</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">load_single_data</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span> <span class="n">latest_timestamp</span><span class="p">)</span>
+
+    <span class="n">filenames</span> <span class="o">=</span> <span class="n">get_data_filenames</span><span class="p">(</span><span class="n">basename</span><span class="p">)</span>
+
+    <span class="c1"># No filenames with timestamp. Try to return data file without timestamp</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">filenames</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">load_single_data</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># Start with the latest filename and load the data and collect them if</span>
+    <span class="c1"># the data have the same parameter</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">load_single_data</span><span class="p">(</span><span class="n">filenames</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;params&quot;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">filenames</span><span class="p">):</span>
+        <span class="n">local_data</span> <span class="o">=</span> <span class="n">load_single_data</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">compare_dicts</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">local_data</span><span class="p">[</span><span class="s2">&quot;params&quot;</span><span class="p">]):</span>
+            <span class="n">info</span><span class="p">(</span><span class="s2">&quot;Not the same parameters, skipping data from &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="n">merge_data_dicts</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">local_data</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+<span class="k">def</span> <span class="nf">merge_data_dicts</span><span class="p">(</span><span class="n">data0</span><span class="p">,</span> <span class="n">data1</span><span class="p">):</span>
+    <span class="s2">&quot;Merge data from data1 into data0&quot;</span>
+
+    <span class="k">def</span> <span class="nf">recursively_merge_data</span><span class="p">(</span><span class="n">data0</span><span class="p">,</span> <span class="n">data1</span><span class="p">):</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">values</span><span class="p">),</span> <span class="n">org_values</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">data1</span><span class="o">.</span><span class="n">items</span><span class="p">()),</span> <span class="nb">list</span><span class="p">(</span><span class="n">data0</span><span class="o">.</span><span class="n">values</span><span class="p">())):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">data0</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">recursively_merge_data</span><span class="p">(</span><span class="n">org_values</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)):</span>
+                        <span class="n">org_values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">org_values</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+                <span class="n">data0</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">org_values</span>
+        <span class="k">return</span> <span class="n">data0</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">values</span><span class="p">),</span> <span class="n">org_values</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">data1</span><span class="o">.</span><span class="n">items</span><span class="p">()),</span> <span class="nb">list</span><span class="p">(</span><span class="n">data0</span><span class="o">.</span><span class="n">values</span><span class="p">())):</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;params&quot;</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="n">data0</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">recursively_merge_data</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">org_values</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">load_single_data</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span> <span class="n">latest_timestamp</span><span class="p">):</span>
+    <span class="s2">&quot;Helper function for load&quot;</span>
+
+    <span class="k">if</span> <span class="n">latest_timestamp</span><span class="p">:</span>
+        <span class="n">filenames</span> <span class="o">=</span> <span class="n">get_data_filenames</span><span class="p">(</span><span class="n">basename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">filenames</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span>
+                <span class="s2">&quot;No files with timestamp for basename: &quot;</span> <span class="s2">&quot;&#39;</span><span class="si">%s</span><span class="s2">&#39; excist&quot;</span> <span class="o">%</span> <span class="n">basename</span>
+            <span class="p">)</span>
+        <span class="n">basename</span> <span class="o">=</span> <span class="n">filenames</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">basename</span> <span class="k">if</span> <span class="s2">&quot;.cpickle&quot;</span> <span class="ow">in</span> <span class="n">basename</span> <span class="k">else</span> <span class="n">basename</span> <span class="o">+</span> <span class="s2">&quot;.cpickle&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s2">&quot;No file with basename: &#39;</span><span class="si">%s</span><span class="s2">&#39; excists&quot;</span> <span class="o">%</span> <span class="n">basename</span><span class="p">)</span>
+
+    <span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loading data from: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">Unpickler</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">get_data_filenames</span><span class="p">(</span><span class="n">basename</span><span class="p">):</span>
+    <span class="s2">&quot;Helper functions for getting data filenames&quot;</span>
+    <span class="kn">import</span> <span class="nn">glob</span><span class="o">,</span> <span class="nn">re</span>
+
+    <span class="n">basename</span> <span class="o">=</span> <span class="n">basename</span> <span class="k">if</span> <span class="s2">&quot;.cpickle&quot;</span> <span class="ow">in</span> <span class="n">basename</span> <span class="k">else</span> <span class="n">basename</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.cpickle&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">-[0-9]+\.[0-9]+\.[0-9]+-[0-9]+&quot;</span> <span class="s2">&quot;\.[0-9]+\.[0-9]+.cpickle&quot;</span> <span class="o">%</span> <span class="n">basename</span>
+    <span class="p">)</span>
+
+    <span class="n">filenames</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">filename</span>
+        <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">*.cpickle&quot;</span> <span class="o">%</span> <span class="n">basename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+    <span class="p">]</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">filenames</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="n">filenames</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">filenames</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

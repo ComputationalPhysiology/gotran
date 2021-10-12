@@ -1,66 +1,31 @@
-
-
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>modelparameters.logger &mdash; gotran 2019.0.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
-
-  
-  
-  
-  
-
-  
-  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
-  
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../../_static/jquery.js"></script>
-        <script type="text/javascript" src="../../_static/underscore.js"></script>
-        <script type="text/javascript" src="../../_static/doctools.js"></script>
-        <script type="text/javascript" src="../../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-    <script type="text/javascript" src="../../_static/js/theme.js"></script>
-
-    
-
-  
-  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
-
-          
             <a href="../../index.html" class="icon icon-home"> gotran
-          
-
-          
           </a>
-
-          
-            
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -68,82 +33,36 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
-              <p class="caption"><span class="caption-text">Programmers reference:</span></p>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Programmers reference:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../gotran.html">gotran package</a></li>
 </ul>
 
-            
-          
         </div>
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../index.html">gotran</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
-      <li><a href="../../index.html">Docs</a> &raquo;</li>
-        
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
           <li><a href="../index.html">Module code</a> &raquo;</li>
-        
       <li>modelparameters.logger</li>
-    
-    
       <li class="wy-breadcrumbs-aside">
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <h1>Source code for modelparameters.logger</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Copyright (C) 2005-2012 Martin Sandve Alnaes and Anders Logg</span>
 <span class="c1">#</span>
@@ -172,7 +91,7 @@
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;DEBUG&quot;</span><span class="p">,</span> <span class="s2">&quot;INFO&quot;</span><span class="p">,</span> <span class="s2">&quot;WARNING&quot;</span><span class="p">,</span> <span class="s2">&quot;ERROR&quot;</span><span class="p">,</span> <span class="s2">&quot;CRITICAL&quot;</span><span class="p">,</span> <span class="s2">&quot;Logger&quot;</span><span class="p">]</span> 
 
 <span class="c1"># Import default log levels</span>
-<span class="kn">from</span> <span class="nn">logging</span> <span class="k">import</span> <span class="n">DEBUG</span><span class="p">,</span> <span class="n">INFO</span><span class="p">,</span> <span class="n">WARNING</span><span class="p">,</span> <span class="n">ERROR</span><span class="p">,</span> <span class="n">CRITICAL</span>
+<span class="kn">from</span> <span class="nn">logging</span> <span class="kn">import</span> <span class="n">DEBUG</span><span class="p">,</span> <span class="n">INFO</span><span class="p">,</span> <span class="n">WARNING</span><span class="p">,</span> <span class="n">ERROR</span><span class="p">,</span> <span class="n">CRITICAL</span>
 
 <span class="c1"># Base class for ModelParameters exceptions</span>
 <span class="k">class</span> <span class="nc">ModelParametersException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
@@ -192,9 +111,9 @@
 <span class="n">GREEN</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[1;37;32m</span><span class="si">%s</span><span class="se">\033</span><span class="s2">[0m&quot;</span>
 
 <span class="c1"># Logger class</span>
-<div class="viewcode-block" id="Logger"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger">[docs]</a><span class="k">class</span> <span class="nc">Logger</span><span class="p">:</span>
+<div class="viewcode-block" id="Logger"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger">[docs]</a><span class="k">class</span> <span class="nc">Logger</span><span class="p">:</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
         <span class="s2">&quot;Create logger instance.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
 
@@ -233,12 +152,12 @@
         <span class="c1"># Set default Exception</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_DefaultException</span> <span class="o">=</span> <span class="n">ModelParametersException</span>
 
-<div class="viewcode-block" id="Logger.set_default_exception"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.set_default_exception">[docs]</a>    <span class="k">def</span> <span class="nf">set_default_exception</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exception</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.set_default_exception"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.set_default_exception">[docs]</a>    <span class="k">def</span> <span class="nf">set_default_exception</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exception</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">exception</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Expected a subclass of Exception&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_DefaultException</span> <span class="o">=</span> <span class="n">exception</span></div>
 
-<div class="viewcode-block" id="Logger.add_logfile"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.add_logfile">[docs]</a>    <span class="k">def</span> <span class="nf">add_logfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;a&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.add_logfile"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.add_logfile">[docs]</a>    <span class="k">def</span> <span class="nf">add_logfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;a&quot;</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">filename</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.log&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
         <span class="k">if</span> <span class="n">filename</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logfiles</span><span class="p">:</span>
@@ -251,18 +170,18 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_logfiles</span><span class="p">[</span><span class="n">filename</span><span class="p">]</span> <span class="o">=</span> <span class="n">h</span>
         <span class="k">return</span> <span class="n">h</span></div>
 
-<div class="viewcode-block" id="Logger.remove_logfile"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.remove_logfile">[docs]</a>    <span class="k">def</span> <span class="nf">remove_logfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.remove_logfile"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.remove_logfile">[docs]</a>    <span class="k">def</span> <span class="nf">remove_logfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">filename</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logfiles</span><span class="p">:</span>
             <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logfiles</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="n">h</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Logger.set_raise_error"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.set_raise_error">[docs]</a>    <span class="k">def</span> <span class="nf">set_raise_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.set_raise_error"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.set_raise_error">[docs]</a>    <span class="k">def</span> <span class="nf">set_raise_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_raise_error</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Logger.get_logfile_handler"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.get_logfile_handler">[docs]</a>    <span class="k">def</span> <span class="nf">get_logfile_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.get_logfile_handler"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.get_logfile_handler">[docs]</a>    <span class="k">def</span> <span class="nf">get_logfile_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logfiles</span><span class="p">[</span><span class="n">filename</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="Logger.log"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.log">[docs]</a>    <span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.log"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.log">[docs]</a>    <span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
         <span class="s2">&quot;Write a log message on given log level&quot;</span>
         <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_raw</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">3</span> <span class="ow">and</span> <span class="n">text</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:]</span> <span class="o">==</span> <span class="s2">&quot;...&quot;</span><span class="p">:</span>
@@ -271,31 +190,31 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="Logger.debug"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.debug">[docs]</a>    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.debug"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.debug">[docs]</a>    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
         <span class="s2">&quot;Write debug message.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">DEBUG</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Logger.info"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.info"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
         <span class="s2">&quot;Write info message.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">INFO</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Logger.info_red"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.info_red">[docs]</a>    <span class="k">def</span> <span class="nf">info_red</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.info_red"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.info_red">[docs]</a>    <span class="k">def</span> <span class="nf">info_red</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
         <span class="s2">&quot;Write info message in red.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">INFO</span><span class="p">,</span> <span class="n">RED</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_raw</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="Logger.info_green"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.info_green">[docs]</a>    <span class="k">def</span> <span class="nf">info_green</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.info_green"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.info_green">[docs]</a>    <span class="k">def</span> <span class="nf">info_green</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
         <span class="s2">&quot;Write info message in green.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">INFO</span><span class="p">,</span> <span class="n">GREEN</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_raw</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="Logger.info_blue"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.info_blue">[docs]</a>    <span class="k">def</span> <span class="nf">info_blue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.info_blue"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.info_blue">[docs]</a>    <span class="k">def</span> <span class="nf">info_blue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
         <span class="s2">&quot;Write info message in blue.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">INFO</span><span class="p">,</span> <span class="n">BLUE</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_raw</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="Logger.warning"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.warning">[docs]</a>    <span class="k">def</span> <span class="nf">warning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.warning"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.warning">[docs]</a>    <span class="k">def</span> <span class="nf">warning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
         <span class="s2">&quot;Write warning message.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">WARNING</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_raw</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="Logger.error"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.error">[docs]</a>    <span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.error"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.error">[docs]</a>    <span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="s2">&quot;Write error message and raise an exception.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">ERROR</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_raw</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">))</span>
         <span class="n">raise_error</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;raise_error&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_raise_error</span><span class="p">)</span>
@@ -304,33 +223,33 @@
         <span class="k">if</span> <span class="n">raise_error</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_format_raw</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="Logger.type_error"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.type_error">[docs]</a>    <span class="k">def</span> <span class="nf">type_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.type_error"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.type_error">[docs]</a>    <span class="k">def</span> <span class="nf">type_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="s2">&quot;Write error message and raise a type error exception.&quot;</span>
         <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;exception&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="ne">TypeError</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Logger.value_error"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.value_error">[docs]</a>    <span class="k">def</span> <span class="nf">value_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.value_error"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.value_error">[docs]</a>    <span class="k">def</span> <span class="nf">value_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="s2">&quot;Write error message and raise a value error exception.&quot;</span>
         <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;exception&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="ne">ValueError</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Logger.begin_log"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.begin_log">[docs]</a>    <span class="k">def</span> <span class="nf">begin_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.begin_log"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.begin_log">[docs]</a>    <span class="k">def</span> <span class="nf">begin_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
         <span class="s2">&quot;Begin task: write message and increase indentation level.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">)</span>
         <span class="c1">#self.info(&quot;-&quot;*len(self._format_raw(*message)))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">add_log_indent</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="Logger.end_log"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.end_log">[docs]</a>    <span class="k">def</span> <span class="nf">end_log</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.end_log"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.end_log">[docs]</a>    <span class="k">def</span> <span class="nf">end_log</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;End task: write a newline and decrease indentation level.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">add_log_indent</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Logger.push_log_level"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.push_log_level">[docs]</a>    <span class="k">def</span> <span class="nf">push_log_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.push_log_level"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.push_log_level">[docs]</a>    <span class="k">def</span> <span class="nf">push_log_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">):</span>
         <span class="s2">&quot;Push a log level on the level stack.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_level_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_log_level</span><span class="p">(</span><span class="n">level</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Logger.pop_log_level"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.pop_log_level">[docs]</a>    <span class="k">def</span> <span class="nf">pop_log_level</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.pop_log_level"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.pop_log_level">[docs]</a>    <span class="k">def</span> <span class="nf">pop_log_level</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Pop log level from the level stack, reverting to before</span>
 <span class="sd">        the last push_level.</span>
@@ -339,11 +258,11 @@
         <span class="n">level</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_level_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_log_level</span><span class="p">(</span><span class="n">level</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Logger.suppress_logging"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.suppress_logging">[docs]</a>    <span class="k">def</span> <span class="nf">suppress_logging</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.suppress_logging"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.suppress_logging">[docs]</a>    <span class="k">def</span> <span class="nf">suppress_logging</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Suppress all logging&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_log_level</span><span class="p">(</span><span class="n">CRITICAL</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Logger.set_log_level"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.set_log_level">[docs]</a>    <span class="k">def</span> <span class="nf">set_log_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.set_log_level"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.set_log_level">[docs]</a>    <span class="k">def</span> <span class="nf">set_log_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">):</span>
         <span class="s2">&quot;Set log level.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_level_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">level</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
@@ -351,28 +270,28 @@
         <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_logfiles</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
             <span class="n">h</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">level</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Logger.get_log_level"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.get_log_level">[docs]</a>    <span class="k">def</span> <span class="nf">get_log_level</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.get_log_level"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.get_log_level">[docs]</a>    <span class="k">def</span> <span class="nf">get_log_level</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Get log level.&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_level_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="Logger.set_log_indent"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.set_log_indent">[docs]</a>    <span class="k">def</span> <span class="nf">set_log_indent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.set_log_indent"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.set_log_indent">[docs]</a>    <span class="k">def</span> <span class="nf">set_log_indent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">):</span>
         <span class="s2">&quot;Set indentation level.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_indent_level</span> <span class="o">=</span> <span class="n">level</span></div>
 
-<div class="viewcode-block" id="Logger.add_log_indent"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.add_log_indent">[docs]</a>    <span class="k">def</span> <span class="nf">add_log_indent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">increment</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.add_log_indent"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.add_log_indent">[docs]</a>    <span class="k">def</span> <span class="nf">add_log_indent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">increment</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
         <span class="s2">&quot;Add to indentation level.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_indent_level</span> <span class="o">+=</span> <span class="n">increment</span></div>
 
-<div class="viewcode-block" id="Logger.get_log_handler"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.get_log_handler">[docs]</a>    <span class="k">def</span> <span class="nf">get_log_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.get_log_handler"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.get_log_handler">[docs]</a>    <span class="k">def</span> <span class="nf">get_log_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Get handler for logging.&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handler</span></div>
 
-<div class="viewcode-block" id="Logger.flush_logger"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.flush_logger">[docs]</a>    <span class="k">def</span> <span class="nf">flush_logger</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.flush_logger"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.flush_logger">[docs]</a>    <span class="k">def</span> <span class="nf">flush_logger</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Flush the log handler&quot;</span>
         <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">handlers</span><span class="p">:</span>
             <span class="n">h</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="Logger.set_log_handler"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.set_log_handler">[docs]</a>    <span class="k">def</span> <span class="nf">set_log_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">handler</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.set_log_handler"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.set_log_handler">[docs]</a>    <span class="k">def</span> <span class="nf">set_log_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">handler</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Replace handler for logging.</span>
 
@@ -387,15 +306,15 @@
         <span class="n">handler</span><span class="o">.</span><span class="n">emit</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">MethodType</span><span class="p">(</span><span class="n">emit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handler</span><span class="p">,</span> \
                                         <span class="bp">self</span><span class="o">.</span><span class="n">_handler</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Logger.get_logger"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.get_logger">[docs]</a>    <span class="k">def</span> <span class="nf">get_logger</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.get_logger"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.get_logger">[docs]</a>    <span class="k">def</span> <span class="nf">get_logger</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return message logger.&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log</span></div>
 
-<div class="viewcode-block" id="Logger.set_log_prefix"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.set_log_prefix">[docs]</a>    <span class="k">def</span> <span class="nf">set_log_prefix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.set_log_prefix"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.set_log_prefix">[docs]</a>    <span class="k">def</span> <span class="nf">set_log_prefix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">):</span>
         <span class="s2">&quot;Set prefix for log messages.&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="o">=</span> <span class="n">prefix</span></div>
 
-<div class="viewcode-block" id="Logger.wrap_log_message"><a class="viewcode-back" href="../../gotran.common.html#gotran.Logger.wrap_log_message">[docs]</a>    <span class="k">def</span> <span class="nf">wrap_log_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">symbol</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="Logger.wrap_log_message"><a class="viewcode-back" href="../../gotran.common.html#gotran.common.Logger.wrap_log_message">[docs]</a>    <span class="k">def</span> <span class="nf">wrap_log_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">symbol</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">):</span>
         <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> </span><span class="si">%s</span><span class="s2"> </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">symbol</span><span class="p">)</span>
         <span class="n">wrapping</span> <span class="o">=</span> <span class="n">symbol</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
         <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">wrapping</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">wrapping</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">])</span></div>
@@ -423,42 +342,30 @@
 </pre></div>
 
            </div>
-           
           </div>
           <footer>
-  
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &copy; Copyright 2019, Johan Hake, Henrik Finsberg
-
-    </p>
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
-
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

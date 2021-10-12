@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gotran.input.mathml &mdash; gotran 2019.0.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> gotran
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Programmers reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gotran.html">gotran package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">gotran</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>gotran.input.mathml</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gotran.input.mathml</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (C) 2013 Johan Hake</span>
+<span class="c1">#</span>
+<span class="c1"># This file is part of Gotran.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU Lesser General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1"># (at your option) any later version.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the</span>
+<span class="c1"># GNU Lesser General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1"># You should have received a copy of the GNU Lesser General Public License</span>
+<span class="c1"># along with Gotran. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;MathMLBaseParser&quot;</span><span class="p">,</span> <span class="s2">&quot;MathMLCPPParser&quot;</span><span class="p">]</span>
+
+<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="n">error</span>
+<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">_all_keywords</span>
+
+
+<div class="viewcode-block" id="MathMLBaseParser"><a class="viewcode-back" href="../../../gotran.input.html#gotran.input.mathml.MathMLBaseParser">[docs]</a><span class="k">class</span> <span class="nc">MathMLBaseParser</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">use_sympy_integers</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state_variable</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_derivative</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variables_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_sympy_integers</span> <span class="o">=</span> <span class="n">use_sympy_integers</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_precedence</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;piecewise&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;power&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;rem&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+            <span class="s2">&quot;divide&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">&quot;times&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="s2">&quot;minus&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+            <span class="s2">&quot;plus&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+            <span class="s2">&quot;lt&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+            <span class="s2">&quot;gt&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+            <span class="s2">&quot;leq&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+            <span class="s2">&quot;geq&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+            <span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s2">&quot;exp&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s2">&quot;ln&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s2">&quot;abs&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s2">&quot;floor&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s2">&quot;log&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s2">&quot;root&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s2">&quot;tan&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s2">&quot;cos&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s2">&quot;sin&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s2">&quot;tanh&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s2">&quot;cosh&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s2">&quot;sinh&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s2">&quot;arccos&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s2">&quot;arcsin&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s2">&quot;arctan&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_operators</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;power&quot;</span><span class="p">:</span> <span class="s2">&quot;**&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;rem&quot;</span><span class="p">:</span> <span class="s2">&quot; % &quot;</span><span class="p">,</span>
+            <span class="s2">&quot;divide&quot;</span><span class="p">:</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;times&quot;</span><span class="p">:</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;minus&quot;</span><span class="p">:</span> <span class="s2">&quot; - &quot;</span><span class="p">,</span>
+            <span class="s2">&quot;plus&quot;</span><span class="p">:</span> <span class="s2">&quot; + &quot;</span><span class="p">,</span>
+            <span class="s2">&quot;lt&quot;</span><span class="p">:</span> <span class="s2">&quot; &lt; &quot;</span><span class="p">,</span>
+            <span class="s2">&quot;gt&quot;</span><span class="p">:</span> <span class="s2">&quot; &gt; &quot;</span><span class="p">,</span>
+            <span class="s2">&quot;leq&quot;</span><span class="p">:</span> <span class="s2">&quot; &lt;= &quot;</span><span class="p">,</span>
+            <span class="s2">&quot;geq&quot;</span><span class="p">:</span> <span class="s2">&quot; &gt;= &quot;</span><span class="p">,</span>
+            <span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="s2">&quot; = &quot;</span><span class="p">,</span>
+            <span class="s2">&quot;exp&quot;</span><span class="p">:</span> <span class="s2">&quot;exp&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ln&quot;</span><span class="p">:</span> <span class="s2">&quot;log&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;abs&quot;</span><span class="p">:</span> <span class="s2">&quot;abs&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;floor&quot;</span><span class="p">:</span> <span class="s2">&quot;floor&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;log&quot;</span><span class="p">:</span> <span class="s2">&quot;log&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;root&quot;</span><span class="p">:</span> <span class="s2">&quot;sqrt&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;tan&quot;</span><span class="p">:</span> <span class="s2">&quot;tan&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;cos&quot;</span><span class="p">:</span> <span class="s2">&quot;cos&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;sin&quot;</span><span class="p">:</span> <span class="s2">&quot;sin&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;tanh&quot;</span><span class="p">:</span> <span class="s2">&quot;tanh&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;cosh&quot;</span><span class="p">:</span> <span class="s2">&quot;cosh&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;sinh&quot;</span><span class="p">:</span> <span class="s2">&quot;sinh&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;arccos&quot;</span><span class="p">:</span> <span class="s2">&quot;acos&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;arcsin&quot;</span><span class="p">:</span> <span class="s2">&quot;asin&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;arctan&quot;</span><span class="p">:</span> <span class="s2">&quot;atan&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="MathMLBaseParser.use_parenthesis"><a class="viewcode-back" href="../../../gotran.input.html#gotran.input.mathml.MathMLBaseParser.use_parenthesis">[docs]</a>    <span class="k">def</span> <span class="nf">use_parenthesis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">first_operand</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return true if child operation need parenthesis</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">parent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="n">parent_prec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_precedence</span><span class="p">[</span><span class="n">parent</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">parent</span> <span class="o">==</span> <span class="s2">&quot;minus&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">first_operand</span><span class="p">:</span>
+            <span class="n">parent_prec</span> <span class="o">-=</span> <span class="mf">0.5</span>
+
+        <span class="k">if</span> <span class="n">parent</span> <span class="o">==</span> <span class="s2">&quot;divide&quot;</span> <span class="ow">and</span> <span class="n">child</span> <span class="o">==</span> <span class="s2">&quot;times&quot;</span> <span class="ow">and</span> <span class="n">first_operand</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="n">parent</span> <span class="o">==</span> <span class="s2">&quot;minus&quot;</span> <span class="ow">and</span> <span class="n">child</span> <span class="o">==</span> <span class="s2">&quot;plus&quot;</span> <span class="ow">and</span> <span class="n">first_operand</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="n">parent_prec</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_precedence</span><span class="p">[</span><span class="n">child</span><span class="p">]</span></div>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operator</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_operators</span><span class="p">[</span><span class="n">operator</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_gettag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Splits off the namespace part from name, and returns the rest, the tag</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;}&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:])</span>
+
+<div class="viewcode-block" id="MathMLBaseParser.parse"><a class="viewcode-back" href="../../../gotran.input.html#gotran.input.mathml.MathMLBaseParser.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Recursively parse a mathML subtree and return an list of tokens</span>
+<span class="sd">        together with any state variable and derivative.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state_variable</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_derivative</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">used_variables</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="n">equation_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">equation_list</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_state_variable</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_derivative</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">used_variables</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_parse_subtree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">first_operand</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">op</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gettag</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+
+        <span class="c1"># If the tag i &quot;apply&quot; pick the operator and continue parsing</span>
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s2">&quot;apply&quot;</span><span class="p">:</span>
+            <span class="n">children</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+            <span class="n">op</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gettag</span><span class="p">(</span><span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">root</span> <span class="o">=</span> <span class="n">children</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="c1"># If use special method to parse</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_parse_&quot;</span> <span class="o">+</span> <span class="n">op</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_parse_&quot;</span> <span class="o">+</span> <span class="n">op</span><span class="p">)(</span><span class="n">root</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">op</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_operators</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="c1"># Build the equation string</span>
+            <span class="n">eq</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="c1"># Check if we need parenthesis</span>
+            <span class="n">use_parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_parenthesis</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">first_operand</span><span class="p">)</span>
+
+            <span class="c1"># If unary operator</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">root</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="c1"># Special case if operator is &quot;minus&quot;</span>
+                <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s2">&quot;minus&quot;</span><span class="p">:</span>
+
+                    <span class="c1"># If an unary minus is infront of a cn or ci we skip</span>
+                    <span class="c1"># parenthesize</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gettag</span><span class="p">(</span><span class="n">root</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ci&quot;</span><span class="p">,</span> <span class="s2">&quot;cn&quot;</span><span class="p">]:</span>
+                        <span class="n">use_parent</span> <span class="o">=</span> <span class="kc">False</span>
+
+                    <span class="c1"># If an unary minus is infront of a plus we always use parenthesize</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gettag</span><span class="p">(</span><span class="n">root</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="s2">&quot;apply&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gettag</span><span class="p">(</span>
+                        <span class="nb">list</span><span class="p">(</span><span class="n">root</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="p">)</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;plus&quot;</span><span class="p">,</span> <span class="s2">&quot;minus&quot;</span><span class="p">]:</span>
+                        <span class="n">use_parent</span> <span class="o">=</span> <span class="kc">True</span>
+
+                    <span class="n">eq</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;-&quot;</span><span class="p">]</span>
+
+                <span class="k">else</span><span class="p">:</span>
+
+                    <span class="c1"># Always use paranthesis for unary operators</span>
+                    <span class="n">use_parent</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">eq</span> <span class="o">+=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_operators</span><span class="p">[</span><span class="n">op</span><span class="p">]]</span>
+
+                <span class="n">eq</span> <span class="o">+=</span> <span class="p">(</span>
+                    <span class="p">[</span><span class="s2">&quot;(&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">use_parent</span>
+                    <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">root</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">op</span><span class="p">)</span>
+                    <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;)&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">use_parent</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="n">eq</span>
+            <span class="k">else</span><span class="p">:</span>
+
+                <span class="c1"># Binary operator</span>
+                <span class="n">eq</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;(&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">use_parent</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">root</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">op</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">operand</span> <span class="ow">in</span> <span class="n">root</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+                    <span class="n">eq</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">eq</span>
+                        <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_operators</span><span class="p">[</span><span class="n">op</span><span class="p">]]</span>
+                        <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">operand</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">first_operand</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="n">eq</span> <span class="o">=</span> <span class="n">eq</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;)&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">use_parent</span>
+
+                <span class="k">return</span> <span class="n">eq</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;No support for parsing MathML &quot;</span> <span class="o">+</span> <span class="n">op</span> <span class="o">+</span> <span class="s2">&quot; operator.&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_parse_conditional</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">condition</span><span class="p">,</span> <span class="n">operands</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="p">[</span><span class="n">condition</span><span class="p">]</span>
+            <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;(&quot;</span><span class="p">]</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">operands</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">parent</span><span class="p">)</span>
+            <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;, &quot;</span><span class="p">]</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">operands</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">parent</span><span class="p">)</span>
+            <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;)&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_parse_and</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operands</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;And(&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">operand</span> <span class="ow">in</span> <span class="n">operands</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">operand</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;, &quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ret</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;)&quot;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_parse_or</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operands</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Or(&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">operand</span> <span class="ow">in</span> <span class="n">operands</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">operand</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;, &quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ret</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;)&quot;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_parse_lt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operands</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_conditional</span><span class="p">(</span><span class="s2">&quot;Lt&quot;</span><span class="p">,</span> <span class="n">operands</span><span class="p">,</span> <span class="s2">&quot;lt&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_parse_leq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operands</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_conditional</span><span class="p">(</span><span class="s2">&quot;Le&quot;</span><span class="p">,</span> <span class="n">operands</span><span class="p">,</span> <span class="s2">&quot;leq&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_parse_gt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operands</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_conditional</span><span class="p">(</span><span class="s2">&quot;Gt&quot;</span><span class="p">,</span> <span class="n">operands</span><span class="p">,</span> <span class="s2">&quot;gt&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_parse_geq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operands</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_conditional</span><span class="p">(</span><span class="s2">&quot;Ge&quot;</span><span class="p">,</span> <span class="n">operands</span><span class="p">,</span> <span class="s2">&quot;geq&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_parse_neq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operands</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_conditional</span><span class="p">(</span><span class="s2">&quot;Ne&quot;</span><span class="p">,</span> <span class="n">operands</span><span class="p">,</span> <span class="s2">&quot;neq&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_parse_eq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operands</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+        <span class="c1"># Parsing conditional</span>
+        <span class="k">if</span> <span class="n">parent</span> <span class="o">==</span> <span class="s2">&quot;piecewise&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_conditional</span><span class="p">(</span><span class="s2">&quot;Eq&quot;</span><span class="p">,</span> <span class="n">operands</span><span class="p">,</span> <span class="s2">&quot;eq&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Parsing assignment</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">operands</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;eq&quot;</span><span class="p">)</span>
+            <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="s2">&quot;eq&quot;</span><span class="p">]]</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">operands</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;eq&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_parse_pi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;pi&quot;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_parse_ci</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+        <span class="n">varname</span> <span class="o">=</span> <span class="n">var</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">varname</span> <span class="ow">in</span> <span class="n">_all_keywords</span><span class="p">:</span>
+            <span class="n">varname</span> <span class="o">=</span> <span class="n">varname</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">used_variables</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">varname</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">varname</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_parse_cn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">var</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s2">&quot;type&quot;</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="ow">and</span> <span class="n">var</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;e-notation&quot;</span><span class="p">:</span>
+            <span class="c1"># Get rid of potential float repr</span>
+            <span class="n">exponent</span> <span class="o">=</span> <span class="s2">&quot;e&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">var</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tail</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">exponent</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">value</span> <span class="o">+=</span> <span class="n">exponent</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_sympy_integers</span><span class="p">:</span>
+
+            <span class="c1"># Fix possible strangeness with integer division in Python...</span>
+            <span class="n">nums</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">]</span>
+            <span class="n">num_strs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;one&quot;</span><span class="p">,</span> <span class="s2">&quot;two&quot;</span><span class="p">,</span> <span class="s2">&quot;three&quot;</span><span class="p">,</span> <span class="s2">&quot;four&quot;</span><span class="p">,</span> <span class="s2">&quot;five&quot;</span><span class="p">,</span> <span class="s2">&quot;ten&quot;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="nb">eval</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="ow">in</span> <span class="n">nums</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span> <span class="n">num_strs</span><span class="p">))[</span><span class="nb">eval</span><span class="p">(</span><span class="n">value</span><span class="p">)]</span>
+        <span class="c1"># elif &quot;.&quot; not in value and &quot;e&quot; not in value:</span>
+        <span class="c1">#    value += &quot;.0&quot;</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">value</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_parse_diff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operands</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+
+        <span class="c1"># Store old used_variables so we can erase any collected state</span>
+        <span class="c1"># variables</span>
+        <span class="n">used_variables_prior_parse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">used_variables</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">operands</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;diff&quot;</span><span class="p">))</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">operands</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;diff&quot;</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">_all_keywords</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span>
+
+        <span class="k">if</span> <span class="n">y</span> <span class="o">==</span> <span class="s2">&quot;time&quot;</span><span class="p">:</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="s2">&quot;t&quot;</span>
+
+        <span class="n">d</span> <span class="o">=</span> <span class="s2">&quot;d&quot;</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="s2">&quot;_d&quot;</span> <span class="o">+</span> <span class="n">y</span>
+
+        <span class="c1"># Restore used_variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">used_variables</span> <span class="o">=</span> <span class="n">used_variables_prior_parse</span>
+
+        <span class="c1"># Store derivative</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">used_variables</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
+        <span class="c1"># This is an in/out variable remember it</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_derivative</span> <span class="o">=</span> <span class="n">d</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state_variable</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">d</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_parse_bvar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">var</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;bvar&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;ERROR: No support for higher order derivatives.&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_parse_piecewise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cases</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">piece_children</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">cases</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">piece_children</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;piecewise&quot;</span><span class="p">)</span>
+            <span class="n">true</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">piece_children</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">false</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">cases</span><span class="p">[</span><span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;Conditional&quot;</span><span class="p">,</span> <span class="s2">&quot;(&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cond</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;, &quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">true</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;, &quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">false</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;)&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">piece_children</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">cases</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">piece_children</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;piecewise&quot;</span><span class="p">)</span>
+            <span class="n">true</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">piece_children</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="p">[</span><span class="s2">&quot;Conditional&quot;</span><span class="p">,</span> <span class="s2">&quot;(&quot;</span><span class="p">]</span>
+                <span class="o">+</span> <span class="n">cond</span>
+                <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;, &quot;</span><span class="p">]</span>
+                <span class="o">+</span> <span class="n">true</span>
+                <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;, &quot;</span><span class="p">]</span>
+                <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_piecewise</span><span class="p">(</span><span class="n">cases</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+                <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;)&quot;</span><span class="p">]</span>
+            <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MathMLCPPParser"><a class="viewcode-back" href="../../../gotran.input.html#gotran.input.mathml.MathMLCPPParser">[docs]</a><span class="k">class</span> <span class="nc">MathMLCPPParser</span><span class="p">(</span><span class="n">MathMLBaseParser</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_parse_power</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operands</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="p">[</span><span class="s2">&quot;pow&quot;</span><span class="p">,</span> <span class="s2">&quot;(&quot;</span><span class="p">]</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">operands</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;, &quot;</span><span class="p">]</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">operands</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;)&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_parse_piecewise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cases</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cases</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">piece_children</span> <span class="o">=</span> <span class="n">cases</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">getchildren</span><span class="p">()</span>
+            <span class="n">cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">piece_children</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">true</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">piece_children</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">false</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_subtree</span><span class="p">(</span><span class="n">cases</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">getchildren</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;(&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cond</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;?&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">true</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;:&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">false</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;)&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span>
+                <span class="s2">&quot;ERROR: No support for cases with other than two &quot;</span> <span class="s2">&quot;possibilities.&quot;</span>
+            <span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

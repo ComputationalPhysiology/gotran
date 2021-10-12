@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gotran.algorithms.symbolicnewtonsolution &mdash; gotran 2019.0.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> gotran
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Programmers reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gotran.html">gotran package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">gotran</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>gotran.algorithms.symbolicnewtonsolution</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gotran.algorithms.symbolicnewtonsolution</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (C) 2012 Johan Hake</span>
+<span class="c1">#</span>
+<span class="c1"># This file is part of Gotran.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU Lesser General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1"># (at your option) any later version.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the</span>
+<span class="c1"># GNU Lesser General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1"># You should have received a copy of the GNU Lesser General Public License</span>
+<span class="c1"># along with Gotran. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;SymbolicNewtonSolution&quot;</span><span class="p">]</span>
+
+<span class="c1"># System imports</span>
+<span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">sp</span>
+<span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">check_arg</span><span class="p">,</span> <span class="n">scalars</span>
+
+<span class="c1"># Local imports</span>
+<span class="kn">from</span> <span class="nn">gotran.model.ode</span> <span class="kn">import</span> <span class="n">ODE</span>
+<span class="kn">from</span> <span class="nn">gotran.common.dicts</span> <span class="kn">import</span> <span class="n">odict</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">reduce</span>
+
+
+<span class="k">def</span> <span class="nf">_iszero</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns True if x is zero.&quot;&quot;&quot;</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sympify</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">is_zero</span>
+
+
+<div class="viewcode-block" id="SymbolicNewtonSolution"><a class="viewcode-back" href="../../../gotran.algorithms.html#gotran.algorithms.symbolicnewtonsolution.SymbolicNewtonSolution">[docs]</a><span class="k">class</span> <span class="nc">SymbolicNewtonSolution</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class for storing information about a symbolic solution of newton</span>
+<span class="sd">    iteration of an ODE</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a SymbolicNewtonSolution</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        ode : ODE</span>
+<span class="sd">            The ODE which the symbolc solution is created for</span>
+<span class="sd">        theta : scalar \xe2\x88\x88 [0,1]</span>
+<span class="sd">            Theta for creating the numerical integration rule of the ODE</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">SymbolicNewtonSolution</span><span class="p">)</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">scalars</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">SymbolicNewtonSolution</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Store attributes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ode</span> <span class="o">=</span> <span class="n">ode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="n">theta</span>
+
+        <span class="c1"># Create symbolic linear system</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">F_expr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">jacobi</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">states</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">jac_subs</span> <span class="o">=</span> <span class="n">_create_newton_system</span><span class="p">(</span>
+            <span class="n">ode</span><span class="p">,</span> <span class="n">theta</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Create a simplified LU decomposition of the jacobi matrix</span>
+        <span class="c1"># FIXME: Better names!</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">new_old</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">old_new</span> <span class="o">=</span> <span class="n">_LU_solve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jacobi</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">)</span></div>
+        <span class="c1"># self.LU_decomp, self.perm, self.LU_decomp_subs_0,\</span>
+        <span class="c1">#    self.LU_decomp_subs_1 = _LU_solve(self.jacobi, self.F)</span>
+
+
+<span class="k">def</span> <span class="nf">_LU_solve</span><span class="p">(</span><span class="n">AA</span><span class="p">,</span> <span class="n">rhs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns the symbolic solve of AA*x=rhs</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">AA</span><span class="o">.</span><span class="n">is_square</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">NonSquareMatrixError</span><span class="p">()</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">AA</span><span class="o">.</span><span class="n">rows</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">AA</span><span class="p">[:,</span> <span class="p">:]</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">nnz</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">nnz</span> <span class="o">+=</span> <span class="ow">not</span> <span class="n">_iszero</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Num non zeros in jacobian:&quot;</span><span class="p">,</span> <span class="n">nnz</span><span class="p">)</span>
+
+    <span class="c1"># A map between old symbols and new. The values in this dict corresponds to</span>
+    <span class="c1"># where an old symbol is used. If the length of the value is 1 it is only</span>
+    <span class="c1"># used once and once the value is used it can be freed.</span>
+    <span class="n">old_new</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+    <span class="n">new_old</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+    <span class="n">new_count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">global</span> <span class="n">zero_operations</span>
+    <span class="n">zero_operations</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">update_entry</span><span class="p">(</span><span class="n">new_count</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+        <span class="k">global</span> <span class="n">zero_operations</span>
+        <span class="k">if</span> <span class="n">_iszero</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">A</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="n">j</span><span class="p">]):</span>
+            <span class="n">zero_operations</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="n">new_count</span>
+
+        <span class="c1"># Create new symbol and store the representation</span>
+        <span class="n">new_sym</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="s2">&quot;j_</span><span class="si">{0}</span><span class="s2">_</span><span class="si">{1}</span><span class="s2">:</span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">new_count</span><span class="p">))</span>
+        <span class="n">new_old</span><span class="p">[</span><span class="n">new_sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">A</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">old_sym</span> <span class="ow">in</span> <span class="p">[</span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">k</span><span class="p">],</span> <span class="n">A</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="n">j</span><span class="p">]]:</span>
+            <span class="n">storage</span> <span class="o">=</span> <span class="n">old_new</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">old_sym</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">storage</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+                <span class="n">old_new</span><span class="p">[</span><span class="n">old_sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">storage</span>
+            <span class="n">storage</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">new_sym</span><span class="p">)</span>
+
+        <span class="c1"># Change entry to the new symbol</span>
+        <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_sym</span>
+        <span class="n">new_count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="n">new_count</span>
+
+    <span class="c1"># factorization</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">j</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+                <span class="n">new_count</span> <span class="o">=</span> <span class="n">update_entry</span><span class="p">(</span><span class="n">new_count</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+        <span class="n">pivot</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">j</span><span class="p">):</span>
+                <span class="n">new_count</span> <span class="o">=</span> <span class="n">update_entry</span><span class="p">(</span><span class="n">new_count</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+
+            <span class="c1"># find the first non-zero pivot, includes any expression</span>
+            <span class="k">if</span> <span class="n">pivot</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_iszero</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]):</span>
+                <span class="n">pivot</span> <span class="o">=</span> <span class="n">i</span>
+        <span class="k">if</span> <span class="n">pivot</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># this result is based on iszerofunc&#39;s analysis of the</span>
+            <span class="c1"># possible pivots, so even though the element may not be</span>
+            <span class="c1"># strictly zero, the supplied iszerofunc&#39;s evaluation gave</span>
+            <span class="c1"># True</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No nonzero pivot found; inversion failed.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">pivot</span> <span class="o">!=</span> <span class="n">j</span><span class="p">:</span>  <span class="c1"># row must be swapped</span>
+            <span class="n">A</span><span class="o">.</span><span class="n">row_swap</span><span class="p">(</span><span class="n">pivot</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">pivot</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">A</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">_iszero</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]):</span>
+                <span class="n">zero_operations</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># Create new symbol and store the representation</span>
+            <span class="n">new_sym</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="s2">&quot;j_</span><span class="si">{0}</span><span class="s2">_</span><span class="si">{1}</span><span class="s2">:</span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">new_count</span><span class="p">))</span>
+            <span class="n">new_old</span><span class="p">[</span><span class="n">new_sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">scale</span>
+            <span class="k">for</span> <span class="n">old_sym</span> <span class="ow">in</span> <span class="p">[</span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">A</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">j</span><span class="p">]]:</span>
+                <span class="n">storage</span> <span class="o">=</span> <span class="n">old_new</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">old_sym</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">storage</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+                    <span class="n">old_new</span><span class="p">[</span><span class="n">old_sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">storage</span>
+                <span class="n">storage</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">new_sym</span><span class="p">)</span>
+
+            <span class="c1"># Change entry to the new symbol</span>
+            <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_sym</span>
+            <span class="n">new_count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="n">nnz</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">nnz</span> <span class="o">+=</span> <span class="ow">not</span> <span class="n">_iszero</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Num non zeros in factorized jacobian:&quot;</span><span class="p">,</span> <span class="n">nnz</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Num non-zero operations while factorizing matrix:&quot;</span><span class="p">,</span> <span class="n">new_count</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Num zero operations while factorizing matrix:&quot;</span><span class="p">,</span> <span class="n">zero_operations</span><span class="p">)</span>
+    <span class="n">factorizing_nnz_operations</span> <span class="o">=</span> <span class="n">new_count</span>
+    <span class="n">zero_operations</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">n</span> <span class="o">=</span> <span class="n">AA</span><span class="o">.</span><span class="n">rows</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">rhs</span><span class="o">.</span><span class="n">permuteFwd</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">update_entry</span><span class="p">(</span><span class="n">new_count</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+        <span class="k">global</span> <span class="n">zero_operations</span>
+        <span class="k">if</span> <span class="n">_iszero</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]):</span>
+            <span class="n">zero_operations</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="n">new_count</span>
+
+        <span class="c1"># Create new symbol and store the representation</span>
+        <span class="n">new_sym</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="s2">&quot;F_</span><span class="si">{0}</span><span class="s2">:</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">new_count</span><span class="p">))</span>
+        <span class="n">new_old</span><span class="p">[</span><span class="n">new_sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">b</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">old_sym</span> <span class="ow">in</span> <span class="p">[</span><span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">b</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]]:</span>
+            <span class="n">storage</span> <span class="o">=</span> <span class="n">old_new</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">old_sym</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">storage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">storage</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+                <span class="n">old_new</span><span class="p">[</span><span class="n">old_sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">storage</span>
+            <span class="n">storage</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">new_sym</span><span class="p">)</span>
+
+        <span class="c1"># Change entry to the new symbol</span>
+        <span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_sym</span>
+        <span class="n">new_count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="n">new_count</span>
+
+    <span class="c1"># forward substitution, all diag entries are scaled to 1</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+            <span class="n">new_count</span> <span class="o">=</span> <span class="n">update_entry</span><span class="p">(</span><span class="n">new_count</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+            <span class="c1"># b.row(i, lambda x,k: x - b[j,k]*A[i,j])</span>
+
+    <span class="c1"># backward substitution</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+            <span class="n">new_count</span> <span class="o">=</span> <span class="n">update_entry</span><span class="p">(</span><span class="n">new_count</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+            <span class="c1"># b.row(i, lambda x,k: x - b[j,k]*A[i,j])</span>
+        <span class="n">b</span><span class="o">.</span><span class="n">row</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="n">x</span> <span class="o">/</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">])</span>
+
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="s2">&quot;Num zero operations while forward/backward substituting matrix:&quot;</span><span class="p">,</span>
+        <span class="n">zero_operations</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="s2">&quot;Num non-zero operations while factorizing matrix:&quot;</span><span class="p">,</span>
+        <span class="n">new_count</span> <span class="o">-</span> <span class="n">factorizing_nnz_operations</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">b</span><span class="p">,</span> <span class="n">new_old</span><span class="p">,</span> <span class="n">old_new</span>
+
+    <span class="k">return</span> <span class="n">A</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">old_new</span><span class="p">,</span> <span class="n">new_old</span>
+
+
+<span class="k">def</span> <span class="nf">symbolic_solve</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Symbolically solve an ode system</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+<span class="k">def</span> <span class="nf">_create_newton_system</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the nonlinear F, the Jacobian matrix and a mapping of states</span>
+<span class="sd">    to nonero fields for the ODE</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Lists of symbols</span>
+    <span class="n">states</span> <span class="o">=</span> <span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">ode</span><span class="o">.</span><span class="n">states</span><span class="p">]</span>
+    <span class="n">states_0</span> <span class="o">=</span> <span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">sym_0</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">ode</span><span class="o">.</span><span class="n">states</span><span class="p">]</span>
+    <span class="n">vars_</span> <span class="o">=</span> <span class="p">[</span><span class="n">var</span><span class="o">.</span><span class="n">sym</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">ode</span><span class="o">.</span><span class="n">variables</span><span class="p">]</span>
+    <span class="n">vars_0</span> <span class="o">=</span> <span class="p">[</span><span class="n">var</span><span class="o">.</span><span class="n">sym_0</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">ode</span><span class="o">.</span><span class="n">variables</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">sum_ders</span><span class="p">(</span><span class="n">ders</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span><span class="p">,</span> <span class="n">ders</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># Substitution dict between sym and previous sym value</span>
+    <span class="n">subs</span> <span class="o">=</span> <span class="p">[</span><span class="n">syms</span> <span class="k">for</span> <span class="n">syms</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">states</span> <span class="o">+</span> <span class="n">vars_</span><span class="p">,</span> <span class="n">states_0</span> <span class="o">+</span> <span class="n">vars_0</span><span class="p">)]</span>
+
+    <span class="c1"># Generate F using theta rule</span>
+    <span class="n">F_expr</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">theta</span> <span class="o">*</span> <span class="n">expr</span>
+        <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">expr</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">subs</span><span class="p">)</span>
+        <span class="o">-</span> <span class="p">(</span><span class="n">sum_ders</span><span class="p">(</span><span class="n">ders</span><span class="p">)</span> <span class="o">-</span> <span class="n">sum_ders</span><span class="p">(</span><span class="n">ders</span><span class="p">)</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">subs</span><span class="p">))</span> <span class="o">/</span> <span class="n">ode</span><span class="o">.</span><span class="n">dt</span>
+        <span class="k">for</span> <span class="n">ders</span><span class="p">,</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">ode</span><span class="o">.</span><span class="n">get_derivative_expr</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+    <span class="p">]</span>
+
+    <span class="c1"># Create mapping of orginal expression</span>
+    <span class="n">sym_map</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+    <span class="n">jac_subs</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+    <span class="n">F</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">expr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">F_expr</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">state</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">states</span><span class="p">):</span>
+            <span class="n">F_ij</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">F_ij</span><span class="p">:</span>
+                <span class="n">jac_sym</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="s2">&quot;j_</span><span class="si">{0}</span><span class="s2">_</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">))</span>
+                <span class="n">sym_map</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">jac_sym</span>
+                <span class="n">jac_subs</span><span class="p">[</span><span class="n">jac_sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">F_ij</span>
+                <span class="c1"># print &quot;[%d,%d] (%d) # [%s, %s]  \n%s&quot; \</span>
+                <span class="c1"># % (i,j, len(F_ij.args), states[i], states[j], F_ij)</span>
+
+        <span class="n">F_i</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="s2">&quot;F_</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+        <span class="n">sym_map</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">F_i</span>
+        <span class="n">jac_subs</span><span class="p">[</span><span class="n">F_i</span><span class="p">]</span> <span class="o">=</span> <span class="n">expr</span>
+        <span class="n">F</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">F_i</span><span class="p">)</span>
+
+    <span class="c1"># Create the Jacobian</span>
+    <span class="n">jacobi</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">SparseMatrix</span><span class="p">(</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="n">sym_map</span><span class="o">.</span><span class="n">get</span><span class="p">((</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="c1"># return Symbolic representation of the linear system</span>
+    <span class="k">return</span> <span class="n">sp</span><span class="o">.</span><span class="n">Matrix</span><span class="p">(</span><span class="n">F</span><span class="p">),</span> <span class="n">F_expr</span><span class="p">,</span> <span class="n">jacobi</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">jac_subs</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

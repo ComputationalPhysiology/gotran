@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gotran.model.ode &mdash; gotran 2019.0.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> gotran
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Programmers reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gotran.html">gotran package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">gotran</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>gotran.model.ode</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gotran.model.ode</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (C) 2012-2014 Johan Hake</span>
+<span class="c1">#</span>
+<span class="c1"># This file is part of Gotran.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU Lesser General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1"># (at your option) any later version.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the</span>
+<span class="c1"># GNU Lesser General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1"># You should have received a copy of the GNU Lesser General Public License</span>
+<span class="c1"># along with Gotran. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ODE&quot;</span><span class="p">]</span>
+
+<span class="c1"># System imports</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">import</span> <span class="nn">weakref</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">cmp_to_key</span>
+
+<span class="kn">from</span> <span class="nn">sympy.core.function</span> <span class="kn">import</span> <span class="n">AppliedUndef</span>
+
+<span class="c1"># ModelParameters imports</span>
+<span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">sp</span>
+<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">sympycode</span><span class="p">,</span> <span class="n">pythoncode</span>
+<span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">Timer</span>
+
+<span class="c1"># Local imports</span>
+<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="n">error</span><span class="p">,</span> <span class="n">debug</span><span class="p">,</span> <span class="n">check_arg</span><span class="p">,</span> <span class="n">check_kwarg</span><span class="p">,</span> <span class="n">scalars</span>
+<span class="kn">from</span> <span class="nn">gotran.model.odeobjects</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">gotran.model.expressions</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">gotran.model.odecomponent</span> <span class="kn">import</span> <span class="o">*</span>
+
+
+<div class="viewcode-block" id="ODE"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODE">[docs]</a><span class="k">class</span> <span class="nc">ODE</span><span class="p">(</span><span class="n">ODEComponent</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Root ODEComponent</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        The name of the ODE</span>
+<span class="sd">    ns : dict (optional)</span>
+<span class="sd">        A namespace which will be filled with declared ODE symbols</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span> <span class="o">=</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">ns</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="c1"># Call super class with itself as parent component</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ODE</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+        <span class="c1"># Turn off magic attributes (see __setattr__ method) during</span>
+        <span class="c1"># construction</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_allow_magic_attributes</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># If namespace provided just keep a weak ref</span>
+        <span class="k">if</span> <span class="n">ns</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ns</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ns</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">ref</span><span class="p">(</span><span class="n">ns</span><span class="p">)</span>
+
+        <span class="c1"># Add Time object</span>
+        <span class="c1"># FIXME: Add information about time unit dimensions and make</span>
+        <span class="c1"># FIXME: it possible to have different time names</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">Time</span><span class="p">(</span><span class="s2">&quot;t&quot;</span><span class="p">,</span> <span class="s2">&quot;ms&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_time</span> <span class="o">=</span> <span class="n">time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ode_objects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">Dt</span><span class="p">(</span><span class="s2">&quot;dt&quot;</span><span class="p">,</span> <span class="s2">&quot;ms&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dt</span> <span class="o">=</span> <span class="n">dt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ode_objects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+
+        <span class="c1"># Add to object to component map</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">object_component</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakValueDictionary</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">object_component</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_time</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">object_component</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_dt</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span>
+
+        <span class="c1"># Namespace, which can be used to eval an expression</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ns</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span> <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span> <span class="s2">&quot;dt&quot;</span><span class="p">:</span> <span class="n">dt</span><span class="o">.</span><span class="n">sym</span><span class="p">})</span>
+
+        <span class="c1"># An list with all component names with expression added to them</span>
+        <span class="c1"># The components are always sorted wrt last expression added</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_expr_components_ordered</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># A dict with all components objects</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_components</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakValueDictionary</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_components</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span>
+
+        <span class="c1"># An attribute keeping track of the present ODE component</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_present_component</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
+        <span class="c1"># A dict with the present ode objects</span>
+        <span class="c1"># NOTE: hashed by name so duplicated expressions are not stored</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">present_ode_objects</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_time</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_time</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_dt</span><span class="p">)</span>
+
+        <span class="c1"># Keep track of duplicated expressions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">duplicated_expressions</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+
+        <span class="c1"># Keep track of expression dependencies and in what expression</span>
+        <span class="c1"># an object has been used in</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">expression_dependencies</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">object_used_in</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>
+
+        <span class="c1"># All expanded expressions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expanded_expressions</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="c1"># Attributes which will be populated later</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mass_matrix</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Global finalized flag</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_finalized_ode</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># Turn on magic attributes (see __setattr__ method)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_allow_magic_attributes</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">ns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ns</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ns</span>
+
+        <span class="c1"># Check if ref in weakref is alive</span>
+        <span class="n">ns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ns</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ns</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">ns</span>
+
+        <span class="c1"># If not just return an empty dict</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">present_component</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the present component</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_components</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_present_component</span><span class="p">]</span>
+
+<div class="viewcode-block" id="ODE.import_ode"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODE.import_ode">[docs]</a>    <span class="k">def</span> <span class="nf">import_ode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">arguments</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Import a Model into the present Model</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        ode : str, gotran.ODE</span>
+<span class="sd">            The ode which should be added. If ode is a str an</span>
+<span class="sd">            ODE stored in that file will be loaded. If it is an ODE it will be</span>
+<span class="sd">            added directly to the present ODE.</span>
+<span class="sd">        prefix : str (optional)</span>
+<span class="sd">            A prefix which all state, parameters and intermediates are</span>
+<span class="sd">            prefixed with.</span>
+<span class="sd">        components : list, tuple of str (optional)</span>
+<span class="sd">            A list of components which will either be extracted or excluded</span>
+<span class="sd">            from the imported model. If not given the whole ODE will be imported.</span>
+<span class="sd">        arguments : dict (optional)</span>
+<span class="sd">            Optional arguments which can control loading of model</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Import ode&quot;</span><span class="p">)</span>
+
+        <span class="n">components</span> <span class="o">=</span> <span class="n">components</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">,</span> <span class="n">ODE</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">ODE</span><span class="o">.</span><span class="n">import_ode</span><span class="p">)</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">ODE</span><span class="o">.</span><span class="n">import_ode</span><span class="p">)</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">components</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">ODE</span><span class="o">.</span><span class="n">import_ode</span><span class="p">,</span> <span class="n">itemtypes</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+
+        <span class="c1"># If ode is given directly</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">)):</span>
+            <span class="c1"># If not load external ODE</span>
+            <span class="kn">from</span> <span class="nn">gotran.model.loadmodel</span> <span class="kn">import</span> <span class="n">load_ode</span>
+
+            <span class="n">ode</span> <span class="o">=</span> <span class="n">load_ode</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="o">**</span><span class="n">arguments</span><span class="p">)</span>
+
+        <span class="c1"># Postfix prefix with &quot;_&quot; if prefix is not &quot;&quot;</span>
+        <span class="k">if</span> <span class="n">prefix</span> <span class="ow">and</span> <span class="n">prefix</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;_&quot;</span><span class="p">:</span>
+            <span class="n">prefix</span> <span class="o">+=</span> <span class="s2">&quot;_&quot;</span>
+
+        <span class="c1"># If extracting only a certain components</span>
+        <span class="k">if</span> <span class="n">components</span><span class="p">:</span>
+            <span class="n">ode</span> <span class="o">=</span> <span class="n">ode</span><span class="o">.</span><span class="n">extract_components</span><span class="p">(</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">components</span><span class="p">)</span>
+
+        <span class="c1"># Subs for expressions</span>
+        <span class="n">subs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">old_new_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">ode</span><span class="p">:</span> <span class="bp">self</span><span class="p">}</span>
+
+        <span class="k">def</span> <span class="nf">add_comp_and_children</span><span class="p">(</span><span class="n">added</span><span class="p">,</span> <span class="n">comp</span><span class="p">):</span>
+            <span class="s2">&quot;Help function to recursively add components to ode&quot;</span>
+
+            <span class="c1"># Add states and parameters</span>
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">comp</span><span class="o">.</span><span class="n">ode_objects</span><span class="p">:</span>
+
+                <span class="c1"># Check if obj already excists as a ODE parameter</span>
+                <span class="n">old_obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+
+                <span class="k">if</span> <span class="n">old_obj</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">object_component</span><span class="p">[</span><span class="n">old_obj</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="p">:</span>
+                    <span class="n">new_name</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">new_name</span> <span class="o">=</span> <span class="n">prefix</span> <span class="o">+</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span>
+
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">State</span><span class="p">):</span>
+                    <span class="n">subs</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">added</span><span class="o">.</span><span class="n">add_state</span><span class="p">(</span><span class="n">new_name</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">param</span><span class="p">)</span>
+
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">):</span>
+
+                    <span class="c1"># If adding an ODE parameter</span>
+                    <span class="k">if</span> <span class="n">comp</span> <span class="o">==</span> <span class="n">ode</span><span class="p">:</span>
+
+                        <span class="c1"># And parameter name already excists in the present ODE</span>
+                        <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="p">:</span>
+
+                            <span class="c1"># Skip it and add the registered symbol for</span>
+                            <span class="c1"># substitution</span>
+                            <span class="n">subs</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">)]</span><span class="o">.</span><span class="n">sym</span>
+
+                        <span class="k">else</span><span class="p">:</span>
+
+                            <span class="c1"># If not already present just add unprefixed name</span>
+                            <span class="n">subs</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">added</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">param</span><span class="p">)</span>
+
+                    <span class="k">else</span><span class="p">:</span>
+
+                        <span class="n">subs</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">added</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">new_name</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">param</span><span class="p">)</span>
+
+            <span class="c1"># Add child components</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+                <span class="n">added_child</span> <span class="o">=</span> <span class="n">added</span><span class="o">.</span><span class="n">add_component</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+                <span class="c1"># Get corresponding component in present ODE</span>
+                <span class="n">old_new_map</span><span class="p">[</span><span class="n">child</span><span class="p">]</span> <span class="o">=</span> <span class="n">added_child</span>
+
+                <span class="n">add_comp_and_children</span><span class="p">(</span><span class="n">added_child</span><span class="p">,</span> <span class="n">child</span><span class="p">)</span>
+
+        <span class="c1"># Recursively add states and parameters</span>
+        <span class="n">add_comp_and_children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ode</span><span class="p">)</span>
+
+        <span class="c1"># Iterate over all components to add expressions</span>
+        <span class="k">for</span> <span class="n">comp_name</span> <span class="ow">in</span> <span class="n">ode</span><span class="o">.</span><span class="n">all_expr_components_ordered</span><span class="p">:</span>
+
+            <span class="n">comp</span> <span class="o">=</span> <span class="n">ode</span><span class="o">.</span><span class="n">all_components</span><span class="p">[</span><span class="n">comp_name</span><span class="p">]</span>
+
+            <span class="n">comp_comment</span> <span class="o">=</span> <span class="s2">&quot;Expressions for the </span><span class="si">{0}</span><span class="s2"> &quot;</span> <span class="s2">&quot;component&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+            <span class="c1"># Get corresponding component in new ODE</span>
+            <span class="n">added</span> <span class="o">=</span> <span class="n">old_new_map</span><span class="p">[</span><span class="n">comp</span><span class="p">]</span>
+
+            <span class="c1"># Iterate over all objects of the component and save only expressions</span>
+            <span class="c1"># and comments</span>
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">comp</span><span class="o">.</span><span class="n">ode_objects</span><span class="p">:</span>
+
+                <span class="c1"># If saving an expression</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Expression</span><span class="p">):</span>
+
+                    <span class="c1"># The new sympy expression</span>
+                    <span class="n">new_expr</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">subs</span><span class="p">)</span>
+
+                    <span class="c1"># If the component is a Markov model</span>
+                    <span class="k">if</span> <span class="n">comp</span><span class="o">.</span><span class="n">rates</span><span class="p">:</span>
+
+                        <span class="c1"># Do not save State derivatives</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">StateDerivative</span><span class="p">):</span>
+                            <span class="k">continue</span>
+
+                        <span class="c1"># Save rate expressions slightly different</span>
+                        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">RateExpression</span><span class="p">):</span>
+
+                            <span class="n">states</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">states</span>
+                            <span class="n">added</span><span class="o">.</span><span class="n">_add_single_rate</span><span class="p">(</span>
+                                <span class="n">subs</span><span class="p">[</span><span class="n">states</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sym</span><span class="p">],</span> <span class="n">subs</span><span class="p">[</span><span class="n">states</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">sym</span><span class="p">],</span> <span class="n">new_expr</span>
+                            <span class="p">)</span>
+                            <span class="k">continue</span>
+
+                    <span class="c1"># If no prefix we just add the expression by using setattr</span>
+                    <span class="c1"># magic</span>
+                    <span class="k">if</span> <span class="n">prefix</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                        <span class="nb">setattr</span><span class="p">(</span><span class="n">added</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">),</span> <span class="n">new_expr</span><span class="p">)</span>
+                        <span class="n">subs</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">added</span><span class="o">.</span><span class="n">ode_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">sym</span>
+
+                    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="n">StateExpression</span><span class="p">,</span> <span class="n">StateSolution</span><span class="p">)):</span>
+
+                        <span class="n">state</span> <span class="o">=</span> <span class="n">subs</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span>
+
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">AlgebraicExpression</span><span class="p">):</span>
+                            <span class="n">subs</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">added</span><span class="o">.</span><span class="n">add_algebraic</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">new_expr</span><span class="p">)</span>
+
+                        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">StateDerivative</span><span class="p">):</span>
+                            <span class="n">subs</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">added</span><span class="o">.</span><span class="n">add_derivative</span><span class="p">(</span>
+                                <span class="n">state</span><span class="p">,</span> <span class="n">added</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">new_expr</span>
+                            <span class="p">)</span>
+
+                        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">StateSolution</span><span class="p">):</span>
+                            <span class="n">subs</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">added</span><span class="o">.</span><span class="n">add_state_solution</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">new_expr</span><span class="p">)</span>
+                            <span class="nb">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">obj</span><span class="p">),</span> <span class="n">obj</span><span class="o">.</span><span class="n">sym</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Should not reach here...&quot;</span><span class="p">)</span>
+
+                    <span class="c1"># Derivatives are tricky. Here the der expr and dep var</span>
+                    <span class="c1"># need to be registered in the ODE already. But they can</span>
+                    <span class="c1"># be registered with and without prefix, so we need to</span>
+                    <span class="c1"># check that.</span>
+                    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Derivatives</span><span class="p">):</span>
+
+                        <span class="c1"># Get der_expr</span>
+                        <span class="n">der_expr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">der_expr</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+                        <span class="k">if</span> <span class="n">der_expr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+                            <span class="c1"># If not found try prefixed version</span>
+                            <span class="n">der_expr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                                <span class="n">prefix</span> <span class="o">+</span> <span class="n">obj</span><span class="o">.</span><span class="n">der_expr</span><span class="o">.</span><span class="n">name</span>
+                            <span class="p">)</span>
+
+                            <span class="k">if</span> <span class="n">der_expr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="k">if</span> <span class="n">prefix</span><span class="p">:</span>
+                                    <span class="n">error</span><span class="p">(</span>
+                                        <span class="s2">&quot;Could not find expression: &quot;</span>
+                                        <span class="s2">&quot;(</span><span class="si">{0}</span><span class="s2">)</span><span class="si">{1}</span><span class="s2"> while adding &quot;</span>
+                                        <span class="s2">&quot;derivative&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">der_expr</span><span class="p">)</span>
+                                    <span class="p">)</span>
+                                <span class="k">else</span><span class="p">:</span>
+                                    <span class="n">error</span><span class="p">(</span>
+                                        <span class="s2">&quot;Could not find expression: &quot;</span>
+                                        <span class="s2">&quot;</span><span class="si">{1}</span><span class="s2"> while adding derivative&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                            <span class="n">obj</span><span class="o">.</span><span class="n">der_expr</span>
+                                        <span class="p">)</span>
+                                    <span class="p">)</span>
+
+                        <span class="n">dep_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">dep_var</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dep_var</span><span class="p">,</span> <span class="n">Time</span><span class="p">):</span>
+                            <span class="n">dep_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time</span>
+
+                        <span class="k">elif</span> <span class="n">dep_var</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+                            <span class="c1"># If not found try prefixed version</span>
+                            <span class="n">dep_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                                <span class="n">prefix</span> <span class="o">+</span> <span class="n">obj</span><span class="o">.</span><span class="n">dep_var</span><span class="o">.</span><span class="n">name</span>
+                            <span class="p">)</span>
+
+                            <span class="k">if</span> <span class="n">dep_var</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="k">if</span> <span class="n">prefix</span><span class="p">:</span>
+                                    <span class="n">error</span><span class="p">(</span>
+                                        <span class="s2">&quot;Could not find expression: &quot;</span>
+                                        <span class="s2">&quot;(</span><span class="si">{0}</span><span class="s2">)</span><span class="si">{1}</span><span class="s2"> while adding &quot;</span>
+                                        <span class="s2">&quot;derivative&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">dep_var</span><span class="p">)</span>
+                                    <span class="p">)</span>
+                                <span class="k">else</span><span class="p">:</span>
+                                    <span class="n">error</span><span class="p">(</span>
+                                        <span class="s2">&quot;Could not find expression: &quot;</span>
+                                        <span class="s2">&quot;</span><span class="si">{1}</span><span class="s2"> while adding derivative&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                            <span class="n">obj</span><span class="o">.</span><span class="n">dep_var</span>
+                                        <span class="p">)</span>
+                                    <span class="p">)</span>
+
+                        <span class="n">subs</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">added</span><span class="o">.</span><span class="n">add_derivative</span><span class="p">(</span>
+                            <span class="n">der_expr</span><span class="p">,</span> <span class="n">dep_var</span><span class="p">,</span> <span class="n">new_expr</span>
+                        <span class="p">)</span>
+
+                    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Intermediate</span><span class="p">):</span>
+
+                        <span class="n">subs</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">added</span><span class="o">.</span><span class="n">add_intermediate</span><span class="p">(</span>
+                            <span class="n">prefix</span> <span class="o">+</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">new_expr</span>
+                        <span class="p">)</span>
+
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Should not reach here!&quot;</span><span class="p">)</span>
+
+                <span class="c1"># If saving a comment</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Comment</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="o">!=</span> <span class="n">comp_comment</span><span class="p">:</span>
+                    <span class="n">added</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ODE.save"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODE.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basename</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Save ODE to file</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        basename : str (optional)</span>
+<span class="sd">            The basename of the file which the ode will be saved to, if not</span>
+<span class="sd">            given the basename will be the same as the name of the ode.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Save &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_finalized_ode</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;ODE need to be finalized to be saved to file.&quot;</span><span class="p">)</span>
+
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;# Saved Gotran model&quot;</span><span class="p">]</span>
+
+        <span class="n">comp_names</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="n">basename</span> <span class="o">=</span> <span class="n">basename</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
+        <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">comp</span> <span class="o">==</span> <span class="bp">self</span><span class="p">:</span>
+                <span class="n">comp_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">present_comp</span> <span class="o">=</span> <span class="n">comp</span>
+                <span class="n">comps</span> <span class="o">=</span> <span class="p">[</span><span class="n">present_comp</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+                <span class="k">while</span> <span class="n">present_comp</span><span class="o">.</span><span class="n">parent</span> <span class="o">!=</span> <span class="bp">self</span><span class="p">:</span>
+                    <span class="n">present_comp</span> <span class="o">=</span> <span class="n">present_comp</span><span class="o">.</span><span class="n">parent</span>
+                    <span class="n">comps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">present_comp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">comp_name</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;&quot;</span><span class="si">{0}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">comps</span><span class="p">))</span>
+
+            <span class="n">comp_names</span><span class="p">[</span><span class="n">comp</span><span class="p">]</span> <span class="o">=</span> <span class="n">comp_name</span>
+
+            <span class="n">states</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">=</span><span class="si">{1}</span><span class="s2">,&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="n">repr</span><span class="p">(</span><span class="n">include_name</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">comp</span><span class="o">.</span><span class="n">ode_objects</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">State</span><span class="p">)</span>
+            <span class="p">]</span>
+            <span class="n">parameters</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">=</span><span class="si">{1}</span><span class="s2">,&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="n">repr</span><span class="p">(</span><span class="n">include_name</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">comp</span><span class="o">.</span><span class="n">ode_objects</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">)</span>
+            <span class="p">]</span>
+            <span class="k">if</span> <span class="n">states</span><span class="p">:</span>
+                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">comp_name</span><span class="p">:</span>
+                    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;states(</span><span class="si">{0}</span><span class="s2">,&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp_name</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;states(</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">states</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
+                <span class="k">for</span> <span class="n">state_code</span> <span class="ow">in</span> <span class="n">states</span><span class="p">:</span>
+                    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;       &quot;</span> <span class="o">+</span> <span class="n">state_code</span><span class="p">)</span>
+                <span class="n">lines</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
+
+            <span class="k">if</span> <span class="n">parameters</span><span class="p">:</span>
+                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">comp_name</span><span class="p">:</span>
+                    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;parameters(</span><span class="si">{0}</span><span class="s2">,&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp_name</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;parameters(</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">parameters</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
+                <span class="k">for</span> <span class="n">param_code</span> <span class="ow">in</span> <span class="n">parameters</span><span class="p">:</span>
+                    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;           &quot;</span> <span class="o">+</span> <span class="n">param_code</span><span class="p">)</span>
+                <span class="n">lines</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
+
+        <span class="c1"># Iterate over all components</span>
+        <span class="k">for</span> <span class="n">comp_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_expr_components_ordered</span><span class="p">:</span>
+
+            <span class="n">comp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_components</span><span class="p">[</span><span class="n">comp_name</span><span class="p">]</span>
+
+            <span class="n">comp_comment</span> <span class="o">=</span> <span class="s2">&quot;Expressions for the </span><span class="si">{0}</span><span class="s2"> &quot;</span> <span class="s2">&quot;component&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+            <span class="c1"># Iterate over all objects of the component and save only expressions</span>
+            <span class="c1"># and comments</span>
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">comp</span><span class="o">.</span><span class="n">ode_objects</span><span class="p">:</span>
+
+                <span class="c1"># If saving an expression</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Expression</span><span class="p">):</span>
+
+                    <span class="c1"># If the component is a Markov model</span>
+                    <span class="k">if</span> <span class="n">comp</span><span class="o">.</span><span class="n">rates</span><span class="p">:</span>
+
+                        <span class="c1"># Do not save State derivatives</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">StateDerivative</span><span class="p">):</span>
+                            <span class="k">continue</span>
+
+                        <span class="c1"># Save rate expressions slightly different</span>
+                        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">RateExpression</span><span class="p">):</span>
+                            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                                <span class="s2">&quot;rates[</span><span class="si">{0}</span><span class="s2">, </span><span class="si">{1}</span><span class="s2">] = </span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                    <span class="n">sympycode</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">states</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                                    <span class="n">sympycode</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">states</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+                                    <span class="n">sympycode</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">expr</span><span class="p">),</span>
+                                <span class="p">)</span>
+                            <span class="p">)</span>
+                            <span class="k">continue</span>
+
+                    <span class="c1"># All other Expressions</span>
+                    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> = </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">sympycode</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">expr</span><span class="p">)))</span>
+
+                <span class="c1"># If saving a comment</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Comment</span><span class="p">):</span>
+
+                    <span class="c1"># If comment is component comment</span>
+                    <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="o">==</span> <span class="n">comp_comment</span><span class="p">:</span>
+                        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+                        <span class="n">comp_name</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="n">comp_names</span><span class="p">[</span><span class="n">comp</span><span class="p">]</span>
+                            <span class="k">if</span> <span class="n">comp_names</span><span class="p">[</span><span class="n">comp</span><span class="p">]</span>
+                            <span class="k">else</span> <span class="s1">&#39;&quot;</span><span class="si">{0}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">basename</span><span class="p">)</span>
+                        <span class="p">)</span>
+                        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;expressions(</span><span class="si">{0}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp_name</span><span class="p">))</span>
+
+                    <span class="c1"># Just add the comment</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+                        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;comment(&quot;</span><span class="si">{0}</span><span class="s1">&quot;)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="c1"># Use Python code generator to indent outputted code</span>
+        <span class="c1"># Write to file</span>
+        <span class="kn">from</span> <span class="nn">gotran.codegeneration.codegenerators</span> <span class="kn">import</span> <span class="n">PythonCodeGenerator</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">basename</span> <span class="o">+</span> <span class="s2">&quot;.ode&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">PythonCodeGenerator</span><span class="o">.</span><span class="n">indent_and_split_lines</span><span class="p">(</span><span class="n">lines</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="ODE.register_ode_object"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODE.register_ode_object">[docs]</a>    <span class="k">def</span> <span class="nf">register_ode_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">comp</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Register an ODE object in the root ODEComponent</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">symbols_from_expr</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_finalized_ode</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">StateExpression</span><span class="p">):</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Cannot register a StateExpression, the ODE is finalized&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Check for existing object in the ODE</span>
+        <span class="n">dup_obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="c1"># If object with same name is already registered in the ode we</span>
+        <span class="c1"># need to figure out what to do</span>
+        <span class="k">if</span> <span class="n">dup_obj</span><span class="p">:</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">dup_comp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">object_component</span><span class="p">[</span><span class="n">dup_obj</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">dup_comp</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="c1"># If a state is substituted by a state solution</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dup_obj</span><span class="p">,</span> <span class="n">State</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">StateSolution</span><span class="p">):</span>
+                <span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Reduce state &#39;</span><span class="si">{0}</span><span class="s2">&#39; to </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dup_obj</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">expr</span><span class="p">))</span>
+
+            <span class="c1"># If duplicated object is an ODE Parameter and the added object is</span>
+            <span class="c1"># either a State or a Parameter we replace the Parameter.</span>
+            <span class="k">elif</span> <span class="p">(</span>
+                <span class="nb">isinstance</span><span class="p">(</span><span class="n">dup_obj</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="n">dup_comp</span> <span class="o">==</span> <span class="bp">self</span>
+                <span class="ow">and</span> <span class="n">comp</span> <span class="o">!=</span> <span class="bp">self</span>
+                <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="n">State</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">))</span>
+            <span class="p">):</span>
+
+                <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Replace objects&quot;</span><span class="p">)</span>
+
+                <span class="c1"># Remove the object</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ode_objects</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">dup_obj</span><span class="p">)</span>
+
+                <span class="c1"># FIXME: Do we need to recreate all expression the objects is used in?</span>
+                <span class="c1"># Replace the object from the object_used_in dict and update</span>
+                <span class="c1"># the correponding expressions</span>
+                <span class="n">subs</span> <span class="o">=</span> <span class="p">{</span><span class="n">dup_obj</span><span class="o">.</span><span class="n">sym</span><span class="p">:</span> <span class="n">obj</span><span class="o">.</span><span class="n">sym</span><span class="p">}</span>
+                <span class="n">subs</span> <span class="o">=</span> <span class="p">{}</span>
+
+                <span class="c1"># Recursively replace object dependencies</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_replace_object</span><span class="p">(</span><span class="n">dup_obj</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">subs</span><span class="p">)</span>
+
+                <span class="c1"># for expr in self.object_used_in[dup_obj]:</span>
+                <span class="c1">#    updated_expr = recreate_expression(expr, subs)</span>
+                <span class="c1">#    self.object_used_in[obj].add(updated_expr)</span>
+                <span class="c1">#</span>
+                <span class="c1">#    # Exchange and update the dependencies</span>
+                <span class="c1">#    self.expression_dependencies[expr].remove(dup_obj)</span>
+                <span class="c1">#    self.expression_dependencies[expr].add(obj)</span>
+                <span class="c1">#</span>
+                <span class="c1">#    # FIXME: Do not remove the dependencies</span>
+                <span class="c1">#    #self.expression_dependencies[updated_expr] = \</span>
+                <span class="c1">#    #            self.expression_dependencies.pop(expr)</span>
+                <span class="c1">#    self.expression_dependencies[updated_expr] = \</span>
+                <span class="c1">#                self.expression_dependencies[expr]</span>
+                <span class="c1">#</span>
+                <span class="c1">#    # Find the index of old expression and exchange it with updated</span>
+                <span class="c1">#    old_comp = self.object_component[expr]</span>
+                <span class="c1">#    ind = old_comp.ode_objects.index(expr)</span>
+                <span class="c1">#    old_comp.ode_objects[ind] = updated_expr</span>
+                <span class="c1">#</span>
+                <span class="c1">## Remove information about the replaced objects</span>
+                <span class="c1"># self.object_used_in.pop(dup_obj)</span>
+
+            <span class="c1"># If duplicated object is an ODE Parameter and the added</span>
+            <span class="c1"># object is an Intermediate we raise an error.</span>
+            <span class="k">elif</span> <span class="p">(</span>
+                <span class="nb">isinstance</span><span class="p">(</span><span class="n">dup_obj</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="n">dup_comp</span> <span class="o">==</span> <span class="bp">self</span>
+                <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Expression</span><span class="p">)</span>
+            <span class="p">):</span>
+                <span class="n">error</span><span class="p">(</span>
+                    <span class="s2">&quot;Cannot replace an ODE parameter with an Expression, &quot;</span>
+                    <span class="s2">&quot;only with Parameters and States.&quot;</span>
+                <span class="p">)</span>
+
+            <span class="c1"># If State, Parameter or DerivativeExpression we always raise an error</span>
+            <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span>
+                <span class="nb">isinstance</span><span class="p">(</span>
+                    <span class="n">oo</span><span class="p">,</span>
+                    <span class="p">(</span>
+                        <span class="n">State</span><span class="p">,</span>
+                        <span class="n">Parameter</span><span class="p">,</span>
+                        <span class="n">Time</span><span class="p">,</span>
+                        <span class="n">Dt</span><span class="p">,</span>
+                        <span class="n">DerivativeExpression</span><span class="p">,</span>
+                        <span class="n">AlgebraicExpression</span><span class="p">,</span>
+                        <span class="n">StateSolution</span><span class="p">,</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">oo</span> <span class="ow">in</span> <span class="p">[</span><span class="n">dup_obj</span><span class="p">,</span> <span class="n">obj</span><span class="p">]</span>
+            <span class="p">):</span>
+                <span class="n">error</span><span class="p">(</span>
+                    <span class="s2">&quot;Cannot register </span><span class="si">{0}</span><span class="s2">. A </span><span class="si">{1}</span><span class="s2"> with name &#39;</span><span class="si">{2}</span><span class="s2">&#39; is &quot;</span>
+                    <span class="s2">&quot;already registered in this ODE.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">dup_obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">dup_obj</span><span class="o">.</span><span class="n">name</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+
+                <span class="c1"># Sanity check that both obj and dup_obj are Expressions</span>
+                <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">oo</span><span class="p">,</span> <span class="p">(</span><span class="n">Expression</span><span class="p">))</span> <span class="k">for</span> <span class="n">oo</span> <span class="ow">in</span> <span class="p">[</span><span class="n">dup_obj</span><span class="p">,</span> <span class="n">obj</span><span class="p">])</span>
+
+                <span class="c1"># Get list of duplicated objects or an empy list</span>
+                <span class="n">dup_objects</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">duplicated_expressions</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dup_objects</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">dup_objects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dup_obj</span><span class="p">)</span>
+                <span class="n">dup_objects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+        <span class="c1"># Update global information about ode object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">object_component</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">comp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ns</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">obj</span><span class="o">.</span><span class="n">sym</span><span class="p">})</span>
+
+        <span class="c1"># If Expression</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Expression</span><span class="p">):</span>
+
+            <span class="c1"># Append the name to the list of all ordered components with</span>
+            <span class="c1"># expressions. If the ODE is finalized we do not update components</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_finalized_ode</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_handle_expr_component</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+
+            <span class="c1"># Expand and add any derivatives in the expressions</span>
+            <span class="n">expression_added</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">replace_dict</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">derivative_expression_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">atoms</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">Derivative</span><span class="p">))</span>
+            <span class="n">derivative_expression_list</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">sort_key</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">der_expr</span> <span class="ow">in</span> <span class="n">derivative_expression_list</span><span class="p">:</span>
+                <span class="n">expression_added</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expand_single_derivative</span><span class="p">(</span>
+                    <span class="n">comp</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">der_expr</span><span class="p">,</span> <span class="n">replace_dict</span><span class="p">,</span> <span class="n">dependent</span>
+                <span class="p">)</span>
+
+            <span class="c1"># If expressions need to be re-created</span>
+            <span class="k">if</span> <span class="n">replace_dict</span><span class="p">:</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">replace_expr</span><span class="p">(</span><span class="n">replace_dict</span><span class="p">)</span>
+
+            <span class="c1"># If any expression was added we need to bump the count of the ODEObject</span>
+            <span class="k">if</span> <span class="n">expression_added</span><span class="p">:</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">_recount</span><span class="p">(</span><span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span><span class="p">)</span>
+
+            <span class="c1"># Add dependencies between the last registered comment and</span>
+            <span class="c1"># expressions so they are carried over in Code components</span>
+            <span class="k">if</span> <span class="n">comp</span><span class="o">.</span><span class="n">_local_comments</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">object_used_in</span><span class="p">[</span><span class="n">comp</span><span class="o">.</span><span class="n">_local_comments</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">expression_dependencies</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">_local_comments</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+            <span class="c1"># Get expression dependencies</span>
+            <span class="k">for</span> <span class="n">sym</span> <span class="ow">in</span> <span class="n">symbols_from_expr</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">expr</span><span class="p">,</span> <span class="n">include_derivatives</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+                <span class="n">dep_obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="p">[</span><span class="n">sympycode</span><span class="p">(</span><span class="n">sym</span><span class="p">)]</span>
+
+                <span class="k">if</span> <span class="n">dep_obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">error</span><span class="p">(</span>
+                        <span class="s2">&quot;The symbol &#39;</span><span class="si">{0}</span><span class="s2">&#39; is not declared within the &#39;</span><span class="si">{1}</span><span class="s2">&#39; &quot;</span>
+                        <span class="s2">&quot;ODE.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="p">)</span>
+
+                <span class="c1"># Store object dependencies</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">expression_dependencies</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">dep_obj</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">object_used_in</span><span class="p">[</span><span class="n">dep_obj</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+            <span class="c1"># If the expression is a StateSolution the state cannot have</span>
+            <span class="c1"># been used previously</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">StateSolution</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">object_used_in</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">state</span><span class="p">):</span>
+                <span class="n">used_in</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">object_used_in</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
+                <span class="n">error</span><span class="p">(</span>
+                    <span class="s2">&quot;A state solution cannot have been used in &quot;</span>
+                    <span class="s2">&quot;any previous expressions. </span><span class="si">{0}</span><span class="s2"> is used in: </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">obj</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="n">used_in</span>
+                    <span class="p">)</span>
+                <span class="p">)</span></div>
+
+<div class="viewcode-block" id="ODE.expanded_expression"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODE.expanded_expression">[docs]</a>    <span class="k">def</span> <span class="nf">expanded_expression</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the expanded expression.</span>
+
+<span class="sd">        The returned expanded expression consists of the original</span>
+<span class="sd">        expression given by it basics objects (States, Parameters and</span>
+<span class="sd">        IndexedObjects)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Expand expression&quot;</span><span class="p">)</span>
+
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">Expression</span><span class="p">)</span>
+
+        <span class="c1"># First check cache</span>
+        <span class="n">exp_expr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expanded_expressions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">exp_expr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">exp_expr</span>
+
+        <span class="c1"># If not recursively expand the expression</span>
+        <span class="n">der_subs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">subs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">expression_dependencies</span><span class="p">[</span><span class="n">expr</span><span class="p">]:</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Derivatives</span><span class="p">):</span>
+                <span class="n">der_subs</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expanded_expression</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Expression</span><span class="p">):</span>
+                <span class="n">subs</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expanded_expression</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+        <span class="c1"># Do the substitution</span>
+        <span class="n">exp_expr</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">der_subs</span><span class="p">)</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">subs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expanded_expressions</span><span class="p">[</span><span class="n">expr</span><span class="p">]</span> <span class="o">=</span> <span class="n">exp_expr</span>
+
+        <span class="k">return</span> <span class="n">exp_expr</span></div>
+
+<div class="viewcode-block" id="ODE.extract_components"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODE.extract_components">[docs]</a>    <span class="k">def</span> <span class="nf">extract_components</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">components</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create an ODE from a number of components</span>
+
+<span class="sd">        Returns an ODE including the components</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        name : str</span>
+<span class="sd">            The name of the created ODE</span>
+<span class="sd">        components : str</span>
+<span class="sd">            A variable len tuple of str describing the components</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">components</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">itemtypes</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+
+        <span class="n">components</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">components</span><span class="p">)</span>
+
+        <span class="n">collected_components</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">components</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Can only extract sub component of this ODE.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Collect components and check that the ODE has the components</span>
+        <span class="k">for</span> <span class="n">original_component</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">:</span>
+
+            <span class="c1"># Collect components together with its children</span>
+            <span class="k">if</span> <span class="n">original_component</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">components</span><span class="p">:</span>
+
+                <span class="n">components</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">original_component</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">collected_components</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">original_component</span><span class="o">.</span><span class="n">components</span><span class="p">)</span>
+
+        <span class="c1"># Check that there are no components left</span>
+        <span class="k">if</span> <span class="n">components</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">components</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">error</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> are not a components of this ODE.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;&#39;</span><span class="si">{0}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp</span><span class="p">)</span> <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">components</span><span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">error</span><span class="p">(</span><span class="s2">&quot;&#39;</span><span class="si">{0}</span><span class="s2">&#39; is not a component of this ODE.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">components</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+        <span class="c1"># Collect dependencies</span>
+        <span class="n">included_objects</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">dependencies</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">collected_components</span><span class="p">:</span>
+                <span class="n">included_objects</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">ode_objects</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">comp</span><span class="o">.</span><span class="n">ode_objects</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">Expression</span><span class="p">):</span>
+                        <span class="n">dependencies</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expression_dependencies</span><span class="p">[</span><span class="n">expr</span><span class="p">])</span>
+
+        <span class="c1"># Remove included objects from dependencies</span>
+        <span class="n">dependencies</span><span class="o">.</span><span class="n">difference_update</span><span class="p">(</span><span class="n">included_objects</span><span class="p">)</span>
+
+        <span class="c1"># Create return ODE</span>
+        <span class="n">ode</span> <span class="o">=</span> <span class="n">ODE</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="c1"># Add dependencies as parameters to return ODE</span>
+        <span class="n">subs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">dependencies</span><span class="p">:</span>
+
+            <span class="c1"># Skip time</span>
+            <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;t&quot;</span><span class="p">,</span> <span class="s2">&quot;time&quot;</span><span class="p">,</span> <span class="s2">&quot;dt&quot;</span><span class="p">]:</span>
+                <span class="k">continue</span>
+            <span class="n">subs</span><span class="p">[</span><span class="n">dep</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">ode</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">dep</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">dep</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="c1"># Add components together with states and parameters to the ODE</span>
+        <span class="n">components</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">collected_components</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">old_new_map</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="k">def</span> <span class="nf">add_comp_and_children</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+            <span class="s2">&quot;Help function to add recursively components to ode&quot;</span>
+
+            <span class="c1"># Add component</span>
+            <span class="n">added</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">add_component</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">old_new_map</span><span class="p">[</span><span class="n">comp</span><span class="p">]</span> <span class="o">=</span> <span class="n">added</span>
+
+            <span class="c1"># Add states and parameters</span>
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">comp</span><span class="o">.</span><span class="n">ode_objects</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">State</span><span class="p">):</span>
+                    <span class="n">added</span><span class="o">.</span><span class="n">add_state</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">param</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">):</span>
+                    <span class="n">added</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">param</span><span class="p">)</span>
+
+            <span class="c1"># Remove the added component</span>
+            <span class="n">components</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">comp</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+                <span class="n">add_comp_and_children</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">added</span><span class="p">)</span>
+
+        <span class="c1"># Add component recursivly</span>
+        <span class="k">while</span> <span class="n">components</span><span class="p">:</span>
+            <span class="n">add_comp_and_children</span><span class="p">(</span><span class="n">components</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">components</span><span class="p">,</span> <span class="n">ode</span><span class="p">)</span>
+
+        <span class="c1"># Iterate over all components to add expressions</span>
+        <span class="k">for</span> <span class="n">comp_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_expr_components_ordered</span><span class="p">:</span>
+
+            <span class="n">comp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_components</span><span class="p">[</span><span class="n">comp_name</span><span class="p">]</span>
+
+            <span class="c1"># If we should add component</span>
+            <span class="k">if</span> <span class="n">comp</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">collected_components</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">comp_comment</span> <span class="o">=</span> <span class="s2">&quot;Expressions for the </span><span class="si">{0}</span><span class="s2"> &quot;</span> <span class="s2">&quot;component&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+            <span class="c1"># Get corresponding component in new ODE</span>
+            <span class="n">added</span> <span class="o">=</span> <span class="n">old_new_map</span><span class="p">[</span><span class="n">comp</span><span class="p">]</span>
+
+            <span class="c1"># Iterate over all objects of the component and save only</span>
+            <span class="c1"># expressions and comments</span>
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">comp</span><span class="o">.</span><span class="n">ode_objects</span><span class="p">:</span>
+
+                <span class="c1"># If saving an expression</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Expression</span><span class="p">):</span>
+
+                    <span class="c1"># The new sympy expression</span>
+                    <span class="n">new_expr</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">subs</span><span class="p">)</span>
+
+                    <span class="c1"># If the component is a Markov model</span>
+                    <span class="k">if</span> <span class="n">comp</span><span class="o">.</span><span class="n">rates</span><span class="p">:</span>
+
+                        <span class="c1"># Do not save State derivatives</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">StateDerivative</span><span class="p">):</span>
+                            <span class="k">continue</span>
+
+                        <span class="c1"># Save rate expressions slightly different</span>
+                        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">RateExpression</span><span class="p">):</span>
+
+                            <span class="n">states</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">states</span>
+                            <span class="n">added</span><span class="o">.</span><span class="n">_add_single_rate</span><span class="p">(</span>
+                                <span class="n">states</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span> <span class="n">states</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span> <span class="n">new_expr</span>
+                            <span class="p">)</span>
+                            <span class="k">continue</span>
+
+                    <span class="c1"># All other Expressions</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="n">added</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">),</span> <span class="n">new_expr</span><span class="p">)</span>
+
+                <span class="c1"># If saving a comment</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Comment</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="o">!=</span> <span class="n">comp_comment</span><span class="p">:</span>
+                    <span class="n">added</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+
+        <span class="c1"># Finalize ode and return it</span>
+        <span class="n">ode</span><span class="o">.</span><span class="n">finalize</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">ode</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">mass_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the mass matrix as a sympy.Matrix</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_finalized</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;The ODE must be finalized&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mass_matrix</span><span class="p">:</span>
+
+            <span class="n">state_exprs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_expressions</span>
+            <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">state_exprs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_mass_matrix</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Matrix</span><span class="p">(</span>
+                <span class="n">N</span><span class="p">,</span>
+                <span class="n">N</span><span class="p">,</span>
+                <span class="k">lambda</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">j</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">state_exprs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">StateDerivative</span><span class="p">)</span>
+                <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mass_matrix</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_dae</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return True if ODE is a DAE</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_complete</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;The ODE is not complete&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">any</span><span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">AlgebraicExpression</span><span class="p">)</span> <span class="k">for</span> <span class="n">expr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_expressions</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="ODE.finalize"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODE.finalize">[docs]</a>    <span class="k">def</span> <span class="nf">finalize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Finalize the ODE</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">:</span>
+            <span class="n">comp</span><span class="o">.</span><span class="n">finalize_component</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_finalized_ode</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_present_component</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span></div>
+
+<div class="viewcode-block" id="ODE.signature"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODE.signature">[docs]</a>    <span class="k">def</span> <span class="nf">signature</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a signature uniquely defining the ODE</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">hashlib</span>
+
+        <span class="n">def_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span> <span class="o">!=</span> <span class="n">comp</span><span class="p">:</span>
+                <span class="n">def_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">comp</span><span class="p">))</span>
+
+            <span class="c1"># Sort wrt stringified states and parameters avoiding trouble with</span>
+            <span class="c1"># random ordering of **kwargs</span>
+            <span class="n">def_list</span> <span class="o">+=</span> <span class="nb">sorted</span><span class="p">([</span><span class="nb">repr</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">param</span><span class="p">)</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">comp</span><span class="o">.</span><span class="n">full_states</span><span class="p">])</span>
+            <span class="n">def_list</span> <span class="o">+=</span> <span class="nb">sorted</span><span class="p">([</span><span class="nb">repr</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">param</span><span class="p">)</span> <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">comp</span><span class="o">.</span><span class="n">parameters</span><span class="p">])</span>
+            <span class="n">def_list</span> <span class="o">+=</span> <span class="p">[</span><span class="n">sympycode</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="p">)</span> <span class="k">for</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">comp</span><span class="o">.</span><span class="n">intermediates</span><span class="p">]</span>
+
+            <span class="c1"># Sort state expressions wrt stringified state names</span>
+            <span class="n">def_list</span> <span class="o">+=</span> <span class="p">[</span>
+                <span class="n">sympycode</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">expr</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">state_expressions</span><span class="p">,</span>
+                    <span class="n">key</span><span class="o">=</span><span class="n">cmp_to_key</span><span class="p">(</span><span class="k">lambda</span> <span class="n">o0</span><span class="p">,</span> <span class="n">o1</span><span class="p">:</span> <span class="n">cmp</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">o0</span><span class="o">.</span><span class="n">state</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">o1</span><span class="o">.</span><span class="n">state</span><span class="p">))),</span>
+                <span class="p">)</span>
+            <span class="p">]</span>
+
+        <span class="n">h</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha1</span><span class="p">()</span>
+        <span class="n">h</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">def_list</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">h</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="nf">_replace_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_obj</span><span class="p">,</span> <span class="n">replaced_obj</span><span class="p">,</span> <span class="n">replace_dicts</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Recursivley replace an expression by recreating the expression</span>
+<span class="sd">        using passed replace dicts</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Iterate over expressions obj is used in and replace these</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="p">[</span><span class="n">old_obj</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">replaced_obj</span>
+        <span class="n">replace_dicts</span><span class="p">[</span><span class="n">old_obj</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">replaced_obj</span><span class="o">.</span><span class="n">sym</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">object_component</span><span class="p">[</span><span class="n">replaced_obj</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">object_component</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">old_obj</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">old_expr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">object_used_in</span><span class="p">[</span><span class="n">old_obj</span><span class="p">]:</span>
+
+            <span class="c1"># Recreate expression</span>
+            <span class="n">replaced_expr</span> <span class="o">=</span> <span class="n">recreate_expression</span><span class="p">(</span><span class="n">old_expr</span><span class="p">,</span> <span class="n">replace_dicts</span><span class="p">)</span>
+
+            <span class="c1"># Update used_in dict</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">object_used_in</span><span class="p">[</span><span class="n">replaced_obj</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">replaced_expr</span><span class="p">)</span>
+
+            <span class="c1"># Update all object used in</span>
+            <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">expression_dependencies</span><span class="p">[</span><span class="n">old_expr</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dep</span><span class="p">,</span> <span class="n">Comment</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">old_expr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">object_used_in</span><span class="p">[</span><span class="n">dep</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">object_used_in</span><span class="p">[</span><span class="n">dep</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">old_expr</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">object_used_in</span><span class="p">[</span><span class="n">dep</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">replaced_expr</span><span class="p">)</span>
+
+            <span class="c1"># Exchange and update the dependencies</span>
+            <span class="k">if</span> <span class="n">old_obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">expression_dependencies</span><span class="p">[</span><span class="n">old_expr</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">expression_dependencies</span><span class="p">[</span><span class="n">old_expr</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">old_obj</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">expression_dependencies</span><span class="p">[</span><span class="n">old_expr</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">replaced_obj</span><span class="p">)</span>
+
+            <span class="c1"># FIXME: Do not remove the dependencies</span>
+            <span class="c1"># self.expression_dependencies[updated_expr] = \</span>
+            <span class="c1">#            self.expression_dependencies.pop(expr)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">expression_dependencies</span><span class="p">[</span><span class="n">replaced_expr</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expression_dependencies</span><span class="p">[</span>
+                <span class="n">old_expr</span>
+            <span class="p">]</span>
+
+            <span class="c1"># Find the index of old expression and exchange it with updated</span>
+            <span class="n">old_comp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">object_component</span><span class="p">[</span><span class="n">old_expr</span><span class="p">]</span>
+
+            <span class="c1"># Get indexed of old expr and overwrite it with new expr</span>
+            <span class="n">ind</span> <span class="o">=</span> <span class="n">old_comp</span><span class="o">.</span><span class="n">ode_objects</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">old_expr</span><span class="p">)</span>
+            <span class="n">old_comp</span><span class="o">.</span><span class="n">ode_objects</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">replaced_expr</span>
+
+            <span class="c1"># Update the expressions this expression is used in</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_replace_object</span><span class="p">(</span><span class="n">old_expr</span><span class="p">,</span> <span class="n">replaced_expr</span><span class="p">,</span> <span class="n">replace_dicts</span><span class="p">)</span>
+
+        <span class="c1"># Remove information about the replaced objects</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">object_used_in</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">old_obj</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_handle_expr_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comp</span><span class="p">,</span> <span class="n">expr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A help function to sort and add components in the ordered</span>
+<span class="sd">        the intermediate expressions are added to the ODE</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_expr_components_ordered</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_expr_components_ordered</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+            <span class="c1"># Add a comment to the component</span>
+            <span class="n">comp</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span><span class="s2">&quot;Expressions for the </span><span class="si">{0}</span><span class="s2"> &quot;</span> <span class="s2">&quot;component&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+            <span class="c1"># Recount the last added expression so the comment comes</span>
+            <span class="c1"># infront of the expression</span>
+            <span class="n">expr</span><span class="o">.</span><span class="n">_recount</span><span class="p">()</span>
+
+        <span class="c1"># We are shifting expression components</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_expr_components_ordered</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+
+            <span class="c1"># Finalize the last component we visited</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_components</span><span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">all_expr_components_ordered</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="p">]</span><span class="o">.</span><span class="n">finalize_component</span><span class="p">()</span>
+
+            <span class="c1"># Append this component</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_expr_components_ordered</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+            <span class="c1"># Add a comment to the component</span>
+            <span class="n">comp</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span><span class="s2">&quot;Expressions for the </span><span class="si">{0}</span><span class="s2"> &quot;</span> <span class="s2">&quot;component&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+            <span class="c1"># Recount the last added expression so the comment comes</span>
+            <span class="c1"># infront of the expression</span>
+            <span class="n">expr</span><span class="o">.</span><span class="n">_recount</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_expand_single_derivative</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comp</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">der_expr</span><span class="p">,</span> <span class="n">replace_dict</span><span class="p">,</span> <span class="n">dependent</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Expand a single derivative and register it as new derivative expression</span>
+
+<span class="sd">        Returns True if an expression was actually added</span>
+
+<span class="sd">        Populate replace dict with a replacement for the derivative if it is trivial</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Try accessing already registered derivative expressions</span>
+        <span class="n">der_expr_obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">sympycode</span><span class="p">(</span><span class="n">der_expr</span><span class="p">))</span>
+
+        <span class="c1"># If excist continue</span>
+        <span class="k">if</span> <span class="n">der_expr_obj</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># Try expand the given derivative if it is directly expandable just</span>
+        <span class="c1"># add a replacement for the derivative result</span>
+        <span class="n">der_result</span> <span class="o">=</span> <span class="n">der_expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">der_expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">der_result</span><span class="o">.</span><span class="n">atoms</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">Derivative</span><span class="p">):</span>
+            <span class="n">replace_dict</span><span class="p">[</span><span class="n">der_expr</span><span class="p">]</span> <span class="o">=</span> <span class="n">der_result</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">der_expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">AppliedUndef</span><span class="p">):</span>
+            <span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;Can only register Derivatives of allready registered &quot;</span>
+                <span class="s2">&quot;Expressions. Got: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sympycode</span><span class="p">(</span><span class="n">der_expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">der_expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">(</span><span class="n">AppliedUndef</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">)):</span>
+            <span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;Can only register Derivatives with a single dependent &quot;</span>
+                <span class="s2">&quot;variabe. Got: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sympycode</span><span class="p">(</span><span class="n">der_expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Get the expr and dependent variable objects</span>
+        <span class="n">expr_obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="p">[</span><span class="n">sympycode</span><span class="p">(</span><span class="n">der_expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+        <span class="n">var_obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="p">[</span><span class="n">sympycode</span><span class="p">(</span><span class="n">der_expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+
+        <span class="c1"># If the dependent variable is time and the expression is a state</span>
+        <span class="c1"># variable we raise an error as the user should already have created</span>
+        <span class="c1"># the expression.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr_obj</span><span class="p">,</span> <span class="n">State</span><span class="p">)</span> <span class="ow">and</span> <span class="n">var_obj</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;The expression </span><span class="si">{0}</span><span class="s2"> is dependent on the state &quot;</span>
+                <span class="s2">&quot;derivative of </span><span class="si">{1}</span><span class="s2"> which is not registered in this ODE.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">obj</span><span class="p">,</span> <span class="n">expr_obj</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="c1"># If we get a Derivative(expr, t) we issue an error</span>
+        <span class="c1"># if isinstance(expr_obj, Expression) and var_obj == self._time:</span>
+        <span class="c1">#    error(&quot;All derivative expressions of registered expressions &quot;\</span>
+        <span class="c1">#          &quot;need to be expanded with respect to time. Use &quot;\</span>
+        <span class="c1">#          &quot;expr.diff(t) instead of Derivative(expr, t) &quot;)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr_obj</span><span class="p">,</span> <span class="n">Expression</span><span class="p">):</span>
+            <span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;Can only differentiate expressions or states. Got </span><span class="si">{0}</span><span class="s2"> as &quot;</span>
+                <span class="s2">&quot;the derivative expression.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">expr_obj</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Expand derivative and see if it is trivial</span>
+        <span class="n">der_result</span> <span class="o">=</span> <span class="n">expr_obj</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">var_obj</span><span class="o">.</span><span class="n">sym</span><span class="p">)</span>
+
+        <span class="c1"># If derivative result are trival we substitute it</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">der_result</span><span class="o">.</span><span class="n">is_number</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">der_result</span><span class="p">,</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">,</span> <span class="n">AppliedUndef</span><span class="p">))</span>
+            <span class="ow">or</span> <span class="p">(</span>
+                <span class="nb">isinstance</span><span class="p">(</span><span class="n">der_result</span><span class="p">,</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">Mul</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Pow</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Add</span><span class="p">))</span>
+                <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">der_result</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+                <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">Number</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">,</span> <span class="n">AppliedUndef</span><span class="p">))</span>
+                    <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">der_result</span><span class="o">.</span><span class="n">args</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">):</span>
+            <span class="n">replace_dict</span><span class="p">[</span><span class="n">der_expr</span><span class="p">]</span> <span class="o">=</span> <span class="n">der_result</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># Store expression</span>
+        <span class="n">comp</span><span class="o">.</span><span class="n">add_derivative</span><span class="p">(</span><span class="n">expr_obj</span><span class="p">,</span> <span class="n">var_obj</span><span class="p">,</span> <span class="n">der_result</span><span class="p">,</span> <span class="n">dependent</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">True</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

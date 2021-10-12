@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gotran.model.cellmodel &mdash; gotran 2019.0.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> gotran
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Programmers reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gotran.html">gotran package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">gotran</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>gotran.model.cellmodel</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gotran.model.cellmodel</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (C) 2011-2012 Johan Hake</span>
+<span class="c1">#</span>
+<span class="c1"># This file is part of Gotran.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU Lesser General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1"># (at your option) any later version.</span>
+<span class="c1">#</span>
+<span class="c1"># Gotran is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the</span>
+<span class="c1"># GNU Lesser General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1"># You should have received a copy of the GNU Lesser General Public License</span>
+<span class="c1"># along with Gotran. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c1"># FIXME: This file is depricated...</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;CellModel&quot;</span><span class="p">,</span> <span class="s2">&quot;gccm&quot;</span><span class="p">]</span>
+
+<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">gotran.model.ode</span> <span class="kn">import</span> <span class="n">ODE</span>
+<span class="kn">from</span> <span class="nn">gotran.model.odeobjects</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="c1"># from gotran.common import error, debug, check_arg, check_kwarg, check_arginlist</span>
+
+<span class="kn">from</span> <span class="nn">modelparameters.parameters</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">modelparameters.sympytools</span> <span class="k">as</span> <span class="nn">sp_tools</span>
+
+<span class="c1"># Holder for all cellmodels</span>
+<span class="n">_all_cellmodels</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="c1"># Holder for current CellModel</span>
+<span class="n">_current_cellmodel</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="k">def</span> <span class="nf">stimulation_protocal</span><span class="p">(</span><span class="n">stim_params</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return stimulation protocal given a dictionary of stimuluation</span>
+<span class="sd">    parameters</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">stim_params</span><span class="p">:</span>
+        <span class="n">amplitude</span> <span class="o">=</span> <span class="n">get_parameter_list_from_string</span><span class="p">(</span><span class="s2">&quot;amp&quot;</span><span class="p">,</span> <span class="n">stim_params</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">duration</span> <span class="o">=</span> <span class="n">get_parameter_list_from_string</span><span class="p">(</span><span class="s2">&quot;dur&quot;</span><span class="p">,</span> <span class="n">stim_params</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">period</span> <span class="o">=</span> <span class="n">get_parameter_list_from_string</span><span class="p">(</span><span class="s2">&quot;period&quot;</span><span class="p">,</span> <span class="n">stim_params</span><span class="p">)</span>
+        <span class="n">frequency</span> <span class="o">=</span> <span class="n">get_parameter_list_from_string</span><span class="p">(</span><span class="s2">&quot;frequency&quot;</span><span class="p">,</span> <span class="n">stim_params</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">period</span><span class="p">:</span>
+            <span class="n">period</span> <span class="o">=</span> <span class="n">period</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">frequency</span><span class="p">:</span>
+            <span class="n">frequency</span> <span class="o">=</span> <span class="n">frequency</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">start</span> <span class="o">=</span> <span class="n">get_parameter_list_from_string</span><span class="p">(</span><span class="s2">&quot;start&quot;</span><span class="p">,</span> <span class="n">stim_params</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">get_parameter_list_from_string</span><span class="p">(</span><span class="s2">&quot;end&quot;</span><span class="p">,</span> <span class="n">stim_params</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">amplitude</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;amplidude&quot;</span><span class="p">,</span> <span class="n">ScalarParam</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+        <span class="n">duration</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;duration&quot;</span><span class="p">,</span> <span class="n">ScalarParam</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+        <span class="n">period</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;period&quot;</span><span class="p">,</span> <span class="n">ScalarParam</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;ms&quot;</span><span class="p">))</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;start&quot;</span><span class="p">,</span> <span class="n">ScalarParam</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;end&quot;</span><span class="p">,</span> <span class="n">ScalarParam</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">30000</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;ms&quot;</span><span class="p">))</span>
+        <span class="n">frequency</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">period</span> <span class="ow">and</span> <span class="n">frequency</span><span class="p">:</span>
+        <span class="c1"># Let the period be the reciprocal of the frequency</span>
+        <span class="n">period_param</span> <span class="o">=</span> <span class="mf">60.0</span> <span class="o">/</span> <span class="n">frequency</span>
+        <span class="n">period</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;period&quot;</span><span class="p">,</span> <span class="n">period_param</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">frequency</span> <span class="ow">and</span> <span class="n">period</span><span class="p">:</span>
+        <span class="n">frequency_param</span> <span class="o">=</span> <span class="mf">60.0</span> <span class="o">/</span> <span class="n">period</span>
+        <span class="n">frequency</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;frequency&quot;</span><span class="p">,</span> <span class="n">frequency_param</span><span class="p">)</span>
+
+    <span class="k">class</span> <span class="nc">StimDict</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+            <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;period&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;frequency&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mf">60.0</span> <span class="o">/</span> <span class="n">value</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;frequency&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;period&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mf">60.0</span> <span class="o">/</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">StimDict</span><span class="p">(</span>
+        <span class="n">amplitude</span><span class="o">=</span><span class="n">amplitude</span><span class="p">,</span>
+        <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">,</span>
+        <span class="n">period</span><span class="o">=</span><span class="n">period</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="n">frequency</span><span class="p">,</span>
+        <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
+        <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_parameter_list_from_string</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">lst</span><span class="p">,</span> <span class="n">case_insesitive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a list with parameters in the given list</span>
+<span class="sd">    that has a name containing the given string</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+
+<span class="sd">    string : str</span>
+<span class="sd">        The string that should be in the name</span>
+<span class="sd">    lst : array with parameters</span>
+<span class="sd">        List containing the candidates for parameters</span>
+<span class="sd">        case_insesitive: bool</span>
+<span class="sd">        If True, include parameter as long as the letters coincide</span>
+<span class="sd">        and do not care about case</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    parlist : lst</span>
+<span class="sd">        A sublist of lst containing the parameter that has a name</span>
+<span class="sd">        containing the given string</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">case_insesitive</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">lst</span> <span class="k">if</span> <span class="n">string</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">lst</span> <span class="k">if</span> <span class="n">string</span> <span class="ow">in</span> <span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="CellModel"><a class="viewcode-back" href="../../../gotran.model.html#gotran.CellModel">[docs]</a><span class="k">class</span> <span class="nc">CellModel</span><span class="p">(</span><span class="n">ODE</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Basic class for storing information of a cell model</span>
+<span class="sd">    You can either initialize an empty CellModel similar to</span>
+<span class="sd">    an ODE.</span>
+<span class="sd">    (Maybe if we can create a library of th cellmodels</span>
+<span class="sd">    then it the string matched that of the library we return</span>
+<span class="sd">    the model in the library, e.g `cell = CellModel(&quot;Noble_1962&quot;)`)</span>
+<span class="sd">    Or you can initialize the cell using an existing ODE</span>
+<span class="sd">    If you have an ODE and want to have a cell, then save the</span>
+<span class="sd">    ODE to an .ode file and load it using `load_cell` (in stead of</span>
+<span class="sd">    `load_ode`)</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    .. code-block::python</span>
+
+<span class="sd">        cell =  CellModel(&quot;MyCell&quot;)</span>
+
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    .. code-block::python</span>
+
+<span class="sd">        # Save current ODE</span>
+<span class="sd">        ode.save(filename)</span>
+
+<span class="sd">        # Load cell</span>
+<span class="sd">        from loadmodel import load_cell</span>
+<span class="sd">        cell = load_cell(filename)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a CellModel instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">arg</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">_all_cellmodels</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_all_cellmodels</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name_</span><span class="p">,</span> <span class="n">ns</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize a CellModel</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">name_</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name_</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">CellModel</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">ns</span><span class="p">)</span>
+        <span class="c1"># Do not reinitialized object if it already excists</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_all_cellmodels</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Initialize attributes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_cell_model</span><span class="p">()</span>
+
+        <span class="c1"># Store instance for future lookups</span>
+        <span class="n">_all_cellmodels</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">_initialize_cell_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Set current CellModel</span>
+        <span class="k">global</span> <span class="n">_current_cellmodel</span>
+        <span class="n">_current_cellmodel</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="c1"># Perhaps more here later</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">parameter_symbols</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">component_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">]</span>
+
+<div class="viewcode-block" id="CellModel.parameter_values"><a class="viewcode-back" href="../../../gotran.model.html#gotran.CellModel.parameter_values">[docs]</a>    <span class="k">def</span> <span class="nf">parameter_values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">]</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">state_symbols</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">states</span><span class="p">]</span>
+
+<div class="viewcode-block" id="CellModel.state_values"><a class="viewcode-back" href="../../../gotran.model.html#gotran.CellModel.state_values">[docs]</a>    <span class="k">def</span> <span class="nf">state_values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">states</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="CellModel.intermediate_unit"><a class="viewcode-back" href="../../../gotran.model.html#gotran.CellModel.intermediate_unit">[docs]</a>    <span class="k">def</span> <span class="nf">intermediate_unit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">unit_type</span><span class="o">=</span><span class="s2">&quot;si&quot;</span><span class="p">,</span> <span class="n">return_factor</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get unit of intermediate expression</span>
+<span class="sd">        Note that we neglect units within a funtion like</span>
+<span class="sd">        exponential and logaritm.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        name : str</span>
+<span class="sd">            Name of intermediate</span>
+<span class="sd">        unit_type : str</span>
+<span class="sd">            Type of unit, options `si`, `base` or `original`</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        unit : str</span>
+<span class="sd">            Unit of the expression for the intermediate</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">get_intermediate_unit</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">unit_type</span><span class="p">):</span>
+            <span class="n">check_arginlist</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">intermediate_symbols</span><span class="p">)</span>
+            <span class="n">intermediate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">intermediates</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">intermediate_symbols</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">name</span><span class="p">)]</span>
+
+            <span class="n">factor</span> <span class="o">=</span> <span class="mf">1.0</span>
+            <span class="c1"># Extract expression</span>
+            <span class="n">expr</span> <span class="o">=</span> <span class="n">intermediate</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Piecewise</span><span class="p">):</span>
+                <span class="n">expr</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="n">expr</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">log</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">expr</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">exp</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">expr</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">zoo</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">unit_dep_map</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">sp_tools</span><span class="o">.</span><span class="n">symbols_from_expr</span><span class="p">(</span><span class="n">expr</span><span class="p">):</span>
+
+                <span class="n">dep_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="n">dep_str</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter_symbols</span><span class="p">:</span>
+                    <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parameter</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">dep</span><span class="p">))</span>
+                    <span class="n">unit</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">unit</span>
+
+                <span class="k">elif</span> <span class="n">dep_str</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_symbols</span><span class="p">:</span>
+                    <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_state</span><span class="p">(</span><span class="n">dep_str</span><span class="p">)</span>
+                    <span class="n">unit</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">unit</span>
+
+                <span class="k">elif</span> <span class="n">dep_str</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">intermediate_symbols</span><span class="p">:</span>
+                    <span class="n">unit</span><span class="p">,</span> <span class="n">factor_</span> <span class="o">=</span> <span class="n">get_intermediate_unit</span><span class="p">(</span><span class="n">dep_str</span><span class="p">,</span> <span class="s2">&quot;original&quot;</span><span class="p">)</span>
+                    <span class="c1"># factor *= factor_</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Parmaterer not found (most likely the time variable)</span>
+                    <span class="k">continue</span>
+
+                <span class="n">expr1</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">dep</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">expr1</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="c1"># We got some cancellation because of the previous substitutioin</span>
+
+                    <span class="c1"># Let us add a dummy number</span>
+                    <span class="n">expr</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">dep</span><span class="p">,</span> <span class="s2">&quot;*&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="p">]))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">expr</span> <span class="o">=</span> <span class="n">expr1</span>
+
+                <span class="n">unit_dep_map</span><span class="p">[</span><span class="n">dep</span><span class="p">]</span> <span class="o">=</span> <span class="n">unit</span>
+
+            <span class="c1"># Substitute again</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">unit_dep_map</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+                <span class="k">for</span> <span class="n">k1</span><span class="p">,</span> <span class="n">v1</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">unit_dep_map</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+                    <span class="n">k</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">k1</span><span class="p">,</span> <span class="n">v1</span><span class="p">)</span>
+                <span class="n">expr</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+
+            <span class="c1"># Fix fractions and remove possible numbers</span>
+            <span class="n">unit_exprs</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">def</span> <span class="nf">add_unit</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">k</span><span class="o">.</span><span class="n">is_Number</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">as_numer_denom</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+
+                    <span class="n">exp</span> <span class="o">=</span> <span class="s2">&quot;**</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="k">if</span> <span class="n">v</span> <span class="o">!=</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+                    <span class="n">unit_</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+
+                    <span class="n">unit_exprs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">unit_</span> <span class="o">+</span> <span class="n">exp</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">as_powers_dict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+
+                <span class="c1"># If term consist of multiple term, choose one of them</span>
+                <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">is_Add</span><span class="p">:</span>
+                    <span class="n">k</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">as_coeff_add</span><span class="p">()[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+                    <span class="k">for</span> <span class="n">k1</span><span class="p">,</span> <span class="n">v1</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">as_powers_dict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+                        <span class="n">add_unit</span><span class="p">(</span><span class="n">k1</span><span class="p">,</span> <span class="n">v1</span><span class="p">)</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">add_unit</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+
+            <span class="c1"># Join by multiplication</span>
+            <span class="n">unit_expr</span> <span class="o">=</span> <span class="s2">&quot;*&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">unit_exprs</span><span class="p">)</span>
+
+            <span class="c1"># Check if this is a sum and use only one term</span>
+            <span class="n">unit_expr</span> <span class="o">=</span> <span class="n">unit_expr</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; + &quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; - &quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="c1"># Strip away any numbers but collect the factor</span>
+            <span class="n">subunits</span> <span class="o">=</span> <span class="s2">&quot;^&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">unit_expr</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;**&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">)</span>
+            <span class="n">new_subunits</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">def</span> <span class="nf">isfloat</span><span class="p">(</span><span class="n">el</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="nb">float</span><span class="p">(</span><span class="n">el</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+
+            <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">subunits</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">isfloat</span><span class="p">(</span><span class="n">u</span><span class="p">):</span>
+                    <span class="n">new_subunits</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+
+            <span class="c1"># Join new expression</span>
+            <span class="n">unit_expr</span> <span class="o">=</span> <span class="s2">&quot;**&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">new_subunits</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;^&quot;</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="n">unit_expr</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                <span class="n">unit_expr</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+
+            <span class="n">unit</span> <span class="o">=</span> <span class="n">Unit</span><span class="p">(</span><span class="n">unit_expr</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">unit_type</span> <span class="o">==</span> <span class="s2">&quot;si&quot;</span><span class="p">:</span>
+                <span class="n">factor</span> <span class="o">=</span> <span class="n">unit</span><span class="o">.</span><span class="n">si_unit_factor</span>
+                <span class="n">retunit</span> <span class="o">=</span> <span class="n">unit</span><span class="o">.</span><span class="n">si_unit</span>
+            <span class="k">elif</span> <span class="n">unit_type</span> <span class="o">==</span> <span class="s2">&quot;base&quot;</span><span class="p">:</span>
+                <span class="n">factor</span> <span class="o">=</span> <span class="n">unit</span><span class="o">.</span><span class="n">factor</span>
+                <span class="n">retunit</span> <span class="o">=</span> <span class="n">unit</span><span class="o">.</span><span class="n">base_unit</span>
+            <span class="k">elif</span> <span class="n">unit_type</span> <span class="o">==</span> <span class="s2">&quot;original&quot;</span><span class="p">:</span>
+                <span class="n">factor</span> <span class="o">=</span> <span class="mf">1.0</span>
+                <span class="n">retunit</span> <span class="o">=</span> <span class="n">unit</span><span class="o">.</span><span class="n">unit</span>
+
+            <span class="k">return</span> <span class="n">retunit</span><span class="p">,</span> <span class="n">factor</span>
+
+        <span class="n">unit_</span><span class="p">,</span> <span class="n">factor_</span> <span class="o">=</span> <span class="n">get_intermediate_unit</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">unit_type</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">return_factor</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">unit_</span><span class="p">,</span> <span class="n">factor_</span>
+        <span class="k">return</span> <span class="n">unit_</span></div>
+
+<div class="viewcode-block" id="CellModel.set_residual_current"><a class="viewcode-back" href="../../../gotran.model.html#gotran.CellModel.set_residual_current">[docs]</a>    <span class="k">def</span> <span class="nf">set_residual_current</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">current</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set rediual current</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+
+<span class="sd">        t : array</span>
+<span class="sd">            List of times</span>
+<span class="sd">        current : array</span>
+<span class="sd">            List with residual current</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">UnivariateSpline</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_residual_current</span> <span class="o">=</span> <span class="n">UnivariateSpline</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">current</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CellModel.residual_current"><a class="viewcode-back" href="../../../gotran.model.html#gotran.CellModel.residual_current">[docs]</a>    <span class="k">def</span> <span class="nf">residual_current</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_residual_current&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_residual_current</span><span class="p">(</span><span class="n">t</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">intermediate_symbols</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">intermediates</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">stimulation_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">get_parameter_list_from_string</span><span class="p">(</span><span class="s2">&quot;stim&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">stimulation_protocol</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">stim_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulation_parameters</span>
+
+        <span class="k">return</span> <span class="n">stimulation_protocal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulation_parameters</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">currents</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a list of the currents used in the</span>
+<span class="sd">        computation of the membrane potential.</span>
+<span class="sd">        Note that intermediate currents (not involved in</span>
+<span class="sd">        th computation of the membrane potential)</span>
+<span class="sd">        are not retured</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">dV_dt</span> <span class="o">=</span> <span class="n">get_parameter_list_from_string</span><span class="p">(</span><span class="s2">&quot;dV_dt&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_expressions</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">currents</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">c</span><span class="p">))</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">dV_dt</span><span class="o">.</span><span class="n">dependent</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">currents</span>
+
+<div class="viewcode-block" id="CellModel.get_beattime"><a class="viewcode-back" href="../../../gotran.model.html#gotran.CellModel.get_beattime">[docs]</a>    <span class="k">def</span> <span class="nf">get_beattime</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="mf">60.0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return number timepoints for one beat</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        dt : float</span>
+<span class="sd">            Time increment in the same time unit</span>
+<span class="sd">            as the model</span>
+<span class="sd">        extra : float</span>
+<span class="sd">            Add some extra time (in ms) to prolonge the</span>
+<span class="sd">            the time. Default 60 ms</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Get stimulation parameters</span>
+        <span class="n">stim_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulation_protocol</span>
+
+        <span class="c1"># Get duration of one beat</span>
+        <span class="k">if</span> <span class="n">stim_params</span><span class="p">[</span><span class="s2">&quot;period&quot;</span><span class="p">]:</span>
+            <span class="n">period</span> <span class="o">=</span> <span class="n">stim_params</span><span class="p">[</span><span class="s2">&quot;period&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">period</span> <span class="o">=</span> <span class="mf">60.0</span> <span class="o">/</span> <span class="n">stim_params</span><span class="p">[</span><span class="s2">&quot;frequency&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="c1"># Get duration of simulus</span>
+        <span class="n">duration</span> <span class="o">=</span> <span class="n">stim_params</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="n">factor</span> <span class="o">=</span> <span class="mf">1e-3</span> <span class="k">if</span> <span class="n">stim_params</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="n">unit</span> <span class="o">==</span> <span class="s2">&quot;s&quot;</span> <span class="k">else</span> <span class="mf">1.0</span>
+        <span class="c1"># Include additional 60 ms before stimulation</span>
+        <span class="n">extra_</span> <span class="o">=</span> <span class="n">factor</span> <span class="o">*</span> <span class="n">extra</span>
+        <span class="n">beattime</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">period</span> <span class="o">+</span> <span class="n">duration</span> <span class="o">+</span> <span class="n">extra_</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">dt</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="n">beattime</span></div>
+
+<div class="viewcode-block" id="CellModel.get_time_steps"><a class="viewcode-back" href="../../../gotran.model.html#gotran.CellModel.get_time_steps">[docs]</a>    <span class="k">def</span> <span class="nf">get_time_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nbeats</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">t1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">t0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get list with time steps given the number</span>
+<span class="sd">        of beats and time increment</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        nbeats : int</span>
+<span class="sd">            Nuber of beats (Default:1)</span>
+<span class="sd">        dt : float</span>
+<span class="sd">            Time increament between two time steps in ms. (Default:1.0)</span>
+<span class="sd">            Note that you can provide `dt` as a Parameter with unit different</span>
+<span class="sd">            from ms.</span>
+<span class="sd">        t1 : float</span>
+<span class="sd">            End time. If not provided then end time will determined from</span>
+<span class="sd">            the number of beats</span>
+<span class="sd">        t0 : float</span>
+<span class="sd">            Start time (Default: 0.0)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">scalars</span><span class="p">):</span>
+            <span class="n">dt</span> <span class="o">=</span> <span class="n">ScalarParam</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;ms&quot;</span><span class="p">)</span>
+        <span class="c1"># Get stimulation prototocal</span>
+        <span class="n">stim_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulation_protocol</span>
+        <span class="c1"># We let the period of the frequency</span>
+        <span class="c1"># define the lenght of each beat</span>
+        <span class="n">period</span> <span class="o">=</span> <span class="n">stim_params</span><span class="p">[</span><span class="s2">&quot;period&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">t1</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Use the stimultation protocol to determine the end time</span>
+            <span class="n">t1</span> <span class="o">=</span> <span class="n">t0</span> <span class="o">+</span> <span class="n">nbeats</span> <span class="o">*</span> <span class="n">period</span>
+
+        <span class="c1"># Estimate number of steps</span>
+        <span class="n">nsteps</span> <span class="o">=</span> <span class="n">t1</span> <span class="o">/</span> <span class="n">dt</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">tsteps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span>
+            <span class="n">param2value</span><span class="p">(</span><span class="n">t0</span><span class="p">),</span> <span class="n">param2value</span><span class="p">(</span><span class="n">t1</span><span class="p">),</span> <span class="n">param2value</span><span class="p">(</span><span class="n">nsteps</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">tsteps</span></div>
+
+<div class="viewcode-block" id="CellModel.simulate"><a class="viewcode-back" href="../../../gotran.model.html#gotran.CellModel.simulate">[docs]</a>    <span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Simulate the ODE to :math:`t_{\mathrm{end}}`</span>
+<span class="sd">        with the given number points</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+
+<span class="sd">        t_end : scalar</span>
+<span class="sd">            The end time</span>
+<span class="sd">        nbeats : scalar</span>
+<span class="sd">            Number of beats based on stimulus protocol</span>
+<span class="sd">        npts : int</span>
+<span class="sd">            Number of communication points used in the solver</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Parameters for time</span>
+        <span class="n">t_end</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;t_end&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;dt&quot;</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
+
+        <span class="c1"># Number of beats</span>
+        <span class="n">nbeats</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;nbeats&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Number of points (only assimulo)</span>
+        <span class="n">npts</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;npts&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="c1"># Solver backend</span>
+        <span class="n">backend</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;backend&quot;</span><span class="p">,</span> <span class="s2">&quot;goss&quot;</span><span class="p">)</span>
+        <span class="c1"># Solver meothd</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;solver_method&quot;</span><span class="p">,</span> <span class="s2">&quot;RKF32&quot;</span><span class="p">)</span>
+        <span class="c1"># Residual current</span>
+        <span class="n">update_residual_current</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;residual_current&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="c1"># Return only the final beat (if simulating multiple beats)</span>
+        <span class="n">return_final_beat</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;return_final_beat&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="c1"># Return monitored values</span>
+        <span class="n">return_monitored</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;return_monitored&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># Get stimulation prototocal</span>
+        <span class="n">stim_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulation_protocol</span>
+
+        <span class="c1"># We let the period of the frequency</span>
+        <span class="c1"># define the lenght of each beat</span>
+        <span class="k">if</span> <span class="n">stim_params</span><span class="p">[</span><span class="s2">&quot;period&quot;</span><span class="p">]:</span>
+            <span class="n">period</span> <span class="o">=</span> <span class="n">stim_params</span><span class="p">[</span><span class="s2">&quot;period&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">period</span> <span class="o">=</span> <span class="mf">60.0</span> <span class="o">/</span> <span class="n">stim_params</span><span class="p">[</span><span class="s2">&quot;frequency&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="k">if</span> <span class="n">t_end</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Use the stimultation protocol to determine the end time</span>
+            <span class="n">t0</span> <span class="o">=</span> <span class="n">stim_params</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">]</span>
+            <span class="n">t_end</span> <span class="o">=</span> <span class="n">t0</span> <span class="o">+</span> <span class="n">nbeats</span> <span class="o">*</span> <span class="n">period</span>
+
+        <span class="c1"># Estimate number of steps</span>
+        <span class="n">nsteps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">t_end</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">dt</span><span class="p">))</span>
+
+        <span class="c1"># Find start and end indices</span>
+        <span class="k">if</span> <span class="n">return_final_beat</span><span class="p">:</span>
+            <span class="n">start_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
+                <span class="n">nsteps</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">period</span> <span class="o">+</span> <span class="n">stim_params</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">t_end</span><span class="p">))</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="p">)</span>
+            <span class="n">end_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">nsteps</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">start_idx</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">end_idx</span> <span class="o">=</span> <span class="n">nsteps</span>
+
+        <span class="c1"># Set the end value for stimulation</span>
+        <span class="n">stim_params</span><span class="p">[</span><span class="s2">&quot;end&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="n">setvalue</span><span class="p">(</span><span class="n">t_end</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">backend</span> <span class="o">==</span> <span class="s2">&quot;goss&quot;</span><span class="p">:</span>
+
+            <span class="kn">import</span> <span class="nn">goss</span>
+
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Solver method has to be one of &quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">, got </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">goss</span><span class="o">.</span><span class="n">goss_solvers</span><span class="p">,</span> <span class="n">method</span>
+            <span class="p">)</span>
+            <span class="k">assert</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">goss</span><span class="o">.</span><span class="n">goss_solvers</span><span class="p">,</span> <span class="n">msg</span>
+
+            <span class="n">monitored_symbols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">intermediate_symbols</span> <span class="k">if</span> <span class="n">return_monitored</span> <span class="k">else</span> <span class="kc">None</span>
+
+            <span class="n">module</span> <span class="o">=</span> <span class="n">goss</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitored</span><span class="o">=</span><span class="n">monitored_symbols</span><span class="p">)</span>
+
+            <span class="n">solver</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">goss</span><span class="p">,</span> <span class="n">method</span><span class="p">)(</span><span class="n">module</span><span class="p">)</span>
+            <span class="n">x0</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">init_state_values</span><span class="p">()</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+            <span class="n">ys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nsteps</span><span class="p">,</span> <span class="n">module</span><span class="o">.</span><span class="n">num_states</span><span class="p">()))</span>
+            <span class="k">if</span> <span class="n">return_monitored</span><span class="p">:</span>
+                <span class="n">monitored</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nsteps</span><span class="p">,</span> <span class="n">module</span><span class="o">.</span><span class="n">num_monitored</span><span class="p">()))</span>
+                <span class="n">monitor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">num_monitored</span><span class="p">())</span>
+            <span class="n">ts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nsteps</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nsteps</span><span class="p">):</span>
+
+                <span class="k">if</span> <span class="n">update_residual_current</span><span class="p">:</span>
+
+                    <span class="n">module</span><span class="o">.</span><span class="n">set_parameter</span><span class="p">(</span><span class="s2">&quot;i_res_amp&quot;</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">residual_current</span><span class="p">(</span><span class="n">t</span><span class="p">)))</span>
+                    <span class="c1"># solver = getattr(goss, method)(module)</span>
+                    <span class="c1"># print float(self.residual_current(t))</span>
+
+                <span class="k">if</span> <span class="n">return_monitored</span><span class="p">:</span>
+                    <span class="n">module</span><span class="o">.</span><span class="n">eval_monitored</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">monitor</span><span class="p">)</span>
+                    <span class="n">monitored</span><span class="p">[</span><span class="n">step</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">monitor</span>
+
+                <span class="c1"># print t</span>
+                <span class="n">solver</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+
+                <span class="n">ys</span><span class="p">[</span><span class="n">step</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">x0</span>
+                <span class="n">ts</span><span class="p">[</span><span class="n">step</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span>
+                <span class="n">t</span> <span class="o">+=</span> <span class="n">dt</span>
+
+            <span class="n">ret</span> <span class="o">=</span> <span class="p">[</span><span class="n">ts</span><span class="p">,</span> <span class="n">ys</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">return_monitored</span><span class="p">:</span>
+                <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">monitored</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">gotran.codegeneration.codegenerators</span> <span class="kn">import</span> <span class="n">PythonCodeGenerator</span>
+            <span class="kn">from</span> <span class="nn">gotran.common.options</span> <span class="kn">import</span> <span class="n">parameters</span>
+            <span class="kn">import</span> <span class="nn">imp</span>
+
+            <span class="n">params</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="n">generation</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">params</span><span class="o">.</span><span class="n">functions</span><span class="o">.</span><span class="n">rhs</span><span class="o">.</span><span class="n">function_name</span> <span class="o">=</span> <span class="s2">&quot;__call__&quot;</span>
+            <span class="n">params</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">default_arguments</span> <span class="o">=</span> <span class="s2">&quot;tsp&quot;</span>
+            <span class="n">params</span><span class="o">.</span><span class="n">class_code</span> <span class="o">=</span> <span class="mi">1</span>
+
+            <span class="n">monitored</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">expr</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">expr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">intermediates</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_expressions</span>
+            <span class="p">]</span>
+            <span class="n">gen</span> <span class="o">=</span> <span class="n">PythonCodeGenerator</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+
+            <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s2">&quot;ODESim&quot;</span><span class="p">)</span>
+            <span class="n">code</span> <span class="o">=</span> <span class="n">gen</span><span class="o">.</span><span class="n">class_code</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitored</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+            <span class="n">module</span> <span class="o">=</span> <span class="n">imp</span><span class="o">.</span><span class="n">new_module</span><span class="p">(</span><span class="s2">&quot;simulation&quot;</span><span class="p">)</span>
+            <span class="n">exec</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">module</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+
+            <span class="n">ode</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">ODESim</span><span class="p">()</span>
+            <span class="kn">from</span> <span class="nn">cellmodels.odesolver</span> <span class="kn">import</span> <span class="n">ODESolver</span>
+
+            <span class="n">states</span> <span class="o">=</span> <span class="n">ode</span><span class="o">.</span><span class="n">init_state_values</span><span class="p">()</span>
+
+            <span class="n">options</span> <span class="o">=</span> <span class="n">ODESolver</span><span class="o">.</span><span class="n">list_solver_options</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+            <span class="n">atol</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;atol&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">atol</span><span class="p">:</span>
+                <span class="n">options</span><span class="p">[</span><span class="s2">&quot;atol&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">atol</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">))</span>
+
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">v</span> <span class="ow">and</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+                    <span class="n">options</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+
+            <span class="n">solver</span> <span class="o">=</span> <span class="n">ODESolver</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span>
+
+            <span class="n">t_</span><span class="p">,</span> <span class="n">y_</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">t_end</span><span class="p">,</span> <span class="n">nbeats</span><span class="p">)</span>
+
+            <span class="n">ret</span> <span class="o">=</span> <span class="p">[</span><span class="n">t_</span><span class="p">,</span> <span class="n">y_</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">return_final_beat</span><span class="p">:</span>
+
+            <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">start_idx</span><span class="p">:</span><span class="n">end_idx</span><span class="p">]</span>
+            <span class="n">ret</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">start_idx</span><span class="p">:</span><span class="n">end_idx</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+<div class="viewcode-block" id="CellModel.get_component"><a class="viewcode-back" href="../../../gotran.model.html#gotran.CellModel.get_component">[docs]</a>    <span class="k">def</span> <span class="nf">get_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the component with the given name</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+
+<span class="sd">        name : str</span>
+<span class="sd">            Name of the component</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        par : gotran.ODECompoenent</span>
+<span class="sd">            The component</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Check if parameter exist</span>
+        <span class="n">check_arginlist</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_names</span><span class="p">)</span>
+        <span class="c1"># Get the index</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="c1"># Return the component</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span></div>
+
+    <span class="k">def</span> <span class="nf">get_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the parameter with the given name</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+
+<span class="sd">        name : str</span>
+<span class="sd">            Name of the parameter</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        par : gotran.Parameter</span>
+<span class="sd">            The parameter</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check if parameter exist</span>
+        <span class="n">check_arginlist</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter_symbols</span><span class="p">)</span>
+        <span class="c1"># Get the index</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter_symbols</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="c1"># Return the parameter</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+<div class="viewcode-block" id="CellModel.get_state"><a class="viewcode-back" href="../../../gotran.model.html#gotran.CellModel.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the state with the given name</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+
+<span class="sd">        name : str</span>
+<span class="sd">            Name of the state variable</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        par : gotran.Parameter</span>
+<span class="sd">            The state</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check if parameter exist</span>
+        <span class="n">check_arginlist</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_symbols</span><span class="p">)</span>
+        <span class="c1"># Get the index</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_symbols</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="c1"># Return the parameter</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">states</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="CellModel.get_intermediate"><a class="viewcode-back" href="../../../gotran.model.html#gotran.CellModel.get_intermediate">[docs]</a>    <span class="k">def</span> <span class="nf">get_intermediate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the intermediate with the given name</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+
+<span class="sd">        name : str</span>
+<span class="sd">            Name of the intermediate</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        par : gotran.Parameter</span>
+<span class="sd">            The parameter</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check if parameter exist</span>
+        <span class="n">check_arginlist</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">intermediate_symbols</span><span class="p">)</span>
+        <span class="c1"># Get the index</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">intermediate_symbols</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="c1"># Return the parameter</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">intermediates</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="CellModel.get_parameter"><a class="viewcode-back" href="../../../gotran.model.html#gotran.CellModel.get_parameter">[docs]</a>    <span class="k">def</span> <span class="nf">get_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the parameter with the given name</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+
+<span class="sd">        name : str</span>
+<span class="sd">            Name of the parameter</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        par : gotran.Parameter</span>
+<span class="sd">            The parameter</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check if parameter exist</span>
+        <span class="n">check_arginlist</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter_symbols</span><span class="p">)</span>
+        <span class="c1"># Get the index</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter_symbols</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="c1"># Return the parameter</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="CellModel.set_parameter"><a class="viewcode-back" href="../../../gotran.model.html#gotran.CellModel.set_parameter">[docs]</a>    <span class="k">def</span> <span class="nf">set_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the parameter in the model to a</span>
+<span class="sd">        given value</span>
+
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+
+<span class="sd">        name : str</span>
+<span class="sd">            Name of the parmaeter</span>
+<span class="sd">        value : scalar, gotran.ScalarParam</span>
+<span class="sd">            The new value of the parameter. Note that</span>
+<span class="sd">            if the parameter is of type `ScalarParam`</span>
+<span class="sd">            while the provided value is a scalar then the value</span>
+<span class="sd">            will be updated while keeping the unit</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">check_arg</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">scalars</span> <span class="o">+</span> <span class="p">(</span><span class="n">ScalarParam</span><span class="p">,),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">)</span>
+
+        <span class="n">par</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parameter</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ScalarParam</span><span class="p">):</span>
+            <span class="n">par</span><span class="o">.</span><span class="n">_param</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">par</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span></div>
+
+<div class="viewcode-block" id="CellModel.update_parameter"><a class="viewcode-back" href="../../../gotran.model.html#gotran.CellModel.update_parameter">[docs]</a>    <span class="k">def</span> <span class="nf">update_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">par</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parameter</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">par</span><span class="o">.</span><span class="n">_param</span><span class="o">.</span><span class="n">value</span> <span class="o">*=</span> <span class="n">factor</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div></div>
+
+
+<span class="c1"># Construct a default CellModel</span>
+<span class="c1"># _current_cellmodel = CellModel(&quot;Default&quot;)</span>
+
+
+<div class="viewcode-block" id="gccm"><a class="viewcode-back" href="../../../gotran.model.html#gotran.gccm">[docs]</a><span class="k">def</span> <span class="nf">gccm</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the current CellModel</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_current_cellmodel</span><span class="p">,</span> <span class="n">CellModel</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_current_cellmodel</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
