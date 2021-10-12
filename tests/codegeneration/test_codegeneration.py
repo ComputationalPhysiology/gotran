@@ -83,6 +83,11 @@ def test_use_cse(use_cse, module):
     _test_codegeneration(module, use_cse=use_cse)
 
 
+@pytest.mark.parametrize("use_enum", [True, False])
+def test_use_enum(use_enum, module):
+    _test_codegeneration(module, use_enum=use_enum)
+
+
 @pytest.mark.parametrize("float_precision", ["double", "single"])
 def test_float_precision(float_precision, module):
     _test_codegeneration(module, float_precision=float_precision)
@@ -95,6 +100,7 @@ def _test_codegeneration(
     param_repr="named",
     state_repr="named",
     use_cse=False,
+    use_enum=False,
     float_precision="double",
 ):
     parameters_name = "parameters"
@@ -121,6 +127,7 @@ def _test_codegeneration(
     code_params["states"]["representation"] = state_repr
     code_params["states"]["array_name"] = states_name
     code_params["body"]["use_cse"] = use_cse
+    code_params["body"]["use_enum"] = use_enum
     code_params["float_precision"] = float_precision
     code_params["default_arguments"] = "stp"
 
