@@ -19,6 +19,7 @@ import re
 from future.standard_library import install_aliases
 
 install_aliases()
+from pathlib import Path
 import urllib.request, urllib.parse, urllib.error
 from xml.etree import ElementTree
 from functools import cmp_to_key
@@ -427,7 +428,7 @@ class CellMLParser(object):
 
         targets = targets or []
         params = params or {}
-        check_arg(model_source, str)
+        check_arg(model_source, (str, Path))
         check_arg(targets, (list, dict))
         self._params = self.default_parameters()
         self._params.update(params)
@@ -1043,9 +1044,12 @@ class CellMLParser(object):
         # Get equations
         for math in comp.iter("{http://www.w3.org/1998/Math/MathML}math"):
             for eq in list(math):
-                equation_list, state_variable, derivative, used_variables = self.mathmlparser.parse(
-                    eq
-                )
+                (
+                    equation_list,
+                    state_variable,
+                    derivative,
+                    used_variables,
+                ) = self.mathmlparser.parse(eq)
 
                 # Get equation name
                 eq_name = equation_list[0]
@@ -1330,9 +1334,7 @@ class CellMLParser(object):
         sort_again = False
         try:
             sorted_components = list(nx.topological_sort(G))
-            components.sort(
-                key = lambda n0: sorted_components.index(n0.name)
-            )
+            components.sort(key=lambda n0: sorted_components.index(n0.name))
             message = (
                 "To avoid circular dependency the following equations "
                 "has been moved:"
@@ -1375,9 +1377,7 @@ class CellMLParser(object):
 
             try:
                 sorted_components = list(nx.topological_sort(G))
-                components.sort(
-                    key = lambda n0: sorted_components.index(n0.name)
-                )
+                components.sort(key=lambda n0: sorted_components.index(n0.name))
             except nx.NetworkXUnfeasible as e:
                 warning("Topological sort failed a second time: " + str(e))
 
@@ -1391,14 +1391,18 @@ class CellMLParser(object):
 
         # First parse connections which is used to determine the interface of
         # each variable
-        self.new_variable_connections, self.same_variable_connections = (
-            self.parse_connections()
-        )
+        (
+            self.new_variable_connections,
+            self.same_variable_connections,
+        ) = self.parse_connections()
 
         # Parse imported components
-        components, collected_states, collected_parameters, collected_equations = (
-            self.parse_imported_model()
-        )
+        (
+            components,
+            collected_states,
+            collected_parameters,
+            collected_equations,
+        ) = self.parse_imported_model()
 
         # Get parent relationship between components
         encapsulations, all_parents = self.get_parents(self._params.grouping)
@@ -1754,7 +1758,7 @@ def cellml2ode(model_source, **options):
     options : dict
         Optional parameters to control cellml parser
     """
-    check_arg(model_source, str)
+    check_arg(model_source, (str, Path))
     from gotran.model.loadmodel import exec_ode
 
     params = CellMLParser.default_parameters()

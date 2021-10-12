@@ -18,6 +18,7 @@
 __all__ = ["ODE"]
 
 # System imports
+from pathlib import Path
 from collections import defaultdict
 import weakref
 from functools import cmp_to_key
@@ -165,12 +166,12 @@ class ODE(ODEComponent):
         timer = Timer("Import ode")
 
         components = components or []
-        check_arg(ode, (str, ODE), 0, context=ODE.import_ode)
+        check_arg(ode, (str, Path, ODE), 0, context=ODE.import_ode)
         check_arg(prefix, str, 1, context=ODE.import_ode)
         check_arg(components, list, 2, context=ODE.import_ode, itemtypes=str)
 
         # If ode is given directly
-        if isinstance(ode, str):
+        if isinstance(ode, (str, Path)):
             # If not load external ODE
             from gotran.model.loadmodel import load_ode
 

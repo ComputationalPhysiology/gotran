@@ -18,6 +18,7 @@
 __all__ = ["load_ode", "exec_ode", "load_cell"]
 
 # System imports
+from pathlib import Path
 import inspect
 import os
 import shutil
@@ -254,24 +255,21 @@ def _load(filename, name, **arguments):
         Optional arguments which can control loading of model
     """
     timer = Timer("Load ODE")
+    filename = Path(filename).with_suffix(".ode").absolute()
     # Extract name from filename
-    if len(filename) < 4 or filename[-4:] != ".ode":
-        name = name or filename
-        filename = filename + ".ode"
-    elif name is None:
-        name = filename[:-4]
+    name = filename.stem
 
     # Execute the file
-    if not os.path.isfile(filename):
+    if not filename.is_file():
         error("Could not find '{0}'".format(filename))
 
     # Copy file temporary to current directory
-    basename = os.path.basename(filename)
+    basename = Path(filename.name).absolute()
     copyfile = False
-    if not basename == filename:
+    if basename != filename:
         shutil.copy(filename, basename)
         filename = basename
-        name = filename[:-4]
+        name = filename.stem
         copyfile = True
 
     # If a Param is provided turn it into its value
@@ -398,9 +396,9 @@ def _namespace_binder(namespace, ode, load_arguments):
             Optional arguments which can control loading of model
         """
 
-        check_arg(subode, str, 0)
+        check_arg(subode, (str, Path), 0)
 
-        # Add the subode and update namespace
+        # Add the 'subode and update namespace
         ode().import_ode(subode, prefix=prefix, components=components, **arguments)
 
     def timeunit(*args, **kwargs):
