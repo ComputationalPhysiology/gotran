@@ -19,16 +19,23 @@ default_params = parameters["generation"].copy()
 default_params.functions.jacobian.generate = True
 default_params.functions.monitored.generate = False
 
-state_repr_opts = sorted(
-    dict.__getitem__(default_params.code.states, "representation")._options
+
+def get_all_options_no_default(d, key):
+    options = list(d.get(key)._options)
+    options.remove(d[key])
+    return options
+
+
+state_repr_opts = get_all_options_no_default(
+    default_params.code.states, "representation"
 )
-param_repr_opts = dict.__getitem__(
+param_repr_opts = get_all_options_no_default(
     default_params.code.parameters, "representation"
-)._options
-body_repr_opts = dict.__getitem__(default_params.code.body, "representation")._options
-body_optimize_opts = dict.__getitem__(
+)
+body_repr_opts = get_all_options_no_default(default_params.code.body, "representation")
+body_optimize_opts = get_all_options_no_default(
     default_params.code.body, "optimize_exprs"
-)._options
+)
 
 
 def get_indexed(comp, name):
@@ -78,24 +85,25 @@ def test_state_repr(state_repr, module):
     _test_codegeneration(module, state_repr=state_repr)
 
 
-@pytest.mark.parametrize("use_cse", [True, False])
-def test_use_cse(use_cse, module):
-    _test_codegeneration(module, use_cse=use_cse)
+def test_use_cse(module):
+    _test_codegeneration(module, use_cse=True)
 
 
-@pytest.mark.parametrize("use_enum", [True, False])
-def test_use_enum(use_enum, module):
-    _test_codegeneration(module, use_enum=use_enum)
+def test_use_enum(module):
+    _test_codegeneration(module, use_enum=True)
 
 
-@pytest.mark.parametrize("float_precision", ["double", "single"])
-def test_float_precision(float_precision, module):
-    _test_codegeneration(module, float_precision=float_precision)
+def test_float_precision_single(module):
+    _test_codegeneration(module, float_precision="single")
+
+
+def test_default(module):
+    _test_codegeneration(module)
 
 
 def _test_codegeneration(
     module,
-    body_repr="named",
+    body_repr=default_params["code"]["body"]["representation"],
     body_optimize="none",
     param_repr="named",
     state_repr="named",
