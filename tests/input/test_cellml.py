@@ -87,8 +87,8 @@ generation.functions.jacobian.generate = False
 def test_cellml(path):
     path = Path(path)
     ode = cellml2ode(path)
-
-    with open(ode.name + ".cpickle", "rb") as f:
+    cpickle_path = path.parent.joinpath(ode.name).with_suffix(".cpickle")
+    with open(cpickle_path, "rb") as f:
 
         u = pickle._Unpickler(f)
         u.encoding = "latin1"
