@@ -16,17 +16,21 @@
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
 import sys
-import os
-import numpy
-import instant
+import typing
 import hashlib
+import types
+import importlib.util
+from pathlib import Path
+from enum import Enum
 
 
 import gotran
 from gotran.common import (
+    GotranException,
     check_arg,
     check_kwarg,
     info,
+    debug,
     value_error,
 )
 from gotran.model.ode import ODE
@@ -38,14 +42,26 @@ from gotran.codegeneration.codegenerators import (
     class_name,
     DOLFINCodeGenerator,
 )
-
-import numpy as np
-import ctypes
 import dijitso
 
-float64_array = np.ctypeslib.ndpointer(
-    dtype=ctypes.c_double, ndim=1, flags="contiguous"
+
+module_template = """import dijitso as _dijitso
+import numpy as _np
+import ctypes as _ctypes
+_module = _dijitso.cache.load_library("{signature}", {cache})
+
+_float64_array = _np.ctypeslib.ndpointer(
+    dtype=_ctypes.c_double, ndim=1, flags="contiguous"
 )
+
+{bindings}
+
+{code}
+"""
+
+binding_template = """_module.{funcname}.argtypes = [{argtypes}]
+_module.{funcname}.restypes = {restype}
+"""
 
 rhs_template = """def {rhs_function_name}({args},{rhs_name} = None):
     '''
@@ -61,178 +77,12 @@ rhs_template = """def {rhs_function_name}({args},{rhs_name} = None):
     if {rhs_name} is None:
         {rhs_name} = np.zeros_like({states_name})
 
-    _{rhs_function_name}({args}, {rhs_name})
+    _module.{rhs_function_name}({args}, {rhs_name})
     return {rhs_name}
 """
 
 
-__all__ = ["compile_module"]
-
-additional_declarations_ = r"""
-%init%{{
-import_array();
-%}}
-
-%include <exception.i>
-%feature("autodoc", "1");
-
-// Typemaps
-%typemap(in) (double* {rhs_name})
-{{
-  // Check type
-  if (!PyArray_Check($input))
-    SWIG_exception(SWIG_TypeError, "Numpy array expected");
-
-  // Get PyArrayObject
-  PyArrayObject *xa = (PyArrayObject *)$input;
-
-  // Check data type
-  if (!(PyArray_ISCONTIGUOUS(xa) && PyArray_TYPE(xa) == NPY_DOUBLE))
-    SWIG_exception(SWIG_TypeError, "Contigous numpy array of doubles "
-                  "expected. Make sure the numpy array is contiguous, "
-                  "and uses dtype=float_.");
-
-  // Check size of passed array
-  if ( PyArray_SIZE(xa) != {num_states} )
-    SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
-                                  "{num_states}, for the {rhs_name} argument.");
-
-  $1 = (double *)PyArray_DATA(xa);
-}}
-
-%typemap(in) (const double* {states_name})
-{{
-  // Check type
-  if (!PyArray_Check($input))
-    SWIG_exception(SWIG_TypeError, "Numpy array expected");
-
-  // Get PyArrayObject
-  PyArrayObject *xa = (PyArrayObject *)$input;
-
-  // Check data type
-  if (!(PyArray_ISCONTIGUOUS(xa) && PyArray_TYPE(xa) == NPY_DOUBLE))
-    SWIG_exception(SWIG_TypeError, "Contigous numpy array of doubles expected."
-           " Make sure the numpy array is contiguous, and uses dtype=float_.");
-
-  // Check size of passed array
-  if ( PyArray_SIZE(xa) != {num_states} )
-    SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
-                              "{num_states}, for the {states_name} argument.");
-
-  $1 = (double *)PyArray_DATA(xa);
-}}
-
-%typemap(in) (double* {states_name})
-{{
-  // Check type
-  if (!PyArray_Check($input))
-    SWIG_exception(SWIG_TypeError, "Numpy array expected");
-
-  // Get PyArrayObject
-  PyArrayObject *xa = (PyArrayObject *)$input;
-
-  // Check data type
-  if (!(PyArray_ISCONTIGUOUS(xa) && PyArray_TYPE(xa) == NPY_DOUBLE))
-    SWIG_exception(SWIG_TypeError, "Contigous numpy array of doubles expected."
-           " Make sure the numpy array is contiguous, and uses dtype=float_.");
-
-  // Check size of passed array
-  if ( PyArray_SIZE(xa) != {num_states} )
-    SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
-                              "{num_states}, for the {states_name} argument.");
-
-  $1 = (double *)PyArray_DATA(xa);
-}}
-
-%typemap(in) (double* {parameters_name})
-{{
-  // Check type
-  if (!PyArray_Check($input))
-    SWIG_exception(SWIG_TypeError, "Numpy array expected");
-
-  // Get PyArrayObject
-  PyArrayObject *xa = (PyArrayObject *)$input;
-
-  // Check data type
-  if (!(PyArray_ISCONTIGUOUS(xa) && PyArray_TYPE(xa) == NPY_DOUBLE))
-    SWIG_exception(SWIG_TypeError, "Contigous numpy array of doubles expected."
-           " Make sure the numpy array is contiguous, and uses dtype=float_.");
-
-  // Check size of passed array
-  if ( PyArray_SIZE(xa) != {num_parameters} )
-    SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
-             "{num_parameters}, for the {parameters_name} argument.");
-
-  $1 = (double *)PyArray_DATA(xa);
-
-}}
-
-// The typecheck
-%typecheck(SWIG_TYPECHECK_DOUBLE_ARRAY) double *
-{{
-    $1 = PyArray_Check($input) ? 1 : 0;
-}}
-
-%typecheck(SWIG_TYPECHECK_DOUBLE_ARRAY) const double *
-{{
-    $1 = PyArray_Check($input) ? 1 : 0;
-}}
-
-%pythoncode%{{
-def {rhs_function_name}({args},{rhs_name} = None):
-    '''
-    Evaluates the right hand side of the model
-
-    Arguments
-    ---------
-{args_doc}
-    {rhs_name} : np.ndarray (optional)
-        The computed result
-    '''
-    import numpy as np
-    if {rhs_name} is None:
-        {rhs_name} = np.zeros_like({states_name})
-
-    _{rhs_function_name}({args}, {rhs_name})
-    return {rhs_name}
-
-{python_code}
-%}}
-
-%rename (_{rhs_function_name}) {rhs_function_name};
-
-{jacobian_declaration}
-
-{monitor_declaration}
-"""
-
-jacobian_declaration_template_ = """
-// Typemaps
-%typemap(in) (double* {jac_name})
-{{
-  // Check type
-  if (!PyArray_Check($input))
-    SWIG_exception(SWIG_TypeError, "Numpy array expected");
-
-  // Get PyArrayObject
-  PyArrayObject *xa = (PyArrayObject *)$input;
-
-  // Check data type
-  if (!(PyArray_ISCONTIGUOUS(xa) && PyArray_TYPE(xa) == NPY_DOUBLE))
-    SWIG_exception(SWIG_TypeError, "Contigous numpy array of doubles "
-                  "expected. Make sure the numpy array is contiguous, "
-                  "and uses dtype=float_.");
-
-  // Check size of passed array
-  if ( PyArray_SIZE(xa) != {num_states}*{num_states} )
-    SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
-                                  "{num_states}*{num_states}, for the {jac_name} argument.");
-
-  $1 = (double *)PyArray_DATA(xa);
-}}
-
-%pythoncode%{{
-def {jacobian_function_name}({args}, {jac_name}=None):
+jacobian_template = """def {jacobian_function_name}({args}, {jac_name}=None):
     '''
     Evaluates the jacobian of the model
 
@@ -253,40 +103,12 @@ def {jacobian_function_name}({args}, {jac_name}=None):
         # Flatten Matrix
         {jac_name}.shape = ({num_states}*{num_states},)
 
-    _{jacobian_function_name}({args}, {jac_name})
+    _module.{jacobian_function_name}({args}, {jac_name})
     {jac_name}.shape = ({num_states},{num_states})
     return {jac_name}
-%}}
-
-%rename (_{jacobian_function_name}) {jacobian_function_name};
 """
 
-monitor_declaration_template = """
-%typemap(in) (double* {monitored_name})
-{{
-  // Check type
-  if (!PyArray_Check($input))
-    SWIG_exception(SWIG_TypeError, "Numpy array expected");
-
-  // Get PyArrayObject
-  PyArrayObject *xa = (PyArrayObject *)$input;
-
-  // Check data type
-  if (!(PyArray_ISCONTIGUOUS(xa) && PyArray_TYPE(xa) == NPY_DOUBLE))
-    SWIG_exception(SWIG_TypeError, "Contigous numpy array of doubles expected."
-           " Make sure the numpy array is contiguous, and uses dtype=float_.");
-
-  // Check size of passed array
-  if ( PyArray_SIZE(xa) != {num_monitored} )
-    SWIG_exception(SWIG_ValueError, "Expected a numpy array of size: "
-             "{num_monitored}, for the {monitored_name} argument.");
-
-  $1 = (double *)PyArray_DATA(xa);
-
-}}
-
-%pythoncode%{{
-def {monitored_function_name}({args}, {monitored_name}=None):
+monitor_template = """def {monitored_function_name}({args}, {monitored_name}=None):
     '''
     Evaluates any monitored intermediates of the model
 
@@ -304,37 +126,43 @@ def {monitored_function_name}({args}, {monitored_name}=None):
     elif len({monitored_name}) != {num_monitored}:
         raise ValueError(\"expected a numpy array of size: {num_monitored}\")
 
-    _{monitored_function_name}({args}, {monitored_name})
+    _module.{monitored_function_name}({args}, {monitored_name})
     return {monitored_name}
-%}}
-
-%rename (_{monitored_function_name}) {monitored_function_name};
 """
+
+__all__ = ["compile_module"]
+
+
+class Languange(str, Enum):
+    c = "C"
+    python = "Python"
+    dolfin = "Dolfin"
 
 
 def compile_module(
-    ode,
-    language="C",
-    monitored=None,
-    generation_params=None,
-    additional_declarations=None,
-    jacobian_declaration_template=None,
-):
-    """
-    JIT compile an ode
+    ode: typing.Union[ODE, str],
+    language: Languange = Languange.c,
+    monitored: typing.Optional[typing.List[str]] = None,
+    generation_params: typing.Optional[typing.Dict[str, typing.Any]] = None,
+) -> types.ModuleType:
+    """JIT compile an ode
 
-    Arguments
-    ---------
-    ode : gotran.ODE, str
+    Parameters
+    ----------
+    ode : typing.Union[ODE, str]
         The gotran ode
-    language : str (optional)
-        The language of the generated code
-        Defaults : 'C' ['C', 'Python']
-    monitored : list
+    language : Languange, optional
+        The language of the generated code, by default Languange.c
+    monitored : typing.Optional[typing.List[str]], optional
         A list of names of intermediates of the ODE. Code for monitoring
-        the intermediates will be generated.
-    generation_params : dict
-        Parameters controling the code generation
+        the intermediates will be generated, by default None
+    generation_params : typing.Optional[typing.Dict[str, typing.Any]], optional
+        Parameters controling the code generation, by default None
+
+    Returns
+    -------
+    types.ModuleType
+        Module with ode functions
     """
 
     monitored = monitored or []
@@ -364,28 +192,14 @@ def compile_module(
             ode,
             monitored,
             params,
-            additional_declarations,
-            jacobian_declaration_template,
         )
 
     # Create unique module name for this application run
-    modulename = "gotran_{0}_module_{1}_{2}".format(
-        language.lower(),
-        class_name(ode.name),
-        hashlib.sha1(
-            str(
-                ode.signature()
-                + str(monitored)
-                + repr(params)
-                + gotran.__version__
-                + instant.__version__
-            ).encode("utf-8")
-        ).hexdigest(),
-    )
+    modulename = module_signature(ode, monitored, params, languange="python")
 
     # Check cache
-    python_module = instant.import_module(modulename)
-    if python_module:
+    python_module = load_module(modulename)
+    if python_module is not None:
         return getattr(python_module, class_name(ode.name))()
 
     # No module in cache generate python version
@@ -395,37 +209,16 @@ def compile_module(
         pgen = PythonCodeGenerator(params)
 
     # Generate class code, execute it and collect namespace
-    code = (
-        "from __future__ import division\nimport numpy as np\nimport math"
-        + pgen.class_code(ode, monitored=monitored)
-    )
+    code = "import numpy as np\nimport math" + pgen.class_code(ode, monitored=monitored)
 
-    # Make a temporary module path for compilation
-    module_path = os.path.join(instant.get_temp_dir(), modulename)
-    instant.instant_assert(
-        not os.path.exists(module_path),
-        "Not expecting module_path to exist: '{}'".format(module_path),
-    )
-    instant.makedirs(module_path)
-    original_path = os.getcwd()
-    try:
-        module_path = os.path.abspath(module_path)
-        os.chdir(module_path)
-        instant.write_file("__init__.py", code)
-        module_path = instant.copy_to_cache(
-            module_path, instant.get_default_cache_dir(), modulename
-        )
+    save_module(code, modulename)
 
-    finally:
-        # Always get back to original directory.
-        os.chdir(original_path)
-
-    python_module = instant.import_module(modulename)
+    python_module = load_module(modulename)
     return getattr(python_module, class_name(ode.name))()
 
 
-def jit_generate(class_data, module_name, signature, parameters):
-    """TODO: document"""
+def _jit_generate(class_data, module_name, signature, parameters):
+    """Helper function for ditjitso"""
 
     template_code = """
 {includes}
@@ -459,7 +252,7 @@ def add_dll_export(code_dict):
     return d
 
 
-def parse_rhs_arguments(params):
+def parse_arguments(params):
     # Add function prototype
     args = []
     args_doc = []
@@ -501,7 +294,10 @@ def parse_rhs_arguments(params):
 
 
 def parse_jacobian_declarations(
-    ode, args, args_doc, params, jacobian_declaration_template=None
+    ode,
+    args,
+    args_doc,
+    params,
 ):
 
     jacobian_declaration = ""
@@ -513,13 +309,7 @@ def parse_jacobian_declarations(
         debug("Generating jacobian C-code, forcing jacobian array " "to be flattened.")
         params.code.array.flatten = True
 
-    jacobian_declaration_template = (
-        jacobian_declaration_template_
-        if jacobian_declaration_template is None
-        else jacobian_declaration_template
-    )
-
-    jacobian_declaration = jacobian_declaration_template.format(
+    jacobian_declaration = jacobian_template.format(
         num_states=ode.num_full_states,
         args=args,
         args_doc=args_doc,
@@ -532,7 +322,7 @@ def parse_jacobian_declarations(
 def parse_monitor_declaration(ode, args, args_doc, params, monitored):
     monitor_declaration = ""
     if monitored and params.functions.monitored.generate:
-        monitor_declaration = monitor_declaration_template.format(
+        monitor_declaration = monitor_template.format(
             num_states=ode.num_full_states,
             num_monitored=len(monitored),
             args=args,
@@ -543,36 +333,79 @@ def parse_monitor_declaration(ode, args, args_doc, params, monitored):
     return monitor_declaration
 
 
-class GotranModule:
-    pass
+def args_to_argtypes(args: str) -> str:
+    argtypes = {
+        "states": "_float64_array",
+        "time": "_ctypes.c_double",
+        "parameters": "_float64_array",
+        "values": "_float64_array",
+    }
+    args_split = args.split(", ")
+
+    if len(args_split) == 3:
+        # Values are optional to it is not in the list
+        args_split.append("values")
+    if len(args_split) != 4:
+        raise GotranException(f"Expected number to arguments to be 4, got {args_split}")
+    return ", ".join([argtypes[arg] for arg in args_split])
 
 
-def compile_extension_module(
-    ode,
-    monitored,
-    params,
-    additional_declarations=None,
-    jacobian_declaration_template=None,
-):
-    """
-    Compile an extension module, based on the C code from the ode
-    """
+def cache_path(signature, cache_dir=None) -> Path:
+    if cache_dir is None:
+        dijitso_params = dijitso.validate_params(dijitso.params.default_params())
+        cache_dir = dijitso_params["cache"]["cache_dir"]
+    return Path(cache_dir).joinpath(f"{signature}.py")
 
-    args, args_doc = parse_rhs_arguments(params)
 
-    # Create unique module name for this application run
-    modulename = "gotran_compiled_module_{0}_{1}".format(
+def load_module(signature: str, cache_dir=None):
+
+    path = cache_path(signature, cache_dir)
+    if not path.is_file():
+        return None
+
+    spec = importlib.util.spec_from_file_location(signature, path)
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+    except AttributeError:
+        return None
+    return module
+
+
+def module_signature(ode, monitored, params, languange):
+    return "gotran_compiled_module_{0}_{1}".format(
         class_name(ode.name),
         hashlib.sha1(
             str(
                 ode.signature()
                 + str(monitored)
                 + repr(params)
+                + languange
                 + gotran.__version__
-                + instant.__version__
+                + dijitso.__version__
             ).encode("utf-8")
         ).hexdigest(),
     )
+
+
+def compile_extension_module(
+    ode,
+    monitored,
+    params,
+):
+    """
+    Compile an extension module, based on the C code from the ode
+    """
+    dijitso_params = dijitso.validate_params(dijitso.params.default_params())
+
+    args, args_doc = parse_arguments(params)
+
+    # Create unique module name for this application run
+    modulename = module_signature(ode, monitored, params, languange="C")
+
+    compiled_module = load_module(modulename)
+    if compiled_module is not None:
+        return compiled_module
 
     # Do not generate any Python functions
     python_params = params.copy()
@@ -581,12 +414,8 @@ def compile_extension_module(
             continue
         python_params.functions[name].generate = False
 
-    jacobian_declaration = parse_jacobian_declarations(
-        ode, args, args_doc, params, jacobian_declaration_template
-    )
-    monitor_declaration = parse_monitor_declaration(
-        ode, args, args_doc, params, monitored
-    )
+    jacobian_code = parse_jacobian_declarations(ode, args, args_doc, params)
+    monitor_code = parse_monitor_declaration(ode, args, args_doc, params, monitored)
 
     pgen = PythonCodeGenerator(python_params)
     cgen = CCodeGenerator(params)
@@ -595,15 +424,10 @@ def compile_extension_module(
     )
 
     pcode = "\n\n".join(list(pgen.code_dict(ode, monitored=monitored).values()))
-
+    argtypes = args_to_argtypes(args)
     cpp_data = {
         "code_dict": add_dll_export(code_dict),
         "includes": ["#include <math.h>"],
-        "exports": ["rhs"],
-        "argtypes": {
-            "rhs": [float64_array, ctypes.c_double, float64_array, float64_array]
-        },
-        "restypes": {"rhs": None},
     }
 
     rhs_code = rhs_template.format(
@@ -613,216 +437,52 @@ def compile_extension_module(
         args_doc=args_doc,
         states_name=params.code.states.array_name,
     )
+    rhs_binding = binding_template.format(
+        funcname="rhs", argtypes=argtypes, restype="None"
+    )
 
-    compiled_module = GotranModule()
-    exec(rhs_code, compiled_module.__dict__)
-    exec(pcode, compiled_module.__dict__)
-    params = dijitso.params.default_params()
+    monitor_binding = ""
+    if monitor_code != "":
+        monitor_binding = binding_template.format(
+            funcname="monitor", argtypes=argtypes, restype="None"
+        )
+
+    jacobian_binding = ""
+    if jacobian_code != "":
+        jacobian_binding = binding_template.format(
+            funcname="compute_jacobian", argtypes=argtypes, restype="None"
+        )
+
+    compiled_module_code = module_template.format(
+        signature=modulename,
+        cache=repr(dijitso_params["cache"]),
+        code="\n\n\n".join([rhs_code, pcode, monitor_code, jacobian_code]),
+        bindings="\n".join([rhs_binding, monitor_binding, jacobian_binding]),
+    )
 
     module, signature = dijitso.jit(
         cpp_data,
         modulename,
-        params,
-        generate=jit_generate,
+        dijitso_params,
+        generate=_jit_generate,
     )
 
-    for funcname in cpp_data["exports"]:
-        func = getattr(module, funcname)
-        func.argtypes = cpp_data["argtypes"][funcname]
-        func.restype = cpp_data["restypes"][funcname]
-        compiled_module.__dict__[f"_{funcname}"] = getattr(module, funcname)
+    save_module(compiled_module_code, modulename)
 
-    # push_log_level(INFO)
     info("Calling GOTRAN just-in-time (JIT) compiler, this may take some " "time...")
     sys.stdout.flush()
 
     info(" done")
-    # pop_log_level()
-    sys.stdout.flush()
-    return compiled_module
-
-
-def compile_extension_module_old(
-    ode,
-    monitored,
-    params,
-    additional_declarations=None,
-    jacobian_declaration_template=None,
-):
-    """
-    Compile an extension module, based on the C code from the ode
-    """
-
-    # Add function prototype
-    args = []
-    args_doc = []
-    for arg in params.code.default_arguments:
-        if arg == "s":
-            args.append("states")
-            args_doc.append(
-                """    {0} : np.ndarray
-        The state values""".format(
-                    params.code.states.array_name
-                )
-            )
-        elif arg == "t":
-            args.append("time")
-            args_doc.append(
-                """    time : scalar
-        The present time"""
-            )
-        elif arg == "p" and params.code.parameters.representation != "numerals":
-            args.append("parameters")
-            args_doc.append(
-                """    {0} : np.ndarray
-        The parameter values""".format(
-                    params.code.parameters.array_name
-                )
-            )
-        elif arg == "b" and params.code.body.representation != "named":
-            args.append("body")
-            args_doc.append(
-                """    {0} : np.ndarray
-        The body values""".format(
-                    params.code.body.array_name
-                )
-            )
-
-    # Create unique module name for this application run
-    modulename = "gotran_compiled_module_{0}_{1}".format(
-        class_name(ode.name),
-        hashlib.sha1(
-            str(
-                ode.signature()
-                + str(monitored)
-                + repr(params)
-                + gotran.__version__
-                + instant.__version__
-            ).encode("utf-8")
-        ).hexdigest(),
-    )
-
-    # Check cache
-    compiled_module = instant.import_module(modulename)
-
-    if compiled_module:
-        return compiled_module
-
-    args = ", ".join(args)
-    args_doc = "\n".join(args_doc)
-
-    # Do not generate any Python functions
-    python_params = params.copy()
-    for name in python_params.functions:
-        if name == "monitored":
-            continue
-        python_params.functions[name].generate = False
-
-    jacobian_declaration = ""
-    monitor_declaration = ""
-    if params.functions.jacobian.generate:
-
-        # Flatten jacobian params
-        if not params.code.array.flatten:
-            debug(
-                "Generating jacobian C-code, forcing jacobian array " "to be flattened."
-            )
-            params.code.array.flatten = True
-
-        jacobian_declaration_template = (
-            jacobian_declaration_template_
-            if jacobian_declaration_template is None
-            else jacobian_declaration_template
-        )
-
-        jacobian_declaration = jacobian_declaration_template.format(
-            num_states=ode.num_full_states,
-            args=args,
-            args_doc=args_doc,
-            jac_name=params.functions.jacobian.result_name,
-            jacobian_function_name=params.functions.jacobian.function_name,
-        )
-
-    if monitored and params.functions.monitored.generate:
-        monitor_declaration = monitor_declaration_template.format(
-            num_states=ode.num_full_states,
-            num_monitored=len(monitored),
-            args=args,
-            args_doc=args_doc,
-            monitored_name=params.functions.monitored.result_name,
-            monitored_function_name=params.functions.monitored.function_name,
-        )
-
-    pgen = PythonCodeGenerator(python_params)
-    cgen = CCodeGenerator(params)
-
-    pcode = "\n\n".join(list(pgen.code_dict(ode, monitored=monitored).values()))
-
-    ccode = "\n\n".join(
-        list(
-            cgen.code_dict(
-                ode, monitored=monitored, include_init=False, include_index_map=False
-            ).values()
-        )
-    )
-
-    # push_log_level(INFO)
-    info("Calling GOTRAN just-in-time (JIT) compiler, this may take some " "time...")
     sys.stdout.flush()
 
-    # Configure instant and add additional system headers
-    instant_kwargs = configure_instant()
-
-    declaration_form = dict(
-        num_states=ode.num_full_states,
-        num_parameters=ode.num_parameters,
-        num_monitored=len(monitored),
-        python_code=pcode,
-        args=args,
-        args_doc=args_doc,
-        jacobian_declaration=jacobian_declaration,
-        rhs_name=params.functions.rhs.result_name,
-        rhs_function_name=params.functions.rhs.function_name,
-        states_name=params.code.states.array_name,
-        parameters_name=params.code.parameters.array_name,
-        monitor_declaration=monitor_declaration,
-    )
-
-    additional_declarations = (
-        additional_declarations_
-        if additional_declarations is None
-        else additional_declarations
-    )
-    # Compile extension module with instant
-    compiled_module = instant.build_module(
-        code=ccode,
-        additional_declarations=additional_declarations.format(**declaration_form),
-        signature=modulename,
-        **instant_kwargs,
-    )
-
-    info(" done")
-    # pop_log_level()
-    sys.stdout.flush()
-    return compiled_module
+    return load_module(signature)
 
 
-def configure_instant():
-    """
-    Check system requirements
-
-    Returns a dict with kwargs that can be passed to instant.build_module.
-    """
-    instant_kwargs = {}
-    swig_include_dirs = []
-
-    instant_kwargs["swig_include_dirs"] = swig_include_dirs
-    instant_kwargs["include_dirs"] = [numpy.get_include()]
-    instant_kwargs["system_headers"] = [
-        "numpy/arrayobject.h",
-        "math.h",
-    ]  # , "complex.h"]
-    instant_kwargs["swigargs"] = ["-O -c++"]
-    instant_kwargs["cppargs"] = ["-O2"]
-
-    return instant_kwargs
+def save_module(
+    code: str, signature: str, cache_dir: typing.Optional[str] = None
+) -> None:
+    with open(
+        cache_path(signature=signature, cache_dir=cache_dir),
+        "w",
+    ) as f:
+        f.write(code)
