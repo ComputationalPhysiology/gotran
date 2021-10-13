@@ -15,7 +15,6 @@ except:
 from itertools import cycle
 import matplotlib.pyplot as plt
 import numpy as np
-import instant
 from gotran.model.loadmodel import load_ode
 from gotran.model.utils import DERIVATIVE_EXPRESSION, special_expression
 from gotran.codegeneration.compilemodule import compile_module

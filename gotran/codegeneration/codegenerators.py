@@ -132,7 +132,12 @@ class BaseCodeGenerator(object):
         raise NotImplementedError(msg)
 
     def code_dict(
-        self, ode, monitored=None, include_init=True, include_index_map=True, indent=0
+        self,
+        ode,
+        monitored=None,
+        include_init=True,
+        include_index_map=True,
+        indent=0,
     ):
         """
         Generates a dict of code snippets
@@ -802,14 +807,18 @@ class PythonCodeGenerator(BaseCodeGenerator):
     def state_names_list_code(self, ode, indent=0):
 
         state_names = [s.name for s in ode.full_states]
-        state_names_str = "{} = {}".format(self.params.lists.state_names.name, repr(state_names))
+        state_names_str = "{} = {}".format(
+            self.params.lists.state_names.name, repr(state_names)
+        )
 
         body_lines = [state_names_str]
         return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
 
     def parameter_names_list_code(self, ode, indent=0):
         parameter_names = [p.name for p in ode.parameters]
-        parameter_names_str = "{} = {}".format(self.params.lists.parameter_names.name, repr(parameter_names))
+        parameter_names_str = "{} = {}".format(
+            self.params.lists.parameter_names.name, repr(parameter_names)
+        )
 
         body_lines = [parameter_names_str]
         return "\n".join(self.indent_and_split_lines(body_lines, indent=indent))
@@ -1230,7 +1239,6 @@ class {0}:
             if self.ns != "np":
                 import_lines.append("import {}".format(self.ns))
 
-
         fmt_str = """# Gotran generated code for the "{model_name}" model
 {imports}
 
@@ -1238,7 +1246,7 @@ class {0}:
 """
 
         return fmt_str.format(
-            model_name = ode.name,
+            model_name=ode.name,
             imports="\n".join(import_lines) + "\n",
             main_body="\n\n".join(code_list),
         )
@@ -1282,7 +1290,9 @@ class CCodeGenerator(BaseCodeGenerator):
                 if params.states.array_name in comp.results:
                     skip_result.append(params.states.array_name)
                     ret_args.append(
-                        "{0} *__restrict {1}".format(self.float_type, params.states.array_name)
+                        "{0} *__restrict {1}".format(
+                            self.float_type, params.states.array_name
+                        )
                     )
                 else:
                     ret_args.append(
@@ -1309,7 +1319,9 @@ class CCodeGenerator(BaseCodeGenerator):
                 if params.parameters.array_name in comp.results:
                     skip_result.append(params.parameters.array_name)
                     ret_args.append(
-                        "{0} *__restrict {1}".format(self.float_type, params.parameters.array_name)
+                        "{0} *__restrict {1}".format(
+                            self.float_type, params.parameters.array_name
+                        )
                     )
                 else:
                     ret_args.append(

@@ -3,7 +3,6 @@ __date__ = "2012-05-07 -- 2015-03-03"
 __copyright__ = "Copyright (C) 2012 " + __author__
 __license__ = "GNU LGPL Version 3.0 or later"
 
-import unittest
 import glob
 import pytest
 from gotran.input.cellml import cellml2ode
@@ -99,7 +98,10 @@ def test_cellml(path):
     ref_data = data[state_name]
 
     # Compile ODE
-    module = compile_module(ode, language="Python", generation_params=generation)
+    module = compile_module(
+        ode, language="C", monitored=["i_CaL"], generation_params=generation
+    )
+
     rhs = module.rhs
     jac = None  # module.compute_jacobian
     y0 = module.init_state_values()
@@ -136,3 +138,7 @@ def test_cellml(path):
 
     print("Rel diff:", rel_diff)
     assert rel_diff < 6e-3
+
+
+if __name__ == "__main__":
+    test_cellml("tentusscher_noble_noble_panfilov_2004_a.cellml")
