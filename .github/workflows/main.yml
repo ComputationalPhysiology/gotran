@@ -14,9 +14,6 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install swig
-        run: |
-          sudo apt install swig
       - name: Install package
         run: |
           python -m pip install -e ".[test]"
