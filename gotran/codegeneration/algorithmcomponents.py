@@ -42,28 +42,20 @@ from modelparameters.sympytools import sp
 from modelparameters.codegeneration import sympycode
 
 # Local imports
-from gotran.common import (
-    error,
-    info,
-    debug,
-    check_arg,
-    check_kwarg,
-    scalars,
-    Timer,
-    warning,
-    tuplewrap,
-    parameters,
-    warning,
-)
-from gotran.common import listwrap
-from gotran.model.utils import ode_primitives
-from gotran.model.odeobjects import State, Parameter, IndexedObject, Comment
-from gotran.model.expressions import *
-from gotran.model.ode import ODE
-from gotran.codegeneration.codecomponent import CodeComponent
+from ..common import error, info, check_arg, check_kwarg, Timer, listwrap
 
-# FIXME: Remove our own cse, or move to this module?
-from gotran.codegeneration.sympy_cse import cse
+from ..model.utils import ode_primitives
+from ..model.odeobjects import Comment
+from gotran.model.expressions import (
+    Expression,
+    IndexedExpression,
+    StateDerivative,
+    AlgebraicExpression,
+)
+from ..model.ode import ODE
+from .codecomponent import CodeComponent
+
+from sympy import cse
 
 
 def rhs_expressions(ode, function_name="rhs", result_name="dy", params=None):
@@ -440,7 +432,7 @@ class JacobianComponent(CodeComponent):
         )
         check_arg(result_name, str)
 
-        timer = Timer("Computing jacobian")
+        timer = Timer("Computing jacobian")  # noqa:F841
 
         # Gather state expressions and states
         state_exprs = self.root.state_expressions
@@ -534,7 +526,7 @@ class DiagonalJacobianComponent(CodeComponent):
         )
 
         what = "Computing diagonal jacobian"
-        timer = Timer(what)
+        timer = Timer(what)  # noqa: F841
 
         self.add_comment(what)
 
@@ -588,7 +580,7 @@ class JacobianActionComponent(CodeComponent):
         params : dict
             Parameters determining how the code should be generated
         """
-        timer = Timer("Computing jacobian action component")
+        timer = Timer("Computing jacobian action component")  # noqa: F841
         check_arg(jacobian, JacobianComponent)
         descr = (
             "Compute the jacobian action of the right hand side of the "
@@ -652,7 +644,7 @@ class DiagonalJacobianActionComponent(CodeComponent):
         params : dict
             Parameters determining how the code should be generated
         """
-        timer = Timer("Computing jacobian action component")
+        timer = Timer("Computing jacobian action component")  # noqa: F841
         check_arg(diagonal_jacobian, DiagonalJacobianComponent)
         descr = (
             "Compute the diagonal jacobian action of the right hand side "
@@ -708,7 +700,7 @@ class FactorizedJacobianComponent(CodeComponent):
             Parameters determining how the code should be generated
         """
 
-        timer = Timer("Computing factorization of jacobian")
+        timer = Timer("Computing factorization of jacobian")  # noqa: F841
         check_arg(jacobian, JacobianComponent)
         descr = f"Symbolically factorize the jacobian of the {jacobian.root} ODE"
         super(FactorizedJacobianComponent, self).__init__(
@@ -854,10 +846,9 @@ class ForwardBackwardSubstitutionComponent(CodeComponent):
         params : dict
             Parameters determining how the code should be generated
         """
-        timer = Timer("Computing forward backward substituion component")
+        timer = Timer("Computing forward backward substituion component")  # noqa: F841
         check_arg(factorized, FactorizedJacobianComponent)
         jacobian_name = list(factorized.shapes.keys())[0]
-        additional_indexed_arguments = factorized.additional_arguments + [residual_name]
         descr = (
             "Symbolically forward backward substitute linear system "
             "of {0} ODE".format(factorized.root)
@@ -1040,7 +1031,7 @@ class CommonSubExpressionODE(ODE):
         check_arg(ode, ODE)
         assert ode.is_finalized
 
-        timer = Timer("Extract common sub expressions")
+        timer = Timer("Extract common sub expressions")  # noqa: F841
 
         newname = ode.name + "_CSE"
 

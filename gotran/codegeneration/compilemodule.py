@@ -22,10 +22,10 @@ import types
 import importlib.util
 from pathlib import Path
 from enum import Enum
+import dijitso
 
-
-import gotran
-from gotran.common import (
+from .. import __version__
+from ..common import (
     GotranException,
     check_arg,
     check_kwarg,
@@ -33,16 +33,15 @@ from gotran.common import (
     debug,
     value_error,
 )
-from gotran.model.ode import ODE
-from gotran.model.loadmodel import load_ode
-from gotran.common.options import parameters
-from gotran.codegeneration.codegenerators import (
+from ..model.ode import ODE
+from ..model.loadmodel import load_ode
+from ..common.options import parameters
+from .codegenerators import (
     PythonCodeGenerator,
     CCodeGenerator,
     class_name,
     DOLFINCodeGenerator,
 )
-import dijitso
 
 
 module_template = """import dijitso as _dijitso
@@ -375,7 +374,7 @@ def module_signature(ode, monitored, params, languange):
                 + str(monitored)
                 + repr(params)
                 + languange
-                + gotran.__version__
+                + __version__
                 + dijitso.__version__
             ).encode("utf-8")
         ).hexdigest(),

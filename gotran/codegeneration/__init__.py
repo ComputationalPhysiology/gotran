@@ -66,14 +66,11 @@ from .codegenerators import (
     CUDACodeGenerator,
     JuliaCodeGenerator,
 )
-from .latexcodegenerator import LatexCodeGenerator, _default_latex_params
+from .latexcodegenerator import LatexCodeGenerator
 from .compilemodule import compile_module
-
-# from .oderepresentation import *
 
 
 # Assign the __all__ attribute
-# __all__ = [name for name in list(globals().keys()) if name[:1] != "_"]
 __all__ = [
     "codecomponent",
     "CodeComponent",
@@ -121,4 +118,18 @@ __all__ = [
     "JuliaCodeGenerator",
     "latexcodegenerator",
     "LatexCodeGenerator",
+    "compile_module",
+    "ExplicitEuler",
+    "explicit_euler_solver",
+    "RushLarsen",
+    "rush_larsen_solver",
+    "GeneralizedRushLarsen",
+    "generalized_rush_larsen_solver",
+    "HybridGeneralizedRushLarsen",
+    "hybrid_generalized_rush_larsen_solver",
+    "SimplifiedImplicitEuler",
+    "simplified_implicit_euler_solver",
+    "get_solver_fn",
+    "compilemodule",
+    "oderepresentation",
 ]

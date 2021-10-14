@@ -15,20 +15,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-# System imports
 import re
 
-# Gotran imports
-from gotran.common import warning
-from gotran.model.odeobjects import SingleODEObjects
-from gotran.model.expressions import Expression, StateDerivative
+from ..model.expressions import Expression, StateDerivative
 
-# Model parameters imports
 from modelparameters.codegeneration import latex as mp_latex
-from modelparameters.parameters import Param, ScalarParam, ArrayParam
+from modelparameters.parameters import Param
 from modelparameters.parameterdict import ParameterDict
 
-# Other imports
 import string
 from io import StringIO
 import sympy
@@ -562,7 +556,7 @@ class LatexCodeGenerator(object):
             end_str += "}"
 
         if "landscape" in override and opts.landscape:
-            if not "pdflscape" in (package_name for package_name, _ in self.packages):
+            if "pdflscape" not in (package_name for package_name, _ in self.packages):
                 self.packages.append(("pdflscape", ""))
             begin_str = "\\begin{landscape}\n" + begin_str
             end_str += "\\end{landscape}\n"

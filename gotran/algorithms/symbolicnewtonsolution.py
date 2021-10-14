@@ -17,13 +17,14 @@
 
 __all__ = ["SymbolicNewtonSolution"]
 
+import sympy
+
 # System imports
 from modelparameters.sympytools import sp
 from modelparameters.utils import check_arg, scalars
 
 # Local imports
 from gotran.model.ode import ODE
-from gotran.common.dicts import odict
 from collections import OrderedDict
 from functools import reduce
 
@@ -80,7 +81,7 @@ def _LU_solve(AA, rhs):
     Returns the symbolic solve of AA*x=rhs
     """
     if not AA.is_square:
-        raise NonSquareMatrixError()
+        raise sympy.NonSquareMatrixError()
     n = AA.rows
     A = AA[:, :]
     p = []

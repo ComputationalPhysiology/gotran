@@ -28,7 +28,7 @@ from modelparameters.sympytools import sp
 from modelparameters.codegeneration import sympycode
 
 # Local imports
-from gotran.common import (
+from ..common import (
     error,
     info,
     debug,
@@ -61,10 +61,7 @@ from gotran.model.expressions import (
 from gotran.model.odecomponent import ODEComponent
 from gotran.model.ode import ODE
 
-# FIXME: Remove our own cse, or move to this module?
-from gotran.codegeneration.sympy_cse import cse
-
-# from sympy import cse
+from sympy import cse
 
 
 class CodeComponent(ODEComponent):

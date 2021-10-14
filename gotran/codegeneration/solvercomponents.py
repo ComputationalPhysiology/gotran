@@ -34,28 +34,17 @@ import sys
 
 # ModelParameters imports
 from modelparameters.sympytools import sp, Conditional
-from modelparameters.codegeneration import sympycode
 
 # Local imports
-from gotran.common import (
+from ..common import (
     error,
     info,
     debug,
     check_arg,
-    check_kwarg,
-    scalars,
     Timer,
-    warning,
-    tuplewrap,
-    parameters,
-    warning,
 )
-from gotran.common import listwrap
-from gotran.model.utils import ode_primitives
-from gotran.model.odeobjects import State, Parameter, IndexedObject, Comment
-from gotran.model.expressions import *
-from gotran.model.ode import ODE
-from gotran.codegeneration.codecomponent import CodeComponent
+from ..model.ode import ODE
+from .codecomponent import CodeComponent
 
 
 def explicit_euler_solver(ode, function_name="forward_explicit_euler", params=None):
@@ -246,7 +235,6 @@ class ExplicitEuler(CodeComponent):
         state_exprs = self.root.state_expressions
         states = self.root.full_states
         result_name = self._params.states.array_name
-        state_offset = self._params.states.add_offset
         self.shapes[result_name] = (len(states),)
 
         # Get time step and start creating the update algorithm
@@ -359,7 +347,6 @@ class RushLarsen(CodeComponent):
         states = self.root.full_states
 
         result_name = self._params.states.array_name
-        state_offset = self._params.states.add_offset
         self.shapes[result_name] = (len(states),)
 
         # Get time step and start creating the update algorithm
@@ -484,7 +471,6 @@ class RushLarsenOneStep(CodeComponent):
 
         result_name = self._params.states.array_name + "_1"
         previous_name = self._params.states.array_name + "_0"
-        state_offset = self._params.states.add_offset
         self.shapes[result_name] = (len(states),)
         self.shapes[previous_name] = (len(states),)
 
@@ -589,7 +575,6 @@ class GeneralizedRushLarsen(CodeComponent):
         state_exprs = self.root.state_expressions
         states = self.root.full_states
         result_name = self._params.states.array_name
-        state_offset = self._params.states.add_offset
 
         self.shapes[result_name] = (len(states),)
 
@@ -709,7 +694,6 @@ class HybridGeneralizedRushLarsen(CodeComponent):
         state_exprs = self.root.state_expressions
         states = self.root.full_states
         result_name = self._params.states.array_name
-        state_offset = self._params.states.add_offset
 
         self.shapes[result_name] = (len(states),)
 
@@ -826,7 +810,6 @@ class SimplifiedImplicitEuler(CodeComponent):
         states = self.root.full_states
 
         result_name = self._params.states.array_name
-        state_offset = self._params.states.add_offset
         self.shapes[result_name] = (len(states),)
 
         # Get time step and start creating the update algorithm

@@ -30,19 +30,19 @@ from modelparameters.codegeneration import (
 )
 
 # Gotran imports
-from gotran.common import check_arg, check_kwarg, error, warning
-from gotran.common.options import parameters
-from gotran.model.ode import ODE
-from gotran.model.odeobjects import Comment, ODEObject
-from gotran.model.expressions import (
+from ..common import check_arg, check_kwarg, error, warning
+from ..common.options import parameters
+from ..model.ode import ODE
+from ..model.odeobjects import Comment, ODEObject
+from ..model.expressions import (
     Expression,
     IndexedExpression,
     StateIndexedExpression,
     ParameterIndexedExpression,
     AlgebraicExpression,
 )
-from gotran.codegeneration.codecomponent import CodeComponent
-from gotran.codegeneration.algorithmcomponents import (
+from .codecomponent import CodeComponent
+from .algorithmcomponents import (
     rhs_expressions,
     monitored_expressions,
     jacobian_expressions,
@@ -51,7 +51,7 @@ from gotran.codegeneration.algorithmcomponents import (
     linearized_derivatives,
     componentwise_derivative,
 )
-from gotran.codegeneration.solvercomponents import get_solver_fn
+from .solvercomponents import get_solver_fn
 from functools import reduce
 
 __all__ = [

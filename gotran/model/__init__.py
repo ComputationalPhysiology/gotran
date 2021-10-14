@@ -25,7 +25,6 @@ from . import loadmodel
 
 
 # gotran imports
-# from .odeobjects import *
 from .odeobjects import (
     ODEObject,
     State,
@@ -58,7 +57,6 @@ from .ode import ODE
 from .cellmodel import CellModel
 from .loadmodel import load_ode, exec_ode, load_cell
 
-# __all__ = [_name for _name in list(globals().keys()) if _name[0] != "_"]
 __all__ = [
     "odeobjects",
     "ODEObject",
@@ -94,4 +92,5 @@ __all__ = [
     "load_ode",
     "exec_ode",
     "load_cell",
+    "utils",
 ]

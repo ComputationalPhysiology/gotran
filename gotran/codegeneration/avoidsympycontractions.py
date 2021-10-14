@@ -20,20 +20,9 @@ __all__ = []
 
 # A hack to get around evaluation of SymPy expressions
 import sympy as sp
-from sympy.core.operations import AssocOp as _AssocOp
-from sympy.core.power import Pow as _Pow
 from sympy.core.expr import Expr as _Expr
-from sympy.core.add import Add as _Add
-from sympy.core.cache import cacheit as _cacheit
 from sympy.core import function as _function
-from sympy.core.assumptions import ManagedProperties as _ManagedProperties
-
-try:
-    import sympy.mpmath.libmp as _mlib
-except ImportError as ex:
-    print(ex)
-
-import types
+import mpmath.libmp as _mlib
 
 _evaluate = False
 
@@ -71,7 +60,8 @@ def _assocop_new(cls, *args, **options):
     obj = cls._from_args(c_part + nc_part, is_commutative)
 
     if order_symbols is not None:
-        return C.Order(obj, *order_symbols)
+        # Where does this come from?
+        return C.Order(obj, *order_symbols)  # noqa: F821
     return obj
 
 

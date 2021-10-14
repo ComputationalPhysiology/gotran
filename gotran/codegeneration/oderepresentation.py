@@ -19,25 +19,25 @@
 # incorporated into other modules by now.
 
 # System imports
-from collections import deque, OrderedDict
+from collections import OrderedDict
 import hashlib
 import re
 import sys
 from distutils.version import LooseVersion as _V
+import sympy
 
 # Model parametrs imports
-from modelparameters.parameterdict import *
+from modelparameters.parameterdict import Param, ScalarParam, ParameterDict
 from modelparameters.sympytools import sp, iter_symbol_params_from_expr
 
-_current_sympy_version = _V(sp.__version__)
-
 # Local gotran imports
-from gotran.model.ode import ODE
-from gotran.model.odecomponent import ODEComponent, Comment
-from gotran.common import check_arg, check_kwarg, info
+from ..model.ode import ODE
+from ..model.odecomponent import ODEComponent, Comment
+from ..common import check_arg, check_kwarg, info
 
-from .sympy_cse import cse
+from sympy import cse
 
+_current_sympy_version = _V(sp.__version__)
 _jacobian_pattern = re.compile("_([0-9]+)")
 
 
@@ -468,7 +468,7 @@ class ODERepresentation(object):
         AA = self._jacobian_mat
 
         if not AA.is_square:
-            raise NonSquareMatrixError()
+            raise sympy.NonSquareMatrixError()
 
         # Get copy
         n = AA.rows
@@ -606,7 +606,6 @@ class ODERepresentation(object):
                 int(zero_operations * 1.0 / total_op * 100),
                 "%",
             )
-        factorizing_nnz_operations = new_count
 
         self._jacobian_factorization_operations = operations
         self._factorized_jacobian = A
