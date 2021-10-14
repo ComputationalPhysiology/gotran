@@ -18,37 +18,40 @@
 # System imports
 from collections import deque, OrderedDict
 import re
-import types
-import numpy as np
 
 # Model parameters imports
-from modelparameters.parameterdict import *
+from modelparameters.parameterdict import ParameterDict
 from modelparameters.codegeneration import (
     ccode,
     cppcode,
     pythoncode,
-    sympycode,
     matlabcode,
     juliacode,
 )
 
 # Gotran imports
-import gotran.model.odeobjects
 from gotran.common import check_arg, check_kwarg, error, warning
 from gotran.common.options import parameters
 from gotran.model.ode import ODE
 from gotran.model.odeobjects import Comment, ODEObject
 from gotran.model.expressions import (
     Expression,
-    Intermediate,
     IndexedExpression,
     StateIndexedExpression,
     ParameterIndexedExpression,
     AlgebraicExpression,
 )
 from gotran.codegeneration.codecomponent import CodeComponent
-from gotran.codegeneration.algorithmcomponents import *
-from gotran.codegeneration.solvercomponents import *
+from gotran.codegeneration.algorithmcomponents import (
+    rhs_expressions,
+    monitored_expressions,
+    jacobian_expressions,
+    factorized_jacobian_expressions,
+    forward_backward_subst_expressions,
+    linearized_derivatives,
+    componentwise_derivative,
+)
+from gotran.codegeneration.solvercomponents import get_solver_fn
 from functools import reduce
 
 __all__ = [
@@ -170,7 +173,7 @@ class BaseCodeGenerator(object):
                     self._monitored_index_to_name = {
                         i: m for i, m in enumerate(monitored)
                     }
-            except NotImplementedError as e:
+            except NotImplementedError:
                 pass
 
         if self.params.lists.state_names.generate:
@@ -336,7 +339,7 @@ class BaseCodeGenerator(object):
             try:
                 float(num_str)
                 return True
-            except:
+            except ValueError:
                 return False
 
         check_kwarg(indent, "indent", int, ge=0)
@@ -681,7 +684,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
                         )
                     ]
                 )
-                body_lines.append("else:".format(body_name))
+                body_lines.append("else:")
                 body_lines.append(
                     [
                         "assert isinstance({0}, np.ndarray) and "
@@ -723,7 +726,7 @@ class PythonCodeGenerator(BaseCodeGenerator):
                 body_lines.append(
                     [f"{result_name} = np.zeros({shape}, dtype=np.{self.float_type})"]
                 )
-                body_lines.append("else:".format(result_name))
+                body_lines.append("else:")
                 body_lines.append(
                     [
                         "assert isinstance({0}, np.ndarray) and "
@@ -835,9 +838,6 @@ class PythonCodeGenerator(BaseCodeGenerator):
         )
         body_lines.append("")
 
-        range_check = (
-            "lambda value : value {minop} {minvalue} and " "value {maxop} {maxvalue}"
-        )
         body_lines.append("# State indices and limit checker")
 
         if perform_range_check:
@@ -943,9 +943,6 @@ class PythonCodeGenerator(BaseCodeGenerator):
         )
         body_lines.append("")
 
-        range_check = (
-            "lambda value : value {minop} {minvalue} and " "value {maxop} {maxvalue}"
-        )
         body_lines.append("# Parameter indices and limit checker")
 
         if perform_range_check:
@@ -1540,7 +1537,7 @@ class CCodeGenerator(BaseCodeGenerator):
 
     def _float_literal_str(self, val):
         s = f"{val}"
-        if not "." in s and not "e" in s and not "E" in s:
+        if "." not in s and "e" not in s and "E" not in s:
             s += ".0"
         if self.params.code.float_precision == "single":
             s += "f"
@@ -2387,8 +2384,6 @@ class CUDACodeGenerator(CCodeGenerator):
         check_arg(comp, CodeComponent)
         check_kwarg(default_arguments, "default_arguments", str)
         check_kwarg(indent, "indent", int)
-
-        states_name = self.params.code.states.array_name
         field_parameter_name = self.params.code.parameters.field_array_name
 
         # Initialization
@@ -3040,7 +3035,6 @@ class OpenCLCodeGenerator(CCodeGenerator):
         check_kwarg(default_arguments, "default_arguments", str)
         check_kwarg(indent, "indent", int)
 
-        states_name = self.params.code.states.array_name
         field_parameter_name = self.params.code.parameters.field_array_name
 
         # Initialization
