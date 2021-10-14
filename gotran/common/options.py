@@ -278,26 +278,14 @@ parameters = ParameterDict(
             ),
         ),
         # Parameters for automatic generation of lists/arrays of names for states and parameters
-        lists = ParameterDict(
-            parameter_names = ParameterDict(
-                generate = Param(
-                    False,
-                    description="Generate list of parameter names"
-                ),
-                name = Param(
-                    "parameter_names",
-                    description="Name of list variable"
-                ),
+        lists=ParameterDict(
+            parameter_names=ParameterDict(
+                generate=Param(False, description="Generate list of parameter names"),
+                name=Param("parameter_names", description="Name of list variable"),
             ),
-            state_names = ParameterDict(
-                generate = Param(
-                    False,
-                    description="Generate list of state names"
-                ),
-                name = Param(
-                    "state_names",
-                    description="Name of list variable"
-                ),
+            state_names=ParameterDict(
+                generate=Param(False, description="Generate list of state names"),
+                name=Param("state_names", description="Name of list variable"),
             ),
         ),
         # Parameters for automatic generation of specific solver functions

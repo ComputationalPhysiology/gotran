@@ -34,22 +34,22 @@ def gotranprobe(filename, params):
 
     if params.flat_view:
         print()
-        print("  Components({}):".format(len(ode.components)))
+        print(f"  Components({len(ode.components)}):")
         print(join_indent_and_split([comp.name for comp in ode.components]))
         print()
-        print("  States({}):".format(len(ode.full_states)))
+        print(f"  States({len(ode.full_states)}):")
         print(join_indent_and_split([state.name for state in ode.full_states]))
         if len(ode.parameters) > 0:
             print()
-            print("  Parameters({}):".format(len(ode.parameters)))
+            print(f"  Parameters({len(ode.parameters)}):")
         print(join_indent_and_split([param.name for param in ode.parameters]))
         print()
-        print("  Intermediates({}): ".format(len(ode.intermediates)))
+        print(f"  Intermediates({len(ode.intermediates)}): ")
         print(join_indent_and_split([interm.name for interm in ode.intermediates]))
     else:
         for comp in ode.components:
             if comp.states or comp.parameters or comp.intermediates:
-                print("\n  {0}:".format(comp.name))
+                print(f"\n  {comp.name}:")
                 if comp.full_states:
                     print(
                         "    States:        ",

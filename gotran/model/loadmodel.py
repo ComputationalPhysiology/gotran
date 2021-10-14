@@ -117,7 +117,7 @@ class IntermediateDispatcher(dict):
                 _no_intermediate_template, code
             ):
 
-                debug("Not registering '{0}' as an intermediate.".format(name))
+                debug(f"Not registering '{name}' as an intermediate.")
 
                 # If so just add the value to the namespace without
                 # registering the intermediate
@@ -131,7 +131,7 @@ class IntermediateDispatcher(dict):
                 sym = setattr(self.ode.present_component, name, value)
 
         else:
-            debug("Not registering '{0}' as an intermediate.".format(name))
+            debug(f"Not registering '{name}' as an intermediate.")
 
             # If no ode attr was generated we just add the value to the
             # namespace
@@ -191,7 +191,7 @@ def exec_ode(ode_str, name, **arguments):
 
     intermediate_dispatcher.ode = ode
 
-    debug("Loading {}".format(ode.name))
+    debug(f"Loading {ode.name}")
 
     # Create namespace which the ode file will be executed in
     _init_namespace(ode, arguments, intermediate_dispatcher)
@@ -210,12 +210,12 @@ def exec_ode(ode_str, name, **arguments):
 
     # Check for completeness
     if not ode.is_complete:
-        warning("ODE mode '{0}' is not complete.".format(ode.name))
+        warning(f"ODE mode '{ode.name}' is not complete.")
 
-    info("Loaded ODE model '{0}' with:".format(ode.name))
+    info(f"Loaded ODE model '{ode.name}' with:")
     for what in ["full_states", "parameters"]:
-        num = getattr(ode, "num_{0}".format(what))
-        info("{0}: {1}".format(("Num " + what.replace("_", " ")).rjust(20), num))
+        num = getattr(ode, f"num_{what}")
+        info(f"{('Num ' + what.replace('_', ' ')).rjust(20)}: {num}")
     return ode
 
 
@@ -261,7 +261,7 @@ def _load(filename, name, **arguments):
 
     # Execute the file
     if not filename.is_file():
-        error("Could not find '{0}'".format(filename))
+        error(f"Could not find '{filename}'")
 
     # Copy file temporary to current directory
     basename = Path(filename.name).absolute()
@@ -278,7 +278,7 @@ def _load(filename, name, **arguments):
             arguments[key] = value.getvalue()
 
     class_type = arguments.pop("class_type", "ode")
-    msg = "Argument class_type must be one of " "('ode', 'cell'), got %s " % class_type
+    msg = f"Argument class_type must be one of ('ode', 'cell'), got {class_type} "
     assert class_type in ("ode", "cell"), msg
 
     # Dict to collect namespace
@@ -293,7 +293,7 @@ def _load(filename, name, **arguments):
 
     intermediate_dispatcher.ode = ode
 
-    debug("Loading {}".format(ode.name))
+    debug(f"Loading {ode.name}")
 
     # Create namespace which the ode file will be executed in
     _init_namespace(ode, arguments, intermediate_dispatcher)
@@ -307,12 +307,12 @@ def _load(filename, name, **arguments):
 
     # Check for completeness
     if not ode.is_complete:
-        warning("ODE model '{0}' is not complete.".format(ode.name))
+        warning(f"ODE model '{ode.name}' is not complete.")
 
-    info("Loaded ODE model '{0}' with:".format(ode.name))
+    info(f"Loaded ODE model '{ode.name}' with:")
     for what in ["full_states", "parameters"]:
-        num = getattr(ode, "num_{0}".format(what))
-        info("{0}: {1}".format(("Num " + what.replace("_", " ")).rjust(20), num))
+        num = getattr(ode, f"num_{what}")
+        info(f"{('Num ' + what.replace('_', ' ')).rjust(20)}: {num}")
     if copyfile:
         os.unlink(filename)
 
@@ -481,7 +481,7 @@ def _namespace_binder(namespace, ode, load_arguments):
         # Check the passed load arguments
         for key in load_arguments:
             if key not in kwargs:
-                error("Name '{0}' is not a model_argument.".format(key))
+                error(f"Name '{key}' is not a model_argument.")
 
         # Update the namespace
         ns = {}

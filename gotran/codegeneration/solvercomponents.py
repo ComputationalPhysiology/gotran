@@ -227,8 +227,7 @@ class ExplicitEuler(CodeComponent):
 
         # Call base class using empty result_expressions
         descr = (
-            "Compute a forward step using the explicit Euler scheme to the "
-            "{0} ODE".format(ode)
+            f"Compute a forward step using the explicit Euler scheme to the {ode} ODE"
         )
         super(ExplicitEuler, self).__init__(
             "ExplicitEuler",
@@ -252,7 +251,7 @@ class ExplicitEuler(CodeComponent):
 
         # Get time step and start creating the update algorithm
         if self._params.states.add_offset:
-            offset_str = "{0}_offset".format(result_name)
+            offset_str = f"{result_name}_offset"
         else:
             offset_str = ""
 
@@ -273,6 +272,7 @@ class ExplicitEuler(CodeComponent):
         results = {result_name: self.indexed_objects(result_name)}
         results, body_expressions = self._body_from_results(**results)
         self.body_expressions = self._recreate_body(body_expressions, **results)
+
 
 def fraction_numerator_is_nonzero(expr):
     """Perform a very cheap check to detect if a fraction is definitely non-zero."""
@@ -309,6 +309,7 @@ def fraction_numerator_is_nonzero(expr):
     else:
         return False
 
+
 class RushLarsen(CodeComponent):
     """
     An ODEComponent which compute one step of the Rush-Larsen scheme
@@ -339,10 +340,7 @@ class RushLarsen(CodeComponent):
             error("Cannot generate a Rush-Larsen forward step for a DAE.")
 
         # Call base class using empty result_expressions
-        descr = (
-            "Compute a forward step using the Rush-Larsen scheme to the "
-            "{0} ODE".format(ode)
-        )
+        descr = f"Compute a forward step using the Rush-Larsen scheme to the {ode} ODE"
         super(RushLarsen, self).__init__(
             "RushLarsen",
             ode,
@@ -366,18 +364,14 @@ class RushLarsen(CodeComponent):
 
         # Get time step and start creating the update algorithm
         if self._params.states.add_offset:
-            offset_str = "{0}_offset".format(result_name)
+            offset_str = f"{result_name}_offset"
         else:
             offset_str = ""
 
         might_take_time = len(states) >= 10
 
         if might_take_time:
-            info(
-                "Calculating derivatives of {0}. Might take some time...".format(
-                    ode.name
-                )
-            )
+            info(f"Calculating derivatives of {ode.name}. Might take some time...")
             sys.stdout.flush()
 
         dt = self.root._dt.sym
@@ -400,7 +394,9 @@ class RushLarsen(CodeComponent):
 
                 need_zero_div_check = not fraction_numerator_is_nonzero(expr_diff)
                 if not need_zero_div_check:
-                    debug("{} cannot be zero. Skipping zero division check".format(linearized_name))
+                    debug(
+                        f"{linearized_name} cannot be zero. Skipping zero division check"
+                    )
 
                 RL_term = expr.sym / linearized * (sp.exp(linearized * dt) - 1)
                 if need_zero_div_check:
@@ -467,10 +463,7 @@ class RushLarsenOneStep(CodeComponent):
             error("Cannot generate a Rush-Larsen forward step for a DAE.")
 
         # Call base class using empty result_expressions
-        descr = (
-            "Compute a forward step using the Rush-Larsen scheme to the "
-            "{0} ODE".format(ode)
-        )
+        descr = f"Compute a forward step using the Rush-Larsen scheme to the {ode} ODE"
         state_name = params.states.array_name
         super(RushLarsen, self).__init__(
             "RushLarsen",
@@ -497,7 +490,7 @@ class RushLarsenOneStep(CodeComponent):
 
         # Get time step and start creating the update algorithm
         if self._params.states.add_offset:
-            offset_str = "{0}_offset".format(result_name)
+            offset_str = f"{result_name}_offset"
         else:
             offset_str = ""
 
@@ -602,7 +595,7 @@ class GeneralizedRushLarsen(CodeComponent):
 
         # Get time step and start creating the update algorithm
         if self._params.states.add_offset:
-            offset_str = "{0}_offset".format(result_name)
+            offset_str = f"{result_name}_offset"
         else:
             offset_str = ""
 
@@ -629,7 +622,7 @@ class GeneralizedRushLarsen(CodeComponent):
 
             need_zero_div_check = not fraction_numerator_is_nonzero(expr_diff)
             if not need_zero_div_check:
-                debug("{} cannot be zero. Skipping zero division check".format(linearized_name))
+                debug(f"{linearized_name} cannot be zero. Skipping zero division check")
 
             RL_term = expr.sym / linearized * (sp.exp(linearized * dt) - 1)
             if need_zero_div_check:
@@ -687,10 +680,7 @@ class HybridGeneralizedRushLarsen(CodeComponent):
         check_arg(ode, ODE)
 
         # Call base class using empty result_expressions
-        descr = (
-            "Compute a forward step using the FE / GRL1 scheme to the "
-            "{0} ODE".format(ode)
-        )
+        descr = f"Compute a forward step using the FE / GRL1 scheme to the {ode} ODE"
         super(HybridGeneralizedRushLarsen, self).__init__(
             "HybridGeneralizedRushLarsen",
             ode,
@@ -709,7 +699,7 @@ class HybridGeneralizedRushLarsen(CodeComponent):
         for s in stiff_state_variables:
             if s == "":
                 continue
-            assert s in state_names, "Unknown state '{}'".format(s)
+            assert s in state_names, f"Unknown state '{s}'"
 
         # Recount the expressions if representation of states are "array" as
         # then the method is not full explcit
@@ -725,7 +715,7 @@ class HybridGeneralizedRushLarsen(CodeComponent):
 
         # Get time step and start creating the update algorithm
         if self._params.states.add_offset:
-            offset_str = "{0}_offset".format(result_name)
+            offset_str = f"{result_name}_offset"
         else:
             offset_str = ""
 
@@ -754,7 +744,7 @@ class HybridGeneralizedRushLarsen(CodeComponent):
 
             need_zero_div_check = not fraction_numerator_is_nonzero(expr_diff)
             if not need_zero_div_check:
-                debug("{} cannot be zero. Skipping zero division check".format(linearized_name))
+                debug(f"{linearized_name} cannot be zero. Skipping zero division check")
 
             RL_term = expr.sym / linearized * (sp.exp(linearized * dt) - 1)
             if need_zero_div_check:
@@ -841,7 +831,7 @@ class SimplifiedImplicitEuler(CodeComponent):
 
         # Get time step and start creating the update algorithm
         if self._params.states.add_offset:
-            offset_str = "{0}_offset".format(result_name)
+            offset_str = f"{result_name}_offset"
         else:
             offset_str = ""
 

@@ -13,7 +13,7 @@ def gotran2julia(filename, params):
     """
     Create a c header file from a gotran model
     """
-    timer = Timer("Generate Julia code from {}".format(filename))
+    timer = Timer(f"Generate Julia code from {filename}")
 
     # Load Gotran model
     ode = load_ode(filename)
@@ -36,7 +36,7 @@ def gotran2julia(filename, params):
         output = filename.replace(".ode", "") + ".jl"
 
     info("")
-    info("Generating Julia code for the {0} ode...".format(ode.name))
+    info(f"Generating Julia code for the {ode.name} ode...")
     code = gen.module_code(ode, monitored=monitored)
     info("  done.")
     with open(output, "w") as f:
@@ -58,7 +58,7 @@ def main():
             "and evaluating the model is listed.",
         ),
         output=Param("", description="Specify output file name"),
-        **JuliaCodeGenerator.default_parameters()
+        **JuliaCodeGenerator.default_parameters(),
     )
 
     params.parse_args(usage="usage: %prog FILE [options]")

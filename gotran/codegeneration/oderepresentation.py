@@ -190,7 +190,7 @@ class ODERepresentation(object):
 
         self.optimization.update(optimization)
         self._symbol_subs = None
-        self.index = lambda i: "[{0}]".format(i)
+        self.index = lambda i: f"[{i}]"
 
         # Init prefix info
         self._state_prefix = ""
@@ -338,7 +338,7 @@ class ODERepresentation(object):
 
                 # Only collect non zero contributions
                 if F_ij:
-                    jacobi_sym = sp.Symbol("j_{0}_{1}".format(i, j))
+                    jacobi_sym = sp.Symbol(f"j_{i}_{j}")
                     sym_map[i, j] = jacobi_sym
                     jacobi_expr[jacobi_sym] = F_ij
                     # print "[%d,%d] (%d) # [%s, %s]  \n%s" \
@@ -516,7 +516,7 @@ class ODERepresentation(object):
                     "jac[{j}] -= jac[{k}]*jac[{k}*{n}+{j}]".format(j=j, k=k, n=n)
                 )
 
-            new_sym = sp.Symbol("j_{0}_{1}:{2}".format(i, j, new_count))
+            new_sym = sp.Symbol(f"j_{i}_{j}:{new_count}")
             new_old[new_sym] = A[i, j] - A[i, k] * A[k, j]
             for old_sym in [A[i, j], A[i, k], A[k, j]]:
                 storage = old_new.get(old_sym)
@@ -568,7 +568,7 @@ class ODERepresentation(object):
                 )
 
                 # Create new symbol and store the representation
-                new_sym = sp.Symbol("j_{0}_{1}:{2}".format(i, j, new_count))
+                new_sym = sp.Symbol(f"j_{i}_{j}:{new_count}")
                 new_old[new_sym] = A[i, j] * scale
                 for old_sym in [A[i, j], A[j, j]]:
                     storage = old_new.get(old_sym)
@@ -625,7 +625,7 @@ class ODERepresentation(object):
         A = self._factorized_jacobian
 
         n = A.rows
-        b = sp.Matrix(n, 1, lambda i, j: sp.Symbol("F_{}".format(i)))
+        b = sp.Matrix(n, 1, lambda i, j: sp.Symbol(f"F_{i}"))
 
         old_new = OrderedDict()
         new_old = OrderedDict()
@@ -649,7 +649,7 @@ class ODERepresentation(object):
                 operations.append("dx[{i}] -= dx[{j}]*jac[{j}]".format(i=i, j=j))
 
             # Create new symbol and store the representation
-            new_sym = sp.Symbol("F_{0}:{1}".format(i, new_count))
+            new_sym = sp.Symbol(f"F_{i}:{new_count}")
             new_old[new_sym] = b[i, 0] - b[j, 0] * A[i, j]
             for old_sym in [b[i, 0], b[j, 0], A[i, j]]:
                 storage = old_new.get(old_sym)
@@ -715,7 +715,7 @@ class ODERepresentation(object):
         for i, (ders, expr) in enumerate(ode.get_derivative_expr(True)):
             cse_subs, cse_derivative_expr = cse(
                 self.subs(expr),
-                symbols=sp.numbered_symbols("cse_der_{0}_".format(i)),
+                symbols=sp.numbered_symbols(f"cse_der_{i}_"),
                 optimizations=[],
             )
             self._cse_subs_single_dy.append(cse_subs)
@@ -805,7 +805,7 @@ class ODERepresentation(object):
 
     def set_state_prefix(self, prefix):
         """
-        Register a prefix to a state name. Used if 
+        Register a prefix to a state name. Used if
         """
         check_arg(prefix, str)
         self._state_prefix = prefix
@@ -815,7 +815,7 @@ class ODERepresentation(object):
 
     def set_parameter_prefix(self, prefix):
         """
-        Register a prefix to a parameter name. Used if 
+        Register a prefix to a parameter name. Used if
         """
         check_arg(prefix, str)
         self._parameter_prefix = prefix
@@ -853,7 +853,7 @@ class ODERepresentation(object):
                 subs.extend(
                     (
                         param.sym,
-                        sp.Symbol("{0}{1}".format(self._parameter_prefix, param.name)),
+                        sp.Symbol(f"{self._parameter_prefix}{param.name}"),
                     )
                     for param in self.ode.parameters
                 )
@@ -869,7 +869,7 @@ class ODERepresentation(object):
                 subs.extend(
                     (
                         param.sym,
-                        sp.Symbol("{0}{1}".format(self._state_prefix, param.name)),
+                        sp.Symbol(f"{self._state_prefix}{param.name}"),
                     )
                     for param in self.ode.states
                 )
@@ -936,7 +936,7 @@ class ODERepresentation(object):
 
     def iter_jacobian_body(self):
         """
-        Iterate over the body defining the jacobi expressions 
+        Iterate over the body defining the jacobi expressions
         """
 
         if not self.optimization.use_cse:
@@ -954,7 +954,7 @@ class ODERepresentation(object):
 
     def iter_jacobian_expr(self):
         """
-        Iterate over the jacobi expressions 
+        Iterate over the jacobi expressions
         """
 
         self._compute_jacobian_cse()
@@ -974,7 +974,7 @@ class ODERepresentation(object):
 
     def iter_jacobian_action_body(self):
         """
-        Iterate over the body defining the jacobi expressions 
+        Iterate over the body defining the jacobi expressions
         """
 
         if not self.optimization.use_cse:
@@ -992,7 +992,7 @@ class ODERepresentation(object):
 
     def iter_jacobian_action_expr(self):
         """
-        Iterate over the jacobi expressions 
+        Iterate over the jacobi expressions
         """
 
         self._compute_jacobian_action_cse()
@@ -1008,7 +1008,7 @@ class ODERepresentation(object):
 
     def iter_monitored_body(self):
         """
-        Iterate over the body defining the monitored expressions 
+        Iterate over the body defining the monitored expressions
         """
 
         self._compute_monitor_cse()
@@ -1025,7 +1025,7 @@ class ODERepresentation(object):
 
     def iter_monitored_expr(self):
         """
-        Iterate over the monitored expressions 
+        Iterate over the monitored expressions
         """
 
         self._compute_monitor_cse()

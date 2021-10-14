@@ -52,7 +52,7 @@ class TestSolver(unittest.TestCase):
 
 def function_closure(method):
     def test(self):
-        print("Testing solver with method {}".format(method))
+        print(f"Testing solver with method {method}")
         self.solve(method)
 
     return test

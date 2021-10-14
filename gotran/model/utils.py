@@ -293,7 +293,7 @@ class ODEObjectList(list):
             for ind, obj in enumerate(self):
                 if item == obj:
                     return ind
-        raise ValueError("Item '{0}' not part of this ODEObjectList.".format(str(item)))
+        raise ValueError(f"Item '{str(item)}' not part of this ODEObjectList.")
 
     def sort(self):
         error("Cannot sort ODEObjectList.")

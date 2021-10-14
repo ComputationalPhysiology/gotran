@@ -83,7 +83,7 @@ class CodeComponent(ODEComponent):
         params=None,
         use_default_arguments=True,
         additional_arguments=None,
-        **results
+        **results,
     ):
         """
         Creates a CodeComponent
@@ -237,7 +237,7 @@ class CodeComponent(ODEComponent):
                 dependent,
             )
         else:
-            error("enum must be State or Parameter. Was {0}".format(type(enum)))
+            error(f"enum must be State or Parameter. Was {type(enum)}")
         self._register_component_object(expr, dependent)
 
         return expr.sym
@@ -319,8 +319,7 @@ class CodeComponent(ODEComponent):
         for param in field_parameters:
             if not isinstance(self.root.present_ode_objects[param], Parameter):
                 error(
-                    "Field parameter '{0}' is not a parameter in the "
-                    "'{1}'".format(param, self.root)
+                    f"Field parameter '{param}' is not a parameter in the '{self.root}'"
                 )
 
         state_repr = self._params["states"]["representation"]
@@ -449,7 +448,7 @@ class CodeComponent(ODEComponent):
 
     def _body_from_cse(self, **results):
 
-        timer = Timer("Compute common sub expressions for {0}".format(self.name))
+        timer = Timer(f"Compute common sub expressions for {self.name}")
 
         (
             orig_result_expressions,
@@ -573,9 +572,7 @@ class CodeComponent(ODEComponent):
                 cse_subs[cse_sym] = expr.xreplace(cse_subs)
             else:
                 # Add body expression as an intermediate expression
-                sym = self.add_intermediate(
-                    "cse_{0}".format(cse_cnt), expr.xreplace(cse_subs)
-                )
+                sym = self.add_intermediate(f"cse_{cse_cnt}", expr.xreplace(cse_subs))
                 obj = self.ode_objects.get(sympycode(sym))
                 for dep in self.root.expression_dependencies[obj]:
                     if isinstance(dep, State):
@@ -625,7 +622,7 @@ class CodeComponent(ODEComponent):
 
     def _body_from_dependencies(self, **results):
 
-        timer = Timer("Compute dependencies for {0}".format(self.name))
+        timer = Timer(f"Compute dependencies for {self.name}")
 
         # Extract all result expressions
         result_expressions = sum(list(results.values()), [])
@@ -714,7 +711,7 @@ class CodeComponent(ODEComponent):
             for result_expr in result_exprs
         )
 
-        timer = Timer("Recreate body expressions for {0}".format(self.name))
+        timer = Timer(f"Recreate body expressions for {self.name}")
 
         # Initialize the replace_dictionaries
         replace_dict = self.param_state_replace_dict
@@ -765,9 +762,7 @@ class CodeComponent(ODEComponent):
         def store_expressions(expr, new_expr):
             "Help function to store new expressions"
 
-            timer = Timer(
-                "Store expression while recreating body of {}".format(self.name)
-            )
+            timer = Timer(f"Store expression while recreating body of {self.name}")
 
             # Update sym replace dict
             if isinstance(expr, Derivatives):
@@ -809,9 +804,7 @@ class CodeComponent(ODEComponent):
             # 2) Check for expression optimizations
             if not (optimize_exprs == "none" or expr in result_expressions):
 
-                timer_opt = Timer(
-                    "Handle expression optimization for {0}".format(self.name)
-                )
+                timer_opt = Timer(f"Handle expression optimization for {self.name}")
 
                 # If expr is just a number we exchange the expression with the
                 # number
@@ -907,9 +900,7 @@ class CodeComponent(ODEComponent):
             # 4) Handle result expression
             if expr in result_expressions:
 
-                timer_result = Timer(
-                    "Handle result expressions for {0}".format(self.name)
-                )
+                timer_result = Timer(f"Handle result expressions for {self.name}")
 
                 # Get the result name
                 result_name = result_names[expr]
@@ -967,9 +958,7 @@ class CodeComponent(ODEComponent):
             # sympy expressions
             elif isinstance(expr, IndexedExpression):
 
-                timer_indexed = Timer(
-                    "Handle indexed expressions for {0}".format(self.name)
-                )
+                timer_indexed = Timer(f"Handle indexed expressions for {self.name}")
 
                 new_expr = recreate_expression(expr, der_replace_dict, replace_dict)
 
@@ -981,7 +970,7 @@ class CodeComponent(ODEComponent):
             # 5) If replacing all body exressions with an indexed expression
             elif "array" in body_repr:
 
-                timer_body = Timer("Handle body expressions for {0}".format(self.name))
+                timer_body = Timer(f"Handle body expressions for {self.name}")
 
                 # 5a) If we reuse array indices
                 if "reused" in body_repr:
@@ -1034,7 +1023,7 @@ class CodeComponent(ODEComponent):
             #    are using named representation of body
             else:
 
-                timer_expr = Timer("Handle expressions for {0}".format(self.name))
+                timer_expr = Timer(f"Handle expressions for {self.name}")
                 # If the expression is a state derivative we need to add a
                 # replacement for the Derivative symbol
                 if isinstance(expr, StateDerivative):

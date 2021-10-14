@@ -1,4 +1,5 @@
 import pycuda.driver as drv
+
 drv.init()
 dev = drv.Device(0)
 
@@ -26,26 +27,49 @@ num_params = ode.num_parameters
 oderepr = ODERepresentation(ode, **optimisations)
 ccode = CCodeGenerator(oderepr)
 
-init_state_code = ccode.init_states_code().replace(\
-    "void", "__global__ void").replace(\
-    "{","{\n  const int thread_ind = blockIdx.x*blockDim.x + threadIdx.x;"\
-    "\n  const int offset = thread_ind*%d;" % num_states).replace("[", "[offset+")
+init_state_code = (
+    ccode.init_states_code()
+    .replace("void", "__global__ void")
+    .replace(
+        "{",
+        "{\n  const int thread_ind = blockIdx.x*blockDim.x + threadIdx.x;"
+        "\n  const int offset = thread_ind*%d;" % num_states,
+    )
+    .replace("[", "[offset+")
+)
 
-init_param_code = ccode.init_param_code().replace(\
-    "void", "__global__ void").replace(\
-    "{","{\n  const int thread_ind = blockIdx.x*blockDim.x + threadIdx.x;"\
-    "\n  const int offset = thread_ind*%d;" % num_params).replace("[", "[offset+")
+init_param_code = (
+    ccode.init_param_code()
+    .replace("void", "__global__ void")
+    .replace(
+        "{",
+        "{\n  const int thread_ind = blockIdx.x*blockDim.x + threadIdx.x;"
+        "\n  const int offset = thread_ind*%d;" % num_params,
+    )
+    .replace("[", "[offset+")
+)
 
-rhs_code = ccode.dy_code(parameters_in_signature=True).replace(\
-    "void", "__global__ void").replace(\
-    "{","{\n  const int thread_ind = blockIdx.x*blockDim.x + threadIdx.x;"\
-    "\n  const int state_offset = thread_ind*%d;"\
-    "\n  const int param_offset = thread_ind*%d;" % (num_states, num_params)).replace(
-    "states[", "states[state_offset+").replace(\
-    "parameters[", "parameters[param_offset+")
+rhs_code = (
+    ccode.dy_code(parameters_in_signature=True)
+    .replace("void", "__global__ void")
+    .replace(
+        "{",
+        "{\n  const int thread_ind = blockIdx.x*blockDim.x + threadIdx.x;"
+        "\n  const int state_offset = thread_ind*%d;"
+        "\n  const int param_offset = thread_ind*%d;" % (num_states, num_params),
+    )
+    .replace("states[", "states[state_offset+")
+    .replace("parameters[", "parameters[param_offset+")
+)
 
-gpu_code = "#include \"math.h\"\n\n" + init_state_code + "\n\n" + \
-           init_param_code + "\n\n" + rhs_code
+gpu_code = (
+    '#include "math.h"\n\n'
+    + init_state_code
+    + "\n\n"
+    + init_param_code
+    + "\n\n"
+    + rhs_code
+)
 
 print gpu_code
 
@@ -53,4 +77,3 @@ print gpu_code
 open("gpu_code.cu", "w").write(gpu_code)
 
 mod = SourceModule(gpu_code, arch=arch)
-

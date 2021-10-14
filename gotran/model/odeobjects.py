@@ -139,7 +139,7 @@ class ODEObject(object):
         """
         x.__repr__() <==> repr(x)
         """
-        return "{0}({1})".format(self.__class__.__name__, self._args_str())
+        return f"{self.__class__.__name__}({self._args_str()})"
 
     def __str__(self):
         """
@@ -155,7 +155,7 @@ class ODEObject(object):
         """
         Return a formatted str of __init__ arguments
         """
-        return "'{0}'".format(self._name)
+        return f"'{self._name}'"
 
     def rename(self, name):
         """
@@ -173,9 +173,7 @@ class ODEObject(object):
 
         # Check for underscore in name
         if len(name) > 0 and name[0] == "_":
-            error(
-                "No ODEObject names can start with an underscore: " "'{0}'".format(name)
-            )
+            error(f"No ODEObject names can start with an underscore: '{name}'")
 
         return name
 
@@ -200,11 +198,7 @@ class ODEObject(object):
             self._count = ODEObject.__count
             ODEObject.__count += 1
 
-        debug(
-            "Change count of {0} from {1} to {2}".format(
-                self.name, old_count, self._count
-            )
-        )
+        debug(f"Change count of {self.name} from {old_count} to {self._count}")
 
 
 class Comment(ODEObject):
@@ -303,9 +297,7 @@ class ODEValueObject(ODEObject):
 
         # Check for underscore in name
         if len(name) > 0 and name[0] == "_":
-            error(
-                "No ODEObject names can start with an underscore: " "'{0}'".format(name)
-            )
+            error(f"No ODEObject names can start with an underscore: '{name}'")
 
         return name
 
@@ -336,7 +328,7 @@ class ODEValueObject(ODEObject):
         """
         Return a formatted str of __init__ arguments
         """
-        return "'{0}', {1}".format(self.name, self._param.repr(include_name=False))
+        return f"'{self.name}', {self._param.repr(include_name=False)}"
 
     def _repr_latex_(self):
         """
@@ -416,7 +408,7 @@ class State(ODEValueObject):
         self.time = time
 
         # Add previous value symbol
-        self.sym_0 = sp.Symbol("{0}_0".format(name))(time.sym)
+        self.sym_0 = sp.Symbol(f"{name}_0")(time.sym)
         self.sym_0._assumptions["real"] = True
         self.sym_0._assumptions["imaginary"] = False
         self.sym_0._assumptions["commutative"] = True
@@ -538,7 +530,7 @@ class IndexedObject(ODEObject):
         if add_offset and isinstance(add_offset, str):
             offset_str = add_offset
         else:
-            offset_str = "{0}_offset".format(basename) if add_offset else ""
+            offset_str = f"{basename}_offset" if add_offset else ""
         self._offset_str = offset_str
 
         if offset_str:
@@ -624,26 +616,26 @@ class StateIndexedObject(IndexedObject):
         dependent=None,
     ):
         """
-            Create an IndexedExpression with an associated basename
+        Create an IndexedExpression with an associated basename
 
-            Arguments
-            ---------
-            basename : str
-                The basename of the multi index Expression
-            indices : tuple of ints
-                The indices
-            state : State
-                The state corresponding to the index
-            shape : tuple (optional)
-                A tuple with the shape of the indexed object
-            array_params : dict
-                Parameters to create the array name for the indexed object
-            add_offset : bool, str
-                If True a fixed offset is added to the indices
-            dependent : ODEObject
-                If given the count of this IndexedObject will follow as a
-                fractional count based on the count of the dependent object
-            """
+        Arguments
+        ---------
+        basename : str
+            The basename of the multi index Expression
+        indices : tuple of ints
+            The indices
+        state : State
+            The state corresponding to the index
+        shape : tuple (optional)
+            A tuple with the shape of the indexed object
+        array_params : dict
+            Parameters to create the array name for the indexed object
+        add_offset : bool, str
+            If True a fixed offset is added to the indices
+        dependent : ODEObject
+            If given the count of this IndexedObject will follow as a
+            fractional count based on the count of the dependent object
+        """
         super(StateIndexedObject, self).__init__(
             basename, indices, shape, array_params, add_offset, dependent
         )
@@ -666,26 +658,26 @@ class ParameterIndexedObject(IndexedObject):
         dependent=None,
     ):
         """
-            Create an IndexedExpression with an associated basename
+        Create an IndexedExpression with an associated basename
 
-            Arguments
-            ---------
-            basename : str
-                The basename of the multi index Expression
-            indices : tuple of ints
-                The indices
-            parameter : Parameter
-                The state corresponding to the index
-            shape : tuple (optional)
-                A tuple with the shape of the indexed object
-            array_params : dict
-                Parameters to create the array name for the indexed object
-            add_offset : bool, str
-                If True a fixed offset is added to the indices
-            dependent : ODEObject
-                If given the count of this IndexedObject will follow as a
-                fractional count based on the count of the dependent object
-            """
+        Arguments
+        ---------
+        basename : str
+            The basename of the multi index Expression
+        indices : tuple of ints
+            The indices
+        parameter : Parameter
+            The state corresponding to the index
+        shape : tuple (optional)
+            A tuple with the shape of the indexed object
+        array_params : dict
+            Parameters to create the array name for the indexed object
+        add_offset : bool, str
+            If True a fixed offset is added to the indices
+        dependent : ODEObject
+            If given the count of this IndexedObject will follow as a
+            fractional count based on the count of the dependent object
+        """
         super(ParameterIndexedObject, self).__init__(
             basename, indices, shape, array_params, add_offset, dependent
         )
@@ -725,7 +717,7 @@ class Time(ODEValueObject):
 
         # Add previous value symbol
         self.sym_0 = sp.Symbol(
-            "{0}_0".format(name),
+            f"{name}_0",
             real=True,
             imaginary=False,
             commutative=True,
@@ -742,7 +734,7 @@ class Time(ODEValueObject):
         if unit in ["ms", "s"]:
             self._param = ScalarParam(0.0, unit=unit, name=self._name)
         else:
-            info("Unknow time unit {}".format(unit))
+            info(f"Unknow time unit {unit}")
 
 
 class Dt(ODEValueObject):
@@ -763,7 +755,7 @@ class Dt(ODEValueObject):
         elif unit == "s":
             self._param = ScalarParam(100, unit=unit, name=self._name)
         else:
-            info("Unknow time unit {}".format(unit))
+            info(f"Unknow time unit {unit}")
 
 
 # Tuple with single ODE Objects, for type checking

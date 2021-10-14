@@ -11,7 +11,7 @@ def gotran2matlab(filename, params):
     Create a matlab code from a gotran model
     """
 
-    timer = Timer("Generate Matlab code from {}".format(filename))
+    timer = Timer(f"Generate Matlab code from {filename}")
 
     # Load Gotran model
     ode = load_ode(filename)
@@ -19,7 +19,7 @@ def gotran2matlab(filename, params):
     gen = MatlabCodeGenerator(params)
 
     info("")
-    info("Generating Matlab files for the {0} ode...".format(ode.name))
+    info(f"Generating Matlab files for the {ode.name} ode...")
 
     # Collect monitored
     if params.functions.monitored.generate:
@@ -28,7 +28,7 @@ def gotran2matlab(filename, params):
         monitored = None
 
     for function_name, code in list(gen.code_dict(ode, monitored).items()):
-        open("{0}_{1}.m".format(ode.name, function_name), "w").write(code)
+        open(f"{ode.name}_{function_name}.m", "w").write(code)
 
     info("  done.")
 
@@ -48,7 +48,7 @@ def main():
             "and evaluating the model is listed.",
         ),
         output=Param("", description="Specify output file name"),
-        **generation_params
+        **generation_params,
     )
     params.parse_args(usage="usage: %prog FILE [options]")  # sys.argv[2:])
 

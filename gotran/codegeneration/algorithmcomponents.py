@@ -88,7 +88,7 @@ def rhs_expressions(ode, function_name="rhs", result_name="dy", params=None):
             "Cannot compute right hand side expressions if the ODE is " "not finalized"
         )
 
-    descr = "Compute the right hand side of the {0} ODE".format(ode)
+    descr = f"Compute the right hand side of the {ode} ODE"
 
     return CodeComponent(
         "RHSComponent",
@@ -96,7 +96,7 @@ def rhs_expressions(ode, function_name="rhs", result_name="dy", params=None):
         function_name,
         descr,
         params=params,
-        **{result_name: ode.state_expressions}
+        **{result_name: ode.state_expressions},
     )
 
 
@@ -135,18 +135,18 @@ def monitored_expressions(
     for expr_str in monitored:
         obj = ode.present_ode_objects.get(expr_str)
         if not isinstance(obj, Expression):
-            error("{0} is not an expression in the {1} ODE".format(expr_str, ode))
+            error(f"{expr_str} is not an expression in the {ode} ODE")
 
         monitored_exprs.append(obj)
 
-    descr = "Computes monitored expressions of the {0} ODE".format(ode)
+    descr = f"Computes monitored expressions of the {ode} ODE"
     return CodeComponent(
         "MonitoredExpressions",
         ode,
         function_name,
         descr,
         params=params,
-        **{result_name: monitored_exprs}
+        **{result_name: monitored_exprs},
     )
 
 
@@ -185,7 +185,7 @@ def componentwise_derivative(ode, indices, params=None, result_name="dy"):
                 "number of states in the ode, got {0}.".format(index)
             )
         if index in registered:
-            error("Index {0} appeared twice.".format(index))
+            error(f"Index {index} appeared twice.")
 
         registered.append(index)
 
@@ -195,14 +195,12 @@ def componentwise_derivative(ode, indices, params=None, result_name="dy"):
     results = {result_name: exprs}
 
     return CodeComponent(
-        "componentwise_derivatives_{0}".format(
-            "_".join(expr.state.name for expr in exprs)
-        ),
+        f"componentwise_derivatives_{'_'.join(expr.state.name for expr in exprs)}",
         ode,
         "",
         "",
         params=params,
-        **results
+        **results,
     )
 
 
@@ -436,9 +434,7 @@ class JacobianComponent(CodeComponent):
         check_arg(ode, ODE)
 
         # Call base class using empty result_expressions
-        descr = "Compute the jacobian of the right hand side of the " "{0} ODE".format(
-            ode
-        )
+        descr = f"Compute the jacobian of the right hand side of the {ode} ODE"
         super(JacobianComponent, self).__init__(
             "Jacobian", ode, function_name, descr, params=params
         )
@@ -464,9 +460,7 @@ class JacobianComponent(CodeComponent):
         might_take_time = N >= 10
 
         if might_take_time:
-            info(
-                "Calculating Jacobian of {0}. Might take some time...".format(ode.name)
-            )
+            info(f"Calculating Jacobian of {ode.name}. Might take some time...")
             sys.stdout.flush()
 
         for i, expr in enumerate(state_exprs):
@@ -478,8 +472,7 @@ class JacobianComponent(CodeComponent):
             )
 
             self.add_comment(
-                "Expressions for the sparse jacobian of "
-                "state {0}".format(expr.state.name),
+                f"Expressions for the sparse jacobian of state {expr.state.name}",
                 dependent=expr,
             )
 
@@ -717,9 +710,7 @@ class FactorizedJacobianComponent(CodeComponent):
 
         timer = Timer("Computing factorization of jacobian")
         check_arg(jacobian, JacobianComponent)
-        descr = "Symbolically factorize the jacobian of the {0} ODE".format(
-            jacobian.root
-        )
+        descr = f"Symbolically factorize the jacobian of the {jacobian.root} ODE"
         super(FactorizedJacobianComponent, self).__init__(
             "FactorizedJacobian",
             jacobian.root,
@@ -730,7 +721,7 @@ class FactorizedJacobianComponent(CodeComponent):
             additional_arguments=jacobian.results,
         )
 
-        self.add_comment("Factorizing jacobian of {0}".format(self.root.name))
+        self.add_comment(f"Factorizing jacobian of {self.root.name}")
 
         jacobian_name = jacobian.results[0]
 
@@ -882,8 +873,7 @@ class ForwardBackwardSubstitutionComponent(CodeComponent):
         )
 
         self.add_comment(
-            "Forward backward substituting factorized "
-            "linear system {0}".format(self.root.name)
+            f"Forward backward substituting factorized linear system {self.root.name}"
         )
 
         # Recreate jacobian using only sympy Symbols
@@ -1087,7 +1077,7 @@ class CommonSubExpressionODE(ODE):
                 cse_subs[sub] = expr
             else:
                 cse_subs[sub] = self.add_intermediate(
-                    "cse_{0}".format(cse_cnt), expr.xreplace(cse_subs)
+                    f"cse_{cse_cnt}", expr.xreplace(cse_subs)
                 )
                 cse_cnt += 1
 

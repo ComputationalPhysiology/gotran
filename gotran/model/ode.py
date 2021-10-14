@@ -244,7 +244,7 @@ class ODE(ODEComponent):
 
             comp = ode.all_components[comp_name]
 
-            comp_comment = "Expressions for the {0} " "component".format(comp.name)
+            comp_comment = f"Expressions for the {comp.name} component"
 
             # Get corresponding component in new ODE
             added = old_new_map[comp]
@@ -405,26 +405,26 @@ class ODE(ODEComponent):
                 while present_comp.parent != self:
                     present_comp = present_comp.parent
                     comps.append(present_comp.name)
-                comp_name = ", ".join('"{0}"'.format(name) for name in reversed(comps))
+                comp_name = ", ".join(f'"{name}"' for name in reversed(comps))
 
             comp_names[comp] = comp_name
 
             states = [
-                "{0}={1},".format(obj.name, obj.param.repr(include_name=False))
+                f"{obj.name}={obj.param.repr(include_name=False)},"
                 for obj in comp.ode_objects
                 if isinstance(obj, State)
             ]
             parameters = [
-                "{0}={1},".format(obj.name, obj.param.repr(include_name=False))
+                f"{obj.name}={obj.param.repr(include_name=False)},"
                 for obj in comp.ode_objects
                 if isinstance(obj, Parameter)
             ]
             if states:
                 lines.append("")
                 if comp_name:
-                    lines.append("states({0},".format(comp_name))
+                    lines.append(f"states({comp_name},")
                 else:
-                    lines.append("states({0}".format(states.pop(0)))
+                    lines.append(f"states({states.pop(0)}")
                 for state_code in states:
                     lines.append("       " + state_code)
                 lines[-1] = lines[-1][:-1] + ")"
@@ -432,9 +432,9 @@ class ODE(ODEComponent):
             if parameters:
                 lines.append("")
                 if comp_name:
-                    lines.append("parameters({0},".format(comp_name))
+                    lines.append(f"parameters({comp_name},")
                 else:
-                    lines.append("parameters({0}".format(parameters.pop(0)))
+                    lines.append(f"parameters({parameters.pop(0)}")
                 for param_code in parameters:
                     lines.append("           " + param_code)
                 lines[-1] = lines[-1][:-1] + ")"
@@ -444,7 +444,7 @@ class ODE(ODEComponent):
 
             comp = self.all_components[comp_name]
 
-            comp_comment = "Expressions for the {0} " "component".format(comp.name)
+            comp_comment = f"Expressions for the {comp.name} component"
 
             # Iterate over all objects of the component and save only expressions
             # and comments
@@ -472,7 +472,7 @@ class ODE(ODEComponent):
                             continue
 
                     # All other Expressions
-                    lines.append("{0} = {1}".format(obj.name, sympycode(obj.expr)))
+                    lines.append(f"{obj.name} = {sympycode(obj.expr)}")
 
                 # If saving a comment
                 elif isinstance(obj, Comment):
@@ -481,16 +481,14 @@ class ODE(ODEComponent):
                     if str(obj) == comp_comment:
                         lines.append("")
                         comp_name = (
-                            comp_names[comp]
-                            if comp_names[comp]
-                            else '"{0}"'.format(basename)
+                            comp_names[comp] if comp_names[comp] else f'"{basename}"'
                         )
-                        lines.append("expressions({0})".format(comp_name))
+                        lines.append(f"expressions({comp_name})")
 
                     # Just add the comment
                     else:
                         lines.append("")
-                        lines.append('comment("{0}")'.format(obj))
+                        lines.append(f'comment("{obj}")')
 
         lines.append("")
         # Use Python code generator to indent outputted code
@@ -524,7 +522,7 @@ class ODE(ODEComponent):
 
             # If a state is substituted by a state solution
             if isinstance(dup_obj, State) and isinstance(obj, StateSolution):
-                debug("Reduce state '{0}' to {1}".format(dup_obj, obj.expr))
+                debug(f"Reduce state '{dup_obj}' to {obj.expr}")
 
             # If duplicated object is an ODE Parameter and the added object is
             # either a State or a Parameter we replace the Parameter.
@@ -756,7 +754,7 @@ class ODE(ODEComponent):
                     )
                 )
             else:
-                error("'{0}' is not a component of this ODE.".format(components[0]))
+                error(f"'{components[0]}' is not a component of this ODE.")
 
         # Collect dependencies
         included_objects = []
@@ -820,7 +818,7 @@ class ODE(ODEComponent):
             if comp not in collected_components:
                 continue
 
-            comp_comment = "Expressions for the {0} " "component".format(comp.name)
+            comp_comment = f"Expressions for the {comp.name} component"
 
             # Get corresponding component in new ODE
             added = old_new_map[comp]
@@ -999,7 +997,7 @@ class ODE(ODEComponent):
             self.all_expr_components_ordered.append(comp.name)
 
             # Add a comment to the component
-            comp.add_comment("Expressions for the {0} " "component".format(comp.name))
+            comp.add_comment(f"Expressions for the {comp.name} component")
 
             # Recount the last added expression so the comment comes
             # infront of the expression
@@ -1017,7 +1015,7 @@ class ODE(ODEComponent):
             self.all_expr_components_ordered.append(comp.name)
 
             # Add a comment to the component
-            comp.add_comment("Expressions for the {0} " "component".format(comp.name))
+            comp.add_comment(f"Expressions for the {comp.name} component")
 
             # Recount the last added expression so the comment comes
             # infront of the expression

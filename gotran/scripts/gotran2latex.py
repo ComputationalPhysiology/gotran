@@ -29,7 +29,7 @@ def gotran2latex(filename, params):
     gen = LatexCodeGenerator(ode, params)
 
     info("")
-    info("Generating LaTeX files for the {0} ode...".format(ode.name))
+    info(f"Generating LaTeX files for the {ode.name} ode...")
     with open(gen.output_file, "w") as f:
         f.write(gen.generate())
     info("  done.")
@@ -47,7 +47,7 @@ def main():
             description="If True sympy contraction"
             " will be used, turning (V-3)/2 into V/2-3/2",
         ),
-        **params
+        **params,
     )
     params.parse_args(usage="usage: %prog FILE [options]")
 
