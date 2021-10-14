@@ -32,8 +32,8 @@ from modelparameters.utils import Timer
 
 # Local imports
 from modelparameters.logger import error, debug, check_arg
-from gotran.model.odeobjects import Time, Dt, Parameter, cmp
-from gotran.model.expressions import (
+from .odeobjects import Time, Dt, Parameter, cmp
+from .expressions import (
     State,
     StateExpression,
     StateDerivative,
@@ -46,7 +46,7 @@ from gotran.model.expressions import (
     DerivativeExpression,
     recreate_expression,
 )
-from gotran.model.odecomponent import ODEComponent, Comment
+from .odecomponent import ODEComponent, Comment
 
 
 class ODE(ODEComponent):

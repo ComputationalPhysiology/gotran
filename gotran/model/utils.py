@@ -39,12 +39,12 @@ from sympy import preorder_traversal, Symbol
 
 # ModelParameters imports
 from modelparameters.sympytools import sp
-from modelparameters.utils import tuplewrap
+from modelparameters.utils import tuplewrap, check_arg
+from modelparameters.logger import error
 
 # Local imports
-from gotran.common import error, debug, check_arg, check_kwarg, scalars
-from gotran.model.odeobjects import *
-from gotran.model.expressions import *
+from .odeobjects import ODEObject
+from .expressions import State
 
 
 def ode_primitives(expr, time):
@@ -267,7 +267,7 @@ class ODEObjectList(list):
             return any(item == obj.name for obj in self)
         elif isinstance(item, sp.Symbol):
             return any(item.name == obj.name for obj in self)
-        elif (item, ODEObject):
+        elif isinstance(item, ODEObject):
             return super(ODEObjectList, self).__contains__(item)
         return False
 
@@ -276,7 +276,7 @@ class ODEObjectList(list):
             return sum(item == obj.name for obj in self)
         elif isinstance(item, sp.Symbol):
             return sum(item.name == obj.name for obj in self)
-        elif (item, ODEObject):
+        elif isinstance(item, ODEObject):
             return super(ODEObjectList, self).count(item)
         return 0
 
@@ -289,7 +289,7 @@ class ODEObjectList(list):
             for ind, obj in enumerate(self):
                 if item.name == obj.name:
                     return ind
-        elif (item, ODEObject):
+        elif isinstance(item, ODEObject):
             for ind, obj in enumerate(self):
                 if item == obj:
                     return ind

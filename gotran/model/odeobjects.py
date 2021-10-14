@@ -32,27 +32,21 @@ __all__ = [
 ]
 
 # System imports
-import numpy as np
-from collections import OrderedDict, defaultdict
-import types
+from collections import defaultdict
 
 # ModelParameters imports
 from modelparameters.sympytools import sp
-from modelparameters.codegeneration import sympycode, latex
-from modelparameters.parameters import *
+from modelparameters.codegeneration import latex
+from modelparameters.parameters import ScalarParam, SlaveParam, ConstParam
 from modelparameters.parameterdict import cmp_to_key
 
-from gotran.common import (
-    error,
-    check_arg,
+from modelparameters.logger import error, debug, info
+from modelparameters.utils import check_arg, tuplewrap, check_kwarg
+from ..common import (
     scalars,
-    debug,
-    DEBUG,
-    get_log_level,
-    Timer,
     parameters,
 )
-from functools import reduce, cmp_to_key
+from functools import reduce
 
 
 def cmp(a, b):

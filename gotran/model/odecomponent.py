@@ -20,20 +20,43 @@ __all__ = ["ODEComponent"]
 # System imports
 from collections import OrderedDict, defaultdict
 import weakref
-from functools import partial
 
 from sympy.core.function import AppliedUndef
 
 # ModelParameters imports
 from modelparameters.sympytools import sp, symbols_from_expr
-from modelparameters.utils import Timer
+from modelparameters.utils import Timer, check_arg
 from modelparameters.codegeneration import sympycode, _all_keywords
 
 # Local imports
-from gotran.common import error, debug, check_arg, check_kwarg, scalars
-from gotran.model.odeobjects import *
-from gotran.model.expressions import *
-from gotran.model.utils import *
+from modelparameters.logger import error, debug
+from .odeobjects import ODEObject, Comment, Parameter
+from .expressions import (
+    State,
+    StateSolution,
+    Intermediate,
+    StateDerivative,
+    DerivativeExpression,
+    AlgebraicExpression,
+    StateExpression,
+    RateExpression,
+    Expression,
+    IndexedObject,
+    IndexedExpression,
+)
+from .utils import (
+    RateDict,
+    ODEObjectList,
+    iter_objects,
+    ode_objects,
+    ode_components,
+    scalars,
+    special_expression,
+    INTERMEDIATE,
+    DERIVATIVE_EXPRESSION,
+    STATE_SOLUTION_EXPRESSION,
+    ALGEBRAIC_EXPRESSION,
+)
 
 
 class ODEComponent(ODEObject):
@@ -164,7 +187,7 @@ class ODEComponent(ODEObject):
         init : scalar, modelparameters.ScalarParam
             The initial value of the state
         """
-        timer = Timer("Add states")
+        timer = Timer("Add states")  # noqa: F841
 
         # Create state
         state = State(name, init, self.time)
@@ -214,7 +237,7 @@ class ODEComponent(ODEObject):
         init : scalar, modelparameters.ScalarParam
             The initial value of the parameter
         """
-        timer = Timer("Add parameters")
+        timer = Timer("Add parameters")  # noqa: F841
 
         param = Parameter(name, init)
 
@@ -305,7 +328,7 @@ class ODEComponent(ODEObject):
         # Try solve the passed expr
         try:
             solved_expr = sp.solve(expr, state.sym)
-        except:
+        except Exception:
             error("Could not solve the passed expression")
 
         assert isinstance(solved_expr, list)
@@ -369,7 +392,7 @@ class ODEComponent(ODEObject):
         """
 
         # Create an Intermediate in the present component
-        timer = Timer("Add intermediate")
+        timer = Timer("Add intermediate")  # noqa: F841
         expr = Intermediate(name, expr, dependent)
 
         self._register_component_object(expr, dependent)
@@ -392,7 +415,7 @@ class ODEComponent(ODEObject):
             If given the count of this expression will follow as a
             fractional count based on the count of the dependent object
         """
-        timer = Timer("Add derivatives")
+        timer = Timer("Add derivatives")  # noqa: F841
 
         if isinstance(der_expr, AppliedUndef):
             name = sympycode(der_expr)
@@ -840,9 +863,6 @@ class ODEComponent(ODEObject):
         ):
             error("expected a tuple of 2 lists with states as the " "states argument")
 
-        # Get all states associated with this Markov model
-        local_states = self.states
-
         # Check index arguments
         # for list_of_states in states:
         #    print list_of_states, local_states
@@ -937,7 +957,7 @@ class ODEComponent(ODEObject):
             incomplete_states = []
             for obj in self.ode_objects:
                 if isinstance(obj, State):
-                    if not obj in self._local_state_expressions:
+                    if obj not in self._local_state_expressions:
                         incomplete_states.append(obj)
 
             incomplete_state_names = [s.name for s in incomplete_states]
