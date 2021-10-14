@@ -25,7 +25,7 @@ from sympy.core.function import AppliedUndef
 
 # ModelParameters imports
 from modelparameters.sympytools import sp, symbols_from_expr
-from modelparameters.utils import Timer, check_arg
+from modelparameters.utils import Timer, check_arg, scalars
 from modelparameters.codegeneration import sympycode, _all_keywords
 
 # Local imports
@@ -50,7 +50,6 @@ from .utils import (
     iter_objects,
     ode_objects,
     ode_components,
-    scalars,
     special_expression,
     INTERMEDIATE,
     DERIVATIVE_EXPRESSION,

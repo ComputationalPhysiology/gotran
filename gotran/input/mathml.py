@@ -16,8 +16,8 @@
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
 __all__ = ["MathMLBaseParser", "MathMLCPPParser"]
-
-from gotran.common import error
+import sys
+from modelparameters.logger import error
 from modelparameters.codegeneration import _all_keywords
 
 

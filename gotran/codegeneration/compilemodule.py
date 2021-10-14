@@ -24,15 +24,11 @@ from pathlib import Path
 from enum import Enum
 import dijitso
 
+from modelparameters.utils import check_arg, check_kwarg
+from modelparameters.logger import info, debug, value_error
+
 from .. import __version__
-from ..common import (
-    GotranException,
-    check_arg,
-    check_kwarg,
-    info,
-    debug,
-    value_error,
-)
+from ..common import GotranException
 from ..model.ode import ODE
 from ..model.loadmodel import load_ode
 from ..common.options import parameters

@@ -19,5 +19,4 @@ from . import cellml
 
 from .cellml import cellml2ode, CellMLParser
 
-# __all__ = [_name for _name in list(globals().keys()) if _name[0] != "_"]
 __all__ = ["cellml", "cellml2ode", "CellMLParser"]

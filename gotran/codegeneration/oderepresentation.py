@@ -33,7 +33,8 @@ from modelparameters.sympytools import sp, iter_symbol_params_from_expr
 # Local gotran imports
 from ..model.ode import ODE
 from ..model.odecomponent import ODEComponent, Comment
-from ..common import check_arg, check_kwarg, info
+from modelparameters.utils import check_arg, check_kwarg
+from modelparameters.logger import info
 
 from sympy import cse
 

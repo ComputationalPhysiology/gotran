@@ -28,9 +28,10 @@ from modelparameters.codegeneration import (
     matlabcode,
     juliacode,
 )
+from modelparameters.utils import check_arg, check_kwarg
 
 # Gotran imports
-from ..common import check_arg, check_kwarg, error, warning
+from modelparameters.logger import error, warning
 from ..common.options import parameters
 from ..model.ode import ODE
 from ..model.odeobjects import Comment, ODEObject

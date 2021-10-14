@@ -36,12 +36,9 @@ from modelparameters.parameters import SlaveParam
 from modelparameters.sympytools import sp
 from modelparameters.codegeneration import sympycode, latex
 
-# Local imports
-from ..common import (
-    error,
-    check_arg,
-    scalars,
-)
+from modelparameters.utils import scalars, check_arg
+from modelparameters.logger import error
+
 from .odeobjects import (
     ODEValueObject,
     cmp,

@@ -34,12 +34,10 @@ import sys
 
 # ModelParameters imports
 from modelparameters.sympytools import sp, Conditional
+from modelparameters.logger import error, info, debug
 
 # Local imports
-from ..common import (
-    error,
-    info,
-    debug,
+from modelparameters.utils import (
     check_arg,
     Timer,
 )

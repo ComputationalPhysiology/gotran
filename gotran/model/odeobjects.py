@@ -41,9 +41,8 @@ from modelparameters.parameters import ScalarParam, SlaveParam, ConstParam
 from modelparameters.parameterdict import cmp_to_key
 
 from modelparameters.logger import error, debug, info
-from modelparameters.utils import check_arg, tuplewrap, check_kwarg
+from modelparameters.utils import check_arg, tuplewrap, check_kwarg, scalars
 from ..common import (
-    scalars,
     parameters,
 )
 from functools import reduce

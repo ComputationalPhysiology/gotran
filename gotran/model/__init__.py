@@ -53,7 +53,7 @@ from .expressions import (
     recreate_expression,
 )
 from .ode import ODE
-from .loadmodel import load_ode, exec_ode, load_cell
+from .loadmodel import load_ode, exec_ode
 
 __all__ = [
     "odeobjects",

@@ -16,20 +16,21 @@
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
 import re
-from future.standard_library import install_aliases
 
-install_aliases()
 from pathlib import Path
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 from xml.etree import ElementTree
 from functools import cmp_to_key
 
 from collections import OrderedDict, deque, defaultdict
-from gotran.common import info, warning, error, check_arg, begin_log, end_log
+from modelparameters.logger import info, warning, error, begin_log, end_log
+from modelparameters.utils import check_arg
 from gotran.model.odeobjects import cmp
 
 from modelparameters.codegeneration import _all_keywords
-from modelparameters.parameterdict import *
+
 
 # Local imports
 from gotran.common.options import parameters
@@ -154,18 +155,18 @@ class Component(object):
             (state, variables.pop(state, None)) for state in state_variables
         )
 
-        for state, info in list(self.state_variables.items()):
-            self.variable_info[state] = info
+        for state, _info in list(self.state_variables.items()):
+            self.variable_info[state] = _info
             self.variable_info["type"] = "state_variable"
 
         self.parameters = OrderedDict(
-            (name, info)
-            for name, info in list(variables.items())
-            if info["init"] is not None
+            (name, _info)
+            for name, _info in list(variables.items())
+            if _info["init"] is not None
         )
 
-        for param, info in list(self.parameters.items()):
-            self.variable_info[param] = info
+        for param, _info in list(self.parameters.items()):
+            self.variable_info[param] = _info
             self.variable_info["type"] = "parameter"
 
         self.derivatives = state_variables
@@ -204,7 +205,6 @@ class Component(object):
         # Check if reserved name for state derivativeis is used as equation
         # name
         derivative_names = [f"d{der}_dt" for der in self.derivatives]
-        removal = []
 
         for eq in equations[:]:
             if (
@@ -441,7 +441,7 @@ class CellMLParser(object):
             try:
                 fp = urllib.request.urlopen(model_source)
                 self.cellml = ElementTree.parse(fp).getroot()
-            except:
+            except Exception:
                 error("ERROR: Unable to open " + model_source)
 
         self.model_source = model_source
@@ -588,7 +588,9 @@ class CellMLParser(object):
                     parsed_twice.append(units)
                     break
                 else:
-                    warning("Unknown unit '{0}' in ".format(cellml_unit, units["name"]))
+                    warning(
+                        "Unknown unit '{0}' in {1}".format(cellml_unit, units["name"])
+                    )
 
             else:
                 # Try change mole*l**-1 to mM...
@@ -703,8 +705,8 @@ class CellMLParser(object):
                     name = comp.change_state_name(name)
                 elif eq_comp.variable_info[name]["private"]:
                     new_name = eq_comp.change_equation_name(name)
-                    collected_equation.pop(name)
-                    collected_equation[new_name] = eq_comp
+                    collected_equations.pop(name)
+                    collected_equations[new_name] = eq_comp
 
                 else:
                     warning(
@@ -794,8 +796,8 @@ class CellMLParser(object):
                     name = comp.change_parameter_name(name)
                 elif eq_comp.variable_info[name]["private"]:
                     new_name = eq_comp.change_equation_name(name)
-                    collected_equation.pop(name)
-                    collected_equation[new_name] = eq_comp
+                    collected_equations.pop(name)
+                    collected_equations[new_name] = eq_comp
 
                 else:
                     warning(
@@ -1057,7 +1059,7 @@ class CellMLParser(object):
                 # Discard collected equation name from used variables
                 used_variables.discard(eq_name)
 
-                assert re.findall("(\w+)", eq_name)[0] == eq_name
+                assert re.findall(r"(\w+)", eq_name)[0] == eq_name
                 assert equation_list[1] == self.mathmlparser["eq"]
                 equations.append(Equation(eq_name, equation_list[2:], used_variables))
 
@@ -1119,7 +1121,7 @@ class CellMLParser(object):
 
         try:
             import networkx as nx
-        except:
+        except ImportError:
             warning(
                 "networkx could not be imported. Circular "
                 "dependencies between components will not be sorted out."
@@ -1664,32 +1666,34 @@ class CellMLParser(object):
             if comp.state_variables:
                 declaration_lines.append("")
                 declaration_lines.append(f"states({comp_name},")
-                for name, info in list(comp.state_variables.items()):
-                    if info["unit"] != "1":
+                for name, _info in list(comp.state_variables.items()):
+                    if _info["unit"] != "1":
                         declaration_lines.append(
                             "       {0} = ScalarParam({1}"
                             ', unit="{2}"),'.format(
-                                name, float(info["init"]), info["unit"]
+                                name, float(_info["init"]), _info["unit"]
                             )
                         )
                     else:
-                        declaration_lines.append(f"       {name} = {info['init']},")
+                        declaration_lines.append(f"       {name} = {_info['init']},")
                 declaration_lines[-1] = declaration_lines[-1][:-1] + ")"
 
             # Collect initial parameters values
             if comp.parameters:
                 declaration_lines.append("")
                 declaration_lines.append(f"parameters({comp_name},")
-                for name, info in list(comp.parameters.items()):
-                    if info["unit"] != "1":
+                for name, _info in list(comp.parameters.items()):
+                    if _info["unit"] != "1":
                         declaration_lines.append(
                             "           {0} = ScalarParam({1}"
                             ', unit="{2}"),'.format(
-                                name, float(info["init"]), info["unit"]
+                                name, float(_info["init"]), _info["unit"]
                             )
                         )
                     else:
-                        declaration_lines.append(f"           {name} = {info['init']},")
+                        declaration_lines.append(
+                            f"           {name} = {_info['init']},"
+                        )
                 declaration_lines[-1] = declaration_lines[-1][:-1] + ")"
 
             # Collect all intermediate equations

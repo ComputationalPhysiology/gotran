@@ -32,11 +32,10 @@ from modelparameters.parameters import (
     ScalarParam,
     ArrayParam,
     ConstParam,
-    scalars,
     OptionParam,
 )
 from modelparameters.logger import error, info, warning, debug
-from modelparameters.utils import Timer, check_arg
+from modelparameters.utils import Timer, check_arg, scalars
 from modelparameters.sympytools import sp_namespace, sp
 
 # gotran imports

@@ -28,10 +28,10 @@ from sympy.core.function import AppliedUndef
 # ModelParameters imports
 from modelparameters.sympytools import sp
 from modelparameters.codegeneration import sympycode
-from modelparameters.utils import Timer
+from modelparameters.utils import Timer, check_arg
 
 # Local imports
-from modelparameters.logger import error, debug, check_arg
+from modelparameters.logger import error, debug
 from .odeobjects import Time, Dt, Parameter, cmp
 from .expressions import (
     State,
