@@ -134,11 +134,11 @@
 <span class="sd">        tsteps : array</span>
 <span class="sd">            The time steps</span>
 <span class="sd">        attempts : int</span>
-<span class="sd">            If integration fails, i.e the solver does not </span>
+<span class="sd">            If integration fails, i.e the solver does not</span>
 <span class="sd">            converge, we could reduce the step size and try again.</span>
 <span class="sd">            This varible controls how many time we should try to</span>
 <span class="sd">            solve the problem. Default: 3</span>
-<span class="sd">        </span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># Some flags</span>
@@ -181,7 +181,7 @@
         <span class="c1"># If we still caught some warnings raise exception</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">caught_warnings</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">caught_warnings</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Catched warning </span><span class="si">{}</span><span class="se">\n</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">category</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Catched warning </span><span class="si">{</span><span class="n">w</span><span class="o">.</span><span class="n">category</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">w</span><span class="o">.</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
                 <span class="k">if</span> <span class="n">w</span><span class="o">.</span><span class="n">category</span> <span class="o">==</span> <span class="n">spi</span><span class="o">.</span><span class="n">odepack</span><span class="o">.</span><span class="n">ODEintWarning</span><span class="p">:</span>

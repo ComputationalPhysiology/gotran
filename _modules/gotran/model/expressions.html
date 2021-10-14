@@ -277,8 +277,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">sym</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sym</span>
 
 <div class="viewcode-block" id="Expression.replace_expr"><a class="viewcode-back" href="../../../gotran.model.html#gotran.Expression.replace_expr">[docs]</a>    <span class="k">def</span> <span class="nf">replace_expr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">replace_dicts</span><span class="p">):</span>
@@ -301,20 +300,20 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a formatted str of __init__ arguments</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;&#39;</span><span class="si">{0}</span><span class="s2">&#39;, </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">sympycode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">))</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;, </span><span class="si">{</span><span class="n">sympycode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
 
     <span class="k">def</span> <span class="nf">_repr_latex_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a pretty latex representation of the Expression object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">return</span> <span class="s2">&quot;$</span><span class="si">{0}</span><span class="s2"> = </span><span class="si">{1}</span><span class="s2">$&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_repr_latex_name</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_repr_latex_expr</span><span class="p">())</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;$</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_repr_latex_name</span><span class="p">()</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_repr_latex_expr</span><span class="p">()</span><span class="si">}</span><span class="s2">$&quot;</span>
 
     <span class="k">def</span> <span class="nf">_repr_latex_expr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">latex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_repr_latex_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">latex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">latex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span></div>
 
 
 <div class="viewcode-block" id="Intermediate"><a class="viewcode-back" href="../../../gotran.model.html#gotran.Intermediate">[docs]</a><span class="k">class</span> <span class="nc">Intermediate</span><span class="p">(</span><span class="n">Expression</span><span class="p">):</span>
@@ -374,7 +373,7 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a formatted str of __init__ arguments</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;&#39;</span><span class="si">{0}</span><span class="s2">&#39;, </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">),</span> <span class="n">sympycode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">))</span></div>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;, </span><span class="si">{</span><span class="n">sympycode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span></div>
 
 
 <div class="viewcode-block" id="DerivativeExpression"><a class="viewcode-back" href="../../../gotran.model.html#gotran.DerivativeExpression">[docs]</a><span class="k">class</span> <span class="nc">DerivativeExpression</span><span class="p">(</span><span class="n">Intermediate</span><span class="p">):</span>
@@ -432,9 +431,7 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a formatted str of __init__ arguments</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">, </span><span class="si">{1}</span><span class="s2">, </span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_der_expr</span><span class="p">),</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dep_var</span><span class="p">),</span> <span class="n">sympycode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">)</span>
-        <span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_der_expr</span><span class="p">)</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dep_var</span><span class="p">)</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">sympycode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
 
     <span class="k">def</span> <span class="nf">_repr_latex_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">frac{{d</span><span class="si">{0}</span><span class="s2">}}{{d</span><span class="si">{1}</span><span class="s2">}}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -453,7 +450,7 @@
         <span class="n">check_arg</span><span class="p">(</span><span class="n">from_state</span><span class="p">,</span> <span class="p">(</span><span class="n">State</span><span class="p">,</span> <span class="n">StateSolution</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">RateExpression</span><span class="p">)</span>
 
         <span class="nb">super</span><span class="p">(</span><span class="n">RateExpression</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="s2">&quot;rates_</span><span class="si">{0}</span><span class="s2">_</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">to_state</span><span class="p">,</span> <span class="n">from_state</span><span class="p">),</span> <span class="n">expr</span><span class="p">,</span> <span class="n">dependent</span>
+            <span class="sa">f</span><span class="s2">&quot;rates_</span><span class="si">{</span><span class="n">to_state</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">from_state</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">dependent</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_to_state</span> <span class="o">=</span> <span class="n">to_state</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_from_state</span> <span class="o">=</span> <span class="n">from_state</span>
@@ -511,7 +508,7 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a formatted str of __init__ arguments</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;&#39;</span><span class="si">{0}</span><span class="s2">&#39;, </span><span class="si">{1}</span><span class="s2">, </span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="n">state</span><span class="p">),</span> <span class="n">sympycode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">))</span></div>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;, </span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="n">state</span><span class="p">)</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">sympycode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span></div>
 
 
 <div class="viewcode-block" id="StateDerivative"><a class="viewcode-back" href="../../../gotran.model.html#gotran.StateDerivative">[docs]</a><span class="k">class</span> <span class="nc">StateDerivative</span><span class="p">(</span><span class="n">StateExpression</span><span class="p">):</span>
@@ -554,10 +551,10 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a formatted str of __init__ arguments</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">, </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">),</span> <span class="n">sympycode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">))</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">sympycode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
 
     <span class="k">def</span> <span class="nf">_repr_latex_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">frac{{d</span><span class="si">{0}</span><span class="s2">}}{{dt}}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">latex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">frac</span><span class="se">{{</span><span class="s2">d</span><span class="si">{</span><span class="n">latex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">name</span><span class="p">)</span><span class="si">}</span><span class="se">}}{{</span><span class="s2">dt</span><span class="se">}}</span><span class="s2">&quot;</span></div>
 
 
 <div class="viewcode-block" id="AlgebraicExpression"><a class="viewcode-back" href="../../../gotran.model.html#gotran.AlgebraicExpression">[docs]</a><span class="k">class</span> <span class="nc">AlgebraicExpression</span><span class="p">(</span><span class="n">StateExpression</span><span class="p">):</span>
@@ -583,7 +580,7 @@
         <span class="n">check_arg</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">State</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">AlgebraicExpression</span><span class="p">)</span>
 
         <span class="nb">super</span><span class="p">(</span><span class="n">AlgebraicExpression</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="s2">&quot;alg_</span><span class="si">{0}</span><span class="s2">_0&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">state</span><span class="p">),</span> <span class="n">state</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">dependent</span>
+            <span class="sa">f</span><span class="s2">&quot;alg_</span><span class="si">{</span><span class="n">state</span><span class="si">}</span><span class="s2">_0&quot;</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">dependent</span>
         <span class="p">)</span>
 
         <span class="c1"># Check that the expr is dependent on the state</span>
@@ -596,7 +593,7 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a formatted str of __init__ arguments</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">, </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">),</span> <span class="n">sympycode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">))</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">sympycode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
 
     <span class="k">def</span> <span class="nf">_repr_latex_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;0&quot;</span></div>

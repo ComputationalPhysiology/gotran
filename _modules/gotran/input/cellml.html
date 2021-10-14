@@ -195,7 +195,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="s2">&quot;Equation(</span><span class="si">{0}</span><span class="s2"> = </span><span class="si">{1}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">))</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Equation(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span>
 
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Equation</span><span class="p">):</span>
@@ -269,7 +269,7 @@
 
         <span class="c1"># Check if reserved name for state derivativeis is used as equation</span>
         <span class="c1"># name</span>
-        <span class="n">derivative_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;d</span><span class="si">{0}</span><span class="s2">_dt&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">der</span><span class="p">)</span> <span class="k">for</span> <span class="n">der</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span><span class="p">]</span>
+        <span class="n">derivative_names</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;d</span><span class="si">{</span><span class="n">der</span><span class="si">}</span><span class="s2">_dt&quot;</span> <span class="k">for</span> <span class="n">der</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span><span class="p">]</span>
         <span class="n">removal</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="k">for</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">equations</span><span class="p">[:]:</span>
@@ -307,10 +307,10 @@
         <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;&lt;</span><span class="si">{0}</span><span class="s2">&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_variables</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;&lt;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_variables</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="s2">&quot;Component&lt;</span><span class="si">{0}</span><span class="s2">, </span><span class="si">{1}</span><span class="s2">&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_variables</span><span class="p">))</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Component&lt;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_variables</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Component</span><span class="p">):</span>
@@ -410,8 +410,8 @@
                 <span class="n">eqn</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">newder</span>
 
         <span class="c1"># Update derivative equation</span>
-        <span class="n">old_eq_name</span> <span class="o">=</span> <span class="s2">&quot;d</span><span class="si">{0}</span><span class="s2">_dt&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">oldname</span><span class="p">)</span>
-        <span class="n">new_eq_name</span> <span class="o">=</span> <span class="s2">&quot;d</span><span class="si">{0}</span><span class="s2">_dt&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">newname</span><span class="p">)</span>
+        <span class="n">old_eq_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;d</span><span class="si">{</span><span class="n">oldname</span><span class="si">}</span><span class="s2">_dt&quot;</span>
+        <span class="n">new_eq_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;d</span><span class="si">{</span><span class="n">newname</span><span class="si">}</span><span class="s2">_dt&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">variable_info</span><span class="p">[</span><span class="n">new_eq_name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_info</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span>
             <span class="n">old_eq_name</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="n">private</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;equation&quot;</span><span class="p">)</span>
         <span class="p">)</span>
@@ -512,7 +512,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">model_source</span> <span class="o">=</span> <span class="n">model_source</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cellml</span><span class="o">.</span><span class="n">attrib</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
-        <span class="n">begin_log</span><span class="p">(</span><span class="s2">&quot;Parsing CellML model: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="n">begin_log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parsing CellML model: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mathmlparser</span> <span class="o">=</span> <span class="n">MathMLBaseParser</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">use_sympy_integers</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cellml_namespace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cellml</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;}&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parse_units</span><span class="p">()</span>
@@ -578,7 +578,7 @@
             <span class="n">content</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 
         <span class="k">if</span> <span class="n">title</span> <span class="ow">or</span> <span class="n">content</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="se">\n\n</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">content</span><span class="si">}</span><span class="s2">&quot;</span>
 
         <span class="k">return</span> <span class="s2">&quot;&quot;</span></div>
 
@@ -613,13 +613,9 @@
             <span class="n">collected_parts</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">units</span><span class="p">):</span>
                 <span class="k">if</span> <span class="n">unit</span><span class="o">.</span><span class="n">attrib</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;multiplier&quot;</span><span class="p">):</span>
-                    <span class="n">warning</span><span class="p">(</span>
-                        <span class="s2">&quot;skipping multiplier in unit </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">units</span><span class="o">.</span><span class="n">attrib</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span>
-                    <span class="p">)</span>
+                    <span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;skipping multiplier in unit </span><span class="si">{</span><span class="n">units</span><span class="o">.</span><span class="n">attrib</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">unit</span><span class="o">.</span><span class="n">attrib</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;multiplier&quot;</span><span class="p">):</span>
-                    <span class="n">warning</span><span class="p">(</span>
-                        <span class="s2">&quot;skipping multiplier in unit </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">units</span><span class="o">.</span><span class="n">attrib</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span>
-                    <span class="p">)</span>
+                    <span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;skipping multiplier in unit </span><span class="si">{</span><span class="n">units</span><span class="o">.</span><span class="n">attrib</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="n">cellml_unit</span> <span class="o">=</span> <span class="n">unit</span><span class="o">.</span><span class="n">attrib</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;units&quot;</span><span class="p">)</span>
 
                 <span class="n">prefix</span> <span class="o">=</span> <span class="n">prefix_map</span><span class="p">[</span><span class="n">unit</span><span class="o">.</span><span class="n">attrib</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;prefix&quot;</span><span class="p">)]</span>
@@ -635,7 +631,7 @@
                     <span class="n">collected_parts</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">fullname</span><span class="p">,</span> <span class="n">exponent</span><span class="p">)</span>
                 <span class="k">elif</span> <span class="n">cellml_unit</span> <span class="ow">in</span> <span class="n">collected_units</span><span class="p">:</span>
                     <span class="k">if</span> <span class="n">prefix</span><span class="p">:</span>
-                        <span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Skipping prefix of unit &#39;</span><span class="si">{0}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cellml_unit</span><span class="p">))</span>
+                        <span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipping prefix of unit &#39;</span><span class="si">{</span><span class="n">cellml_unit</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
                     <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">fullnam</span><span class="p">,</span> <span class="n">part_exponent</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span>
                         <span class="n">collected_units</span><span class="p">[</span><span class="n">cellml_unit</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
                     <span class="p">):</span>
@@ -693,7 +689,7 @@
 
         <span class="c1"># Check for duplication of states</span>
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">state_variables</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-            <span class="n">der_name</span> <span class="o">=</span> <span class="s2">&quot;d</span><span class="si">{0}</span><span class="s2">_dt&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">der_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;d</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_dt&quot;</span>
             <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">change_state_names</span><span class="p">:</span>
                 <span class="n">newname</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
                 <span class="n">comp</span><span class="o">.</span><span class="n">change_state_name</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">newname</span><span class="p">)</span>
@@ -794,7 +790,7 @@
             <span class="c1"># Check parameter name vs collected state names</span>
             <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">collected_states</span><span class="p">:</span>
                 <span class="n">state_comp</span> <span class="o">=</span> <span class="n">collected_states</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
-                <span class="n">der_name</span> <span class="o">=</span> <span class="s2">&quot;d</span><span class="si">{0}</span><span class="s2">_dt&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">der_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;d</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_dt&quot;</span>
                 <span class="n">begin_log</span><span class="p">(</span>
                     <span class="s2">&quot;Same parameter and state name: &#39;</span><span class="si">{0}</span><span class="s2">&#39; is used in &quot;</span>
                     <span class="s2">&quot;component &#39;</span><span class="si">{1}</span><span class="s2">&#39; and &#39;</span><span class="si">{2}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -896,7 +892,7 @@
             <span class="c1"># Check equation name vs collected state names</span>
             <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">collected_states</span><span class="p">:</span>
                 <span class="n">state_comp</span> <span class="o">=</span> <span class="n">collected_states</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
-                <span class="n">der_name</span> <span class="o">=</span> <span class="s2">&quot;d</span><span class="si">{0}</span><span class="s2">_dt&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">der_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;d</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_dt&quot;</span>
                 <span class="n">begin_log</span><span class="p">(</span>
                     <span class="s2">&quot;Same equation and state name &#39;</span><span class="si">{0}</span><span class="s2">&#39; is used in &quot;</span>
                     <span class="s2">&quot;component &#39;</span><span class="si">{1}</span><span class="s2">&#39; and &#39;</span><span class="si">{2}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -1420,11 +1416,7 @@
         <span class="n">warning</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">eq</span><span class="p">,</span> <span class="n">old_comp</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">removed_equations</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
-            <span class="n">warning</span><span class="p">(</span>
-                <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> : from </span><span class="si">{1}</span><span class="s2"> to </span><span class="si">{2}</span><span class="s2"> component&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">eq</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">old_comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">ode_comp</span><span class="o">.</span><span class="n">name</span>
-                <span class="p">)</span>
-            <span class="p">)</span>
+            <span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">eq</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> : from </span><span class="si">{</span><span class="n">old_comp</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">ode_comp</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> component&quot;</span><span class="p">)</span>
 
         <span class="n">end_log</span><span class="p">()</span>
 
@@ -1732,12 +1724,12 @@
                 <span class="n">names</span><span class="o">.</span><span class="n">appendleft</span><span class="p">(</span><span class="n">unders_score_replace</span><span class="p">(</span><span class="n">parent</span><span class="p">))</span>
                 <span class="n">parent</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">parent</span>
 
-            <span class="n">comp_name</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;&quot;</span><span class="si">{0}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">)</span>
+            <span class="n">comp_name</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">&quot;&#39;</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">)</span>
 
             <span class="c1"># Collect initial state values</span>
             <span class="k">if</span> <span class="n">comp</span><span class="o">.</span><span class="n">state_variables</span><span class="p">:</span>
                 <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-                <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;states(</span><span class="si">{0}</span><span class="s2">,&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp_name</span><span class="p">))</span>
+                <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;states(</span><span class="si">{</span><span class="n">comp_name</span><span class="si">}</span><span class="s2">,&quot;</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">state_variables</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
                     <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
                         <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
@@ -1747,15 +1739,13 @@
                             <span class="p">)</span>
                         <span class="p">)</span>
                     <span class="k">else</span><span class="p">:</span>
-                        <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                            <span class="s2">&quot;       </span><span class="si">{0}</span><span class="s2"> = </span><span class="si">{1}</span><span class="s2">,&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;init&quot;</span><span class="p">])</span>
-                        <span class="p">)</span>
+                        <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;       </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;init&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">,&quot;</span><span class="p">)</span>
                 <span class="n">declaration_lines</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">declaration_lines</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
 
             <span class="c1"># Collect initial parameters values</span>
             <span class="k">if</span> <span class="n">comp</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
                 <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-                <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;parameters(</span><span class="si">{0}</span><span class="s2">,&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp_name</span><span class="p">))</span>
+                <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;parameters(</span><span class="si">{</span><span class="n">comp_name</span><span class="si">}</span><span class="s2">,&quot;</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
                     <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
                         <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
@@ -1765,15 +1755,13 @@
                             <span class="p">)</span>
                         <span class="p">)</span>
                     <span class="k">else</span><span class="p">:</span>
-                        <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                            <span class="s2">&quot;           </span><span class="si">{0}</span><span class="s2"> = </span><span class="si">{1}</span><span class="s2">,&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;init&quot;</span><span class="p">])</span>
-                        <span class="p">)</span>
+                        <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;           </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;init&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">,&quot;</span><span class="p">)</span>
                 <span class="n">declaration_lines</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">declaration_lines</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
 
             <span class="c1"># Collect all intermediate equations</span>
             <span class="k">if</span> <span class="n">comp</span><span class="o">.</span><span class="n">equations</span><span class="p">:</span>
                 <span class="n">equation_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-                <span class="n">equation_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;expressions(</span><span class="si">{0}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp_name</span><span class="p">))</span>
+                <span class="n">equation_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;expressions(</span><span class="si">{</span><span class="n">comp_name</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
                 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">                for eq in comp.equations:</span>
 <span class="sd">                    expr = []</span>
@@ -1798,8 +1786,7 @@
                 <span class="p">)</span>
 
         <span class="n">gotran_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="s2">&quot;# gotran file generated by cellml2gotran from &quot;</span>
-            <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_source</span><span class="p">)</span>
+            <span class="sa">f</span><span class="s2">&quot;# gotran file generated by cellml2gotran from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_source</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="p">)</span>
         <span class="n">gotran_lines</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">declaration_lines</span><span class="p">)</span>
         <span class="n">gotran_lines</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">equation_lines</span><span class="p">)</span>
@@ -1810,7 +1797,7 @@
         <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">gotran_lines</span><span class="p">)</span>
 
         <span class="c1"># Write file</span>
-        <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">.ode&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">()</span></div></div>
+        <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">.ode&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">()</span></div></div>
 
 
 <div class="viewcode-block" id="cellml2ode"><a class="viewcode-back" href="../../../gotran.input.html#gotran.cellml2ode">[docs]</a><span class="k">def</span> <span class="nf">cellml2ode</span><span class="p">(</span><span class="n">model_source</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">):</span>

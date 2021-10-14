@@ -77,7 +77,7 @@
 <span class="sd">    Create a matlab code from a gotran model</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Generate Matlab code from </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+    <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generate Matlab code from </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="c1"># Load Gotran model</span>
     <span class="n">ode</span> <span class="o">=</span> <span class="n">load_ode</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
@@ -85,7 +85,7 @@
     <span class="n">gen</span> <span class="o">=</span> <span class="n">MatlabCodeGenerator</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
 
     <span class="n">info</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-    <span class="n">info</span><span class="p">(</span><span class="s2">&quot;Generating Matlab files for the </span><span class="si">{0}</span><span class="s2"> ode...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+    <span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generating Matlab files for the </span><span class="si">{</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> ode...&quot;</span><span class="p">)</span>
 
     <span class="c1"># Collect monitored</span>
     <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">functions</span><span class="o">.</span><span class="n">monitored</span><span class="o">.</span><span class="n">generate</span><span class="p">:</span>
@@ -94,7 +94,7 @@
         <span class="n">monitored</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">for</span> <span class="n">function_name</span><span class="p">,</span> <span class="n">code</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">gen</span><span class="o">.</span><span class="n">code_dict</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">monitored</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
-        <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_</span><span class="si">{1}</span><span class="s2">.m&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">function_name</span><span class="p">),</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
+        <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">function_name</span><span class="si">}</span><span class="s2">.m&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
 
     <span class="n">info</span><span class="p">(</span><span class="s2">&quot;  done.&quot;</span><span class="p">)</span></div>
 
@@ -114,7 +114,7 @@
             <span class="s2">&quot;and evaluating the model is listed.&quot;</span><span class="p">,</span>
         <span class="p">),</span>
         <span class="n">output</span><span class="o">=</span><span class="n">Param</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Specify output file name&quot;</span><span class="p">),</span>
-        <span class="o">**</span><span class="n">generation_params</span>
+        <span class="o">**</span><span class="n">generation_params</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">params</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">usage</span><span class="o">=</span><span class="s2">&quot;usage: %prog FILE [options]&quot;</span><span class="p">)</span>  <span class="c1"># sys.argv[2:])</span>
 

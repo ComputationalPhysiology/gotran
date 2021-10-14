@@ -80,7 +80,7 @@
 <span class="sd">    Create a C++ header file from a gotran model</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Generate C++ code from </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+    <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generate C++ code from </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="c1"># Load Gotran model</span>
     <span class="n">ode</span> <span class="o">=</span> <span class="n">load_ode</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
@@ -97,7 +97,7 @@
         <span class="n">output</span> <span class="o">=</span> <span class="n">filename</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.ode&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;.h&quot;</span>
 
     <span class="n">info</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-    <span class="n">info</span><span class="p">(</span><span class="s2">&quot;Generating C++ code for the </span><span class="si">{0}</span><span class="s2"> ode...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+    <span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generating C++ code for the </span><span class="si">{</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> ode...&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">class_code</span><span class="p">:</span>
         <span class="n">code</span> <span class="o">=</span> <span class="n">gen</span><span class="o">.</span><span class="n">class_code</span><span class="p">(</span><span class="n">ode</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
@@ -136,7 +136,7 @@
             <span class="s2">&quot;headers needed to compile moudle is &quot;</span>
             <span class="s2">&quot;included.&quot;</span><span class="p">,</span>
         <span class="p">),</span>
-        <span class="o">**</span><span class="n">generation_params</span>
+        <span class="o">**</span><span class="n">generation_params</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">params</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">usage</span><span class="o">=</span><span class="s2">&quot;usage: %prog FILE [options]&quot;</span><span class="p">)</span>  <span class="c1"># sys.argv[2:])</span>
 

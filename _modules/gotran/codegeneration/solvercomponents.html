@@ -293,8 +293,7 @@
 
         <span class="c1"># Call base class using empty result_expressions</span>
         <span class="n">descr</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="s2">&quot;Compute a forward step using the explicit Euler scheme to the &quot;</span>
-            <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="p">)</span>
+            <span class="sa">f</span><span class="s2">&quot;Compute a forward step using the explicit Euler scheme to the </span><span class="si">{</span><span class="n">ode</span><span class="si">}</span><span class="s2"> ODE&quot;</span>
         <span class="p">)</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">ExplicitEuler</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="s2">&quot;ExplicitEuler&quot;</span><span class="p">,</span>
@@ -318,7 +317,7 @@
 
         <span class="c1"># Get time step and start creating the update algorithm</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span><span class="p">:</span>
-            <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_offset&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result_name</span><span class="p">)</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">result_name</span><span class="si">}</span><span class="s2">_offset&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 
@@ -339,6 +338,7 @@
         <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">indexed_objects</span><span class="p">(</span><span class="n">result_name</span><span class="p">)}</span>
         <span class="n">results</span><span class="p">,</span> <span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_body_from_results</span><span class="p">(</span><span class="o">**</span><span class="n">results</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">body_expressions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recreate_body</span><span class="p">(</span><span class="n">body_expressions</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">)</span></div>
+
 
 <span class="k">def</span> <span class="nf">fraction_numerator_is_nonzero</span><span class="p">(</span><span class="n">expr</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Perform a very cheap check to detect if a fraction is definitely non-zero.&quot;&quot;&quot;</span>
@@ -375,6 +375,7 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
 
+
 <div class="viewcode-block" id="RushLarsen"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.solvercomponents.RushLarsen">[docs]</a><span class="k">class</span> <span class="nc">RushLarsen</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    An ODEComponent which compute one step of the Rush-Larsen scheme</span>
@@ -405,10 +406,7 @@
             <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Cannot generate a Rush-Larsen forward step for a DAE.&quot;</span><span class="p">)</span>
 
         <span class="c1"># Call base class using empty result_expressions</span>
-        <span class="n">descr</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="s2">&quot;Compute a forward step using the Rush-Larsen scheme to the &quot;</span>
-            <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="p">)</span>
-        <span class="p">)</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Compute a forward step using the Rush-Larsen scheme to the </span><span class="si">{</span><span class="n">ode</span><span class="si">}</span><span class="s2"> ODE&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">RushLarsen</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="s2">&quot;RushLarsen&quot;</span><span class="p">,</span>
             <span class="n">ode</span><span class="p">,</span>
@@ -432,18 +430,14 @@
 
         <span class="c1"># Get time step and start creating the update algorithm</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span><span class="p">:</span>
-            <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_offset&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result_name</span><span class="p">)</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">result_name</span><span class="si">}</span><span class="s2">_offset&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 
         <span class="n">might_take_time</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">10</span>
 
         <span class="k">if</span> <span class="n">might_take_time</span><span class="p">:</span>
-            <span class="n">info</span><span class="p">(</span>
-                <span class="s2">&quot;Calculating derivatives of </span><span class="si">{0}</span><span class="s2">. Might take some time...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">ode</span><span class="o">.</span><span class="n">name</span>
-                <span class="p">)</span>
-            <span class="p">)</span>
+            <span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Calculating derivatives of </span><span class="si">{</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">. Might take some time...&quot;</span><span class="p">)</span>
             <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 
         <span class="n">dt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">_dt</span><span class="o">.</span><span class="n">sym</span>
@@ -466,7 +460,9 @@
 
                 <span class="n">need_zero_div_check</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">fraction_numerator_is_nonzero</span><span class="p">(</span><span class="n">expr_diff</span><span class="p">)</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">need_zero_div_check</span><span class="p">:</span>
-                    <span class="n">debug</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> cannot be zero. Skipping zero division check&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">linearized_name</span><span class="p">))</span>
+                    <span class="n">debug</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">linearized_name</span><span class="si">}</span><span class="s2"> cannot be zero. Skipping zero division check&quot;</span>
+                    <span class="p">)</span>
 
                 <span class="n">RL_term</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">sym</span> <span class="o">/</span> <span class="n">linearized</span> <span class="o">*</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">linearized</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">need_zero_div_check</span><span class="p">:</span>
@@ -533,10 +529,7 @@
             <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Cannot generate a Rush-Larsen forward step for a DAE.&quot;</span><span class="p">)</span>
 
         <span class="c1"># Call base class using empty result_expressions</span>
-        <span class="n">descr</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="s2">&quot;Compute a forward step using the Rush-Larsen scheme to the &quot;</span>
-            <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="p">)</span>
-        <span class="p">)</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Compute a forward step using the Rush-Larsen scheme to the </span><span class="si">{</span><span class="n">ode</span><span class="si">}</span><span class="s2"> ODE&quot;</span>
         <span class="n">state_name</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">array_name</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">RushLarsen</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="s2">&quot;RushLarsen&quot;</span><span class="p">,</span>
@@ -563,7 +556,7 @@
 
         <span class="c1"># Get time step and start creating the update algorithm</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span><span class="p">:</span>
-            <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_offset&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result_name</span><span class="p">)</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">result_name</span><span class="si">}</span><span class="s2">_offset&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 
@@ -668,7 +661,7 @@
 
         <span class="c1"># Get time step and start creating the update algorithm</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span><span class="p">:</span>
-            <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_offset&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result_name</span><span class="p">)</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">result_name</span><span class="si">}</span><span class="s2">_offset&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 
@@ -695,7 +688,7 @@
 
             <span class="n">need_zero_div_check</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">fraction_numerator_is_nonzero</span><span class="p">(</span><span class="n">expr_diff</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">need_zero_div_check</span><span class="p">:</span>
-                <span class="n">debug</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> cannot be zero. Skipping zero division check&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">linearized_name</span><span class="p">))</span>
+                <span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">linearized_name</span><span class="si">}</span><span class="s2"> cannot be zero. Skipping zero division check&quot;</span><span class="p">)</span>
 
             <span class="n">RL_term</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">sym</span> <span class="o">/</span> <span class="n">linearized</span> <span class="o">*</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">linearized</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">need_zero_div_check</span><span class="p">:</span>
@@ -753,10 +746,7 @@
         <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">)</span>
 
         <span class="c1"># Call base class using empty result_expressions</span>
-        <span class="n">descr</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="s2">&quot;Compute a forward step using the FE / GRL1 scheme to the &quot;</span>
-            <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="p">)</span>
-        <span class="p">)</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Compute a forward step using the FE / GRL1 scheme to the </span><span class="si">{</span><span class="n">ode</span><span class="si">}</span><span class="s2"> ODE&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">HybridGeneralizedRushLarsen</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="s2">&quot;HybridGeneralizedRushLarsen&quot;</span><span class="p">,</span>
             <span class="n">ode</span><span class="p">,</span>
@@ -775,7 +765,7 @@
         <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">stiff_state_variables</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">s</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
                 <span class="k">continue</span>
-            <span class="k">assert</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">state_names</span><span class="p">,</span> <span class="s2">&quot;Unknown state &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">state_names</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Unknown state &#39;</span><span class="si">{</span><span class="n">s</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
 
         <span class="c1"># Recount the expressions if representation of states are &quot;array&quot; as</span>
         <span class="c1"># then the method is not full explcit</span>
@@ -791,7 +781,7 @@
 
         <span class="c1"># Get time step and start creating the update algorithm</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span><span class="p">:</span>
-            <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_offset&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result_name</span><span class="p">)</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">result_name</span><span class="si">}</span><span class="s2">_offset&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 
@@ -820,7 +810,7 @@
 
             <span class="n">need_zero_div_check</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">fraction_numerator_is_nonzero</span><span class="p">(</span><span class="n">expr_diff</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">need_zero_div_check</span><span class="p">:</span>
-                <span class="n">debug</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> cannot be zero. Skipping zero division check&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">linearized_name</span><span class="p">))</span>
+                <span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">linearized_name</span><span class="si">}</span><span class="s2"> cannot be zero. Skipping zero division check&quot;</span><span class="p">)</span>
 
             <span class="n">RL_term</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">sym</span> <span class="o">/</span> <span class="n">linearized</span> <span class="o">*</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">linearized</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">need_zero_div_check</span><span class="p">:</span>
@@ -907,7 +897,7 @@
 
         <span class="c1"># Get time step and start creating the update algorithm</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span><span class="p">:</span>
-            <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_offset&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result_name</span><span class="p">)</span>
+            <span class="n">offset_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">result_name</span><span class="si">}</span><span class="s2">_offset&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">offset_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 

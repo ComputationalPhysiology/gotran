@@ -222,15 +222,13 @@
     <span class="k">if</span> <span class="n">latest_timestamp</span><span class="p">:</span>
         <span class="n">filenames</span> <span class="o">=</span> <span class="n">get_data_filenames</span><span class="p">(</span><span class="n">basename</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">filenames</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span>
-                <span class="s2">&quot;No files with timestamp for basename: &quot;</span> <span class="s2">&quot;&#39;</span><span class="si">%s</span><span class="s2">&#39; excist&quot;</span> <span class="o">%</span> <span class="n">basename</span>
-            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No files with timestamp for basename: &#39;</span><span class="si">{</span><span class="n">basename</span><span class="si">}</span><span class="s2">&#39; excist&quot;</span><span class="p">)</span>
         <span class="n">basename</span> <span class="o">=</span> <span class="n">filenames</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
     <span class="n">filename</span> <span class="o">=</span> <span class="n">basename</span> <span class="k">if</span> <span class="s2">&quot;.cpickle&quot;</span> <span class="ow">in</span> <span class="n">basename</span> <span class="k">else</span> <span class="n">basename</span> <span class="o">+</span> <span class="s2">&quot;.cpickle&quot;</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s2">&quot;No file with basename: &#39;</span><span class="si">%s</span><span class="s2">&#39; excists&quot;</span> <span class="o">%</span> <span class="n">basename</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No file with basename: &#39;</span><span class="si">{</span><span class="n">basename</span><span class="si">}</span><span class="s2">&#39; excists&quot;</span><span class="p">)</span>
 
     <span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loading data from: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
     <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
@@ -244,12 +242,12 @@
 
     <span class="n">basename</span> <span class="o">=</span> <span class="n">basename</span> <span class="k">if</span> <span class="s2">&quot;.cpickle&quot;</span> <span class="ow">in</span> <span class="n">basename</span> <span class="k">else</span> <span class="n">basename</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.cpickle&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
     <span class="n">pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
-        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">-[0-9]+\.[0-9]+\.[0-9]+-[0-9]+&quot;</span> <span class="s2">&quot;\.[0-9]+\.[0-9]+.cpickle&quot;</span> <span class="o">%</span> <span class="n">basename</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">basename</span><span class="si">}</span><span class="s2">-[0-9]+</span><span class="se">\\</span><span class="s2">.[0-9]+</span><span class="se">\\</span><span class="s2">.[0-9]+-[0-9]+</span><span class="se">\\</span><span class="s2">.[0-9]+</span><span class="se">\\</span><span class="s2">.[0-9]+.cpickle&quot;</span>
     <span class="p">)</span>
 
     <span class="n">filenames</span> <span class="o">=</span> <span class="p">[</span>
         <span class="n">filename</span>
-        <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">*.cpickle&quot;</span> <span class="o">%</span> <span class="n">basename</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">basename</span><span class="si">}</span><span class="s2">*.cpickle&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
     <span class="p">]</span>
 

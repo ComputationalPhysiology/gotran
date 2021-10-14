@@ -154,7 +154,7 @@
             <span class="s2">&quot;Cannot compute right hand side expressions if the ODE is &quot;</span> <span class="s2">&quot;not finalized&quot;</span>
         <span class="p">)</span>
 
-    <span class="n">descr</span> <span class="o">=</span> <span class="s2">&quot;Compute the right hand side of the </span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="p">)</span>
+    <span class="n">descr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Compute the right hand side of the </span><span class="si">{</span><span class="n">ode</span><span class="si">}</span><span class="s2"> ODE&quot;</span>
 
     <span class="k">return</span> <span class="n">CodeComponent</span><span class="p">(</span>
         <span class="s2">&quot;RHSComponent&quot;</span><span class="p">,</span>
@@ -162,7 +162,7 @@
         <span class="n">function_name</span><span class="p">,</span>
         <span class="n">descr</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
-        <span class="o">**</span><span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="n">ode</span><span class="o">.</span><span class="n">state_expressions</span><span class="p">}</span>
+        <span class="o">**</span><span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="n">ode</span><span class="o">.</span><span class="n">state_expressions</span><span class="p">},</span>
     <span class="p">)</span></div>
 
 
@@ -201,18 +201,18 @@
     <span class="k">for</span> <span class="n">expr_str</span> <span class="ow">in</span> <span class="n">monitored</span><span class="p">:</span>
         <span class="n">obj</span> <span class="o">=</span> <span class="n">ode</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">expr_str</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Expression</span><span class="p">):</span>
-            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> is not an expression in the </span><span class="si">{1}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">expr_str</span><span class="p">,</span> <span class="n">ode</span><span class="p">))</span>
+            <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">expr_str</span><span class="si">}</span><span class="s2"> is not an expression in the </span><span class="si">{</span><span class="n">ode</span><span class="si">}</span><span class="s2"> ODE&quot;</span><span class="p">)</span>
 
         <span class="n">monitored_exprs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
 
-    <span class="n">descr</span> <span class="o">=</span> <span class="s2">&quot;Computes monitored expressions of the </span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="p">)</span>
+    <span class="n">descr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Computes monitored expressions of the </span><span class="si">{</span><span class="n">ode</span><span class="si">}</span><span class="s2"> ODE&quot;</span>
     <span class="k">return</span> <span class="n">CodeComponent</span><span class="p">(</span>
         <span class="s2">&quot;MonitoredExpressions&quot;</span><span class="p">,</span>
         <span class="n">ode</span><span class="p">,</span>
         <span class="n">function_name</span><span class="p">,</span>
         <span class="n">descr</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
-        <span class="o">**</span><span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="n">monitored_exprs</span><span class="p">}</span>
+        <span class="o">**</span><span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="n">monitored_exprs</span><span class="p">},</span>
     <span class="p">)</span></div>
 
 
@@ -251,7 +251,7 @@
                 <span class="s2">&quot;number of states in the ode, got </span><span class="si">{0}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
             <span class="p">)</span>
         <span class="k">if</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">registered</span><span class="p">:</span>
-            <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Index </span><span class="si">{0}</span><span class="s2"> appeared twice.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">index</span><span class="p">))</span>
+            <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Index </span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2"> appeared twice.&quot;</span><span class="p">)</span>
 
         <span class="n">registered</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
 
@@ -261,14 +261,12 @@
     <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="n">exprs</span><span class="p">}</span>
 
     <span class="k">return</span> <span class="n">CodeComponent</span><span class="p">(</span>
-        <span class="s2">&quot;componentwise_derivatives_</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">exprs</span><span class="p">)</span>
-        <span class="p">),</span>
+        <span class="sa">f</span><span class="s2">&quot;componentwise_derivatives_</span><span class="si">{</span><span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">exprs</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">ode</span><span class="p">,</span>
         <span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">results</span>
+        <span class="o">**</span><span class="n">results</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 
@@ -502,9 +500,7 @@
         <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">)</span>
 
         <span class="c1"># Call base class using empty result_expressions</span>
-        <span class="n">descr</span> <span class="o">=</span> <span class="s2">&quot;Compute the jacobian of the right hand side of the &quot;</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">ode</span>
-        <span class="p">)</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Compute the jacobian of the right hand side of the </span><span class="si">{</span><span class="n">ode</span><span class="si">}</span><span class="s2"> ODE&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">JacobianComponent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="s2">&quot;Jacobian&quot;</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="p">,</span> <span class="n">descr</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
         <span class="p">)</span>
@@ -530,9 +526,7 @@
         <span class="n">might_take_time</span> <span class="o">=</span> <span class="n">N</span> <span class="o">&gt;=</span> <span class="mi">10</span>
 
         <span class="k">if</span> <span class="n">might_take_time</span><span class="p">:</span>
-            <span class="n">info</span><span class="p">(</span>
-                <span class="s2">&quot;Calculating Jacobian of </span><span class="si">{0}</span><span class="s2">. Might take some time...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-            <span class="p">)</span>
+            <span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Calculating Jacobian of </span><span class="si">{</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">. Might take some time...&quot;</span><span class="p">)</span>
             <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">expr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">state_exprs</span><span class="p">):</span>
@@ -544,8 +538,7 @@
             <span class="p">)</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span>
-                <span class="s2">&quot;Expressions for the sparse jacobian of &quot;</span>
-                <span class="s2">&quot;state </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+                <span class="sa">f</span><span class="s2">&quot;Expressions for the sparse jacobian of state </span><span class="si">{</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
                 <span class="n">dependent</span><span class="o">=</span><span class="n">expr</span><span class="p">,</span>
             <span class="p">)</span>
 
@@ -783,9 +776,7 @@
 
         <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Computing factorization of jacobian&quot;</span><span class="p">)</span>
         <span class="n">check_arg</span><span class="p">(</span><span class="n">jacobian</span><span class="p">,</span> <span class="n">JacobianComponent</span><span class="p">)</span>
-        <span class="n">descr</span> <span class="o">=</span> <span class="s2">&quot;Symbolically factorize the jacobian of the </span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">jacobian</span><span class="o">.</span><span class="n">root</span>
-        <span class="p">)</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Symbolically factorize the jacobian of the </span><span class="si">{</span><span class="n">jacobian</span><span class="o">.</span><span class="n">root</span><span class="si">}</span><span class="s2"> ODE&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">FactorizedJacobianComponent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="s2">&quot;FactorizedJacobian&quot;</span><span class="p">,</span>
             <span class="n">jacobian</span><span class="o">.</span><span class="n">root</span><span class="p">,</span>
@@ -796,7 +787,7 @@
             <span class="n">additional_arguments</span><span class="o">=</span><span class="n">jacobian</span><span class="o">.</span><span class="n">results</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span><span class="s2">&quot;Factorizing jacobian of </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Factorizing jacobian of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="n">jacobian_name</span> <span class="o">=</span> <span class="n">jacobian</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
@@ -948,8 +939,7 @@
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span>
-            <span class="s2">&quot;Forward backward substituting factorized &quot;</span>
-            <span class="s2">&quot;linear system </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="sa">f</span><span class="s2">&quot;Forward backward substituting factorized linear system </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="p">)</span>
 
         <span class="c1"># Recreate jacobian using only sympy Symbols</span>
@@ -1153,7 +1143,7 @@
                 <span class="n">cse_subs</span><span class="p">[</span><span class="n">sub</span><span class="p">]</span> <span class="o">=</span> <span class="n">expr</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">cse_subs</span><span class="p">[</span><span class="n">sub</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_intermediate</span><span class="p">(</span>
-                    <span class="s2">&quot;cse_</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cse_cnt</span><span class="p">),</span> <span class="n">expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">cse_subs</span><span class="p">)</span>
+                    <span class="sa">f</span><span class="s2">&quot;cse_</span><span class="si">{</span><span class="n">cse_cnt</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">cse_subs</span><span class="p">)</span>
                 <span class="p">)</span>
                 <span class="n">cse_cnt</span> <span class="o">+=</span> <span class="mi">1</span>
 
