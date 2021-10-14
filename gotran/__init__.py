@@ -17,10 +17,10 @@
 
 __version__ = "2021.0.2"
 
-import modelparameters.utils
-import modelparameters.parameterdict
-import modelparameters.codegeneration
-import modelparameters.sympytools
+# import modelparameters.utils
+# import modelparameters.parameterdict
+# import modelparameters.codegeneration
+# import modelparameters.sympytools
 
 # Import gotran modules
 from . import common
@@ -29,7 +29,6 @@ from . import model
 # import algorithms
 from . import codegeneration
 from . import input
-from . import solver
 
 # from . import scripts
 
@@ -138,17 +137,17 @@ from .codegeneration import (
     LatexCodeGenerator,
 )
 from .input import *
-from .solver import *
 
 # Model parameters
-from modelparameters.parameters import ScalarParam
-from modelparameters.parameterdict import ParameterDict
-from modelparameters.sympytools import sp_namespace as _sp_namespace
-from modelparameters.sympytools import sp as _sp
+# from modelparameters.parameters import ScalarParam
+# from modelparameters.parameterdict import ParameterDict
+# from modelparameters.sympytools import sp_namespace as _sp_namespace
+# from modelparameters.sympytools import sp as _sp
 
 # Add sympy namespace to globals
 # globals().update(_sp_namespace)
 # globals().update(dict(eye=_sp.eye, diag=_sp.diag, Matrix=_sp.Matrix, zeros=_sp.zeros))
 
 # Assign the __all__ attribute
-__all__ = [name for name in list(globals().keys()) if name[:1] != "_"]
+# __all__ = [name for name in list(globals().keys()) if name[:1] != "_"]
+__all__ = []

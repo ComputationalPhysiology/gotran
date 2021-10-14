@@ -40,10 +40,8 @@ import sys
 # ModelParameters imports
 from modelparameters.sympytools import sp
 from modelparameters.codegeneration import sympycode
-
-# Local imports
-from ..common import error, info, check_arg, check_kwarg, Timer, listwrap
-
+from modelparameters.utils import Timer, listwrap, check_arg, check_kwarg
+from modelparameters.logger import error, info
 from ..model.utils import ode_primitives
 from ..model.odeobjects import Comment
 from gotran.model.expressions import (

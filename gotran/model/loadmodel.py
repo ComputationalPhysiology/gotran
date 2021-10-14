@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ["load_ode", "exec_ode", "load_cell"]
+__all__ = ["load_ode", "exec_ode"]
 
 # System imports
 from pathlib import Path
@@ -23,9 +23,8 @@ import inspect
 import os
 import shutil
 import re
-import tempfile
 import weakref
-from collections import OrderedDict, deque
+from collections import deque
 
 # modelparameters import
 from modelparameters.parameters import (
@@ -36,12 +35,12 @@ from modelparameters.parameters import (
     scalars,
     OptionParam,
 )
+from modelparameters.logger import error, info, warning, debug
+from modelparameters.utils import Timer, check_arg
 from modelparameters.sympytools import sp_namespace, sp
 
 # gotran imports
-from gotran.common import *
-from gotran.model.ode import ODE
-from gotran.model.cellmodel import CellModel
+from .ode import ODE
 
 _for_template = re.compile("\A[ ]*for[ ]+.*in[ ]+:[ ]*\Z")
 _no_intermediate_template = re.compile(".*# NO INTERMEDIATE.*")
@@ -64,7 +63,7 @@ class IntermediateDispatcher(dict):
     @property
     def ode(self):
 
-        if self._ode == None:
+        if self._ode is None:
             error("ode attr is not set")
 
         return self._ode()
@@ -80,7 +79,7 @@ class IntermediateDispatcher(dict):
 
         from modelparameters.sympytools import symbols_from_expr
 
-        timer = Timer("Namespace dispatcher")
+        timer = Timer("Namespace dispatcher")  # noqa: F841
         # Set the attr of the ODE
         # If a scalar or a sympy number or it is a sympy.Basic consisting of
         # sp.Symbols
@@ -107,7 +106,7 @@ class IntermediateDispatcher(dict):
                 ):
                     code = lines[frame.f_lineno - prev][:-2].strip() + code
                     prev += 1
-            except:
+            except Exception:
                 code = ""
 
             # Check if the line includes a for statement
@@ -128,7 +127,7 @@ class IntermediateDispatcher(dict):
                 del timer
 
                 # Add obj to the present component
-                sym = setattr(self.ode.present_component, name, value)
+                setattr(self.ode.present_component, name, value)
 
         else:
             debug(f"Not registering '{name}' as an intermediate.")
@@ -254,7 +253,7 @@ def _load(filename, name, **arguments):
     arguments : dict (optional)
         Optional arguments which can control loading of model
     """
-    timer = Timer("Load ODE")
+    timer = Timer("Load ODE")  # noqa: F841
     filename = Path(filename).with_suffix(".ode").absolute()
     # Extract name from filename
     name = filename.stem
@@ -277,19 +276,12 @@ def _load(filename, name, **arguments):
         if isinstance(value, Param):
             arguments[key] = value.getvalue()
 
-    class_type = arguments.pop("class_type", "ode")
-    msg = f"Argument class_type must be one of ('ode', 'cell'), got {class_type} "
-    assert class_type in ("ode", "cell"), msg
-
     # Dict to collect namespace
     intermediate_dispatcher = IntermediateDispatcher()
 
     # Create an ODE which will be populated with data when ode file is loaded
 
-    if class_type == "ode":
-        ode = ODE(name, intermediate_dispatcher)
-    else:
-        ode = CellModel(name, intermediate_dispatcher)
+    ode = ODE(name, intermediate_dispatcher)
 
     intermediate_dispatcher.ode = ode
 
@@ -317,28 +309,6 @@ def _load(filename, name, **arguments):
         os.unlink(filename)
 
     return ode
-
-
-def load_cell(filename, name=None, **arguments):
-    """
-    Load a Cell from file and return the instance
-
-    The method looks for a file with .ode extension.
-
-    Arguments
-    ---------
-    filename : str
-        Name of the ode file to load
-    name : str (optional)
-        Set the name of ODE (defaults to filename)
-    arguments : dict (optional)
-        Optional arguments which can control loading of model
-    """
-    arguments["class_type"] = "cell"
-
-    cell = _load(filename, name, **arguments)
-    cell._initialize_cell_model()
-    return cell
 
 
 def _namespace_binder(namespace, ode, load_arguments):
@@ -376,7 +346,7 @@ def _namespace_binder(namespace, ode, load_arguments):
             ODE. If not given the whole ODE will be added.
         """
         warning("Usage of 'sub_ode()' is deprecated. " "Use 'import_ode()' instead.")
-        import_model(subode, prefix, components)
+        import_ode(subode, prefix, components)
 
     def import_ode(subode, prefix="", components=None, **arguments):
         """

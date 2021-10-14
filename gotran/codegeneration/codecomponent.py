@@ -26,19 +26,21 @@ from functools import cmp_to_key
 # ModelParameters imports
 from modelparameters.sympytools import sp
 from modelparameters.codegeneration import sympycode
-
-# Local imports
-from ..common import (
+from modelparameters.logger import (
     error,
     info,
     debug,
+    warning,
+)
+from modelparameters.utils import (
     check_arg,
     check_kwarg,
     Timer,
-    warning,
     tuplewrap,
-    parameters,
 )
+
+# Local imports
+from ..common import parameters
 from gotran.model.odeobjects import (
     State,
     Parameter,

@@ -35,21 +35,23 @@ __all__ = [
 from modelparameters.parameters import SlaveParam
 from modelparameters.sympytools import sp
 from modelparameters.codegeneration import sympycode, latex
-from sympy.core.function import AppliedUndef
 
 # Local imports
-from gotran.common import (
+from ..common import (
     error,
     check_arg,
     scalars,
-    debug,
-    DEBUG,
-    get_log_level,
-    Timer,
-    tuplewrap,
-    parameters,
 )
-from gotran.model.odeobjects import *
+from .odeobjects import (
+    ODEValueObject,
+    cmp,
+    cmp_to_key,
+    State,
+    Time,
+    IndexedObject,
+    StateIndexedObject,
+    ParameterIndexedObject,
+)
 
 
 def recreate_expression(expr, *replace_dicts, **kwargs):
@@ -58,7 +60,7 @@ def recreate_expression(expr, *replace_dicts, **kwargs):
     """
 
     replace_type = kwargs.get("replace_type", "xreplace")
-    if not replace_type in ["xreplace", "subs"]:
+    if replace_type not in ["xreplace", "subs"]:
         error(
             "Valid alternatives for replace_type is: 'xreplace', "
             "'subs' got {0}".format(replace_type)
@@ -442,7 +444,7 @@ class StateExpression(Expression):
         """
         Return a formatted str of __init__ arguments
         """
-        return f"'{self.name}', {repr(state)}, {sympycode(self.expr)}"
+        return f"'{self.name}', {repr(self.state)}, {sympycode(self.expr)}"
 
 
 class StateDerivative(StateExpression):

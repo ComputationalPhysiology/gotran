@@ -27,14 +27,26 @@ from sympy.core.function import AppliedUndef
 
 # ModelParameters imports
 from modelparameters.sympytools import sp
-from modelparameters.codegeneration import sympycode, pythoncode
+from modelparameters.codegeneration import sympycode
 from modelparameters.utils import Timer
 
 # Local imports
-from gotran.common import error, debug, check_arg, check_kwarg, scalars
-from gotran.model.odeobjects import *
-from gotran.model.expressions import *
-from gotran.model.odecomponent import *
+from modelparameters.logger import error, debug, check_arg
+from gotran.model.odeobjects import Time, Dt, Parameter, cmp
+from gotran.model.expressions import (
+    State,
+    StateExpression,
+    StateDerivative,
+    Expression,
+    RateExpression,
+    StateSolution,
+    AlgebraicExpression,
+    Derivatives,
+    Intermediate,
+    DerivativeExpression,
+    recreate_expression,
+)
+from gotran.model.odecomponent import ODEComponent, Comment
 
 
 class ODE(ODEComponent):
@@ -163,7 +175,7 @@ class ODE(ODEComponent):
             Optional arguments which can control loading of model
         """
 
-        timer = Timer("Import ode")
+        timer = Timer("Import ode")  # noqa: F841
 
         components = components or []
         check_arg(ode, (str, Path, ODE), 0, context=ODE.import_ode)
@@ -325,7 +337,7 @@ class ODE(ODEComponent):
                                 else:
                                     error(
                                         "Could not find expression: "
-                                        "{1} while adding derivative".format(
+                                        "{0} while adding derivative".format(
                                             obj.der_expr
                                         )
                                     )
@@ -352,7 +364,7 @@ class ODE(ODEComponent):
                                 else:
                                     error(
                                         "Could not find expression: "
-                                        "{1} while adding derivative".format(
+                                        "{0} while adding derivative".format(
                                             obj.dep_var
                                         )
                                     )
@@ -385,7 +397,7 @@ class ODE(ODEComponent):
             given the basename will be the same as the name of the ode.
         """
 
-        timer = Timer("Save " + self.name)
+        timer = Timer("Save " + self.name)  # noqa: F841
 
         if not self._is_finalized_ode:
             error("ODE need to be finalized to be saved to file.")
@@ -533,7 +545,7 @@ class ODE(ODEComponent):
                 and isinstance(obj, (State, Parameter))
             ):
 
-                timer = Timer("Replace objects")
+                timer = Timer("Replace objects")  # noqa: F841
 
                 # Remove the object
                 self.ode_objects.remove(dup_obj)
@@ -686,7 +698,7 @@ class ODE(ODEComponent):
         IndexedObjects)
         """
 
-        timer = Timer("Expand expression")
+        timer = Timer("Expand expression")  # noqa: F841
 
         check_arg(expr, Expression)
 

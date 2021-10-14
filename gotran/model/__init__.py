@@ -20,7 +20,6 @@ from . import expressions
 from . import odecomponent
 from . import utils
 from . import ode
-from . import cellmodel
 from . import loadmodel
 
 
@@ -54,7 +53,6 @@ from .expressions import (
     recreate_expression,
 )
 from .ode import ODE
-from .cellmodel import CellModel
 from .loadmodel import load_ode, exec_ode, load_cell
 
 __all__ = [
