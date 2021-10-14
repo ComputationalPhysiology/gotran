@@ -129,7 +129,7 @@ class Equation(object):
         return self.name
 
     def __repr__(self):
-        return "Equation({0} = {1})".format(self.name, "".join(self.expr))
+        return f"Equation({self.name} = {''.join(self.expr)})"
 
     def __eq__(self, other):
         if not isinstance(other, Equation):
@@ -203,7 +203,7 @@ class Component(object):
 
         # Check if reserved name for state derivativeis is used as equation
         # name
-        derivative_names = ["d{0}_dt".format(der) for der in self.derivatives]
+        derivative_names = [f"d{der}_dt" for der in self.derivatives]
         removal = []
 
         for eq in equations[:]:
@@ -241,10 +241,10 @@ class Component(object):
         return hash(self.name)
 
     def __str__(self):
-        return self.name + "<{0}>".format(len(self.state_variables))
+        return self.name + f"<{len(self.state_variables)}>"
 
     def __repr__(self):
-        return "Component<{0}, {1}>".format(self.name, len(self.state_variables))
+        return f"Component<{self.name}, {len(self.state_variables)}>"
 
     def __eq__(self, other):
         if not isinstance(other, Component):
@@ -344,8 +344,8 @@ class Component(object):
                 eqn.name = newder
 
         # Update derivative equation
-        old_eq_name = "d{0}_dt".format(oldname)
-        new_eq_name = "d{0}_dt".format(newname)
+        old_eq_name = f"d{oldname}_dt"
+        new_eq_name = f"d{newname}_dt"
         self.variable_info[new_eq_name] = self.variable_info.pop(
             old_eq_name, dict(init=None, unit="1", private=True, type="equation")
         )
@@ -446,7 +446,7 @@ class CellMLParser(object):
 
         self.model_source = model_source
         self.name = self.cellml.attrib["name"]
-        begin_log("Parsing CellML model: {0}".format(self.name))
+        begin_log(f"Parsing CellML model: {self.name}")
         self.mathmlparser = MathMLBaseParser(self._params.use_sympy_integers)
         self.cellml_namespace = self.cellml.tag.split("}")[0] + "}"
         self.parse_units()
@@ -512,7 +512,7 @@ class CellMLParser(object):
             content = ""
 
         if title or content:
-            return "%s\n\n%s" % (title, content)
+            return f"{title}\n\n{content}"
 
         return ""
 
@@ -547,13 +547,9 @@ class CellMLParser(object):
             collected_parts = OrderedDict()
             for unit in list(units):
                 if unit.attrib.get("multiplier"):
-                    warning(
-                        "skipping multiplier in unit {0}".format(units.attrib["name"])
-                    )
+                    warning(f"skipping multiplier in unit {units.attrib['name']}")
                 if unit.attrib.get("multiplier"):
-                    warning(
-                        "skipping multiplier in unit {0}".format(units.attrib["name"])
-                    )
+                    warning(f"skipping multiplier in unit {units.attrib['name']}")
                 cellml_unit = unit.attrib.get("units")
 
                 prefix = prefix_map[unit.attrib.get("prefix")]
@@ -569,7 +565,7 @@ class CellMLParser(object):
                     collected_parts[name] = (fullname, exponent)
                 elif cellml_unit in collected_units:
                     if prefix:
-                        warning("Skipping prefix of unit '{0}'".format(cellml_unit))
+                        warning(f"Skipping prefix of unit '{cellml_unit}'")
                     for name, (fullnam, part_exponent) in list(
                         collected_units[cellml_unit].items()
                     ):
@@ -627,7 +623,7 @@ class CellMLParser(object):
 
         # Check for duplication of states
         for name in list(comp.state_variables.keys()):
-            der_name = "d{0}_dt".format(name)
+            der_name = f"d{name}_dt"
             if name in self._params.change_state_names:
                 newname = name + "_" + comp.name.split("_")[0]
                 comp.change_state_name(name, newname)
@@ -728,7 +724,7 @@ class CellMLParser(object):
             # Check parameter name vs collected state names
             if name in collected_states:
                 state_comp = collected_states[name]
-                der_name = "d{0}_dt".format(name)
+                der_name = f"d{name}_dt"
                 begin_log(
                     "Same parameter and state name: '{0}' is used in "
                     "component '{1}' and '{2}'.".format(
@@ -830,7 +826,7 @@ class CellMLParser(object):
             # Check equation name vs collected state names
             if name in collected_states:
                 state_comp = collected_states[name]
-                der_name = "d{0}_dt".format(name)
+                der_name = f"d{name}_dt"
                 begin_log(
                     "Same equation and state name '{0}' is used in "
                     "component '{1}' and '{2}'.".format(
@@ -1354,11 +1350,7 @@ class CellMLParser(object):
         warning(message)
 
         for eq, old_comp in list(removed_equations.items()):
-            warning(
-                "{0} : from {1} to {2} component".format(
-                    eq.name, old_comp.name, ode_comp.name
-                )
-            )
+            warning(f"{eq.name} : from {old_comp.name} to {ode_comp.name} component")
 
         end_log()
 
@@ -1666,12 +1658,12 @@ class CellMLParser(object):
                 names.appendleft(unders_score_replace(parent))
                 parent = parent.parent
 
-            comp_name = ", ".join('"{0}"'.format(name) for name in names)
+            comp_name = ", ".join(f'"{name}"' for name in names)
 
             # Collect initial state values
             if comp.state_variables:
                 declaration_lines.append("")
-                declaration_lines.append("states({0},".format(comp_name))
+                declaration_lines.append(f"states({comp_name},")
                 for name, info in list(comp.state_variables.items()):
                     if info["unit"] != "1":
                         declaration_lines.append(
@@ -1681,15 +1673,13 @@ class CellMLParser(object):
                             )
                         )
                     else:
-                        declaration_lines.append(
-                            "       {0} = {1},".format(name, info["init"])
-                        )
+                        declaration_lines.append(f"       {name} = {info['init']},")
                 declaration_lines[-1] = declaration_lines[-1][:-1] + ")"
 
             # Collect initial parameters values
             if comp.parameters:
                 declaration_lines.append("")
-                declaration_lines.append("parameters({0},".format(comp_name))
+                declaration_lines.append(f"parameters({comp_name},")
                 for name, info in list(comp.parameters.items()):
                     if info["unit"] != "1":
                         declaration_lines.append(
@@ -1699,15 +1689,13 @@ class CellMLParser(object):
                             )
                         )
                     else:
-                        declaration_lines.append(
-                            "           {0} = {1},".format(name, info["init"])
-                        )
+                        declaration_lines.append(f"           {name} = {info['init']},")
                 declaration_lines[-1] = declaration_lines[-1][:-1] + ")"
 
             # Collect all intermediate equations
             if comp.equations:
                 equation_lines.append("")
-                equation_lines.append("expressions({0})".format(comp_name))
+                equation_lines.append(f"expressions({comp_name})")
                 """
                 for eq in comp.equations:
                     expr = []
@@ -1732,8 +1720,7 @@ class CellMLParser(object):
                 )
 
         gotran_lines.append(
-            "# gotran file generated by cellml2gotran from "
-            "{0}".format(self.model_source)
+            f"# gotran file generated by cellml2gotran from {self.model_source}"
         )
         gotran_lines.extend(declaration_lines)
         gotran_lines.extend(equation_lines)
@@ -1744,7 +1731,7 @@ class CellMLParser(object):
         return "\n".join(gotran_lines)
 
         # Write file
-        open("{0}.ode".format(self.name), "w").write()
+        open(f"{self.name}.ode", "w").write()
 
 
 def cellml2ode(model_source, **options):

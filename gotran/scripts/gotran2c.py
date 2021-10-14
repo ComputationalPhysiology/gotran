@@ -13,7 +13,7 @@ def gotran2c(filename, params):
     """
     Create a C header file from a gotran model
     """
-    timer = Timer("Generate C code from {}".format(filename))
+    timer = Timer(f"Generate C code from {filename}")
 
     # Load Gotran model
     ode = load_ode(filename)
@@ -36,7 +36,7 @@ def gotran2c(filename, params):
         output = filename.replace(".ode", "") + ".h"
 
     info("")
-    info("Generating C code for the {0} ode...".format(ode.name))
+    info(f"Generating C code for the {ode.name} ode...")
     code = gen.module_code(ode, monitored=monitored)
     info("  done.")
     with open(output, "w") as f:
@@ -74,7 +74,7 @@ def main():
             (name, param)
             for name, param in list(generation_params.items())
             if name not in ["class_code"]
-        )
+        ),
     )
     params.parse_args(usage="usage: %prog FILE [options]")  # sys.argv[2:])
 

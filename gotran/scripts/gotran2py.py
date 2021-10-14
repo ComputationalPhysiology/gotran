@@ -13,7 +13,7 @@ def gotran2py(filename, params):
     """
     Create a c header file from a gotran model
     """
-    timer = Timer("Generate Python code from {}".format(filename))
+    timer = Timer(f"Generate Python code from {filename}")
 
     # Load Gotran model
     ode = load_ode(filename)
@@ -40,7 +40,7 @@ def gotran2py(filename, params):
         output = filename.replace(".ode", "") + ".py"
 
     info("")
-    info("Generating Python code for the {0} ode...".format(ode.name))
+    info(f"Generating Python code for the {ode.name} ode...")
     if params.class_code:
         code = gen.class_code(ode, monitored=monitored)
     else:
@@ -75,7 +75,7 @@ def main():
             ["math", "np", "numpy", "ufl"],
             description="The math namespace of the generated code",
         ),
-        **generation_params
+        **generation_params,
     )
     params.parse_args(usage="usage: %prog FILE [options]")  # sys.argv[2:])
 

@@ -291,7 +291,7 @@ class CellModel(ODE):
             def add_unit(k, v):
                 if not k.is_Number and v.as_numer_denom()[1] == 1:
 
-                    exp = "**{}".format(str(v)) if v != 1 else ""
+                    exp = f"**{str(v)}" if v != 1 else ""
                     unit_ = str(k)
 
                     unit_exprs.append(unit_ + exp)

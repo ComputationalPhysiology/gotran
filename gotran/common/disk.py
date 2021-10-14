@@ -155,15 +155,13 @@ def load_single_data(basename, latest_timestamp):
     if latest_timestamp:
         filenames = get_data_filenames(basename)
         if not filenames:
-            raise IOError(
-                "No files with timestamp for basename: " "'%s' excist" % basename
-            )
+            raise IOError(f"No files with timestamp for basename: '{basename}' excist")
         basename = filenames[-1]
 
     filename = basename if ".cpickle" in basename else basename + ".cpickle"
 
     if not os.path.isfile(filename):
-        raise IOError("No file with basename: '%s' excists" % basename)
+        raise IOError(f"No file with basename: '{basename}' excists")
 
     info("Loading data from: %s", filename)
     f = open(filename, "r")
@@ -177,12 +175,12 @@ def get_data_filenames(basename):
 
     basename = basename if ".cpickle" in basename else basename.replace(".cpickle", "")
     pattern = re.compile(
-        "%s-[0-9]+\.[0-9]+\.[0-9]+-[0-9]+" "\.[0-9]+\.[0-9]+.cpickle" % basename
+        f"{basename}-[0-9]+\\.[0-9]+\\.[0-9]+-[0-9]+\\.[0-9]+\\.[0-9]+.cpickle"
     )
 
     filenames = [
         filename
-        for filename in glob.glob("%s*.cpickle" % basename)
+        for filename in glob.glob(f"{basename}*.cpickle")
         if re.search(pattern, filename)
     ]
 

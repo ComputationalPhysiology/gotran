@@ -20,7 +20,7 @@ __all__ = ["adict", "odict"]
 
 class adict(dict):
     """A dictionary with attribute-style access. It maps attribute access to
-    the real dictionary.  """
+    the real dictionary."""
 
     def __init__(self, **kwargs):
         dict.__init__(self, **kwargs)

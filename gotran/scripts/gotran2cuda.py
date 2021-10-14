@@ -29,7 +29,7 @@ def gotran2cuda(filename, params):
         output = filename.replace(".ode", "") + ".cu"
 
     info("")
-    info("Generating CUDA code for the {0} ode...".format(ode.name))
+    info(f"Generating CUDA code for the {ode.name} ode...")
     code = gen.module_code(ode)
     info("  done.")
     with open(output, "w") as f:
@@ -65,7 +65,7 @@ def main():
             (name, param)
             for name, param in list(generation_params.items())
             if name not in ["class_code"]
-        )
+        ),
     )
     params.parse_args(usage="usage: %prog FILE [options]")  # sys.argv[2:])
 

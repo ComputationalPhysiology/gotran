@@ -280,7 +280,7 @@ class LatexCodeGenerator(object):
         self._name = ode.name
         self.params = params if params else _default_latex_params()
 
-        self.output_file = params.output or "{0}.tex".format(ode.name)
+        self.output_file = params.output or f"{ode.name}.tex"
 
         # Verify valid multiplication symbol
         if self.params.mul_symbol in ("dot", "ldot", "times"):
@@ -534,9 +534,7 @@ class LatexCodeGenerator(object):
             ("page_columns" not in exclude and not override)
             or "page_columns" in override
         ):
-            begin_str = (
-                "\\begin{{multicols}}{{{0}}}\n".format(opts.page_columns) + begin_str
-            )
+            begin_str = f"\\begin{{multicols}}{{{opts.page_columns}}}\n" + begin_str
             end_str += "\\end{multicols}\n"
 
         # Non-standard options -- only include if specified in override:
@@ -584,15 +582,11 @@ class LatexCodeGenerator(object):
         additional_options = list()
 
         if opts.columnsep:
-            additional_options.append(
-                "\\setlength{{\\columnsep}}{{{COLSEP}}}".format(COLSEP=opts.columnsep)
-            )
+            additional_options.append(f"\\setlength{{\\columnsep}}{{{opts.columnsep}}}")
 
         if opts.columnseprule:
             additional_options.append(
-                "\\setlength{{\\columnseprule}}{{{COLSEPR}}}".format(
-                    COLSEPR=opts.columnseprule
-                )
+                f"\\setlength{{\\columnseprule}}{{{opts.columnseprule}}}"
             )
 
         global_options = option_template.format(
@@ -609,7 +603,7 @@ class LatexCodeGenerator(object):
         'e^{i \\pi} + 1'
         """
         if isinstance(expr, str) and expr in _greek:
-            return "\\{0}".format(expr)
+            return f"\\{expr}"
         # Some values are treated as special cases by sympy.sympify.
         # Return these as they are.
         if isinstance(expr, str) and expr in [x for x in dir(sympy) if len(x) == 1]:
@@ -634,11 +628,8 @@ class LatexCodeGenerator(object):
         Assumes package list is on the form (("package1", "[options1]"), ...).
         """
         return "\n".join(
-            "\\usepackage{0}{{{1}}}".format(option, package)
-            for package, option in package_list
+            f"\\usepackage{option}{{{package}}}" for package, option in package_list
         )
 
     def __repr__(self):
-        return "{0}({1}, {2})".format(
-            self.__class__.__name__, repr(self.ode), repr(self.params)
-        )
+        return f"{self.__class__.__name__}({repr(self.ode)}, {repr(self.params)})"

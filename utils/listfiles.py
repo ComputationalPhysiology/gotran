@@ -20,10 +20,17 @@
 
 from instant import get_status_output
 
+
 def list_python_files():
     """
     Return a list of all included src files
     """
-    return [f for f in sorted(\
-        get_status_output('git ls-tree --name-only --full-tree -r HEAD')\
-        [1].split('\n')) if ".py" == f[-3:]]
+    return [
+        f
+        for f in sorted(
+            get_status_output("git ls-tree --name-only --full-tree -r HEAD")[1].split(
+                "\n"
+            )
+        )
+        if ".py" == f[-3:]
+    ]

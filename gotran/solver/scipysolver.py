@@ -68,11 +68,11 @@ class ScipySolver(Solver):
         tsteps : array
             The time steps
         attempts : int
-            If integration fails, i.e the solver does not 
+            If integration fails, i.e the solver does not
             converge, we could reduce the step size and try again.
             This varible controls how many time we should try to
             solve the problem. Default: 3
-        
+
         """
 
         # Some flags
@@ -115,7 +115,7 @@ class ScipySolver(Solver):
         # If we still caught some warnings raise exception
         if len(caught_warnings) > 0:
             for w in caught_warnings:
-                msg = "Catched warning {}\n{}".format(w.category, w.message)
+                msg = f"Catched warning {w.category}\n{w.message}"
                 warning(msg)
 
                 if w.category == spi.odepack.ODEintWarning:

@@ -211,8 +211,7 @@ class Expression(ODEValueObject):
 
     @property
     def sym(self):
-        """
-        """
+        """"""
         return self._sym
 
     def replace_expr(self, *replace_dicts):
@@ -235,20 +234,20 @@ class Expression(ODEValueObject):
         """
         Return a formatted str of __init__ arguments
         """
-        return "'{0}', {1}".format(self.name, sympycode(self.expr))
+        return f"'{self.name}', {sympycode(self.expr)}"
 
     def _repr_latex_(self):
         """
         Return a pretty latex representation of the Expression object
         """
 
-        return "${0} = {1}$".format(self._repr_latex_name(), self._repr_latex_expr())
+        return f"${self._repr_latex_name()} = {self._repr_latex_expr()}$"
 
     def _repr_latex_expr(self):
         return latex(self.expr)
 
     def _repr_latex_name(self):
-        return "{0}".format(latex(self.name))
+        return f"{latex(self.name)}"
 
 
 class Intermediate(Expression):
@@ -308,7 +307,7 @@ class StateSolution(Intermediate):
         """
         Return a formatted str of __init__ arguments
         """
-        return "'{0}', {1}".format(repr(self.state), sympycode(self.expr))
+        return f"'{repr(self.state)}', {sympycode(self.expr)}"
 
 
 class DerivativeExpression(Intermediate):
@@ -366,9 +365,7 @@ class DerivativeExpression(Intermediate):
         """
         Return a formatted str of __init__ arguments
         """
-        return "{0}, {1}, {2}".format(
-            repr(self._der_expr), repr(self._dep_var), sympycode(self.expr)
-        )
+        return f"{repr(self._der_expr)}, {repr(self._dep_var)}, {sympycode(self.expr)}"
 
     def _repr_latex_name(self):
         return "\\frac{{d{0}}}{{d{1}}}".format(
@@ -387,7 +384,7 @@ class RateExpression(Intermediate):
         check_arg(from_state, (State, StateSolution), 1, RateExpression)
 
         super(RateExpression, self).__init__(
-            "rates_{0}_{1}".format(to_state, from_state), expr, dependent
+            f"rates_{to_state}_{from_state}", expr, dependent
         )
         self._to_state = to_state
         self._from_state = from_state
@@ -445,7 +442,7 @@ class StateExpression(Expression):
         """
         Return a formatted str of __init__ arguments
         """
-        return "'{0}', {1}, {2}".format(self.name, repr(state), sympycode(self.expr))
+        return f"'{self.name}', {repr(state)}, {sympycode(self.expr)}"
 
 
 class StateDerivative(StateExpression):
@@ -488,10 +485,10 @@ class StateDerivative(StateExpression):
         """
         Return a formatted str of __init__ arguments
         """
-        return "{0}, {1}".format(repr(self._state), sympycode(self.expr))
+        return f"{repr(self._state)}, {sympycode(self.expr)}"
 
     def _repr_latex_name(self):
-        return "\\frac{{d{0}}}{{dt}}".format(latex(self.state.name))
+        return f"\\frac{{d{latex(self.state.name)}}}{{dt}}"
 
 
 class AlgebraicExpression(StateExpression):
@@ -517,7 +514,7 @@ class AlgebraicExpression(StateExpression):
         check_arg(state, State, 0, AlgebraicExpression)
 
         super(AlgebraicExpression, self).__init__(
-            "alg_{0}_0".format(state), state, expr, dependent
+            f"alg_{state}_0", state, expr, dependent
         )
 
         # Check that the expr is dependent on the state
@@ -530,7 +527,7 @@ class AlgebraicExpression(StateExpression):
         """
         Return a formatted str of __init__ arguments
         """
-        return "{0}, {1}".format(repr(self._state), sympycode(self.expr))
+        return f"{repr(self._state)}, {sympycode(self.expr)}"
 
     def _repr_latex_name(self):
         return "0"

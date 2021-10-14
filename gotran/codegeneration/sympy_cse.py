@@ -92,7 +92,7 @@ def cse_separate(r, e):
 
 
 def preprocess_for_cse(expr, optimizations):
-    """ Preprocess an expression to optimize for common subexpression
+    """Preprocess an expression to optimize for common subexpression
     elimination.
 
     Parameters
@@ -114,7 +114,7 @@ def preprocess_for_cse(expr, optimizations):
 
 
 def postprocess_for_cse(expr, optimizations):
-    """ Postprocess an expression after common subexpression elimination to
+    """Postprocess an expression after common subexpression elimination to
     return the expression to canonical sympy form.
 
     Parameters
@@ -389,7 +389,7 @@ def tree_cse(exprs, symbols, opt_subs=None, order="canonical"):
 
 
 def cse(exprs, symbols=None, optimizations=None, postprocess=None, order="canonical"):
-    """ Perform common subexpression elimination on an expression.
+    """Perform common subexpression elimination on an expression.
 
     Parameters
     ==========

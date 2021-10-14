@@ -116,7 +116,7 @@ def main():
     else:
         output = os.path.splitext(options.output)[0]
 
-    open("{0}.ode".format(output), "w").write(gotran_code)
+    open(f"{output}.ode", "w").write(gotran_code)
 
 
 if __name__ == "__main__":

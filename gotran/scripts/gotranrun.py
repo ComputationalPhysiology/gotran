@@ -101,7 +101,7 @@ def gotranrun(filename, params):
     # Check valid monitored plot
     for mp in monitored_plot:
         if mp not in monitored:
-            error("{} is not a state or intermediate in this ODE".format(mp))
+            error(f"{mp} is not a state or intermediate in this ODE")
 
     # Check x_name
     if x_name not in ["time"] + monitored + state_names:
@@ -177,7 +177,7 @@ def gotranrun(filename, params):
             print(
                 "Found stead state:",
                 ", ".join(
-                    "{0}: {1:e}".format(state.name, value)
+                    f"{state.name}: {value:e}"
                     for value, state in zip(y0, ode.full_states)
                 ),
             )
@@ -191,7 +191,7 @@ def gotranrun(filename, params):
         try:
             from scipy.integrate import odeint
         except Exception as e:
-            error("Problem importing scipy.integrate.odeint. {}".format(e))
+            error(f"Problem importing scipy.integrate.odeint. {e}")
         results = odeint(rhs, y0, tsteps, Dfun=jac, args=(model_params,))
 
     else:
@@ -252,7 +252,7 @@ def gotranrun(filename, params):
     # Save data
     if params.save_results:
         np.savetxt(
-            "{}.csv".format(params.basename),
+            f"{params.basename}.csv",
             save_results,
             header=all_results_header,
             delimiter=", ",
@@ -270,7 +270,7 @@ def gotranrun(filename, params):
         if what == DERIVATIVE_EXPRESSION:
             var, dep = expr.groups()
             if var in ode.present_ode_objects and dep in ode.present_ode_objects:
-                monitored_plot_updated.append("d{0}/d{1}".format(var, dep))
+                monitored_plot_updated.append(f"d{var}/d{dep}")
             else:
                 monitored_plot_updated.append(monitor)
         else:
@@ -302,11 +302,11 @@ def gotranrun(filename, params):
         plt.plot(x_values, values, next(line_styles))
 
     if plotted_items > 1:
-        plt.legend(["$\\mathrm{{{0}}}$".format(latex(value)) for value in plot_items])
+        plt.legend([f"$\\mathrm{{{latex(value)}}}$" for value in plot_items])
     elif plot_items:
-        plt.ylabel("$\\mathrm{{{0}}}$".format(latex(plot_items[0])))
+        plt.ylabel(f"$\\mathrm{{{latex(plot_items[0])}}}$")
 
-    plt.xlabel("$\\mathrm{{{0}}}$".format(latex(x_name)))
+    plt.xlabel(f"$\\mathrm{{{latex(x_name)}}}$")
     plt.title(ode.name.replace("_", "\\_"))
     plt.show()
 

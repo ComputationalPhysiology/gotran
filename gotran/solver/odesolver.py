@@ -146,7 +146,7 @@ class Solver(object):
 
 
 def check_method(method):
-    msg = "Unknown method {1}, possible method are {0}".format(method, methods)
+    msg = f"Unknown method {methods}, possible method are {method}"
     assert method in methods, msg
 
 

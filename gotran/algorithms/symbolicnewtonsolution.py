@@ -60,9 +60,13 @@ class SymbolicNewtonSolution(object):
         self.theta = theta
 
         # Create symbolic linear system
-        self.F, self.F_expr, self.jacobi, self.states, self.jac_subs = _create_newton_system(
-            ode, theta
-        )
+        (
+            self.F,
+            self.F_expr,
+            self.jacobi,
+            self.states,
+            self.jac_subs,
+        ) = _create_newton_system(ode, theta)
 
         # Create a simplified LU decomposition of the jacobi matrix
         # FIXME: Better names!
@@ -104,7 +108,7 @@ def _LU_solve(AA, rhs):
             return new_count
 
         # Create new symbol and store the representation
-        new_sym = sp.Symbol("j_{0}_{1}:{2}".format(i, j, new_count))
+        new_sym = sp.Symbol(f"j_{i}_{j}:{new_count}")
         new_old[new_sym] = A[i, j] - A[i, k] * A[k, j]
         for old_sym in [A[i, j], A[i, k], A[k, j]]:
             storage = old_new.get(old_sym)
@@ -149,7 +153,7 @@ def _LU_solve(AA, rhs):
                 continue
 
             # Create new symbol and store the representation
-            new_sym = sp.Symbol("j_{0}_{1}:{2}".format(i, j, new_count))
+            new_sym = sp.Symbol(f"j_{i}_{j}:{new_count}")
             new_old[new_sym] = A[i, j] * scale
             for old_sym in [A[i, j], A[j, j]]:
                 storage = old_new.get(old_sym)
@@ -183,7 +187,7 @@ def _LU_solve(AA, rhs):
             return new_count
 
         # Create new symbol and store the representation
-        new_sym = sp.Symbol("F_{0}:{1}".format(i, new_count))
+        new_sym = sp.Symbol(f"F_{i}:{new_count}")
         new_old[new_sym] = b[i, 0] - b[j, 0] * A[i, j]
         for old_sym in [b[i, 0], b[j, 0], A[i, j]]:
             storage = old_new.get(old_sym)
@@ -265,13 +269,13 @@ def _create_newton_system(ode, theta=1):
         for j, state in enumerate(states):
             F_ij = expr.diff(state)
             if F_ij:
-                jac_sym = sp.Symbol("j_{0}_{1}".format(i, j))
+                jac_sym = sp.Symbol(f"j_{i}_{j}")
                 sym_map[i, j] = jac_sym
                 jac_subs[jac_sym] = F_ij
                 # print "[%d,%d] (%d) # [%s, %s]  \n%s" \
                 # % (i,j, len(F_ij.args), states[i], states[j], F_ij)
 
-        F_i = sp.Symbol("F_{0}".format(i))
+        F_i = sp.Symbol(f"F_{i}")
         sym_map[i, j + 1] = F_i
         jac_subs[F_i] = expr
         F.append(F_i)

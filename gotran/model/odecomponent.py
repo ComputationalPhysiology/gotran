@@ -260,7 +260,7 @@ class ODEComponent(ODEObject):
         comp = ODEComponent(name, self)
 
         if name in self.root.all_components:
-            error("A component with the name '{0}' already excists.".format(name))
+            error(f"A component with the name '{name}' already excists.")
 
         self.children[comp.name] = comp
         self.root.all_components[comp.name] = comp
@@ -336,13 +336,13 @@ class ODEComponent(ODEObject):
 
         state = self._expect_state(state)
 
-        if "d{0}_dt".format(state.name) in self.ode_objects:
+        if f"d{state.name}_dt" in self.ode_objects:
             error(
                 "Cannot registered a state solution for a state "
                 "that has a state derivative registered."
             )
 
-        if "alg_{0}_0".format(state.name) in self.ode_objects:
+        if f"alg_{state.name}_0" in self.ode_objects:
             error(
                 "Cannot registered a state solution for a state "
                 "that has an algebraic expression registered."
@@ -399,14 +399,14 @@ class ODEComponent(ODEObject):
             der_expr = self.root.present_ode_objects.get(name)
 
             if der_expr is None:
-                error("{0} is not registered in this ODE".format(name))
+                error(f"{name} is not registered in this ODE")
 
         if isinstance(dep_var, (AppliedUndef, sp.Symbol)):
             name = sympycode(dep_var)
             dep_var = self.root.present_ode_objects.get(name)
 
             if dep_var is None:
-                error("{0} is not registered in this ODE".format(name))
+                error(f"{name} is not registered in this ODE")
 
         # Check if der_expr is a State
         if isinstance(der_expr, State):
@@ -440,7 +440,7 @@ class ODEComponent(ODEObject):
 
         state = self._expect_state(state)
 
-        if "d{0}_dt".format(state.name) in self.ode_objects:
+        if f"d{state.name}_dt" in self.ode_objects:
             error(
                 "Cannot registered an algebraic expression for a state "
                 "that has a state derivative registered."
@@ -664,7 +664,7 @@ class ODEComponent(ODEObject):
         elif TYPE == ALGEBRAIC_EXPRESSION:
 
             # Try getting corresponding ODEObjects
-            var_name, = expr.groups()
+            (var_name,) = expr.groups()
             var_obj = self.root.present_ode_objects.get(var_name)
 
             if var_obj is None:
@@ -687,7 +687,7 @@ class ODEComponent(ODEObject):
 
         if comp is None:
             comp = self.add_component(name)
-            debug("Adding '{0}' component to {1}".format(name, self))
+            debug(f"Adding '{name}' component to {self}")
         else:
             self.root._present_component = comp.name
 
@@ -709,13 +709,13 @@ class ODEComponent(ODEObject):
             state = self.root.present_ode_objects.get(name)
 
             if state is None:
-                error("{} is not registered in this ODE".format(name))
+                error(f"{name} is not registered in this ODE")
 
             if only_local_states and not (
                 state in self.states
                 or (state in self.intermediates and allow_state_solution)
             ):
-                error("{} is not registered in component {}".format(name, self.name))
+                error(f"{name} is not registered in component {self.name}")
 
         check_arg(state, allowed, 0)
 
@@ -900,8 +900,7 @@ class ODEComponent(ODEObject):
 
         if (to_state.sym, from_state.sym) in self.rates:
             error(
-                "Rate between state {0} and {1} is already "
-                "registered.".format(from_state, to_state)
+                f"Rate between state {from_state} and {to_state} is already registered."
             )
 
         # FIXME: It should also not be possible to include other
@@ -943,8 +942,8 @@ class ODEComponent(ODEObject):
 
             incomplete_state_names = [s.name for s in incomplete_states]
 
-            msg = "Cannot finalize component '{0}'. ".format(self)
-            msg += "Missing time derivatives for the following states: {}".format(', '.join(incomplete_state_names))
+            msg = f"Cannot finalize component '{self}'. "
+            msg += f"Missing time derivatives for the following states: {', '.join(incomplete_state_names)}"
 
             error(msg)
 
@@ -990,9 +989,7 @@ class ODEComponent(ODEObject):
 
         # Check used states
         if 0 in used_states:
-            error(
-                "No rate registered for state {0}".format(states[used_states.find(0)])
-            )
+            error(f"No rate registered for state {states[used_states.find(0)]}")
 
         # Check rate symetry
         for (ind_from, ind_to), times in list(rate_check.items()):

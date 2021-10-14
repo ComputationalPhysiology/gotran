@@ -14,7 +14,7 @@ def gotran2cpp(filename, params):
     Create a C++ header file from a gotran model
     """
 
-    timer = Timer("Generate C++ code from {}".format(filename))
+    timer = Timer(f"Generate C++ code from {filename}")
 
     # Load Gotran model
     ode = load_ode(filename)
@@ -31,7 +31,7 @@ def gotran2cpp(filename, params):
         output = filename.replace(".ode", "") + ".h"
 
     info("")
-    info("Generating C++ code for the {0} ode...".format(ode.name))
+    info(f"Generating C++ code for the {ode.name} ode...")
     if params.class_code:
         code = gen.class_code(ode)
     else:
@@ -70,7 +70,7 @@ def main():
             "headers needed to compile moudle is "
             "included.",
         ),
-        **generation_params
+        **generation_params,
     )
     params.parse_args(usage="usage: %prog FILE [options]")  # sys.argv[2:])
 

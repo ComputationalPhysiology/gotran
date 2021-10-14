@@ -260,10 +260,8 @@ def parse_arguments(params):
         if arg == "s":
             args.append("states")
             args_doc.append(
-                """    {0} : np.ndarray
-        The state values""".format(
-                    params.code.states.array_name
-                )
+                f"""    {params.code.states.array_name} : np.ndarray
+        The state values"""
             )
         elif arg == "t":
             args.append("time")
@@ -274,18 +272,14 @@ def parse_arguments(params):
         elif arg == "p" and params.code.parameters.representation != "numerals":
             args.append("parameters")
             args_doc.append(
-                """    {0} : np.ndarray
-        The parameter values""".format(
-                    params.code.parameters.array_name
-                )
+                f"""    {params.code.parameters.array_name} : np.ndarray
+        The parameter values"""
             )
         elif arg == "b" and params.code.body.representation != "named":
             args.append("body")
             args_doc.append(
-                """    {0} : np.ndarray
-        The body values""".format(
-                    params.code.body.array_name
-                )
+                f"""    {params.code.body.array_name} : np.ndarray
+        The body values"""
             )
 
     args = ", ".join(args)
