@@ -1,3 +1,5 @@
+[![CI](https://github.com/ComputationalPhysiology/gotran/actions/workflows/main.yml/badge.svg)](https://github.com/ComputationalPhysiology/gotran/actions/workflows/main.yml)
+
 # Gotran - General ODE TRAnslator
 
 Gotran:
