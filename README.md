@@ -1,4 +1,6 @@
 [![CI](https://github.com/ComputationalPhysiology/gotran/actions/workflows/main.yml/badge.svg)](https://github.com/ComputationalPhysiology/gotran/actions/workflows/main.yml)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/ComputationalPhysiology/gotran/master.svg)](https://results.pre-commit.ci/latest/github/ComputationalPhysiology/gotran/master)
+[![codecov](https://codecov.io/gh/ComputationalPhysiology/gotran/branch/master/graph/badge.svg?token=jfiLeIpkNa)](https://codecov.io/gh/ComputationalPhysiology/gotran)
 
 # Gotran - General ODE TRAnslator
 
