@@ -1,8 +1,11 @@
+# flake8: noqa
+import time
+
+import numpy as np
+
 from gotran import *
 from gotran.codegeneration.codegenerator import *
 from gotran.codegeneration.compilemodule import compile_module
-import time
-import numpy as np
 
 ode = load_ode("winslow")
 
@@ -21,9 +24,9 @@ oderepr = ODERepresentation(
 )
 gen = CodeGenerator(oderepr)
 
-exec (gen.init_states_code())
-exec (gen.init_param_code())
-exec (gen.dy_code())
+exec(gen.init_states_code())
+exec(gen.init_param_code())
+exec(gen.dy_code())
 
 parameters = default_parameters()
 states = init_values()
@@ -72,13 +75,18 @@ for keep, use_cse, numerals, use_names in [
         for i in range(times):
             module.rhs(states, 0.0, parameters, dy)
 
-    print """
+    print(
+        """
 keep_intermediates = {0}
 use_cse            = {1}
 parameter_numerals = {2}
 use_names          = {3}""".format(
-        keep, use_cse, numerals, use_names
+            keep,
+            use_cse,
+            numerals,
+            use_names,
+        ),
     )
-    print "TIMING: {:.4f}s".format(time.time() - t0)
+    print("TIMING: {:.4f}s".format(time.time() - t0))
 
     assert np.sum(np.abs(dy - dy_correct)) < 1e-6

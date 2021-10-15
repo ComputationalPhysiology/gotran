@@ -6,12 +6,12 @@ __date__ = "2013-05-07 -- 2015-06-04"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__ = "GNU LGPL Version 3.0 or later"
 
-from modelparameters.parameterdict import *
+from modelparameters.parameterdict import ParameterDict
+from modelparameters.parameters import Param
 
-from gotran import *
 from gotran.common import error
 from gotran.model.loadmodel import load_ode
-from gotran.model.odeobjects import Comment
+from gotran.model.ode import ODE
 
 
 def gotranexport(filename, params):

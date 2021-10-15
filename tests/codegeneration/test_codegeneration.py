@@ -1,10 +1,8 @@
 """test for odecomponent module"""
-
 # Imports for evaluation of generated code
 from __future__ import division
 
 import importlib
-import itertools
 from pathlib import Path
 
 import numpy as np

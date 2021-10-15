@@ -43,7 +43,7 @@ from modelparameters.utils import Timer, check_arg, scalars
 # gotran imports
 from .ode import ODE
 
-_for_template = re.compile("\A[ ]*for[ ]+.*in[ ]+:[ ]*\Z")
+_for_template = re.compile(r"\A[ ]*for[ ]+.*in[ ]+:[ ]*\Z")
 _no_intermediate_template = re.compile(".*# NO INTERMEDIATE.*")
 
 

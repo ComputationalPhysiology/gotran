@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-
-import os
-
-from modelparameters.parameterdict import *
+from modelparameters.parameterdict import ParameterDict
+from modelparameters.parameters import Param
 
 from gotran.codegeneration.codegenerators import CCodeGenerator
-from gotran.common import Timer, error, info, list_timings
-from gotran.common.options import parameters
+from gotran.common import info
+from gotran.common import list_timings
+from gotran.common import Timer
 from gotran.model.loadmodel import load_ode
 
 

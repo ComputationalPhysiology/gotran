@@ -7,7 +7,9 @@ import pytest
 from modelparameters import ScalarParam
 from modelparameters.codegeneration import sympycode
 from modelparameters.sympytools import symbols_from_expr
-from sympy import Matrix, exp, log
+from sympy import exp
+from sympy import log
+from sympy import Matrix
 
 import gotran
 
@@ -29,11 +31,11 @@ def test_creation():
     kk = ode.add_parameter("kk", 0.0)
 
     # Try overwriting state
-    with pytest.raises(gotran.GotranException) as cm:
+    with pytest.raises(gotran.GotranException):
         ode.add_parameter("j", 1.0)
 
     # Try overwriting parameter
-    with pytest.raises(gotran.GotranException) as cm:
+    with pytest.raises(gotran.GotranException):
         ode.add_state("ii", 1.0)
 
     assert ode.num_states == 3
@@ -79,7 +81,7 @@ def test_creation():
     assert ode.num_intermediates == 4
 
     # Try overwriting parameter with expression
-    with pytest.raises(gotran.GotranException) as cm:
+    with pytest.raises(gotran.GotranException):
         jada.ll = jada.tmp * jada.tmp2
 
     # Create a derivative expression
@@ -94,7 +96,7 @@ def test_creation():
     assert ode.num_full_states == 6
 
     # Try adding expressions to ode component
-    with pytest.raises(gotran.GotranException) as cm:
+    with pytest.raises(gotran.GotranException):
         ode.p = 1.0
 
     # Check used in and dependencies for one intermediate

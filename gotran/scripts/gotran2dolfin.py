@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-
 import os
+import sys
 
-import numpy as np
+from modelparameters.parameterdict import ParameterDict
+from modelparameters.parameters import Param
 
 from gotran.codegeneration.algorithmcomponents import rhs_expressions
 from gotran.codegeneration.codegenerators import DOLFINCodeGenerator
@@ -39,9 +40,6 @@ def gotran2dolfin(filename, params):
 
 
 def main():
-    import sys
-
-    from modelparameters.parameterdict import OptionParam, Param, ParameterDict
 
     params = ParameterDict(
         output=Param("", description="Specify output file name"),

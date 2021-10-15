@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <model xmlns="http://www.cellml.org/cellml/1.0#" xmlns:cmeta="http://www.cellml.org/metadata/1.0#" cmeta:id="terkildsen_2008" name="terkildsen_2008">
-  
+
 <documentation xmlns="http://cellml.org/tmp-documentation">
 <article>
   <articleinfo>
@@ -5869,7 +5869,7 @@ A CellML 1.1 version of this model is also available, which imports components f
   </rdf:Description>
   <rdf:Description rdf:about="rdf:#01b1f3a9-8550-4c31-972a-2233ea5606b5">
     <dcterms:modified xmlns:dcterms="http://purl.org/dc/terms/" rdf:resource="rdf:#18e2d24c-8f28-4fb3-84b1-d0125c52598a"/>
-    <rdf:value>Added CellML 1.0 model to version 01's documentation. 
+    <rdf:value>Added CellML 1.0 model to version 01's documentation.
 
 Added some cmeta:ids to variables</rdf:value>
     <cmeta:modifier rdf:resource="rdf:#d864f300-bb41-438b-a374-22885e9a74e3"/>

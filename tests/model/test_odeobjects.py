@@ -1,17 +1,15 @@
 """test for odeobjects module"""
-
 import pytest
-
-# from modelparameters.logger import suppress_logging
-# from modelparameters.codegeneration import sympycode
 from modelparameters.sympytools import symbols_from_expr
 from sympy import Symbol
 
 import gotran
+from gotran.model.utils import ode_primitives
 
+# from modelparameters.logger import suppress_logging
+# from modelparameters.codegeneration import sympycode
 # from gotran.model.odeobjects import *
 # from gotran.model.expressions import StateDerivative
-from gotran.model.utils import ode_primitives
 
 # import unittest
 

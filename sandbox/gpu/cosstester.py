@@ -1,14 +1,16 @@
-from gotran import load_ode
-from gotran.common import list_timings, clear_timings
-from StringIO import StringIO
-
 import ast
-import cudaodesystemsolver as coss
 import itertools as it
-import matplotlib.pyplot as plt
-import numpy as np
 import os
 import pickle
+from io import StringIO
+
+import cudaodesystemsolver as coss
+import matplotlib.pyplot as plt
+import numpy as np
+
+from gotran import load_ode
+from gotran.common import clear_timings
+from gotran.common import list_timings
 
 try:
     import progressbar
@@ -16,7 +18,6 @@ except ImportError:
     progressbar = None
 import random
 import threading
-import time
 import traceback
 
 DEFAULT_ODE_MODEL = "tentusscher"
@@ -59,13 +60,14 @@ class COSSTestCase(object):
             params["field_states"] = params["field_states"][params["ode_model"]]
 
         if "field_parameters" in params and isinstance(
-            params["field_parameters"], dict
+            params["field_parameters"],
+            dict,
         ):
             params["field_parameters"] = params["field_parameters"][params["ode_model"]]
 
         self.__dict__.update(params)
 
-        print self.ode_model
+        print(self.ode_model)
         self.ode = load_ode(self.ode_model)
         self.stored_field_states = list()
         if self.field_states_getter_fn is None:
@@ -74,7 +76,8 @@ class COSSTestCase(object):
         else:
             self.stored_field_states = list()
             self.field_states_fn = self.field_states_getter_fn(
-                self.num_nodes, self.stored_field_states
+                self.num_nodes,
+                self.stored_field_states,
             )
         initial_field_params = [
             param.init
@@ -85,7 +88,9 @@ class COSSTestCase(object):
             self.field_parameter_values = None
         else:
             self.field_parameter_values = self.field_parameter_values_getter_fn(
-                initial_field_params, self.num_nodes, self.double
+                initial_field_params,
+                self.num_nodes,
+                self.double,
             )
 
     @staticmethod
@@ -122,7 +127,9 @@ class COSSTestCase(object):
 
     @staticmethod
     def parameter_iterability_map():
-        return {k: v == [""] for k, v in COSSTestCase.default_parameters().items()}
+        return {
+            k: v == [""] for k, v in list(COSSTestCase.default_parameters().items())
+        }
 
     @staticmethod
     def check_kwargs(**kwargs):
@@ -132,13 +139,13 @@ class COSSTestCase(object):
 
         params = COSSTestCase.default_parameters()
 
-        for key, value in kwargs.iteritems():
+        for key, value in kwargs.items():
             if key not in params:
                 raise ValueError("Unknown argument '{0}'".format(key))
 
 
 def dict_product(dicts):
-    return (dict(it.izip(dicts, prod)) for prod in it.product(*dicts.itervalues()))
+    return (dict(it.izip(dicts, prod)) for prod in it.product(*iter(dicts.values())))
 
 
 def createTestCases(**kwargs):
@@ -148,7 +155,7 @@ def createTestCases(**kwargs):
     param_iterability_map = COSSTestCase.parameter_iterability_map()
     named_keys = list()
 
-    for key, value in params.iteritems():
+    for key, value in params.items():
         if (
             param_iterability_map[key]
             and isinstance(value, (list, tuple))
@@ -164,7 +171,7 @@ def createTestCases(**kwargs):
         testcases.append(COSSTestCase(**comb))
         names.append(",".join("%s=%s" % (k, comb[k]) for k in named_keys))
 
-    print "Generated {0} test cases.".format(len(testcases))
+    print("Generated {0} test cases.".format(len(testcases)))
     return (testcases, names)
 
 
@@ -178,7 +185,7 @@ def runTestSuite(
 ):
     testcases, names = createTestCases(**kwargs)
 
-    print "Running '{0}' tests...".format(title)
+    print("Running '{0}' tests...".format(title))
 
     results = runTests(
         testcases,
@@ -207,7 +214,7 @@ def runTestSuites(
 
     results = dict()
 
-    for title, test_suite in test_suites.iteritems():
+    for title, test_suite in test_suites.items():
         results[title] = runTestSuite(
             title,
             keep_cuda_code=keep_cuda_code,
@@ -218,17 +225,25 @@ def runTestSuites(
             **test_suite
         )
 
-    for title, result in results.iteritems():
-        print "Results from '{0}' test:".format(title)
+    for title, result in results.items():
+        print("Results from '{0}' test:".format(title))
         printResults(result, indent=4)
 
     return results
 
 
 def printResults(results, indent=0):
-    max_name_len = max(1, *map(len, [r["name"] for r in results]))
+    max_name_len = max(1, *list(map(len, [r["name"] for r in results])))
     max_runtime_str_len = (
-        max(map(len, map(str, map(int, [r["runtime"] for r in results])))) + 3
+        max(
+            list(
+                map(
+                    len,
+                    list(map(str, list(map(int, [r["runtime"] for r in results])))),
+                ),
+            ),
+        )
+        + 3
     )
     for result in results:
         name, runtime, fstates, error = (
@@ -243,10 +258,18 @@ def printResults(results, indent=0):
             else "No field states"
         )
         error_fmt = "(ERROR)" if error is not None else ""
-        print " " * indent + "{0:{1}s}: {2:{3}.2f}s ({4}) {5}".format(
-            name, max_name_len, runtime, max_runtime_str_len, fstates_fmt, error_fmt
+        print(
+            " " * indent
+            + "{0:{1}s}: {2:{3}.2f}s ({4}) {5}".format(
+                name,
+                max_name_len,
+                runtime,
+                max_runtime_str_len,
+                fstates_fmt,
+                error_fmt,
+            ),
         )
-    print
+    print()
 
 
 def runTestCase(
@@ -296,16 +319,16 @@ def runTestCase(
 
         solver.reset()
 
-        print "Completed test '{0}' in {1:.2f}s.".format(name, result["runtime"])
-    except:
+        print("Completed test '{0}' in {1:.2f}s.".format(name, result["runtime"]))
+    except Exception:
         f = StringIO()
         traceback.print_exc(file=f)
         f.read()
         result["error"] = f.buf
         f.close()
-        print "FAILED test '{0}'.".format(name)
+        print("FAILED test '{0}'.".format(name))
 
-    print
+    print()
     return result
 
 
@@ -406,8 +429,8 @@ def runSteppedTestCase(
 
         solver.reset()
 
-        print "Completed test '{0}' in {1:.2f}s".format(name, result["runtime"])
-    except:
+        print("Completed test '{0}' in {1:.2f}s".format(name, result["runtime"]))
+    except Exception:
         if bar is not None:
             bar.finish()
         f = StringIO()
@@ -415,14 +438,18 @@ def runSteppedTestCase(
         f.read()
         result["error"] = f.buf
         f.close()
-        print "FAILED test '{0}'.".format(name)
+        print("FAILED test '{0}'.".format(name))
 
-    print
+    print()
     return result
 
 
 def runTests(
-    testcases, names=None, keep_cuda_code=False, printTimings=True, showProgress=True
+    testcases,
+    names=None,
+    keep_cuda_code=False,
+    printTimings=True,
+    showProgress=True,
 ):
     results = list()
 
@@ -430,8 +457,8 @@ def runTests(
 
     names = names or [""] * ntests
 
-    for i, testcase, name in it.izip(xrange(ntests), testcases, names):
-        print "Running test {0}/{1} ({2})...".format(i + 1, ntests, name)
+    for i, testcase, name in it.izip(range(ntests), testcases, names):
+        print("Running test {0}/{1} ({2})...".format(i + 1, ntests, name))
         # results.append(runTestCase(testcase, name,
         #                           keep_cuda_code=keep_cuda_code,
         #                           printTimings=printTimings))
@@ -442,7 +469,7 @@ def runTests(
                 keep_cuda_code=keep_cuda_code,
                 printTimings=printTimings,
                 showProgress=showProgress,
-            )
+            ),
         )
 
     return results
@@ -472,7 +499,7 @@ def getTestCaseParams(testcase, keep_cuda_code=False):
 def get_store_partial_field_state_fn(num_nodes, stored_field_states, n=3):
     def store_field_states_fn(field_states):
         stored_field_states.append(
-            [field_states[j * (len(field_states) - 1) / (n - 1)] for j in xrange(n)]
+            [field_states[j * (len(field_states) - 1) / (n - 1)] for j in range(n)],
         )
 
     return store_field_states_fn
@@ -485,7 +512,7 @@ def get_c_s_partial_field_state_fn(num_nodes, stored_field_states, n=3):
             fs * random.uniform(0.1, 10.0)
 
         stored_field_states.append(
-            [field_states[j * (len(field_states) - 1) / (n - 1)] for j in xrange(n)]
+            [field_states[j * (len(field_states) - 1) / (n - 1)] for j in range(n)],
         )
 
     return c_s_field_states_fn
@@ -506,7 +533,8 @@ def linear_field_parameter_transform(field_parameters, num_nodes, float_precisio
             np.concatenate(
                 tuple(
                     np.reshape(
-                        np.linspace(value, value * 0.01, num_nodes), (num_nodes, 1)
+                        np.linspace(value, value * 0.01, num_nodes),
+                        (num_nodes, 1),
                     )
                     for value in field_parameters
                 ),
@@ -748,7 +776,7 @@ class ThreadedTest(threading.Thread):
     def run(self):
         self.threadLock.acquire()
 
-        print "Running test on thread {0}...".format(self.threadID)
+        print("Running test on thread {0}...".format(self.threadID))
         self.results[self.threadID] = runTestCase(
             self.testcase,
             "Thread {0}".format(self.threadID),
@@ -761,7 +789,7 @@ class ThreadedTest(threading.Thread):
 
 
 def testSimultaneous(n=4, **kwargs):
-    if not ("force" in kwargs and kwargs["force"] == True):
+    if not ("force" in kwargs and kwargs["force"] is True):
         raise NotImplementedError("testSimultaneous() is broken. Do not run.")
 
     test_suite = sample_test_suites["FLOAT PRECISION"].copy()
@@ -796,14 +824,14 @@ def testSimultaneous(n=4, **kwargs):
 
 def saveResults(title, results, directory):
     if title is None or len(title) == 0:
-        print "Title error in saveResults"
+        print("Title error in saveResults")
         return
 
     try:
         if not os.path.exists(directory):
             os.makedirs(directory)
     except OSError as e:
-        print "OSError: {0}".format(e)
+        print("OSError: {0}".format(e))
         return
 
     if directory[-1] != os.path.sep:
@@ -811,7 +839,7 @@ def saveResults(title, results, directory):
 
     fname = directory + title.replace(" ", "_")
 
-    print "Writing results to {0}...".format(fname)
+    print("Writing results to {0}...".format(fname))
 
     with open(directory + title.replace(" ", "_"), "w") as f:
         f.write("{0}\n".format(title))
@@ -834,14 +862,16 @@ def saveResults(title, results, directory):
             if tc.field_parameters is not None:
                 f.write(
                     "{0}\n".format(
-                        " ".join("{0}".format(fp) for fp in tc.field_parameters)
-                    )
+                        " ".join("{0}".format(fp) for fp in tc.field_parameters),
+                    ),
                 )
             else:
                 f.write("\n")
             if tc.field_states is not None:
                 f.write(
-                    "{0}\n".format(" ".join("{0}".format(fs) for fs in tc.field_states))
+                    "{0}\n".format(
+                        " ".join("{0}".format(fs) for fs in tc.field_states),
+                    ),
                 )
             else:
                 f.write("\n")
@@ -862,15 +892,15 @@ def saveResults(title, results, directory):
             if tc.field_parameter_values is not None:
                 f.write(
                     "{0}\n".format(
-                        " ".join("{0}".format(fp) for fp in tc.field_parameter_values)
-                    )
+                        " ".join("{0}".format(fp) for fp in tc.field_parameter_values),
+                    ),
                 )
             else:
                 f.write("\n")
             f.write(
                 "{0}\n".format(
-                    " ".join("{0}".format(fs) for fs in result["field_states"])
-                )
+                    " ".join("{0}".format(fs) for fs in result["field_states"]),
+                ),
             )
             if tc.stored_field_states is not None:
                 f.write("{0}\n".format(len(tc.stored_field_states)))
@@ -879,8 +909,8 @@ def saveResults(title, results, directory):
                         "\n".join(
                             " ".join("{0}".format(fs) for fs in field_states)
                             for field_states in tc.stored_field_states
-                        )
-                    )
+                        ),
+                    ),
                 )
             else:
                 f.write("0\n")
@@ -888,13 +918,13 @@ def saveResults(title, results, directory):
 
 def saveResultsSimple(title, results, directory):
     if title is not None or len(title) == 0:
-        print "Title error in saveResultsSimple"
+        print("Title error in saveResultsSimple")
 
     try:
         if not os.path.exists(directory):
             os.makedirs(directory)
     except OSError as e:
-        print "OSError: {0}".format(e)
+        print("OSError: {0}".format(e))
         return
 
     if directory[-1] != os.path.sep:
@@ -904,7 +934,7 @@ def saveResultsSimple(title, results, directory):
 
     data = [title]
 
-    print "Processing results..."
+    print("Processing results...")
 
     for i, result in enumerate(results):
         tc = result["testcase"]
@@ -915,7 +945,7 @@ def saveResultsSimple(title, results, directory):
                     "name": result["name"],
                     "error": result["error"],
                     "runtime": result["runtime"],
-                }
+                },
             )
             continue
         data.append(
@@ -944,10 +974,10 @@ def saveResultsSimple(title, results, directory):
                 "update_field_states": tc.update_field_states,
                 "update_host_states": tc.update_host_states,
                 "use_cse": tc.use_cse,
-            }
+            },
         )
 
-    print "Writing results to {0}...".format(fname)
+    print("Writing results to {0}...".format(fname))
 
     with open(fname, "w") as f:
         pickle.dump(data, f)
@@ -956,17 +986,21 @@ def saveResultsSimple(title, results, directory):
 def getDataFromFile(_file, get_stored_fstates=False):
     with open(_file) as f:
         title = f.readline().rstrip()
-        print "Reading test data '{0}' (may take a while)...".format(title)
+        print("Reading test data '{0}' (may take a while)...".format(title))
         n = int(f.readline().rstrip())
         data = list()
-        for _ in xrange(n):
+        for _ in range(n):
             datum = dict()
             datum["name"] = f.readline().rstrip()
             datum["error"] = f.readline().rstrip()
             datum["runtime"] = float(f.readline().rstrip())
 
             if datum["error"] != "None":
-                print "Encountered result with error ({0}), discarding...".format(name)
+                print(
+                    "Encountered result with error ({0}), discarding...".format(
+                        datum["error"],
+                    ),
+                )
                 continue
 
             datum["block_size"] = int(f.readline().rstrip())
@@ -991,7 +1025,7 @@ def getDataFromFile(_file, get_stored_fstates=False):
             datum["use_cse"] = bool(f.readline().rstrip())
 
             datum["field_parameter_values"] = [
-                map(float, fpv)
+                list(map(float, fpv))
                 for fpv in map(
                     ast.literal_eval,
                     [
@@ -1000,16 +1034,18 @@ def getDataFromFile(_file, get_stored_fstates=False):
                     ],
                 )
             ]
-            datum["field_state_values"] = map(float, f.readline().rstrip().split(" "))
+            datum["field_state_values"] = list(
+                map(float, f.readline().rstrip().split(" ")),
+            )
             datum["n_stored_fstate_iters"] = int(f.readline().rstrip())
             datum["stored_field_states"] = list()
             if get_stored_fstates:
-                for _ in xrange(datum["n_stored_fstate_iters"]):
+                for _ in range(datum["n_stored_fstate_iters"]):
                     datum["stored_field_states"].append(
-                        map(float, f.readline().rstrip().split(" "))
+                        list(map(float, f.readline().rstrip().split(" "))),
                     )
             else:
-                for _ in xrange(datum["n_stored_fstate_iters"]):
+                for _ in range(datum["n_stored_fstate_iters"]):
                     f.readline()
 
             data.append(datum)
@@ -1063,16 +1099,18 @@ def plotResults(_file, plotTypes=None, get_stored_fstates=False):
     subnames = [name.split(" ", 2)[-1][1:-1] for name in names]
     if plotTypes is None:
         subsubnames = [s.split(",") for s in subnames]
-        namekeys, namevalues = zip(
-            *[zip(*[s.split("=") for s in ssname]) for ssname in subsubnames]
+        namekeys, namevalues = list(
+            zip(
+                *[list(zip(*[s.split("=") for s in ssname])) for ssname in subsubnames]
+            ),
         )
 
         if len(set(namekeys)) != 1:
-            print "Cannot determine what to plot."
+            print("Cannot determine what to plot.")
             if len(set(namekeys)) < 16:
-                print "Keys", set(namekeys)
+                print("Keys", set(namekeys))
             else:
-                print len(set(namekeys)), "keys"
+                print(len(set(namekeys)), "keys")
             return
         else:
             plotTypes = list()
@@ -1093,7 +1131,7 @@ def plotResults(_file, plotTypes=None, get_stored_fstates=False):
             pType["x"]["type"] not in validPlotTypes
             or pType["y"]["type"] not in validPlotTypes
         ):
-            print str(pType) + " plot not yet implemented"
+            print(str(pType) + " plot not yet implemented")
         else:
             figures.append(pType)
 
@@ -1118,7 +1156,7 @@ def plotResults(_file, plotTypes=None, get_stored_fstates=False):
                 xy_pos[axis] = [datum["field_parameter_values"] for datum in data]
 
             if figure[axis]["type"] == "double":
-                xy_pos[axis] = [i for i in xrange(len(data))]
+                xy_pos[axis] = [i for i in range(len(data))]
 
         x_pos = xy_pos["x"]
         y_pos = xy_pos["y"]

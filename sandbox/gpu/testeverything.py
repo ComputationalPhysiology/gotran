@@ -1,10 +1,14 @@
-from gotran import load_ode, CUDACodeGenerator
-from gotran.common import list_timings, clear_timings
-from StringIO import StringIO
-import cudaodesystemsolver as coss
 import itertools as it
-import numpy as np
 import traceback
+from io import StringIO
+
+import cudaodesystemsolver as coss
+import numpy as np
+from goss import Progress
+
+from gotran import load_ode
+from gotran.common import clear_timings
+from gotran.common import list_timings
 
 
 def get_dtype_str(float_precision):
@@ -24,7 +28,7 @@ def get_store_field_states_fn(num_nodes):
 
     def store_field_states_fn(field_states):
         stored_field_states[i].append(
-            [field_states[0], field_states[num_nodes / 2], field_states[num_nodes - 1]]
+            [field_states[0], field_states[num_nodes / 2], field_states[num_nodes - 1]],
         )
 
     return store_field_states_fn
@@ -144,7 +148,7 @@ def createTestCases(
     ):
         testcases.append(TestCase(*comb))
 
-    print "Generated {0} test cases.".format(len(testcases))
+    print("Generated {0} test cases.".format(len(testcases)))
     return testcases
 
 
@@ -171,11 +175,11 @@ def testFloatPrecision(
         double=(True,),  # , False)
     )
 
-    print "Running FLOAT PRECISION tests..."
+    print("Running FLOAT PRECISION tests...")
 
     names = ("double precision", "single precision")
 
-    all_field_states, runtimes, errors = zip(*runTests(testcases))
+    all_field_states, runtimes, errors = list(zip(*runTests(testcases)))
 
     printResults(names, all_field_states, runtimes)
 
@@ -206,11 +210,11 @@ def testThreadsPerBlock(
         block_size=block_size,
     )
 
-    print "Running THREADS PER BLOCK tests..."
+    print("Running THREADS PER BLOCK tests...")
 
     names = ["block size {0}".format(bs) for bs in block_size]
 
-    all_field_states, runtimes, errors = zip(*runTests(testcases))
+    all_field_states, runtimes, errors = list(zip(*runTests(testcases)))
 
     printResults(names, all_field_states, runtimes)
 
@@ -240,11 +244,11 @@ def testNumNodes(
         field_parameter_values_getter_fn=(field_parameter_values_getter_fn,),
     )
 
-    print "Running NUM NODES tests..."
+    print("Running NUM NODES tests...")
 
     names = ["{0} nodes".format(nn) for nn in num_nodes]
 
-    all_field_states, runtimes, errors = zip(*runTests(testcases))
+    all_field_states, runtimes, errors = list(zip(*runTests(testcases)))
 
     printResults(names, all_field_states, runtimes)
 
@@ -273,11 +277,11 @@ def testSolvers(
         field_parameter_values_getter_fn=(field_parameter_values_getter_fn,),
     )
 
-    print "Running SOLVERS tests..."
+    print("Running SOLVERS tests...")
 
     names = solver
 
-    all_field_states, runtimes, errors = zip(*runTests(testcases))
+    all_field_states, runtimes, errors = list(zip(*runTests(testcases)))
 
     printResults(names, all_field_states, runtimes)
 
@@ -307,11 +311,11 @@ def testDt(
         field_parameter_values_getter_fn=(field_parameter_values_getter_fn,),
     )
 
-    print "Running DT tests..."
+    print("Running DT tests...")
 
     names = ["dt={0}".format(dt_) for dt_ in dt]
 
-    all_field_states, runtimes, errors = zip(*runTests(testcases))
+    all_field_states, runtimes, errors = list(zip(*runTests(testcases)))
 
     printResults(names, all_field_states, runtimes)
 
@@ -344,14 +348,14 @@ def testUpdateStates(
         update_field_states=update_field_states,
     )
 
-    print "Running UPDATE HOST/FIELD STATES tests..."
+    print("Running UPDATE HOST/FIELD STATES tests...")
 
     names = [
         "host={0}, field={1}".format(h, f)
         for h, f in it.product(update_host_states, update_field_states)
     ]
 
-    all_field_states, runtimes, errors = zip(*runTests(testcases))
+    all_field_states, runtimes, errors = list(zip(*runTests(testcases)))
 
     printResults(names, all_field_states, runtimes)
 
@@ -389,14 +393,14 @@ def testRepresentation(
         use_cse=use_cse,
     )
 
-    print "Running REPRESENTATION/CSE tests..."
+    print("Running REPRESENTATION/CSE tests...")
 
     names = [
         "s={0}, p={1}, b={2}, cse={3}".format(s, p, b, cse)
         for s, p, b, cse in it.product(statesrepr, paramrepr, bodyrepr, use_cse)
     ]
 
-    all_field_states, runtimes, errors = zip(*runTests(testcases))
+    all_field_states, runtimes, errors = list(zip(*runTests(testcases)))
 
     printResults(names, all_field_states, runtimes)
 
@@ -421,8 +425,8 @@ def testEverything():
     for name, test in tests:
         results[name] = test()
 
-    for name, result in results.iteritems():
-        print "\nResults from {0} test:".format(name)
+    for name, result in results.items():
+        print("\nResults from {0} test:".format(name))
         subnames, fstates, runtimes, _, _ = result
         printResults(subnames, fstates, runtimes, indent=4)
 
@@ -431,14 +435,17 @@ def testEverything():
 
 def printResults(names, all_field_states, runtimes, indent=0):
     for name, fstates, runtime in zip(names, all_field_states, runtimes):
-        print " " * indent + "{0:{1}s}: {2:{3}.2f}s ({4}, {5}, {6})".format(
-            name,
-            max(map(len, names)),
-            runtime,
-            max(map(len, map(str, map(int, runtimes)))) + 3,
-            fstates[0],
-            fstates[len(fstates) / 2],
-            fstates[-1],
+        print(
+            " " * indent
+            + "{0:{1}s}: {2:{3}.2f}s ({4}, {5}, {6})".format(
+                name,
+                max(list(map(len, names))),
+                runtime,
+                max(list(map(len, list(map(str, list(map(int, runtimes))))))) + 3,
+                fstates[0],
+                fstates[len(fstates) / 2],
+                fstates[-1],
+            ),
         )
 
 
@@ -468,7 +475,7 @@ def runTests(testcases, printTimings=True):
             )
 
             kernel_fname = solver._dump_kernel_code()
-            print "Dumped CUDA code into '{0}.'".format(kernel_fname)
+            print("Dumped CUDA code into '{0}.'".format(kernel_fname))
 
             solver.simulate(
                 testcase.t0,
@@ -489,24 +496,30 @@ def runTests(testcases, printTimings=True):
 
             solver.reset()
 
-            print "Completed test {0}/{1} in {2:.2f}s.".format(
-                i + 1, ntests, results[-1][1]
+            print(
+                "Completed test {0}/{1} in {2:.2f}s.".format(
+                    i + 1,
+                    ntests,
+                    results[-1][1],
+                ),
             )
-        except:
+        except Exception:
             f = StringIO()
             traceback.print_exc(file=f)
             f.read()
             results.append(["ERROR", 0.0, f.buf])
             f.close()
-            print "FAILED test {0}/{1}.".format(i + 1, ntests)
+            print("FAILED test {0}/{1}.".format(i + 1, ntests))
 
     return results
 
 
 def runTestsStep(
-    testcases, printTimings=True, checkNaN=False, update_host_states=False
+    testcases,
+    printTimings=True,
+    checkNaN=False,
+    update_host_states=False,
 ):
-    from goss import Progress, Timer as GossTimer, timings
 
     results = list()
 
@@ -560,7 +573,7 @@ def runTestsStep(
                 if checkNaN:
                     n = np.isnan(field_states).sum()
                     if n > num_nans:
-                        print t, n
+                        print(t, n)
                     num_nans = n
 
                 t += dt
@@ -568,15 +581,19 @@ def runTestsStep(
 
             results.append([field_states, solver.simulation_runtime, None])
             solver.reset()
-            print "Completed test {0}/{1} in {2:.2f}s.".format(
-                i + 1, ntests, results[-1][1]
+            print(
+                "Completed test {0}/{1} in {2:.2f}s.".format(
+                    i + 1,
+                    ntests,
+                    results[-1][1],
+                ),
             )
-        except:
+        except Exception:
             f = StringIO()
             traceback.print_exc(file=f)
             f.read()
             results.append(["ERROR", 0.0, f.buf])
             f.close()
-            print "FAILED test {0}/{1}.".format(i + 1, ntests)
+            print("FAILED test {0}/{1}.".format(i + 1, ntests))
 
     return results

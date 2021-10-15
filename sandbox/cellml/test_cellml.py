@@ -1,12 +1,13 @@
-from xml.etree import ElementTree
-from collections import defaultdict, OrderedDict
+import glob
+import re
+from collections import OrderedDict
+
+from modelparameters.utils import clear_timings
+from modelparameters.utils import list_timings
+
+from gotran import warning
 from gotran.input.cellml2 import CellMLParser
 from gotran.model.loadmodel import load_ode
-from modelparameters.utils import list_timings, clear_timings
-from gotran import warning
-import glob
-
-import re
 
 # model = "winslow_rice_jafri_marban_ororke_1999.cellml"
 model = "iyer_mazhari_winslow_2004.cellml"
@@ -33,12 +34,12 @@ for f in glob.glob("*.cellml"):
     open(parser.name + ".ode", "w").write(parser.to_gotran())
     try:
         ode = load_ode(parser.name + ".ode")
-    except Exception, e:
-        print "***Error: Could not load gotran model", parser.name, e
-        print
+    except Exception as e:
+        print("***Error: Could not load gotran model", parser.name, e)
+        print()
     list_timings()
     clear_timings()
-    print
+    print()
 
 mathmlparser = parser.mathmlparser
 parsed_components = parser.components
@@ -155,7 +156,9 @@ for units in parser.get_iterator("units"):
         elif cellml_unit in collected_units:
             if prefix:
                 warning("Skipping prefix of unit '{0}'".format(cellml_unit))
-            for name, (fullnam, part_exponent) in collected_units[cellml_unit].items():
+            for name, (fullnam, part_exponent) in list(
+                collected_units[cellml_unit].items(),
+            ):
                 new_exponent = str(int(part_exponent) * int(exponent))
                 if new_exponent not in ["0", "1"]:
                     fullname = name + "**" + new_exponent
@@ -211,7 +214,7 @@ def parse_component(comp):
             # Discard collected equation name from used variables
             used_variables.discard(eq_name)
 
-            assert re.findall("(\w+)", eq_name)[0] == eq_name
+            assert re.findall(r"(\w+)", eq_name)[0] == eq_name
             assert equation_list[1] == mathmlparser["eq"]
             equations[eq_name] = "".join(equation_list[2:])
 
@@ -224,7 +227,7 @@ def parse_component(comp):
     )
 
     parameters = OrderedDict(
-        (name, value) for name, value in variables.items() if value is not None
+        (name, value) for name, value in list(variables.items()) if value is not None
     )
 
     component["states"] = state_variables

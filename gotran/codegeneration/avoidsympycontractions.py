@@ -14,7 +14,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
-
 # Not meant to make any of the functions available from this module
 __all__ = []
 

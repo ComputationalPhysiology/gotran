@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-from __future__ import division
-
 from itertools import cycle
 
 import matplotlib.pyplot as plt
 import numpy as np
 from modelparameters.codegeneration import latex
-from modelparameters.parameterdict import *
+from modelparameters.logger import error
+from modelparameters.logger import warning
+from modelparameters.parameterdict import ParameterDict
+from modelparameters.parameters import OptionParam
+from modelparameters.parameters import Param
+from modelparameters.parameters import ScalarParam
 
 from gotran.codegeneration.compilemodule import compile_module
-from gotran.common import error, warning
 from gotran.common.options import parameters
 from gotran.model.loadmodel import load_ode
-from gotran.model.utils import DERIVATIVE_EXPRESSION, special_expression
+from gotran.model.utils import DERIVATIVE_EXPRESSION
+from gotran.model.utils import special_expression
 
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __date__ = "2013-03-13 -- 2015-06-24"
@@ -22,7 +24,7 @@ __license__ = "GNU LGPL Version 3.0 or later"
 
 try:
     from scipy.optimize import root
-except:
+except ImportError:
     root = None
 
 
@@ -229,7 +231,6 @@ def gotranrun(filename, params):
 
     plot_inds = [module.state_indices(state) for state in plot_states]
 
-    monitored_values = [[] for monitor in monitored_plot]
     monitor_inds = np.array(
         [monitored.index(monitor) for monitor in monitored_plot],
         dtype=int,

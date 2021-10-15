@@ -58,16 +58,16 @@ The complete original paper reference is cited below:
 
 </sect1>
 </article>
-</documentation> 
+</documentation>
 
 
-  
-  
+
+
 
   <units name="ms">
     <unit units="second" prefix="milli"/>
   </units>
-  
+
   <units name="V">
     <unit units="volt"/>
   </units>
@@ -75,7 +75,7 @@ The complete original paper reference is cited below:
   <units name="per_V">
     <unit units="volt" exponent="-1"/>
   </units>
-  
+
   <units name="J_mol">
     <unit units="joule"/>
     <unit units="mole" exponent="-1"/>
@@ -90,12 +90,12 @@ The complete original paper reference is cited below:
   <units name="first_order_rate_constant">
     <unit units="second" prefix="milli" exponent="-1"/>
   </units>
-  
+
   <units name="J_K">
     <unit units="joule"/>
     <unit units="kelvin" exponent="-1"/>
   </units>
-  
+
   <units name="K">
     <unit units="kelvin"/>
   </units>
@@ -104,13 +104,13 @@ The complete original paper reference is cited below:
     <unit units="joule"/>
     <unit units="second" prefix="milli"/>
   </units>
-  
+
   <units name="C_mol">
     <unit units="coulomb"/>
     <unit units="mole" exponent="-1"/>
   </units>
- 
-  
+
+
   <component name="environment">
     <variable units="ms" public_interface="out" name="time" cmeta:id="environment_time"/>
   </component>
@@ -118,17 +118,17 @@ The complete original paper reference is cited below:
   <component name="membrane">
     <variable units="V" public_interface="out" name="V" initial_value="-0.12"/>
   </component>
-  
+
   <component name="sodium_current">
     <variable units="dimensionless" public_interface="out" name="i_Na" cmeta:id="sodium_current_i_Na"/>
-    
+
     <variable units="V" name="E_Na" initial_value="0.044675"/>
     <variable units="per_V" name="g_Na" initial_value="0.0131"/>
-    
+
     <variable units="ms" public_interface="in" name="time"/>
     <variable units="V" public_interface="in" name="V"/>
     <variable units="dimensionless" public_interface="in" name="P_open"/>
-    
+
     <math xmlns="http://www.w3.org/1998/Math/MathML" id="1">
       <apply>
         <eq/>
@@ -143,13 +143,13 @@ The complete original paper reference is cited below:
             <ci> E_Na </ci>
           </apply>
         </apply>
-      </apply>  
+      </apply>
     </math>
   </component>
-  
+
   <component name="Markov_model" cmeta:id="Markov_model">
     <variable units="dimensionless" public_interface="out" name="P_open"/>
-    
+
     <variable units="dimensionless" name="O1" initial_value="0.0"/>
     <variable units="dimensionless" name="O2" initial_value="0.0"/>
     <variable units="dimensionless" name="C0" initial_value="1.0"/>
@@ -164,7 +164,7 @@ The complete original paper reference is cited below:
     <variable units="dimensionless" name="C4I" initial_value="0.0"/>
     <variable units="dimensionless" name="I" initial_value="0.0"/>
     <variable units="dimensionless" name="a" initial_value="2.5218"/>
-     
+
     <variable units="first_order_rate_constant" public_interface="in" name="alpha"/>
     <variable units="first_order_rate_constant" public_interface="in" name="beta"/>
     <variable units="first_order_rate_constant" public_interface="in" name="cf"/>
@@ -180,7 +180,7 @@ The complete original paper reference is cited below:
     <variable units="first_order_rate_constant" public_interface="in" name="gamma_gamma"/>
     <variable units="first_order_rate_constant" public_interface="in" name="delta_delta"/>
     <variable units="ms" public_interface="in" name="time"/>
-    
+
     <math xmlns="http://www.w3.org/1998/Math/MathML" id="2">
       <apply>
         <eq/>
@@ -192,7 +192,7 @@ The complete original paper reference is cited below:
         </apply>
       </apply>
     </math>
-              
+
     <math xmlns="http://www.w3.org/1998/Math/MathML" id="3">
       <apply>
         <eq/>
@@ -854,7 +854,7 @@ The complete original paper reference is cited below:
             </apply>
          </apply>
     </math>
-      
+
     <math xmlns="http://www.w3.org/1998/Math/MathML" id="14">
       <apply>
             <eq/>
@@ -957,9 +957,9 @@ The complete original paper reference is cited below:
                </apply>
             </apply>
          </apply>
-    </math>  
-  </component> 
-  
+    </math>
+  </component>
+
   <component name="rate_constants">
     <variable units="first_order_rate_constant" public_interface="out" name="alpha"/>
     <variable units="first_order_rate_constant" public_interface="out" name="beta"/>
@@ -978,7 +978,7 @@ The complete original paper reference is cited below:
 
     <variable units="J_mol_K" name="R" initial_value="8.314472"/>
     <variable units="K" name="T" initial_value="286.0"/>
-    <variable units="C_mol" name="F" initial_value="96500.0"/> 
+    <variable units="C_mol" name="F" initial_value="96500.0"/>
     <variable units="J_K" name="k" initial_value="1.3806504E-23"/>
     <variable units="J_ms" name="h" initial_value="6.62607095E-31"/>
     <variable units="dimensionless" name="z_alpha" initial_value="0"/>
@@ -1023,16 +1023,16 @@ The complete original paper reference is cited below:
     <variable units="J_mol_K" name="delta_S_v" initial_value="193.265"/>
     <variable units="J_mol_K" name="delta_S_gamma_gamma" initial_value="-578.317"/>
     <variable units="J_mol_K" name="delta_S_delta_delta" initial_value="-130.639"/>
-   
+
     <variable units="ms" public_interface="in" name="time"/>
     <variable units="V" public_interface="in" name="V"/>
 
-    <math xmlns="http://www.w3.org/1998/Math/MathML" id="16">    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" id="16">
       <apply>
         <eq/>
         <ci> alpha </ci>
         <apply>
-          <times/>      
+          <times/>
 		  <apply>
             <divide/>
             <apply>
@@ -1079,11 +1079,11 @@ The complete original paper reference is cited below:
               </apply>
             </apply>
           </apply>
-        </apply>  
+        </apply>
       </apply>
     </math>
 
-    <math xmlns="http://www.w3.org/1998/Math/MathML" id="17">    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" id="17">
       <apply>
         <eq/>
         <ci> beta </ci>
@@ -1135,11 +1135,11 @@ The complete original paper reference is cited below:
               </apply>
             </apply>
           </apply>
-        </apply>     
+        </apply>
       </apply>
     </math>
 
-    <math xmlns="http://www.w3.org/1998/Math/MathML" id="18">    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" id="18">
       <apply>
         <eq/>
         <ci> gamma </ci>
@@ -1191,11 +1191,11 @@ The complete original paper reference is cited below:
               </apply>
             </apply>
           </apply>
-        </apply>     
+        </apply>
       </apply>
     </math>
 
-    <math xmlns="http://www.w3.org/1998/Math/MathML" id="19">    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" id="19">
       <apply>
         <eq/>
         <ci> delta </ci>
@@ -1247,11 +1247,11 @@ The complete original paper reference is cited below:
               </apply>
             </apply>
           </apply>
-        </apply>     
+        </apply>
       </apply>
     </math>
-      
-    <math xmlns="http://www.w3.org/1998/Math/MathML" id="20">    
+
+    <math xmlns="http://www.w3.org/1998/Math/MathML" id="20">
       <apply>
         <eq/>
         <ci> on </ci>
@@ -1303,11 +1303,11 @@ The complete original paper reference is cited below:
               </apply>
             </apply>
           </apply>
-        </apply>     
+        </apply>
       </apply>
     </math>
 
-    <math xmlns="http://www.w3.org/1998/Math/MathML" id="21">    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" id="21">
       <apply>
         <eq/>
         <ci> of </ci>
@@ -1359,11 +1359,11 @@ The complete original paper reference is cited below:
               </apply>
             </apply>
           </apply>
-        </apply>     
+        </apply>
       </apply>
-    </math> 
+    </math>
 
-    <math xmlns="http://www.w3.org/1998/Math/MathML" id="22">    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" id="22">
       <apply>
         <eq/>
         <ci> gamma_gamma </ci>
@@ -1415,11 +1415,11 @@ The complete original paper reference is cited below:
               </apply>
             </apply>
           </apply>
-        </apply>     
+        </apply>
       </apply>
     </math>
 
-    <math xmlns="http://www.w3.org/1998/Math/MathML" id="23">    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" id="23">
       <apply>
         <eq/>
         <ci> delta_delta </ci>
@@ -1471,11 +1471,11 @@ The complete original paper reference is cited below:
               </apply>
             </apply>
           </apply>
-        </apply>     
+        </apply>
       </apply>
     </math>
 
-    <math xmlns="http://www.w3.org/1998/Math/MathML" id="24">    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" id="24">
       <apply>
         <eq/>
         <ci> epsilon </ci>
@@ -1527,11 +1527,11 @@ The complete original paper reference is cited below:
               </apply>
             </apply>
           </apply>
-        </apply>     
+        </apply>
       </apply>
     </math>
 
-    <math xmlns="http://www.w3.org/1998/Math/MathML" id="25">    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" id="25">
       <apply>
         <eq/>
         <ci> omega </ci>
@@ -1583,11 +1583,11 @@ The complete original paper reference is cited below:
               </apply>
             </apply>
           </apply>
-        </apply>     
+        </apply>
       </apply>
-    </math> 
+    </math>
 
-    <math xmlns="http://www.w3.org/1998/Math/MathML" id="26">    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" id="26">
       <apply>
         <eq/>
         <ci> eta </ci>
@@ -1639,11 +1639,11 @@ The complete original paper reference is cited below:
               </apply>
             </apply>
           </apply>
-        </apply>     
+        </apply>
       </apply>
     </math>
 
-    <math xmlns="http://www.w3.org/1998/Math/MathML" id="27">    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" id="27">
       <apply>
         <eq/>
         <ci> v </ci>
@@ -1695,11 +1695,11 @@ The complete original paper reference is cited below:
               </apply>
             </apply>
           </apply>
-        </apply>     
+        </apply>
       </apply>
     </math>
 
-    <math xmlns="http://www.w3.org/1998/Math/MathML" id="28">    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" id="28">
       <apply>
         <eq/>
         <ci> cn </ci>
@@ -1751,11 +1751,11 @@ The complete original paper reference is cited below:
               </apply>
             </apply>
           </apply>
-        </apply>     
+        </apply>
       </apply>
     </math>
 
-    <math xmlns="http://www.w3.org/1998/Math/MathML" id="29">    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" id="29">
       <apply>
         <eq/>
         <ci> cf </ci>
@@ -1807,9 +1807,9 @@ The complete original paper reference is cited below:
               </apply>
             </apply>
           </apply>
-        </apply>     
+        </apply>
       </apply>
-    </math>  
+    </math>
   </component>
 
   <connection>
@@ -1821,12 +1821,12 @@ The complete original paper reference is cited below:
     <map_components component_2="environment" component_1="Markov_model"/>
     <map_variables variable_2="time" variable_1="time"/>
   </connection>
-  
+
   <connection>
     <map_components component_2="environment" component_1="rate_constants"/>
     <map_variables variable_2="time" variable_1="time"/>
   </connection>
-  
+
   <connection>
     <map_components component_2="sodium_current" component_1="membrane"/>
     <map_variables variable_2="V" variable_1="V"/>
@@ -1836,12 +1836,12 @@ The complete original paper reference is cited below:
     <map_components component_2="rate_constants" component_1="membrane"/>
     <map_variables variable_2="V" variable_1="V"/>
   </connection>
-  
+
   <connection>
     <map_components component_2="Markov_model" component_1="sodium_current"/>
     <map_variables variable_2="P_open" variable_1="P_open"/>
   </connection>
-  
+
   <connection>
     <map_components component_2="rate_constants" component_1="Markov_model"/>
     <map_variables variable_2="alpha" variable_1="alpha"/>
@@ -1859,7 +1859,7 @@ The complete original paper reference is cited below:
     <map_variables variable_2="gamma_gamma" variable_1="gamma_gamma"/>
     <map_variables variable_2="delta_delta" variable_1="delta_delta"/>
   </connection>
-  
+
 
 <rdf:RDF>
   <rdf:Bag rdf:about="rdf:#ac979988-e7b4-4b44-b96f-0f25dbbe3d7c">

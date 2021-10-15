@@ -5,12 +5,14 @@ __author__ = "Johan Hake (hake.dev@gmail.com)"
 __date__ = "2013-05-07 -- 2015-06-04"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__ = "GNU LGPL Version 3.0 or later"
-
+import os
+import sys
 from collections import deque
 
-from modelparameters.parameterdict import *
+from modelparameters.logger import INFO, WARNING, set_log_level
+from modelparameters.parameterdict import ParameterDict
+from modelparameters.parameters import Param
 
-from gotran import *
 from gotran.model.loadmodel import load_ode
 from gotran.model.odeobjects import Comment
 
@@ -82,8 +84,6 @@ def gotranprobe(filename, params):
 
 
 def main():
-    import os
-    import sys
 
     params = ParameterDict(
         flat_view=Param(True, description="List all objects in a flat view"),

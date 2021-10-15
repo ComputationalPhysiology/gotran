@@ -14,7 +14,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
-
 import hashlib
 import importlib.util
 import sys
@@ -24,20 +23,21 @@ from enum import Enum
 from pathlib import Path
 
 import dijitso
-from modelparameters.logger import debug, info, value_error
-from modelparameters.utils import check_arg, check_kwarg
+from modelparameters.logger import debug
+from modelparameters.logger import info
+from modelparameters.logger import value_error
+from modelparameters.utils import check_arg
+from modelparameters.utils import check_kwarg
 
 from .. import __version__
 from ..common import GotranException
 from ..common.options import parameters
 from ..model.loadmodel import load_ode
 from ..model.ode import ODE
-from .codegenerators import (
-    CCodeGenerator,
-    DOLFINCodeGenerator,
-    PythonCodeGenerator,
-    class_name,
-)
+from .codegenerators import CCodeGenerator
+from .codegenerators import class_name
+from .codegenerators import DOLFINCodeGenerator
+from .codegenerators import PythonCodeGenerator
 
 module_template = """import dijitso as _dijitso
 import numpy as _np

@@ -14,7 +14,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
-
 import re
 import string
 import tokenize
@@ -25,7 +24,8 @@ from modelparameters.codegeneration import latex as mp_latex
 from modelparameters.parameterdict import ParameterDict
 from modelparameters.parameters import Param
 
-from ..model.expressions import Expression, StateDerivative
+from ..model.expressions import Expression
+from ..model.expressions import StateDerivative
 
 __all__ = ["LatexCodeGenerator"]
 
@@ -59,7 +59,7 @@ _param_table_template = """
 \\endfirsthead
 \\multicolumn{{3}}{{c}}%
 {{{{\\bfseries\\tablename\\ \\thetable{{}} --- continued from previous page}}}}
-\\\\ \hline
+\\\\ \\hline
 \\multicolumn{{1}}{{|c}}{{\\textbf{{Parameter\\hspace{{0.5cm}}}}}} &
 \\multicolumn{{1}}{{c}}{{\\textbf{{Value\\hspace{{0.5cm}}}}}} &
 \\multicolumn{{1}}{{c|}}{{\\textbf{{Description\\hspace{{0.5cm}}}}}}\\\\ \\hline
@@ -92,7 +92,7 @@ _state_table_template = """
 \\endfirsthead
 \\multicolumn{{3}}{{c}}%
 {{{{\\bfseries\\tablename\\ \\thetable{{}} --- continued from previous page}}}}
-\\\\ \hline
+\\\\ \\hline
 \\multicolumn{{1}}{{|c}}{{\\textbf{{State\\hspace{{0.5cm}}}}}} &
 \\multicolumn{{1}}{{c}}{{\\textbf{{Value\\hspace{{0.5cm}}}}}} &
 \\multicolumn{{1}}{{c|}}{{\\textbf{{Description\\hspace{{0.5cm}}}}}}\\\\ \\hline

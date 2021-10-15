@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-
 import os
+import sys
 
-from modelparameters.parameterdict import *
+from modelparameters.logger import info
+from modelparameters.parameterdict import Param
+from modelparameters.parameterdict import ParameterDict
+from modelparameters.utils import list_timings
 
 from gotran.codegeneration.codegenerators import OpenCLCodeGenerator
-from gotran.common import error, info, list_timings
-from gotran.common.options import parameters
 from gotran.model.loadmodel import load_ode
 
 
@@ -41,9 +42,6 @@ def gotran2opencl(filename, params):
 
 
 def main():
-    import os
-    import sys
-
     generation_params = OpenCLCodeGenerator.default_parameters()
 
     params = ParameterDict(

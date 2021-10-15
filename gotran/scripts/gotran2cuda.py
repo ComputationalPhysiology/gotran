@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-
-import os
-
-from modelparameters.parameterdict import *
+from modelparameters.logger import info
+from modelparameters.parameterdict import ParameterDict
+from modelparameters.parameters import Param
+from modelparameters.utils import list_timings
 
 from gotran.codegeneration.codegenerators import CUDACodeGenerator
-from gotran.common import error, info, list_timings
-from gotran.common.options import parameters
 from gotran.model.loadmodel import load_ode
 
 

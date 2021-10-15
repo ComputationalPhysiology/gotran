@@ -14,8 +14,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
-
 from . import cellml
-from .cellml import CellMLParser, cellml2ode
+from .cellml import cellml2ode
+from .cellml import CellMLParser
 
 __all__ = ["cellml", "cellml2ode", "CellMLParser"]

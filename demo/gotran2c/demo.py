@@ -1,8 +1,6 @@
-import ctypes
-import math
 import os
-import time
-from ctypes import c_double, c_int, c_long, c_ulong
+from ctypes import c_double
+from ctypes import c_int
 
 import matplotlib.pyplot as plt
 import numpy as np

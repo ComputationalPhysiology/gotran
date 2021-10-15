@@ -1,4 +1,5 @@
-from cosstester import *
+import cosstester
+import matplotlib.pyplot as plt
 
 
 def _getDefaultPlotConfig(figure):
@@ -34,21 +35,23 @@ def plotResults(_file, plotTypes=None, get_stored_fstates=False):
                       'index': 0,
                       'name': 'V'}}]
     """
-    title, data = getDataFromFileSimple(_file)
+    title, data = cosstester.getDataFromFileSimple(_file)
     names = [datum["name"] for datum in data]
     subnames = [name.split(" ", 2)[-1][1:-1] for name in names]
     if plotTypes is None:
         subsubnames = [s.split(",") for s in subnames]
-        namekeys, namevalues = zip(
-            *[zip(*[s.split("=") for s in ssname]) for ssname in subsubnames]
+        namekeys, namevalues = list(
+            zip(
+                *[list(zip(*[s.split("=") for s in ssname])) for ssname in subsubnames]
+            ),
         )
 
         if len(set(namekeys)) != 1:
-            print "Cannot determine what to plot."
+            print("Cannot determine what to plot.")
             if len(set(namekeys)) < 16:
-                print "Keys", set(namekeys)
+                print("Keys", set(namekeys))
             else:
-                print len(set(namekeys)), "keys"
+                print(len(set(namekeys)), "keys")
             return
         else:
             plotTypes = list()
@@ -74,7 +77,7 @@ def plotResults(_file, plotTypes=None, get_stored_fstates=False):
             pType["x"]["type"] not in validPlotTypes
             or pType["y"]["type"] not in validPlotTypes
         ):
-            print str(pType) + " plot not yet implemented"
+            print(str(pType) + " plot not yet implemented")
         else:
             figures.append(pType)
 
@@ -99,7 +102,7 @@ def plotResults(_file, plotTypes=None, get_stored_fstates=False):
                 xy_pos[axis] = [datum["field_parameter_values"] for datum in data]
 
             if figure[axis]["type"] == "double":
-                xy_pos[axis] = [i for i in xrange(len(data))]
+                xy_pos[axis] = [i for i in range(len(data))]
 
         x_pos = xy_pos["x"]
         y_pos = xy_pos["y"]
@@ -140,8 +143,8 @@ def plotResults(_file, plotTypes=None, get_stored_fstates=False):
         else:
             plt.yticks(y_pos, plotConfig["yticks"])
 
-        plt.title(PLOT_TITLES[figure["y"]["type"]].format(title))
-        plt.xlabel(PLOT_STRINGS[figure["x"]["type"]])
-        plt.ylabel(PLOT_STRINGS[figure["y"]["type"]])
+        plt.title(cosstester.PLOT_TITLES[figure["y"]["type"]].format(title))
+        plt.xlabel(cosstester.PLOT_STRINGS[figure["x"]["type"]])
+        plt.ylabel(cosstester.PLOT_STRINGS[figure["y"]["type"]])
 
         plt.show()
