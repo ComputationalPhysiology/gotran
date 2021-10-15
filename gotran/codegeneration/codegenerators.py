@@ -14,49 +14,44 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
-
 import re
-
-# System imports
-from collections import OrderedDict, deque
+from collections import deque
+from collections import OrderedDict
 from functools import reduce
 
-from modelparameters.codegeneration import (
-    ccode,
-    cppcode,
-    juliacode,
-    matlabcode,
-    pythoncode,
-)
-
-# Gotran imports
-from modelparameters.logger import error, warning
-
-# Model parameters imports
+from modelparameters.codegeneration import ccode
+from modelparameters.codegeneration import cppcode
+from modelparameters.codegeneration import juliacode
+from modelparameters.codegeneration import matlabcode
+from modelparameters.codegeneration import pythoncode
+from modelparameters.logger import error
+from modelparameters.logger import warning
 from modelparameters.parameterdict import ParameterDict
-from modelparameters.utils import check_arg, check_kwarg
+from modelparameters.utils import check_arg
+from modelparameters.utils import check_kwarg
 
 from ..common.options import parameters
-from ..model.expressions import (
-    AlgebraicExpression,
-    Expression,
-    IndexedExpression,
-    ParameterIndexedExpression,
-    StateIndexedExpression,
-)
+from ..model.expressions import AlgebraicExpression
+from ..model.expressions import Expression
+from ..model.expressions import IndexedExpression
+from ..model.expressions import ParameterIndexedExpression
+from ..model.expressions import StateIndexedExpression
 from ..model.ode import ODE
-from ..model.odeobjects import Comment, ODEObject
-from .algorithmcomponents import (
-    componentwise_derivative,
-    factorized_jacobian_expressions,
-    forward_backward_subst_expressions,
-    jacobian_expressions,
-    linearized_derivatives,
-    monitored_expressions,
-    rhs_expressions,
-)
+from ..model.odeobjects import Comment
+from ..model.odeobjects import ODEObject
+from .algorithmcomponents import componentwise_derivative
+from .algorithmcomponents import factorized_jacobian_expressions
+from .algorithmcomponents import forward_backward_subst_expressions
+from .algorithmcomponents import jacobian_expressions
+from .algorithmcomponents import linearized_derivatives
+from .algorithmcomponents import monitored_expressions
+from .algorithmcomponents import rhs_expressions
 from .codecomponent import CodeComponent
 from .solvercomponents import get_solver_fn
+
+# System imports
+# Gotran imports
+# Model parameters imports
 
 __all__ = [
     "PythonCodeGenerator",
@@ -340,7 +335,7 @@ class BaseCodeGenerator(object):
         Combine a set of lines into a single string
         """
 
-        _re_str = re.compile('.*"([\w\s]+)".*')
+        _re_str = re.compile(r'.*"([\w\s]+)".*')
 
         def _is_number(num_str):
             """

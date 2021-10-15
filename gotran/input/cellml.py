@@ -14,24 +14,30 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
-
 import re
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections import OrderedDict, defaultdict, deque
+from collections import defaultdict
+from collections import deque
+from collections import OrderedDict
 from functools import cmp_to_key
 from pathlib import Path
 from xml.etree import ElementTree
 
 from modelparameters.codegeneration import _all_keywords
-from modelparameters.logger import begin_log, end_log, error, info, warning
+from modelparameters.logger import begin_log
+from modelparameters.logger import end_log
+from modelparameters.logger import error
+from modelparameters.logger import info
+from modelparameters.logger import warning
 from modelparameters.utils import check_arg
 
-# Local imports
 from gotran.common.options import parameters
 from gotran.input.mathml import MathMLBaseParser
 from gotran.model.odeobjects import cmp
+
+# Local imports
 
 __all__ = ["cellml2ode", "CellMLParser"]
 

@@ -14,30 +14,32 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
-
 # FIXME: This is a deprecated module. Most of it should be
 # incorporated into other modules by now.
-
 import hashlib
 import re
 import sys
-
-# System imports
 from collections import OrderedDict
 from distutils.version import LooseVersion as _V
 
 import sympy
 from modelparameters.logger import info
-
-# Model parametrs imports
-from modelparameters.parameterdict import Param, ParameterDict, ScalarParam
-from modelparameters.sympytools import iter_symbol_params_from_expr, sp
-from modelparameters.utils import check_arg, check_kwarg
+from modelparameters.parameterdict import Param
+from modelparameters.parameterdict import ParameterDict
+from modelparameters.parameterdict import ScalarParam
+from modelparameters.sympytools import iter_symbol_params_from_expr
+from modelparameters.sympytools import sp
+from modelparameters.utils import check_arg
+from modelparameters.utils import check_kwarg
 from sympy import cse
 
-# Local gotran imports
 from ..model.ode import ODE
-from ..model.odecomponent import Comment, ODEComponent
+from ..model.odecomponent import Comment
+from ..model.odecomponent import ODEComponent
+
+# System imports
+# Model parametrs imports
+# Local gotran imports
 
 _current_sympy_version = _V(sp.__version__)
 _jacobian_pattern = re.compile("_([0-9]+)")
