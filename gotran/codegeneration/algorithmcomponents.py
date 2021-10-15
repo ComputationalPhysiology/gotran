@@ -37,23 +37,25 @@ __all__ = [
 # System imports
 import sys
 
+from modelparameters.codegeneration import sympycode
+from modelparameters.logger import error, info
+
 # ModelParameters imports
 from modelparameters.sympytools import sp
-from modelparameters.codegeneration import sympycode
-from modelparameters.utils import Timer, listwrap, check_arg, check_kwarg
-from modelparameters.logger import error, info
-from ..model.utils import ode_primitives
-from ..model.odeobjects import Comment
+from modelparameters.utils import Timer, check_arg, check_kwarg, listwrap
+from sympy import cse
+
 from gotran.model.expressions import (
+    AlgebraicExpression,
     Expression,
     IndexedExpression,
     StateDerivative,
-    AlgebraicExpression,
 )
-from ..model.ode import ODE
-from .codecomponent import CodeComponent
 
-from sympy import cse
+from ..model.ode import ODE
+from ..model.odeobjects import Comment
+from ..model.utils import ode_primitives
+from .codecomponent import CodeComponent
 
 
 def rhs_expressions(ode, function_name="rhs", result_name="dy", params=None):
@@ -75,7 +77,7 @@ def rhs_expressions(ode, function_name="rhs", result_name="dy", params=None):
     check_arg(ode, ODE)
     if not ode.is_finalized:
         error(
-            "Cannot compute right hand side expressions if the ODE is " "not finalized"
+            "Cannot compute right hand side expressions if the ODE is " "not finalized",
         )
 
     descr = f"Compute the right hand side of the {ode} ODE"
@@ -117,7 +119,7 @@ def monitored_expressions(
     check_arg(ode, ODE)
     if not ode.is_finalized:
         error(
-            "Cannot compute right hand side expressions if the ODE is " "not finalized"
+            "Cannot compute right hand side expressions if the ODE is " "not finalized",
         )
 
     check_arg(monitored, (tuple, list), itemtypes=str)
@@ -172,7 +174,7 @@ def componentwise_derivative(ode, indices, params=None, result_name="dy"):
         if index < 0 or index >= ode.num_full_states:
             error(
                 "Expected the passed indices to be between 0 and the "
-                "number of states in the ode, got {0}.".format(index)
+                "number of states in the ode, got {0}.".format(index),
             )
         if index in registered:
             error(f"Index {index} appeared twice.")
@@ -239,7 +241,10 @@ def linearized_derivatives(
 
 
 def jacobian_expressions(
-    ode, function_name="compute_jacobian", result_name="jac", params=None
+    ode,
+    function_name="compute_jacobian",
+    result_name="jac",
+    params=None,
 ):
     """
     Return an ODEComponent holding expressions for the jacobian
@@ -259,7 +264,10 @@ def jacobian_expressions(
         error("The ODE is not finalized")
 
     return JacobianComponent(
-        ode, function_name=function_name, result_name=result_name, params=params
+        ode,
+        function_name=function_name,
+        result_name=result_name,
+        params=params,
     )
 
 
@@ -289,7 +297,11 @@ def jacobian_action_expressions(
 
     check_arg(jacobian, JacobianComponent)
     return JacobianActionComponent(
-        jacobian, with_body, function_name, result_name, params=params
+        jacobian,
+        with_body,
+        function_name,
+        result_name,
+        params=params,
     )
 
 
@@ -314,7 +326,10 @@ def diagonal_jacobian_expressions(
         Parameters determining how the code should be generated
     """
     return DiagonalJacobianComponent(
-        jacobian, function_name, result_name, params=params
+        jacobian,
+        function_name,
+        result_name,
+        params=params,
     )
 
 
@@ -344,12 +359,18 @@ def diagonal_jacobian_action_expressions(
 
     check_arg(diagonal_jacobian, DiagonalJacobianComponent)
     return DiagonalJacobianActionComponent(
-        diagonal_jacobian, with_body, function_name, result_name, params=params
+        diagonal_jacobian,
+        with_body,
+        function_name,
+        result_name,
+        params=params,
     )
 
 
 def factorized_jacobian_expressions(
-    jacobian, function_name="lu_factorize", params=None
+    jacobian,
+    function_name="lu_factorize",
+    params=None,
 ):
     """
     Return an ODEComponent holding expressions for the factorized jacobian
@@ -405,7 +426,11 @@ class JacobianComponent(CodeComponent):
     """
 
     def __init__(
-        self, ode, function_name="compute_jacobian", result_name="jac", params=None
+        self,
+        ode,
+        function_name="compute_jacobian",
+        result_name="jac",
+        params=None,
     ):
         """
         Create a JacobianComponent
@@ -426,7 +451,11 @@ class JacobianComponent(CodeComponent):
         # Call base class using empty result_expressions
         descr = f"Compute the jacobian of the right hand side of the {ode} ODE"
         super(JacobianComponent, self).__init__(
-            "Jacobian", ode, function_name, descr, params=params
+            "Jacobian",
+            ode,
+            function_name,
+            descr,
+            params=params,
         )
         check_arg(result_name, str)
 
@@ -472,7 +501,10 @@ class JacobianComponent(CodeComponent):
                 del time_diff
                 self.num_nonzero += 1
                 jac_ij = self.add_indexed_expression(
-                    result_name, (i, j), jac_ij, dependent=expr
+                    result_name,
+                    (i, j),
+                    jac_ij,
+                    dependent=expr,
                 )
 
                 self.jacobian[i, j] = jac_ij
@@ -520,7 +552,11 @@ class DiagonalJacobianComponent(CodeComponent):
             "{0} ODE".format(jacobian.root)
         )
         super(DiagonalJacobianComponent, self).__init__(
-            "DiagonalJacobian", jacobian.root, function_name, descr, params=params
+            "DiagonalJacobian",
+            jacobian.root,
+            function_name,
+            descr,
+            params=params,
         )
 
         what = "Computing diagonal jacobian"
@@ -585,7 +621,11 @@ class JacobianActionComponent(CodeComponent):
             "{0} ODE".format(jacobian.root)
         )
         super(JacobianActionComponent, self).__init__(
-            "JacobianAction", jacobian.root, function_name, descr, params=params
+            "JacobianAction",
+            jacobian.root,
+            function_name,
+            descr,
+            params=params,
         )
 
         x = self.root.full_state_vector
@@ -862,7 +902,7 @@ class ForwardBackwardSubstitutionComponent(CodeComponent):
         )
 
         self.add_comment(
-            f"Forward backward substituting factorized linear system {self.root.name}"
+            f"Forward backward substituting factorized linear system {self.root.name}",
         )
 
         # Recreate jacobian using only sympy Symbols
@@ -903,7 +943,9 @@ class ForwardBackwardSubstitutionComponent(CodeComponent):
                 if jac[i, j].is_zero:
                     continue
                 dx[i] = self.add_indexed_expression(
-                    result_name, i, dx[i] - dx[j] * jac[i, j]
+                    result_name,
+                    i,
+                    dx[i] - dx[j] * jac[i, j],
                 )
 
         # backward substitution
@@ -912,7 +954,9 @@ class ForwardBackwardSubstitutionComponent(CodeComponent):
                 if jac[i, j].is_zero:
                     continue
                 dx[i] = self.add_indexed_expression(
-                    result_name, i, dx[i] - dx[j] * jac[i, j]
+                    result_name,
+                    i,
+                    dx[i] - dx[j] * jac[i, j],
                 )
 
             dx[i] = self.add_indexed_expression(result_name, i, dx[i] / jac[i, i])
@@ -970,7 +1014,11 @@ class LinearizedDerivativeComponent(CodeComponent):
 
         descr = "Computes the linearized derivatives for all linear derivatives"
         super(LinearizedDerivativeComponent, self).__init__(
-            "LinearizedDerivatives", ode, function_name, descr, params=params
+            "LinearizedDerivatives",
+            ode,
+            function_name,
+            descr,
+            params=params,
         )
 
         check_arg(ode, ODE)
@@ -999,14 +1047,20 @@ class LinearizedDerivativeComponent(CodeComponent):
                 nonlinear_exprs.append((linearized_name, ind, expr_diff))
             else:
                 self.add_indexed_expression(
-                    linearized_name, ind, expr_diff, dependent=expr
+                    linearized_name,
+                    ind,
+                    expr_diff,
+                    dependent=expr,
                 )
 
         if nonlinear_exprs:
             self.add_comment("Nonlinear linearized expressions", dependent=expr)
             for linearized_name, ind, expr_diff in nonlinear_exprs:
                 self.add_indexed_expression(
-                    linearized_name, ind, expr_diff, dependent=expr
+                    linearized_name,
+                    ind,
+                    expr_diff,
+                    dependent=expr,
                 )
 
         # Call recreate body with the jacobian action expressions as the
@@ -1052,7 +1106,9 @@ class CommonSubExpressionODE(ODE):
 
         # Call sympy common sub expression reduction
         cse_exprs, cse_state_exprs = cse(
-            expanded_state_exprs, symbols=sp.numbered_symbols("cse_"), optimizations=[]
+            expanded_state_exprs,
+            symbols=sp.numbered_symbols("cse_"),
+            optimizations=[],
         )
         cse_cnt = 0
         cse_subs = {}
@@ -1066,7 +1122,8 @@ class CommonSubExpressionODE(ODE):
                 cse_subs[sub] = expr
             else:
                 cse_subs[sub] = self.add_intermediate(
-                    f"cse_{cse_cnt}", expr.xreplace(cse_subs)
+                    f"cse_{cse_cnt}",
+                    expr.xreplace(cse_subs),
                 )
                 cse_cnt += 1
 

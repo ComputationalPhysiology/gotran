@@ -17,17 +17,17 @@
 
 __all__ = ["load", "save", "present_time_str"]
 
-# System imports
-import time
-import os
-import numpy
 import glob
+import os
 import re
 
-from pickle import Unpickler, Pickler
-from modelparameters.utils import check_arg
-from modelparameters.logger import info, set_default_exception, set_log_level, INFO
+# System imports
+import time
+from pickle import Pickler, Unpickler
 
+import numpy
+from modelparameters.logger import INFO, info, set_default_exception, set_log_level
+from modelparameters.utils import check_arg
 
 TIME_FORMAT = "%Y.%m.%d-%H.%M.%S"
 
@@ -185,7 +185,7 @@ def get_data_filenames(basename):
 
     basename = basename if ".cpickle" in basename else basename.replace(".cpickle", "")
     pattern = re.compile(
-        f"{basename}-[0-9]+\\.[0-9]+\\.[0-9]+-[0-9]+\\.[0-9]+\\.[0-9]+.cpickle"
+        f"{basename}-[0-9]+\\.[0-9]+\\.[0-9]+-[0-9]+\\.[0-9]+\\.[0-9]+.cpickle",
     )
 
     filenames = [

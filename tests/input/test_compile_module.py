@@ -1,9 +1,11 @@
+from pathlib import Path
+
+import numpy as np
 import pytest
-from gotran.input.cellml import cellml2ode
+
 from gotran.codegeneration.compilemodule import compile_module
 from gotran.common.options import parameters
-from pathlib import Path
-import numpy as np
+from gotran.input.cellml import cellml2ode
 
 _here = Path(__file__).absolute().parent
 
@@ -27,10 +29,12 @@ def test_compile_rhs(ode, generation):
     c_module = compile_module(ode, language="C", generation_params=generation)
 
     assert np.isclose(
-        python_module.init_state_values(), c_module.init_state_values()
+        python_module.init_state_values(),
+        c_module.init_state_values(),
     ).all()
     assert np.isclose(
-        python_module.init_parameter_values(), c_module.init_parameter_values()
+        python_module.init_parameter_values(),
+        c_module.init_parameter_values(),
     ).all()
     states = c_module.init_state_values()
     parameters = c_module.init_parameter_values()
@@ -47,17 +51,25 @@ def test_compile_monitored(ode, generation):
     generation.functions.monitored.generate = True
     monitored = [i.name for i in ode.intermediates]
     python_module = compile_module(
-        ode, monitored=monitored, language="Python", generation_params=generation
+        ode,
+        monitored=monitored,
+        language="Python",
+        generation_params=generation,
     )
     c_module = compile_module(
-        ode, monitored=monitored, language="C", generation_params=generation
+        ode,
+        monitored=monitored,
+        language="C",
+        generation_params=generation,
     )
 
     assert np.isclose(
-        python_module.init_state_values(), c_module.init_state_values()
+        python_module.init_state_values(),
+        c_module.init_state_values(),
     ).all()
     assert np.isclose(
-        python_module.init_parameter_values(), c_module.init_parameter_values()
+        python_module.init_parameter_values(),
+        c_module.init_parameter_values(),
     ).all()
     states = c_module.init_state_values()
     parameters = c_module.init_parameter_values()
@@ -80,17 +92,19 @@ def test_compile_jacobian(ode, generation):
     c_module = compile_module(ode, language="C", generation_params=generation)
 
     assert np.isclose(
-        python_module.init_state_values(), c_module.init_state_values()
+        python_module.init_state_values(),
+        c_module.init_state_values(),
     ).all()
     assert np.isclose(
-        python_module.init_parameter_values(), c_module.init_parameter_values()
+        python_module.init_parameter_values(),
+        c_module.init_parameter_values(),
     ).all()
     states = c_module.init_state_values()
     parameters = c_module.init_parameter_values()
 
     jac_c = c_module.compute_jacobian(states, 0, parameters)
     jac_python = python_module.compute_jacobian(states, 0.0, parameters).reshape(
-        jac_c.shape
+        jac_c.shape,
     )
     assert np.isclose(jac_python, jac_c).all()
 

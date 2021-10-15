@@ -2,11 +2,12 @@
 
 import os
 
-from gotran.model.loadmodel import load_ode
-from gotran.codegeneration.codegenerators import JuliaCodeGenerator
-from gotran.common.options import parameters
-from gotran.common import error, info, list_timings, Timer
 from modelparameters.parameterdict import *
+
+from gotran.codegeneration.codegenerators import JuliaCodeGenerator
+from gotran.common import Timer, error, info, list_timings
+from gotran.common.options import parameters
+from gotran.model.loadmodel import load_ode
 
 
 def gotran2julia(filename, params):
@@ -49,7 +50,8 @@ def gotran2julia(filename, params):
 
 
 def main():
-    import sys, os
+    import os
+    import sys
 
     params = ParameterDict(
         list_timings=Param(

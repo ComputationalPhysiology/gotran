@@ -1,4 +1,5 @@
 import sys
+
 from . import scripts
 
 __doc__ = """gotran (General Ode TRANslator)

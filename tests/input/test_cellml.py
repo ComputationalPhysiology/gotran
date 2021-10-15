@@ -4,14 +4,16 @@ __copyright__ = "Copyright (C) 2012 " + __author__
 __license__ = "GNU LGPL Version 3.0 or later"
 
 import glob
+import pickle
+from pathlib import Path
+
+import numpy as np
 import pytest
-from gotran.input.cellml import cellml2ode
+from scipy.integrate import odeint
+
 from gotran.codegeneration.compilemodule import compile_module
 from gotran.common.options import parameters
-from pathlib import Path
-from scipy.integrate import odeint
-import numpy as np
-import pickle
+from gotran.input.cellml import cellml2ode
 
 _here = Path(__file__).absolute().parent
 
@@ -99,7 +101,10 @@ def test_cellml(path):
 
     # Compile ODE
     module = compile_module(
-        ode, language="C", monitored=["i_CaL"], generation_params=generation
+        ode,
+        language="C",
+        monitored=["i_CaL"],
+        generation_params=generation,
     )
 
     rhs = module.rhs

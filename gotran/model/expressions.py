@@ -31,23 +31,23 @@ __all__ = [
     "recreate_expression",
 ]
 
+from modelparameters.codegeneration import latex, sympycode
+from modelparameters.logger import error
+
 # ModelParameters imports
 from modelparameters.parameters import SlaveParam
 from modelparameters.sympytools import sp
-from modelparameters.codegeneration import sympycode, latex
-
-from modelparameters.utils import scalars, check_arg
-from modelparameters.logger import error
+from modelparameters.utils import check_arg, scalars
 
 from .odeobjects import (
+    IndexedObject,
     ODEValueObject,
+    ParameterIndexedObject,
+    State,
+    StateIndexedObject,
+    Time,
     cmp,
     cmp_to_key,
-    State,
-    Time,
-    IndexedObject,
-    StateIndexedObject,
-    ParameterIndexedObject,
 )
 
 
@@ -60,7 +60,7 @@ def recreate_expression(expr, *replace_dicts, **kwargs):
     if replace_type not in ["xreplace", "subs"]:
         error(
             "Valid alternatives for replace_type is: 'xreplace', "
-            "'subs' got {0}".format(replace_type)
+            "'subs' got {0}".format(replace_type),
         )
 
     # First do the replacements
@@ -171,7 +171,7 @@ class Expression(ODEValueObject):
 
         if not symbols_from_expr(expr, include_numbers=True):
             error(
-                "expected the expression to contain at least one " "Symbol or Number."
+                "expected the expression to contain at least one " "Symbol or Number.",
             )
 
         # Call super class with expression as the "value"
@@ -182,7 +182,7 @@ class Expression(ODEValueObject):
             sorted(
                 symbols_from_expr(expr),
                 key=cmp_to_key(lambda a, b: cmp(sympycode(a), sympycode(b))),
-            )
+            ),
         )
 
         if dependent:
@@ -337,7 +337,7 @@ class DerivativeExpression(Intermediate):
         if dep_var.sym not in der_expr.sym.args:
             error(
                 "Cannot create a DerivativeExpression as {0} is not "
-                "dependent on {1}".format(der_expr, dep_var)
+                "dependent on {1}".format(der_expr, dep_var),
             )
 
         der_sym = sp.Derivative(der_expr.sym, dep_var.sym)
@@ -368,7 +368,8 @@ class DerivativeExpression(Intermediate):
 
     def _repr_latex_name(self):
         return "\\frac{{d{0}}}{{d{1}}}".format(
-            latex(self._der_expr.name), latex(self._dep_var.name)
+            latex(self._der_expr.name),
+            latex(self._dep_var.name),
         )
 
 
@@ -383,7 +384,9 @@ class RateExpression(Intermediate):
         check_arg(from_state, (State, StateSolution), 1, RateExpression)
 
         super(RateExpression, self).__init__(
-            f"rates_{to_state}_{from_state}", expr, dependent
+            f"rates_{to_state}_{from_state}",
+            expr,
+            dependent,
         )
         self._to_state = to_state
         self._from_state = from_state
@@ -393,7 +396,9 @@ class RateExpression(Intermediate):
         Return a formatted str of __init__ arguments
         """
         return "{0}, {1}, {2}".format(
-            repr(self._to_state), repr(self._from_state), sympycode(self.expr)
+            repr(self._to_state),
+            repr(self._from_state),
+            sympycode(self.expr),
         )
 
     @property
@@ -513,7 +518,10 @@ class AlgebraicExpression(StateExpression):
         check_arg(state, State, 0, AlgebraicExpression)
 
         super(AlgebraicExpression, self).__init__(
-            f"alg_{state}_0", state, expr, dependent
+            f"alg_{state}_0",
+            state,
+            expr,
+            dependent,
         )
 
         # Check that the expr is dependent on the state
@@ -574,7 +582,14 @@ class IndexedExpression(IndexedObject, Expression):
             String that can be used for enumeration
         """
         IndexedObject.__init__(
-            self, basename, indices, shape, array_params, add_offset, dependent, enum
+            self,
+            basename,
+            indices,
+            shape,
+            array_params,
+            add_offset,
+            dependent,
+            enum,
         )
         Expression.__init__(self, self.name, expr, dependent)
 
@@ -623,7 +638,14 @@ class StateIndexedExpression(StateIndexedObject, Expression):
         """
 
         StateIndexedObject.__init__(
-            self, basename, indices, state, shape, array_params, add_offset, dependent
+            self,
+            basename,
+            indices,
+            state,
+            shape,
+            array_params,
+            add_offset,
+            dependent,
         )
         Expression.__init__(self, self.name, expr, dependent)
 

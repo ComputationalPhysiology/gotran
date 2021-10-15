@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-from gotran.model.loadmodel import load_ode
 from gotran.codegeneration.codegenerators import MatlabCodeGenerator
+from gotran.common import Timer, error, info, list_timings
 from gotran.common.options import parameters
-from gotran.common import error, info, list_timings, Timer
+from gotran.model.loadmodel import load_ode
 
 
 def gotran2matlab(filename, params):
@@ -37,7 +37,7 @@ def main():
     import os
     import sys
 
-    from modelparameters.parameterdict import ParameterDict, Param
+    from modelparameters.parameterdict import Param, ParameterDict
 
     generation_params = MatlabCodeGenerator.default_parameters()
 

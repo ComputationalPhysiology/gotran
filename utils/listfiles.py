@@ -29,8 +29,8 @@ def list_python_files():
         f
         for f in sorted(
             get_status_output("git ls-tree --name-only --full-tree -r HEAD")[1].split(
-                "\n"
-            )
+                "\n",
+            ),
         )
         if ".py" == f[-3:]
     ]

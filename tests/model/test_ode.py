@@ -1,14 +1,15 @@
 """test for odecomponent module"""
 # import unittest
 import os
-import pytest
-import gotran
 from pathlib import Path
+
+import pytest
+from modelparameters import ScalarParam
 from modelparameters.codegeneration import sympycode
 from modelparameters.sympytools import symbols_from_expr
-from modelparameters import ScalarParam
-
 from sympy import Matrix, exp, log
+
+import gotran
 
 _here = Path(__file__).absolute().parent
 
@@ -148,13 +149,13 @@ def test_creation():
 
     with pytest.raises(gotran.GotranException):
         markov.rates[[markov.tt, markov.u, markov.v]] = Matrix(
-            [[1, 2 * i, 0.0], [0.0, 2.0, 4.0]]
+            [[1, 2 * i, 0.0], [0.0, 2.0, 4.0]],
         )
     with pytest.raises(gotran.GotranException):
         markov.rates[markov.tt, markov.tt] = 5.0
 
     markov.rates[[markov.tt, markov.u, markov.v]] = Matrix(
-        [[0.0, 2 * i, 2.0], [4.0, 0.0, 2.0], [5.0, 2.0, 0.0]]
+        [[0.0, 2 * i, 2.0], [4.0, 0.0, 2.0], [5.0, 2.0, 0.0]],
     )
 
     ode.finalize()
@@ -279,7 +280,7 @@ def test_subode():
         mem.R
         * mem.T
         * log(
-            (ode.Na_o * rev_pot.P_kna + ode.K_o) / (ode.K_i + ode.Na_i * rev_pot.P_kna)
+            (ode.Na_o * rev_pot.P_kna + ode.K_o) / (ode.K_i + ode.Na_i * rev_pot.P_kna),
         )
         / mem.F
     )

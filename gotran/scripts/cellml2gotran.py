@@ -29,7 +29,8 @@ def define_parser(change_state_names):
     import optparse
 
     parser = optparse.OptionParser(
-        usage="%prog [options]", description="Translate CellML files into gotran files."
+        usage="%prog [options]",
+        description="Translate CellML files into gotran files.",
     )
 
     def list_parser(option, opt_str, value, parser, arg_list):
@@ -80,7 +81,7 @@ def define_parser(change_state_names):
     parser.add_option(
         "-o",
         "--output",
-        help="""Name of output file. If not provided 
+        help="""Name of output file. If not provided
         then the same name as the name of the cellml file will be used""",
         default="",
         type=str,
@@ -90,8 +91,8 @@ def define_parser(change_state_names):
 
 
 def main():
-    import sys
     import os
+    import sys
 
     change_state_names = []
     parser = define_parser(change_state_names)

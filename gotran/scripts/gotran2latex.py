@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
+from gotran import info
 from gotran.codegeneration.latexcodegenerator import (
     LatexCodeGenerator,
     _default_latex_params,
 )
 from gotran.model.loadmodel import load_ode
-from gotran import info
 
 
 def gotran2latex(filename, params):
@@ -38,7 +38,8 @@ def gotran2latex(filename, params):
 def main():
     import os
     import sys
-    from modelparameters.parameterdict import ParameterDict, Param
+
+    from modelparameters.parameterdict import Param, ParameterDict
 
     params = _default_latex_params()
     params = ParameterDict(

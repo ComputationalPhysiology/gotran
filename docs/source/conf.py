@@ -142,7 +142,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "gotran.tex", "gotran Documentation", "Henrik", "manual")
+    (master_doc, "gotran.tex", "gotran Documentation", "Henrik", "manual"),
 ]
 
 # autodoc_inherit_docstrings = False
@@ -168,7 +168,7 @@ texinfo_documents = [
         "gotran",
         "One line description of project.",
         "Miscellaneous",
-    )
+    ),
 ]
 
 

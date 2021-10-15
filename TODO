@@ -7,7 +7,7 @@ TODO
 * TODO Add support for SBML input
 * DONE Add support for a specific Markov model editor
   With this we can facilitate a more easy editing of Markov models:
-  
+
   : mm = markov_model("Some ion channel", c0=0.1, c1=0.1, O=0.8, degenerate="c0")
   : parameters("Some ion channel", r0=0.5, r1=0.6, r2=0.5, r3=1.0)
   : mm.rates[c0, c1] = r0*V
@@ -15,7 +15,7 @@ TODO
   : mm.rates[c1, O] = r2
   : mm.rates[O, c1] = r3
 
-  This would define the whole markov model. 
+  This would define the whole markov model.
 
   If degenerate is included in the constructor we assume the sum of
   all states are 1, and behind the scene we set
@@ -36,13 +36,13 @@ TODO
 
     d) derivatives
 
-  with a component name we could more easily export the model to 
+  with a component name we could more easily export the model to
   CellML. We need to figure out a good way to do this for derivatives
   and intermediates.
 
 * TODO Import other gotran models
   With this feature we could allow stand alone gotran models to be
-  imported into others. 
+  imported into others.
 
   : import_ode("Kv3")
 

@@ -1,7 +1,7 @@
-import numpy as np
 import matplotlib.pyplot as plt
-from scipy.integrate import odeint
+import numpy as np
 import tentusscher_panfilov_2006_M_cell as model
+from scipy.integrate import odeint
 
 # Initial states
 y0 = model.init_state_values()

@@ -17,26 +17,28 @@
 
 __all__ = ["load_ode", "exec_ode"]
 
-# System imports
-from pathlib import Path
 import inspect
 import os
-import shutil
 import re
+import shutil
 import weakref
 from collections import deque
 
+# System imports
+from pathlib import Path
+
+from modelparameters.logger import debug, error, info, warning
+
 # modelparameters import
 from modelparameters.parameters import (
-    Param,
-    ScalarParam,
     ArrayParam,
     ConstParam,
     OptionParam,
+    Param,
+    ScalarParam,
 )
-from modelparameters.logger import error, info, warning, debug
+from modelparameters.sympytools import sp, sp_namespace
 from modelparameters.utils import Timer, check_arg, scalars
-from modelparameters.sympytools import sp_namespace, sp
 
 # gotran imports
 from .ode import ODE
@@ -112,7 +114,8 @@ class IntermediateDispatcher(dict):
             # Here we strip op potiential code comments after the main for
             # statement.
             if re.search(_for_template, code.split("#")[0].strip()) or re.search(
-                _no_intermediate_template, code
+                _no_intermediate_template,
+                code,
             ):
 
                 debug(f"Not registering '{name}' as an intermediate.")
@@ -159,7 +162,7 @@ def _init_namespace(ode, load_arguments, namespace):
             ConstParam=ConstParam,
             OptionParam=OptionParam,
             sp=sp,
-        )
+        ),
     )
 
     # Add ode and model_arguments
@@ -458,7 +461,7 @@ def _namespace_binder(namespace, ode, load_arguments):
             if not isinstance(value, (float, int, str, Param)):
                 error(
                     "expected only 'float', 'int', 'str' or 'Param', as model_arguments, "
-                    "got: '{}' for '{}'".format(type(value).__name__, key)
+                    "got: '{}' for '{}'".format(type(value).__name__, key),
                 )
 
             if key not in load_arguments:
@@ -520,5 +523,5 @@ def _namespace_binder(namespace, ode, load_arguments):
             subode=subode,
             import_ode=import_ode,
             comment=comment,
-        )
+        ),
     )

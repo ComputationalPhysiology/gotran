@@ -32,15 +32,14 @@ __all__ = [
 # System imports
 import sys
 
+from modelparameters.logger import debug, error, info
+
 # ModelParameters imports
-from modelparameters.sympytools import sp, Conditional
-from modelparameters.logger import error, info, debug
+from modelparameters.sympytools import Conditional, sp
 
 # Local imports
-from modelparameters.utils import (
-    check_arg,
-    Timer,
-)
+from modelparameters.utils import Timer, check_arg
+
 from ..model.ode import ODE
 from .codecomponent import CodeComponent
 
@@ -65,7 +64,10 @@ def explicit_euler_solver(ode, function_name="forward_explicit_euler", params=No
 
 
 def rush_larsen_solver(
-    ode, function_name="forward_rush_larsen", delta=1e-8, params=None
+    ode,
+    function_name="forward_rush_larsen",
+    delta=1e-8,
+    params=None,
 ):
     """
     Return an ODEComponent holding expressions for the Rush-Larsen method
@@ -88,7 +90,10 @@ def rush_larsen_solver(
 
 
 def generalized_rush_larsen_solver(
-    ode, function_name="forward_generalized_rush_larsen", delta=1e-8, params=None
+    ode,
+    function_name="forward_generalized_rush_larsen",
+    delta=1e-8,
+    params=None,
 ):
     """
     Return an ODEComponent holding expressions for the generalized Rush-Larsen method
@@ -108,7 +113,10 @@ def generalized_rush_larsen_solver(
         error("The ODE is not finalized")
 
     return GeneralizedRushLarsen(
-        ode, function_name=function_name, delta=delta, params=params
+        ode,
+        function_name=function_name,
+        delta=delta,
+        params=params,
     )
 
 
@@ -302,7 +310,11 @@ class RushLarsen(CodeComponent):
     """
 
     def __init__(
-        self, ode, function_name="forward_rush_larsen", delta=1e-8, params=None
+        self,
+        ode,
+        function_name="forward_rush_larsen",
+        delta=1e-8,
+        params=None,
     ):
         """
         Create a RushLarsen Solver component
@@ -374,13 +386,15 @@ class RushLarsen(CodeComponent):
 
                 linearized_name = expr.name + "_linearized"
                 linearized = self.add_intermediate(
-                    linearized_name, expr_diff, dependent=dependent
+                    linearized_name,
+                    expr_diff,
+                    dependent=dependent,
                 )
 
                 need_zero_div_check = not fraction_numerator_is_nonzero(expr_diff)
                 if not need_zero_div_check:
                     debug(
-                        f"{linearized_name} cannot be zero. Skipping zero division check"
+                        f"{linearized_name} cannot be zero. Skipping zero division check",
                     )
 
                 RL_term = expr.sym / linearized * (sp.exp(linearized * dt) - 1)
@@ -491,7 +505,9 @@ class RushLarsenOneStep(CodeComponent):
             if expr_diff and expr.state.sym not in expr_diff:
 
                 linearized = self.add_intermediate(
-                    expr.name + "_linearized", expr_diff, dependent=dependent
+                    expr.name + "_linearized",
+                    expr_diff,
+                    dependent=dependent,
                 )
 
                 # Solve "exact" using exp
@@ -600,7 +616,9 @@ class GeneralizedRushLarsen(CodeComponent):
 
             linearized_name = expr.name + "_linearized"
             linearized = self.add_intermediate(
-                linearized_name, expr_diff, dependent=dependent
+                linearized_name,
+                expr_diff,
+                dependent=dependent,
             )
 
             need_zero_div_check = not fraction_numerator_is_nonzero(expr_diff)
@@ -721,7 +739,9 @@ class HybridGeneralizedRushLarsen(CodeComponent):
 
             linearized_name = expr.name + "_linearized"
             linearized = self.add_intermediate(
-                linearized_name, expr_diff, dependent=dependent
+                linearized_name,
+                expr_diff,
+                dependent=dependent,
             )
 
             need_zero_div_check = not fraction_numerator_is_nonzero(expr_diff)
@@ -826,7 +846,9 @@ class SimplifiedImplicitEuler(CodeComponent):
 
             if not diag_jac_expr.is_zero:
                 diag_jac = self.add_intermediate(
-                    expr.name + "_diag_jac", diag_jac_expr, dependent=dependent
+                    expr.name + "_diag_jac",
+                    diag_jac_expr,
+                    dependent=dependent,
                 )
             else:
                 diag_jac = 0.0

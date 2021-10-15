@@ -1,21 +1,22 @@
 """test for odeobjects module"""
 
 import pytest
-import gotran
-
-# import unittest
 
 # from modelparameters.logger import suppress_logging
 # from modelparameters.codegeneration import sympycode
 from modelparameters.sympytools import symbols_from_expr
+from sympy import Symbol
 
-# from gotran.common import GotranException
+import gotran
 
 # from gotran.model.odeobjects import *
 # from gotran.model.expressions import StateDerivative
 from gotran.model.utils import ode_primitives
 
-from sympy import Symbol
+# import unittest
+
+
+# from gotran.common import GotranException
 
 
 def test_odeobjects():
@@ -88,7 +89,7 @@ def test_state():
 
     # Create expression from just states symbols
     assert ode_primitives(s_s ** 2 * a_s + t_s * b_s * a_s, t_s) == set(
-        [s_s, a_s, b_s, t_s]
+        [s_s, a_s, b_s, t_s],
     )
 
     # Create composite symbol
@@ -126,7 +127,7 @@ def test_param():
 
     # Create expression from just states symbols
     assert ode_primitives(s_s ** 2 * a_s + t_s * b_s * a_s, t_s) == set(
-        [s_s, a_s, b_s, t_s]
+        [s_s, a_s, b_s, t_s],
     )
 
     # Create composite symbol

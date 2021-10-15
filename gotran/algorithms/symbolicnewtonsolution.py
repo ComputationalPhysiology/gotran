@@ -17,6 +17,9 @@
 
 __all__ = ["SymbolicNewtonSolution"]
 
+from collections import OrderedDict
+from functools import reduce
+
 import sympy
 
 # System imports
@@ -25,8 +28,6 @@ from modelparameters.utils import check_arg, scalars
 
 # Local imports
 from gotran.model.ode import ODE
-from collections import OrderedDict
-from functools import reduce
 
 
 def _iszero(x):
@@ -283,7 +284,9 @@ def _create_newton_system(ode, theta=1):
 
     # Create the Jacobian
     jacobi = sp.SparseMatrix(
-        len(states), len(states), lambda i, j: sym_map.get((i, j), 0)
+        len(states),
+        len(states),
+        lambda i, j: sym_map.get((i, j), 0),
     )
 
     # return Symbolic representation of the linear system

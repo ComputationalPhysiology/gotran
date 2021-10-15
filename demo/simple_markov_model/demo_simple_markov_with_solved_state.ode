@@ -9,4 +9,3 @@ rates[b, a] = 1.
 rates[a, b] = 2.
 rates[c, b] = 2.
 rates[b, c] = 1.
-

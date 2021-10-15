@@ -2,11 +2,12 @@
 
 import os
 
-from gotran.model.loadmodel import load_ode
-from gotran.codegeneration.codegenerators import OpenCLCodeGenerator
-from gotran.common.options import parameters
-from gotran.common import error, list_timings, info
 from modelparameters.parameterdict import *
+
+from gotran.codegeneration.codegenerators import OpenCLCodeGenerator
+from gotran.common import error, info, list_timings
+from gotran.common.options import parameters
+from gotran.model.loadmodel import load_ode
 
 
 def gotran2opencl(filename, params):
@@ -40,7 +41,8 @@ def gotran2opencl(filename, params):
 
 
 def main():
-    import sys, os
+    import os
+    import sys
 
     generation_params = OpenCLCodeGenerator.default_parameters()
 
@@ -74,7 +76,7 @@ def main():
     file_name = sys.argv[1]
     info(
         "Note: The OpenCL support in gotran is a work in progress. "
-        "The CUDA generator is recommended for NVIDIA GPUs."
+        "The CUDA generator is recommended for NVIDIA GPUs.",
     )
     gotran2opencl(file_name, params)
 

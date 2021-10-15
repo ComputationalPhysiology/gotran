@@ -29,22 +29,24 @@ __all__ = [
     "RateDict",
 ]
 
+import re
+import weakref
+
 # System imports
 from collections import OrderedDict
-import weakref
-import re
 
-from sympy.core.function import AppliedUndef
-from sympy import preorder_traversal, Symbol
+from modelparameters.logger import error
 
 # ModelParameters imports
 from modelparameters.sympytools import sp
-from modelparameters.utils import tuplewrap, check_arg
-from modelparameters.logger import error
+from modelparameters.utils import check_arg, tuplewrap
+from sympy import Symbol, preorder_traversal
+from sympy.core.function import AppliedUndef
+
+from .expressions import State
 
 # Local imports
 from .odeobjects import ODEObject
-from .expressions import State
 
 
 def ode_primitives(expr, time):
@@ -356,7 +358,7 @@ class RateDict(OrderedDict):
             if not isinstance(states, tuple) or len(states) != 2:
                 error(
                     "Expected a tuple of size 2 with states when "
-                    "registering a single rate."
+                    "registering a single rate.",
                 )
 
             # NOTE: the actuall item is set by the component while calling this

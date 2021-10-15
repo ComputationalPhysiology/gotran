@@ -33,19 +33,18 @@ __all__ = [
 
 # System imports
 from collections import defaultdict
+from functools import reduce
+
+from modelparameters.codegeneration import latex
+from modelparameters.logger import debug, error, info
+from modelparameters.parameterdict import cmp_to_key
+from modelparameters.parameters import ConstParam, ScalarParam, SlaveParam
 
 # ModelParameters imports
 from modelparameters.sympytools import sp
-from modelparameters.codegeneration import latex
-from modelparameters.parameters import ScalarParam, SlaveParam, ConstParam
-from modelparameters.parameterdict import cmp_to_key
+from modelparameters.utils import check_arg, check_kwarg, scalars, tuplewrap
 
-from modelparameters.logger import error, debug, info
-from modelparameters.utils import check_arg, tuplewrap, check_kwarg, scalars
-from ..common import (
-    parameters,
-)
-from functools import reduce
+from ..common import parameters
 
 
 def cmp(a, b):
@@ -332,7 +331,8 @@ class ODEValueObject(ODEObject):
         value = self.value
         unit_str = latex_unit(self.param.unit)
         return "${0}{1}$".format(
-            latex(value), "\\;{0}".format(unit_str) if unit_str else ""
+            latex(value),
+            "\\;{0}".format(unit_str) if unit_str else "",
         )
 
     def __truediv__(self, other):
@@ -429,7 +429,9 @@ class State(ODEValueObject):
         Return a formatted str of __init__ arguments
         """
         return "'{0}', {1}, {2}".format(
-            self.name, repr(self._param.copy(include_name=False)), repr(self.time)
+            self.name,
+            repr(self._param.copy(include_name=False)),
+            repr(self.time),
         )
 
     @property
@@ -534,7 +536,7 @@ class IndexedObject(ODEObject):
         if len(indices) > 1 and flatten and shape is None:
             error(
                 "A 'shape' need to be provided to generate flatten indices "
-                "for index expressions with rank larger than 1."
+                "for index expressions with rank larger than 1.",
             )
 
         # Create index format
@@ -630,7 +632,12 @@ class StateIndexedObject(IndexedObject):
             fractional count based on the count of the dependent object
         """
         super(StateIndexedObject, self).__init__(
-            basename, indices, shape, array_params, add_offset, dependent
+            basename,
+            indices,
+            shape,
+            array_params,
+            add_offset,
+            dependent,
         )
         self._state = state
 
@@ -672,7 +679,12 @@ class ParameterIndexedObject(IndexedObject):
             fractional count based on the count of the dependent object
         """
         super(ParameterIndexedObject, self).__init__(
-            basename, indices, shape, array_params, add_offset, dependent
+            basename,
+            indices,
+            shape,
+            array_params,
+            add_offset,
+            dependent,
         )
         self._parameter = parameter
 

@@ -15,30 +15,29 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-import sys
-import typing
 import hashlib
-import types
 import importlib.util
-from pathlib import Path
+import sys
+import types
+import typing
 from enum import Enum
-import dijitso
+from pathlib import Path
 
+import dijitso
+from modelparameters.logger import debug, info, value_error
 from modelparameters.utils import check_arg, check_kwarg
-from modelparameters.logger import info, debug, value_error
 
 from .. import __version__
 from ..common import GotranException
-from ..model.ode import ODE
-from ..model.loadmodel import load_ode
 from ..common.options import parameters
+from ..model.loadmodel import load_ode
+from ..model.ode import ODE
 from .codegenerators import (
-    PythonCodeGenerator,
     CCodeGenerator,
-    class_name,
     DOLFINCodeGenerator,
+    PythonCodeGenerator,
+    class_name,
 )
-
 
 module_template = """import dijitso as _dijitso
 import numpy as _np
@@ -175,8 +174,8 @@ def compile_module(
     if language not in valid_languages:
         value_error(
             "Expected one of {0} for the language kwarg.".format(
-                ", ".join("'{0}'".format(lang) for lang in valid_languages)
-            )
+                ", ".join("'{0}'".format(lang) for lang in valid_languages),
+            ),
         )
 
     params = parameters.generation.copy()
@@ -256,25 +255,25 @@ def parse_arguments(params):
             args.append("states")
             args_doc.append(
                 f"""    {params.code.states.array_name} : np.ndarray
-        The state values"""
+        The state values""",
             )
         elif arg == "t":
             args.append("time")
             args_doc.append(
                 """    time : scalar
-        The present time"""
+        The present time""",
             )
         elif arg == "p" and params.code.parameters.representation != "numerals":
             args.append("parameters")
             args_doc.append(
                 f"""    {params.code.parameters.array_name} : np.ndarray
-        The parameter values"""
+        The parameter values""",
             )
         elif arg == "b" and params.code.body.representation != "named":
             args.append("body")
             args_doc.append(
                 f"""    {params.code.body.array_name} : np.ndarray
-        The body values"""
+        The body values""",
             )
 
     args = ", ".join(args)
@@ -371,8 +370,8 @@ def module_signature(ode, monitored, params, languange):
                 + repr(params)
                 + languange
                 + __version__
-                + dijitso.__version__
-            ).encode("utf-8")
+                + dijitso.__version__,
+            ).encode("utf-8"),
         ).hexdigest(),
     )
 
@@ -409,7 +408,10 @@ def compile_extension_module(
     pgen = PythonCodeGenerator(python_params)
     cgen = CCodeGenerator(params)
     code_dict = cgen.code_dict(
-        ode, monitored=monitored, include_init=False, include_index_map=False
+        ode,
+        monitored=monitored,
+        include_init=False,
+        include_index_map=False,
     )
 
     pcode = "\n\n".join(list(pgen.code_dict(ode, monitored=monitored).values()))
@@ -427,19 +429,25 @@ def compile_extension_module(
         states_name=params.code.states.array_name,
     )
     rhs_binding = binding_template.format(
-        funcname="rhs", argtypes=argtypes, restype="None"
+        funcname="rhs",
+        argtypes=argtypes,
+        restype="None",
     )
 
     monitor_binding = ""
     if monitor_code != "":
         monitor_binding = binding_template.format(
-            funcname="monitor", argtypes=argtypes, restype="None"
+            funcname="monitor",
+            argtypes=argtypes,
+            restype="None",
         )
 
     jacobian_binding = ""
     if jacobian_code != "":
         jacobian_binding = binding_template.format(
-            funcname="compute_jacobian", argtypes=argtypes, restype="None"
+            funcname="compute_jacobian",
+            argtypes=argtypes,
+            restype="None",
         )
 
     compiled_module_code = module_template.format(
@@ -468,7 +476,9 @@ def compile_extension_module(
 
 
 def save_module(
-    code: str, signature: str, cache_dir: typing.Optional[str] = None
+    code: str,
+    signature: str,
+    cache_dir: typing.Optional[str] = None,
 ) -> None:
     with open(
         cache_path(signature=signature, cache_dir=cache_dir),

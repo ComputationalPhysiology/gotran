@@ -6,11 +6,12 @@ __date__ = "2013-05-07 -- 2015-06-04"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__ = "GNU LGPL Version 3.0 or later"
 
+from modelparameters.parameterdict import *
+
 from gotran import *
+from gotran.common import error
 from gotran.model.loadmodel import load_ode
 from gotran.model.odeobjects import Comment
-from gotran.common import error
-from modelparameters.parameterdict import *
 
 
 def gotranexport(filename, params):
@@ -31,11 +32,13 @@ def gotranexport(filename, params):
 
 
 def main():
-    import sys, os
+    import os
+    import sys
 
     params = ParameterDict(
         components=Param(
-            [""], description="List all components that will be " "exported."
+            [""],
+            description="List all components that will be " "exported.",
         ),
         name=Param("", description="Specify name of exported ODE."),
     )

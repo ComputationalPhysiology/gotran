@@ -17,44 +17,46 @@
 
 __all__ = ["ODEComponent"]
 
-# System imports
-from collections import OrderedDict, defaultdict
 import weakref
 
-from sympy.core.function import AppliedUndef
+# System imports
+from collections import OrderedDict, defaultdict
+
+from modelparameters.codegeneration import _all_keywords, sympycode
+
+# Local imports
+from modelparameters.logger import debug, error
 
 # ModelParameters imports
 from modelparameters.sympytools import sp, symbols_from_expr
 from modelparameters.utils import Timer, check_arg, scalars
-from modelparameters.codegeneration import sympycode, _all_keywords
+from sympy.core.function import AppliedUndef
 
-# Local imports
-from modelparameters.logger import error, debug
-from .odeobjects import ODEObject, Comment, Parameter
 from .expressions import (
-    State,
-    StateSolution,
-    Intermediate,
-    StateDerivative,
-    DerivativeExpression,
     AlgebraicExpression,
-    StateExpression,
-    RateExpression,
+    DerivativeExpression,
     Expression,
-    IndexedObject,
     IndexedExpression,
+    IndexedObject,
+    Intermediate,
+    RateExpression,
+    State,
+    StateDerivative,
+    StateExpression,
+    StateSolution,
 )
+from .odeobjects import Comment, ODEObject, Parameter
 from .utils import (
-    RateDict,
-    ODEObjectList,
-    iter_objects,
-    ode_objects,
-    ode_components,
-    special_expression,
-    INTERMEDIATE,
-    DERIVATIVE_EXPRESSION,
-    STATE_SOLUTION_EXPRESSION,
     ALGEBRAIC_EXPRESSION,
+    DERIVATIVE_EXPRESSION,
+    INTERMEDIATE,
+    STATE_SOLUTION_EXPRESSION,
+    ODEObjectList,
+    RateDict,
+    iter_objects,
+    ode_components,
+    ode_objects,
+    special_expression,
 )
 
 
@@ -218,7 +220,7 @@ class ODEComponent(ODEObject):
             if not isinstance(arg, tuple) or len(arg) != 2:
                 error(
                     "excpected tuple with lenght 2 with state name (str) "
-                    "and init values as the args argument."
+                    "and init values as the args argument.",
                 )
             state_name, init = arg
 
@@ -267,7 +269,7 @@ class ODEComponent(ODEObject):
             if not isinstance(arg, tuple) or len(arg) != 2:
                 error(
                     "excpected tuple with lenght 2 with parameter name (str) "
-                    "and init values as the args argument."
+                    "and init values as the args argument.",
                 )
             parameter_name, value = arg
 
@@ -321,7 +323,7 @@ class ODEComponent(ODEObject):
             if (state.sym is not sym) and (state.sym in sym.atoms()):
                 error(
                     "{0}, a sub expression of the expression, cannot depend "
-                    "on the state for which we try to solve for.".format(sym)
+                    "on the state for which we try to solve for.".format(sym),
                 )
 
         # Try solve the passed expr
@@ -361,13 +363,13 @@ class ODEComponent(ODEObject):
         if f"d{state.name}_dt" in self.ode_objects:
             error(
                 "Cannot registered a state solution for a state "
-                "that has a state derivative registered."
+                "that has a state derivative registered.",
             )
 
         if f"alg_{state.name}_0" in self.ode_objects:
             error(
                 "Cannot registered a state solution for a state "
-                "that has an algebraic expression registered."
+                "that has an algebraic expression registered.",
             )
 
         # Create a StateSolution in the present component
@@ -465,13 +467,13 @@ class ODEComponent(ODEObject):
         if f"d{state.name}_dt" in self.ode_objects:
             error(
                 "Cannot registered an algebraic expression for a state "
-                "that has a state derivative registered."
+                "that has a state derivative registered.",
             )
 
         if state.is_solved:
             error(
                 "Cannot registered an algebraic expression for a state "
-                "which is registered solved."
+                "which is registered solved.",
             )
 
         # Create an AlgebraicExpression in the present component
@@ -653,7 +655,7 @@ class ODEComponent(ODEObject):
         ):
             debug(
                 "Not registering: {0} as attribut. It does not contain "
-                "any symbols or scalars.".format(name)
+                "any symbols or scalars.".format(name),
             )
 
             # FIXME: Should we raise an error?
@@ -744,7 +746,7 @@ class ODEComponent(ODEObject):
         if isinstance(state, State) and state.is_solved:
             error(
                 "Cannot registered a state expression for a state "
-                "which is registered solved."
+                "which is registered solved.",
             )
 
         return state
@@ -757,7 +759,7 @@ class ODEComponent(ODEObject):
         if self._is_finalized:
             error(
                 "Cannot add {0} {1} to component {2} it is "
-                "already finalized.".format(obj.__class__.__name__, obj, self)
+                "already finalized.".format(obj.__class__.__name__, obj, self),
             )
 
         self._check_reserved_wordings(obj)
@@ -773,13 +775,13 @@ class ODEComponent(ODEObject):
                 error(
                     "A component cannot have both state expressions "
                     "(derivative and algebraic expressions) and rate "
-                    "expressions."
+                    "expressions.",
                 )
 
             if obj.state in self._local_state_expressions:
                 error(
                     "A StateExpression for state {0} is already registered "
-                    "in this component.".format(obj.state.name)
+                    "in this component.".format(obj.state.name),
                 )
 
             # Check that the state is registered in this component
@@ -787,7 +789,7 @@ class ODEComponent(ODEObject):
             if not isinstance(state_obj, State):
                 error(
                     "The state expression {0} defines state {1}, which is "
-                    "not registered in the {2} component.".format(obj, obj.state, self)
+                    "not registered in the {2} component.".format(obj, obj.state, self),
                 )
 
             self._local_state_expressions[obj.state] = obj
@@ -799,7 +801,8 @@ class ODEComponent(ODEObject):
             # If indexed expression or object register the basename as a dict
             if isinstance(obj, (IndexedExpression, IndexedObject)):
                 if obj.basename in self.__dict__ and isinstance(
-                    self.__dict__[obj.basename], dict
+                    self.__dict__[obj.basename],
+                    dict,
                 ):
                     self.__dict__[obj.basename][obj.indices] = obj.sym
                 else:
@@ -817,7 +820,7 @@ class ODEComponent(ODEObject):
         if obj.name in _all_keywords:
             error(
                 "Cannot register a {0} with a computer language "
-                "keyword name: {1}".format(obj.__class__.__name__, obj.name)
+                "keyword name: {1}".format(obj.__class__.__name__, obj.name),
             )
 
         # Check for reserved Expression wordings
@@ -872,7 +875,7 @@ class ODEComponent(ODEObject):
         # Check that the length of the state lists corresponds with the shape of
         # the rate matrix
         if rate_matrix.shape[0] != len(states[0]) or rate_matrix.shape[1] != len(
-            states[1]
+            states[1],
         ):
             error("Shape of rates does not match given states")
 
@@ -900,7 +903,7 @@ class ODEComponent(ODEObject):
         if self.state_expressions:
             error(
                 "A component cannot have both state expressions (derivative "
-                "and algebraic expressions) and rate expressions."
+                "and algebraic expressions) and rate expressions.",
             )
 
         check_arg(expr, scalars + (sp.Basic,), 2, ODEComponent._add_single_rate)
@@ -908,10 +911,14 @@ class ODEComponent(ODEObject):
         expr = sp.sympify(expr)
 
         to_state = self._expect_state(
-            to_state, allow_state_solution=True, only_local_states=True
+            to_state,
+            allow_state_solution=True,
+            only_local_states=True,
         )
         from_state = self._expect_state(
-            from_state, allow_state_solution=True, only_local_states=True
+            from_state,
+            allow_state_solution=True,
+            only_local_states=True,
         )
 
         if to_state == from_state:
@@ -919,7 +926,7 @@ class ODEComponent(ODEObject):
 
         if (to_state.sym, from_state.sym) in self.rates:
             error(
-                f"Rate between state {from_state} and {to_state} is already registered."
+                f"Rate between state {from_state} and {to_state} is already registered.",
             )
 
         # FIXME: It should also not be possible to include other
@@ -927,7 +934,7 @@ class ODEComponent(ODEObject):
         syms_expr = symbols_from_expr(expr)
         if to_state.sym in syms_expr or from_state.sym in syms_expr:
             error(
-                "The rate expression cannot be dependent on the " "states it connects."
+                "The rate expression cannot be dependent on the " "states it connects.",
             )
 
         # Create a RateExpression
@@ -1015,7 +1022,10 @@ class ODEComponent(ODEObject):
             if times != 2:
                 error(
                     "Only one rate between the states {0} and {1} was "
-                    "registered, expected two.".format(states[ind_from], states[ind_to])
+                    "registered, expected two.".format(
+                        states[ind_from],
+                        states[ind_to],
+                    ),
                 )
 
         # Add derivatives

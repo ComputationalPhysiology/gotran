@@ -31,14 +31,14 @@ for f in list_python_files():
         if len(line) > max_line_length + 1:
             clean = False
             too_long[num] = line
-    
+
     if too_long:
         print("")
-        display = "In file: '%s':"%f
+        display = "In file: '%s':" % f
         print(display)
-        print("-"*len(display))
+        print("-" * len(display))
         for num in sorted(too_long.keys()):
-            print("%04d: %s"%(num+1, too_long[num][:max_display_of_line]))
+            print("%04d: %s" % (num + 1, too_long[num][:max_display_of_line]))
 
 if clean:
     print("You are clean! Good job!")

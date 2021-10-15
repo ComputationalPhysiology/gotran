@@ -17,7 +17,7 @@ This model is known to run in OpenCell and COR to reproduce the output shown in 
 
 <para>
 Abstract: The determinants of relaxation in cardiac muscle are poorly understood, yet compromised relaxation accompanies various pathologies and impaired pump function. In this study, we develop a model of active contraction to elucidate the relative importance of the [Ca2+]i transient magnitude, the unbinding of Ca2+ from troponin C (TnC), and the length-dependence of tension and Ca2+ sensitivity on relaxation. Using the framework proposed by one of our researchers, we extensively reviewed experimental literature, to quantitatively characterize the binding of Ca2+ to TnC, the kinetics of tropomyosin, the availability of binding sites, and the kinetics of crossbridge binding after perturbations in sarcomere length. Model parameters were determined from multiple experimental results and modalities (skinned and intact preparations) and model results were validated against data from length step, caged Ca2+, isometric twitches, and the half-time to relaxation with increasing sarcomere length experiments. A factorial analysis found that the [Ca2+]i transient and the unbinding of Ca2+ from TnC were the primary determinants of relaxation, with a fivefold greater effect than that of length-dependent maximum tension and twice the effect of tension-dependent binding of Ca2+ to TnC and length-dependent Ca2+ sensitivity. The affects of the [Ca2+]i transient and the unbinding rate of Ca2+ from TnC were tightly coupled with the effect of increasing either factor, depending on the reference [Ca2+]i transient and unbinding rate.
-</para> 
+</para>
 
 <informalfigure float="0" id="fig_reaction_diagram">
 <mediaobject>
@@ -36,13 +36,13 @@ The original publication reference is cited below:
 </para>
 
 <para>
-A Quantitative Analysis of Cardiac Myocyte Relaxation: A Simulation Study, Steven Niederer, Peter Hunter, Nicholas Smith, 2006 
+A Quantitative Analysis of Cardiac Myocyte Relaxation: A Simulation Study, Steven Niederer, Peter Hunter, Nicholas Smith, 2006
             <emphasis>Biophysical Journal</emphasis>, 90 1697-1722  <ulink url="http://www.ncbi.nlm.nih.gov/pubmed/16339881?ordinalpos=1&amp;itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_RVDocSum">PubMed ID: 16339881</ulink>
 </para>
 
 </sect1>
 </article>
-</documentation> 
+</documentation>
 
    <units name="per_ms">
       <unit exponent="-1" prefix="milli" units="second"/>
@@ -1101,7 +1101,7 @@ A Quantitative Analysis of Cardiac Myocyte Relaxation: A Simulation Study, Steve
          </apply>
       </math>
    </component>
-  
+
    <connection>
       <map_components component_1="intracellular_ion_concentrations" component_2="environment"/>
       <map_variables variable_1="time" variable_2="time"/>

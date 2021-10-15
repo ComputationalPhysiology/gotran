@@ -18,11 +18,12 @@
 # Not meant to make any of the functions available from this module
 __all__ = []
 
+import mpmath.libmp as _mlib
+
 # A hack to get around evaluation of SymPy expressions
 import sympy as sp
-from sympy.core.expr import Expr as _Expr
 from sympy.core import function as _function
-import mpmath.libmp as _mlib
+from sympy.core.expr import Expr as _Expr
 
 _evaluate = False
 
@@ -89,7 +90,12 @@ def _function_new(cls, *args, **options):
             )
             raise TypeError(
                 temp
-                % {"name": cls, "args": cls.nargs, "plural": "s" * (n != 1), "given": n}
+                % {
+                    "name": cls,
+                    "args": cls.nargs,
+                    "plural": "s" * (n != 1),
+                    "given": n,
+                },
             )
 
     evaluate = options.get("evaluate", _evaluate)

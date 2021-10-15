@@ -9,8 +9,8 @@ http://COR.physiol.ox.ac.uk/ - COR@physiol.ox.ac.uk
 CellML 1.0 was used to generate this cellular model
 http://www.CellML.org/
 --><model xmlns="http://www.cellml.org/cellml/1.0#" xmlns:bqs="http://www.cellml.org/bqs/1.0#" xmlns:cellml="http://www.cellml.org/cellml/1.0#" xmlns:cmeta="http://www.cellml.org/metadata/1.0#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:ns7="http://www.cellml.org/metadata/simulation/1.0#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#" xml:base="file:///home/hake/Downloads/beeler_reuter_1977-fdd29a005ffc/beeler_reuter_1977.cellml" cmeta:id="beeler_reuter_1977" name="beeler_reuter_1977_version06">
-  
-  
+
+
   <!--
     Below, we define some additional units for association with variables and
     constants within the model. The identifiers are fairly self-explanatory.
@@ -53,7 +53,7 @@ The complete original paper reference is cited below:
 </para>
 
 <para>
-Reconstruction of the action potential of ventricular myocardial fibres, Beeler, G.W. and Reuter, H. 1977 
+Reconstruction of the action potential of ventricular myocardial fibres, Beeler, G.W. and Reuter, H. 1977
             <emphasis>Journal of Physiology</emphasis>
           , 268, 177-210.  <ulink url="http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&amp;db=PubMed&amp;list_uids=874889&amp;dopt=Abstract">PubMed ID: 874889</ulink>
 </para>

@@ -18,25 +18,26 @@
 # FIXME: This is a deprecated module. Most of it should be
 # incorporated into other modules by now.
 
-# System imports
-from collections import OrderedDict
 import hashlib
 import re
 import sys
+
+# System imports
+from collections import OrderedDict
 from distutils.version import LooseVersion as _V
+
 import sympy
+from modelparameters.logger import info
 
 # Model parametrs imports
-from modelparameters.parameterdict import Param, ScalarParam, ParameterDict
-from modelparameters.sympytools import sp, iter_symbol_params_from_expr
+from modelparameters.parameterdict import Param, ParameterDict, ScalarParam
+from modelparameters.sympytools import iter_symbol_params_from_expr, sp
+from modelparameters.utils import check_arg, check_kwarg
+from sympy import cse
 
 # Local gotran imports
 from ..model.ode import ODE
-from ..model.odecomponent import ODEComponent, Comment
-from modelparameters.utils import check_arg, check_kwarg
-from modelparameters.logger import info
-
-from sympy import cse
+from ..model.odecomponent import Comment, ODEComponent
 
 _current_sympy_version = _V(sp.__version__)
 _jacobian_pattern = re.compile("_([0-9]+)")
@@ -76,14 +77,16 @@ def _default_params(exclude=None):
     if "keep_intermediates" not in exclude:
         # Keep all intermediates
         params["keep_intermediates"] = Param(
-            True, description="Keep intermediates in code"
+            True,
+            description="Keep intermediates in code",
         )
 
     if "use_variables" not in exclude:
         # If True, code for altering variables are created
         # FIXME: Not used
         params["use_variables"] = Param(
-            False, description="If True, code for altering variables are created"
+            False,
+            description="If True, code for altering variables are created",
         )
 
     if "parameter_contraction" not in exclude:
@@ -125,25 +128,29 @@ def _default_params(exclude=None):
     if "generate_jacobian" not in exclude:
         # Generate code for the computation of the jacobian
         params["generate_jacobian"] = Param(
-            True, description="Generate code for the computation of the jacobian"
+            True,
+            description="Generate code for the computation of the jacobian",
         )
 
     if "transposed_jacobian" not in exclude:
         # Generate code for the computation of the jacobian
         params["transposed_jacobian"] = Param(
-            False, description="The Jacobian is transposed"
+            False,
+            description="The Jacobian is transposed",
         )
 
     if "generate_lu_factorization" not in exclude:
         # Generate code for the factorization of the jacobian
         params["generate_lu_factorization"] = Param(
-            True, description="Generate code for the factorization of the jacobian"
+            True,
+            description="Generate code for the factorization of the jacobian",
         )
 
     if "generate_forward_backward_subst" not in exclude:
         # Generate code for the forward backward substitution code
         params["generate_forward_backward_subst"] = Param(
-            True, description="Generate code for the forward backward substitution code"
+            True,
+            description="Generate code for the forward backward substitution code",
         )
 
     if "generate_linearized_evaluation" not in exclude:
@@ -313,7 +320,7 @@ class ODERepresentation(object):
         self._cse_monitored_counts = cse_counts
 
         self._used_in_monitoring["parameters"] = list(
-            self._used_in_monitoring["parameters"]
+            self._used_in_monitoring["parameters"],
         )
 
         self._used_in_monitoring["states"] = list(self._used_in_monitoring["states"])
@@ -327,7 +334,7 @@ class ODERepresentation(object):
         if ode.num_states > 10:
             info(
                 "Calculating jacobian for {0} states. "
-                "May take some time...".format(ode.num_states)
+                "May take some time...".format(ode.num_states),
             )
             sys.stdout.flush()
 
@@ -347,7 +354,9 @@ class ODERepresentation(object):
 
         # Create the Jacobian
         self._jacobian_mat = sp.SparseMatrix(
-            ode.num_states, ode.num_states, lambda i, j: sym_map.get((i, j), 0)
+            ode.num_states,
+            ode.num_states,
+            lambda i, j: sym_map.get((i, j), 0),
         )
 
         if self.optimization.transposed_jacobian:
@@ -381,7 +390,7 @@ class ODERepresentation(object):
 
         info(
             "Calculating jacobian action common sub expressions for {0} entries. "
-            "May take some time...".format(len(self._jacobian_action_expr))
+            "May take some time...".format(len(self._jacobian_action_expr)),
         )
         sys.stdout.flush()
 
@@ -411,7 +420,7 @@ class ODERepresentation(object):
                     in self._cse_jacobian_action_expr[j].atoms()
                 ):
                     cse_jacobian_action_counts[i].append(
-                        j + len(self._cse_jacobian_action_subs)
+                        j + len(self._cse_jacobian_action_subs),
                     )
 
         # Store usage count
@@ -429,7 +438,7 @@ class ODERepresentation(object):
 
         info(
             "Calculating jacobi common sub expressions for {0} entries. "
-            "May take some time...".format(len(self._jacobian_expr))
+            "May take some time...".format(len(self._jacobian_expr)),
         )
         sys.stdout.flush()
 
@@ -509,12 +518,15 @@ class ODERepresentation(object):
             if i != 0:
                 operations.append(
                     "jac[{i}*{n}+{j}] -= jac[{i}*{n}+{k}]*jac[{k}*{n}+{j}]".format(
-                        i=i, j=j, k=k, n=n
-                    )
+                        i=i,
+                        j=j,
+                        k=k,
+                        n=n,
+                    ),
                 )
             else:
                 operations.append(
-                    "jac[{j}] -= jac[{k}]*jac[{k}*{n}+{j}]".format(j=j, k=k, n=n)
+                    "jac[{j}] -= jac[{k}]*jac[{k}*{n}+{j}]".format(j=j, k=k, n=n),
                 )
 
             new_sym = sp.Symbol(f"j_{i}_{j}:{new_count}")
@@ -565,7 +577,7 @@ class ODERepresentation(object):
 
                 # Store operation
                 operations.append(
-                    "jac[{i}*{n}+{j}] /= jac[{j}*{n}+{j}]".format(i=i, n=n, j=j)
+                    "jac[{i}*{n}+{j}] /= jac[{j}*{n}+{j}]".format(i=i, n=n, j=j),
                 )
 
                 # Create new symbol and store the representation
@@ -643,7 +655,7 @@ class ODERepresentation(object):
 
             if i != 0:
                 operations.append(
-                    "dx[{i}] -= dx[{j}]*jac[{i}*{n}+{j}]".format(i=i, j=j, n=n)
+                    "dx[{i}] -= dx[{j}]*jac[{i}*{n}+{j}]".format(i=i, j=j, n=n),
                 )
             else:
                 operations.append("dx[{i}] -= dx[{j}]*jac[{j}]".format(i=i, j=j))
@@ -703,7 +715,7 @@ class ODERepresentation(object):
             return
 
         info(
-            "Calculating common sub expressions for single components of ODE. May take some time..."
+            "Calculating common sub expressions for single components of ODE. May take some time...",
         )
         sys.stdout.flush()
         ode = self.ode
@@ -723,7 +735,7 @@ class ODERepresentation(object):
 
         info(" done")
         info(
-            "Calculating common sub expressions for linearized ODE. May take some time..."
+            "Calculating common sub expressions for linearized ODE. May take some time...",
         )
         self._cse_linearized_subs, self._cse_linearized_derivative_expr = cse(
             [self.subs(expr) for expr in list(self._linearized_exprs.values())],
@@ -755,7 +767,7 @@ class ODERepresentation(object):
                     used_parameters.add(sym.name)
 
             used_in_single_dy.append(
-                dict(parameters=list(used_parameters), states=list(used_states))
+                dict(parameters=list(used_parameters), states=list(used_states)),
             )
 
             assert len(ders) == 1
@@ -905,7 +917,8 @@ class ODERepresentation(object):
             return (
                 (derivatives, cse_expr)
                 for ((derivatives, expr), cse_expr) in zip(
-                    self.ode.get_derivative_expr(), self._cse_derivative_expr
+                    self.ode.get_derivative_expr(),
+                    self._cse_derivative_expr,
                 )
             )
 
@@ -947,7 +960,8 @@ class ODERepresentation(object):
         # Yield the CSE
         yield "Common Sub Expressions for jacobi intermediates", "COMMENT"
         for (name, expr), cse_count in zip(
-            self._cse_jacobian_subs, self._cse_jacobian_counts
+            self._cse_jacobian_subs,
+            self._cse_jacobian_counts,
         ):
             if cse_count:
                 yield expr, name
@@ -962,14 +976,15 @@ class ODERepresentation(object):
         if self.optimization.use_cse:
 
             for ((name, expr), cse_expr) in zip(
-                list(self._jacobian_expr.items()), self._cse_jacobian_expr
+                list(self._jacobian_expr.items()),
+                self._cse_jacobian_expr,
             ):
                 yield list(map(int, re.findall(_jacobian_pattern, str(name)))), cse_expr
         else:
 
             for name, expr in list(self._jacobian_expr.items()):
                 yield list(
-                    map(int, re.findall(_jacobian_pattern, str(name)))
+                    map(int, re.findall(_jacobian_pattern, str(name))),
                 ), self.subs(expr)
 
     def iter_jacobian_action_body(self):
@@ -985,7 +1000,8 @@ class ODERepresentation(object):
         # Yield the CSE
         yield "Common Sub Expressions for jacobi action intermediates", "COMMENT"
         for (name, expr), cse_count in zip(
-            self._cse_jacobian_action_subs, self._cse_jacobian_action_counts
+            self._cse_jacobian_action_subs,
+            self._cse_jacobian_action_counts,
         ):
             if cse_count:
                 yield expr, name
@@ -1018,7 +1034,8 @@ class ODERepresentation(object):
         # Yield the CSE
         yield "Common Sub Expressions for monitored intermediates", "COMMENT"
         for (name, expr), cse_count in zip(
-            self._cse_monitored_subs, self._cse_monitored_counts
+            self._cse_monitored_subs,
+            self._cse_monitored_counts,
         ):
             if cse_count:
                 yield expr, name
@@ -1035,7 +1052,8 @@ class ODERepresentation(object):
         yield "COMMENT", "Monitored intermediates"
 
         for (name, cse_expr) in zip(
-            self.ode.monitored_intermediates, self._cse_monitored_expr
+            self.ode.monitored_intermediates,
+            self._cse_monitored_expr,
         ):
             yield name, cse_expr
 
@@ -1055,7 +1073,8 @@ class ODERepresentation(object):
         if self.optimization.use_cse:
             self._compute_linearized_dy_cse()
             for idx, cse_expr in zip(
-                self._linearized_exprs, self._cse_linearized_derivative_expr
+                self._linearized_exprs,
+                self._cse_linearized_derivative_expr,
             ):
                 yield idx, cse_expr
 
@@ -1069,7 +1088,8 @@ class ODERepresentation(object):
         if self.optimization.use_cse:
             self._compute_linearized_dy_cse()
             for subs, expr in zip(
-                self._cse_subs_single_dy, self._cse_derivative_expr_single_dy
+                self._cse_subs_single_dy,
+                self._cse_derivative_expr_single_dy,
             ):
                 yield subs, expr[0]
 

@@ -26,20 +26,20 @@ comment_lines = 0
 docstrings = 0
 meta_data = 0
 
-in_docstring= False
+in_docstring = False
 
 for f in list_python_files():
     for line in open(f, "r").readlines():
         line = line.strip()
         if in_docstring:
-            docstrings +=1
+            docstrings += 1
             if line.endswith('"""'):
                 in_docstring = False
         elif line.startswith('"""'):
-            docstrings +=1
+            docstrings += 1
             in_docstring = True
         elif line.startswith('"'):
-            docstrings +=1
+            docstrings += 1
         elif line.startswith("__"):
             meta_data += 1
         elif line.startswith("#"):
@@ -47,7 +47,7 @@ for f in list_python_files():
         elif len(line) == 0:
             blank_lines += 1
         else:
-            code_lines+=1
+            code_lines += 1
 
 print("### Gotran2 code statistics ###")
 print("Code lines:      ", code_lines)

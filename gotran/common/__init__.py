@@ -15,11 +15,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-# ModelParameters imports
+
 # from modelparameters.logger import set_default_exception, set_log_level, INFO
 # import modelparameters.commands as commands
 from .dicts import adict, odict
-from .disk import load, save, present_time_str, GotranException
+
+# ModelParameters imports
+from .disk import GotranException, load, present_time_str, save
 from .options import parameters
 
 # Base class for ModelParameters exceptions
