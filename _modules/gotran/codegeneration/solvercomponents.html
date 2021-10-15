@@ -98,30 +98,16 @@
 <span class="c1"># System imports</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 
+<span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">debug</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">info</span>
+
 <span class="c1"># ModelParameters imports</span>
-<span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">sp</span><span class="p">,</span> <span class="n">Conditional</span>
-<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">sympycode</span>
+<span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">Conditional</span><span class="p">,</span> <span class="n">sp</span>
 
 <span class="c1"># Local imports</span>
-<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">error</span><span class="p">,</span>
-    <span class="n">info</span><span class="p">,</span>
-    <span class="n">debug</span><span class="p">,</span>
-    <span class="n">check_arg</span><span class="p">,</span>
-    <span class="n">check_kwarg</span><span class="p">,</span>
-    <span class="n">scalars</span><span class="p">,</span>
-    <span class="n">Timer</span><span class="p">,</span>
-    <span class="n">warning</span><span class="p">,</span>
-    <span class="n">tuplewrap</span><span class="p">,</span>
-    <span class="n">parameters</span><span class="p">,</span>
-    <span class="n">warning</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="n">listwrap</span>
-<span class="kn">from</span> <span class="nn">gotran.model.utils</span> <span class="kn">import</span> <span class="n">ode_primitives</span>
-<span class="kn">from</span> <span class="nn">gotran.model.odeobjects</span> <span class="kn">import</span> <span class="n">State</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">IndexedObject</span><span class="p">,</span> <span class="n">Comment</span>
-<span class="kn">from</span> <span class="nn">gotran.model.expressions</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">gotran.model.ode</span> <span class="kn">import</span> <span class="n">ODE</span>
-<span class="kn">from</span> <span class="nn">gotran.codegeneration.codecomponent</span> <span class="kn">import</span> <span class="n">CodeComponent</span>
+<span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">Timer</span><span class="p">,</span> <span class="n">check_arg</span>
+
+<span class="kn">from</span> <span class="nn">..model.ode</span> <span class="kn">import</span> <span class="n">ODE</span>
+<span class="kn">from</span> <span class="nn">.codecomponent</span> <span class="kn">import</span> <span class="n">CodeComponent</span>
 
 
 <div class="viewcode-block" id="explicit_euler_solver"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.solvercomponents.explicit_euler_solver">[docs]</a><span class="k">def</span> <span class="nf">explicit_euler_solver</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_explicit_euler&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -144,7 +130,10 @@
 
 
 <div class="viewcode-block" id="rush_larsen_solver"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.solvercomponents.rush_larsen_solver">[docs]</a><span class="k">def</span> <span class="nf">rush_larsen_solver</span><span class="p">(</span>
-    <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_rush_larsen&quot;</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span>
+    <span class="n">ode</span><span class="p">,</span>
+    <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_rush_larsen&quot;</span><span class="p">,</span>
+    <span class="n">delta</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span>
+    <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return an ODEComponent holding expressions for the Rush-Larsen method</span>
@@ -167,7 +156,10 @@
 
 
 <div class="viewcode-block" id="generalized_rush_larsen_solver"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.solvercomponents.generalized_rush_larsen_solver">[docs]</a><span class="k">def</span> <span class="nf">generalized_rush_larsen_solver</span><span class="p">(</span>
-    <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_generalized_rush_larsen&quot;</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span>
+    <span class="n">ode</span><span class="p">,</span>
+    <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_generalized_rush_larsen&quot;</span><span class="p">,</span>
+    <span class="n">delta</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span>
+    <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return an ODEComponent holding expressions for the generalized Rush-Larsen method</span>
@@ -187,7 +179,10 @@
         <span class="n">error</span><span class="p">(</span><span class="s2">&quot;The ODE is not finalized&quot;</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">GeneralizedRushLarsen</span><span class="p">(</span>
-        <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="n">function_name</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="n">delta</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+        <span class="n">ode</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="o">=</span><span class="n">function_name</span><span class="p">,</span>
+        <span class="n">delta</span><span class="o">=</span><span class="n">delta</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 
@@ -312,7 +307,6 @@
         <span class="n">state_exprs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">state_expressions</span>
         <span class="n">states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">full_states</span>
         <span class="n">result_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">array_name</span>
-        <span class="n">state_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">),)</span>
 
         <span class="c1"># Get time step and start creating the update algorithm</span>
@@ -382,7 +376,11 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_rush_larsen&quot;</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ode</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;forward_rush_larsen&quot;</span><span class="p">,</span>
+        <span class="n">delta</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a RushLarsen Solver component</span>
@@ -425,7 +423,6 @@
         <span class="n">states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">full_states</span>
 
         <span class="n">result_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">array_name</span>
-        <span class="n">state_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">),)</span>
 
         <span class="c1"># Get time step and start creating the update algorithm</span>
@@ -455,13 +452,15 @@
 
                 <span class="n">linearized_name</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_linearized&quot;</span>
                 <span class="n">linearized</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_intermediate</span><span class="p">(</span>
-                    <span class="n">linearized_name</span><span class="p">,</span> <span class="n">expr_diff</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span>
+                    <span class="n">linearized_name</span><span class="p">,</span>
+                    <span class="n">expr_diff</span><span class="p">,</span>
+                    <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span><span class="p">,</span>
                 <span class="p">)</span>
 
                 <span class="n">need_zero_div_check</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">fraction_numerator_is_nonzero</span><span class="p">(</span><span class="n">expr_diff</span><span class="p">)</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">need_zero_div_check</span><span class="p">:</span>
                     <span class="n">debug</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">linearized_name</span><span class="si">}</span><span class="s2"> cannot be zero. Skipping zero division check&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">linearized_name</span><span class="si">}</span><span class="s2"> cannot be zero. Skipping zero division check&quot;</span><span class="p">,</span>
                     <span class="p">)</span>
 
                 <span class="n">RL_term</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">sym</span> <span class="o">/</span> <span class="n">linearized</span> <span class="o">*</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">linearized</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
@@ -550,7 +549,6 @@
 
         <span class="n">result_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">array_name</span> <span class="o">+</span> <span class="s2">&quot;_1&quot;</span>
         <span class="n">previous_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">array_name</span> <span class="o">+</span> <span class="s2">&quot;_0&quot;</span>
-        <span class="n">state_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">),)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">previous_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">),)</span>
 
@@ -573,7 +571,9 @@
             <span class="k">if</span> <span class="n">expr_diff</span> <span class="ow">and</span> <span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">expr_diff</span><span class="p">:</span>
 
                 <span class="n">linearized</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_intermediate</span><span class="p">(</span>
-                    <span class="n">expr</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_linearized&quot;</span><span class="p">,</span> <span class="n">expr_diff</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span>
+                    <span class="n">expr</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_linearized&quot;</span><span class="p">,</span>
+                    <span class="n">expr_diff</span><span class="p">,</span>
+                    <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span><span class="p">,</span>
                 <span class="p">)</span>
 
                 <span class="c1"># Solve &quot;exact&quot; using exp</span>
@@ -655,7 +655,6 @@
         <span class="n">state_exprs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">state_expressions</span>
         <span class="n">states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">full_states</span>
         <span class="n">result_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">array_name</span>
-        <span class="n">state_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">),)</span>
 
@@ -683,7 +682,9 @@
 
             <span class="n">linearized_name</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_linearized&quot;</span>
             <span class="n">linearized</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_intermediate</span><span class="p">(</span>
-                <span class="n">linearized_name</span><span class="p">,</span> <span class="n">expr_diff</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span>
+                <span class="n">linearized_name</span><span class="p">,</span>
+                <span class="n">expr_diff</span><span class="p">,</span>
+                <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span><span class="p">,</span>
             <span class="p">)</span>
 
             <span class="n">need_zero_div_check</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">fraction_numerator_is_nonzero</span><span class="p">(</span><span class="n">expr_diff</span><span class="p">)</span>
@@ -775,7 +776,6 @@
         <span class="n">state_exprs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">state_expressions</span>
         <span class="n">states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">full_states</span>
         <span class="n">result_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">array_name</span>
-        <span class="n">state_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">),)</span>
 
@@ -805,7 +805,9 @@
 
             <span class="n">linearized_name</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_linearized&quot;</span>
             <span class="n">linearized</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_intermediate</span><span class="p">(</span>
-                <span class="n">linearized_name</span><span class="p">,</span> <span class="n">expr_diff</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span>
+                <span class="n">linearized_name</span><span class="p">,</span>
+                <span class="n">expr_diff</span><span class="p">,</span>
+                <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span><span class="p">,</span>
             <span class="p">)</span>
 
             <span class="n">need_zero_div_check</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">fraction_numerator_is_nonzero</span><span class="p">(</span><span class="n">expr_diff</span><span class="p">)</span>
@@ -892,7 +894,6 @@
         <span class="n">states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">full_states</span>
 
         <span class="n">result_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">array_name</span>
-        <span class="n">state_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">add_offset</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">result_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">),)</span>
 
         <span class="c1"># Get time step and start creating the update algorithm</span>
@@ -911,7 +912,9 @@
 
             <span class="k">if</span> <span class="ow">not</span> <span class="n">diag_jac_expr</span><span class="o">.</span><span class="n">is_zero</span><span class="p">:</span>
                 <span class="n">diag_jac</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_intermediate</span><span class="p">(</span>
-                    <span class="n">expr</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_diag_jac&quot;</span><span class="p">,</span> <span class="n">diag_jac_expr</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span>
+                    <span class="n">expr</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_diag_jac&quot;</span><span class="p">,</span>
+                    <span class="n">diag_jac_expr</span><span class="p">,</span>
+                    <span class="n">dependent</span><span class="o">=</span><span class="n">dependent</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">diag_jac</span> <span class="o">=</span> <span class="mf">0.0</span>
@@ -939,7 +942,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

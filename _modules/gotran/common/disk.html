@@ -54,7 +54,6 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
           <li><a href="../../index.html">Module code</a> &raquo;</li>
-          <li><a href="../common.html">gotran.common</a> &raquo;</li>
       <li>gotran.common.disk</li>
       <li class="wy-breadcrumbs-aside">
       </li>
@@ -84,26 +83,37 @@
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;load&quot;</span><span class="p">,</span> <span class="s2">&quot;save&quot;</span><span class="p">,</span> <span class="s2">&quot;present_time_str&quot;</span><span class="p">]</span>
 
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
 <span class="c1"># System imports</span>
 <span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">pickle</span> <span class="kn">import</span> <span class="n">Pickler</span><span class="p">,</span> <span class="n">Unpickler</span>
+
 <span class="kn">import</span> <span class="nn">numpy</span>
-
-<span class="kn">from</span> <span class="nn">pickle</span> <span class="kn">import</span> <span class="n">Unpickler</span><span class="p">,</span> <span class="n">Pickler</span>
-<span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">isdir</span><span class="p">,</span> <span class="n">join</span>
-
-<span class="c1"># gotran imports</span>
-<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">INFO</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">set_default_exception</span><span class="p">,</span> <span class="n">set_log_level</span>
+<span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">check_arg</span>
 
 <span class="n">TIME_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;%Y.%m.</span><span class="si">%d</span><span class="s2">-%H.%M.%S&quot;</span>
 
+<span class="n">set_log_level</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span>
 
-<div class="viewcode-block" id="present_time_str"><a class="viewcode-back" href="../../../gotran.common.html#gotran.common.disk.present_time_str">[docs]</a><span class="k">def</span> <span class="nf">present_time_str</span><span class="p">():</span>
+
+<div class="viewcode-block" id="GotranException"><a class="viewcode-back" href="../../../gotran.common.html#gotran.GotranException">[docs]</a><span class="k">class</span> <span class="nc">GotranException</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
+    <span class="s2">&quot;Base class for ModelParameters exceptions&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<span class="n">set_default_exception</span><span class="p">(</span><span class="n">GotranException</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="present_time_str"><a class="viewcode-back" href="../../../gotran.common.html#gotran.present_time_str">[docs]</a><span class="k">def</span> <span class="nf">present_time_str</span><span class="p">():</span>
     <span class="s2">&quot;Returns the present time nicely formated&quot;</span>
     <span class="k">return</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">TIME_FORMAT</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="save"><a class="viewcode-back" href="../../../gotran.common.html#gotran.common.disk.save">[docs]</a><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span> <span class="o">**</span><span class="n">data</span><span class="p">):</span>
+<div class="viewcode-block" id="save"><a class="viewcode-back" href="../../../gotran.common.html#gotran.save">[docs]</a><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span> <span class="o">**</span><span class="n">data</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Save data using cPickle</span>
 
@@ -137,7 +147,7 @@
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p2</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="n">p1</span> <span class="o">==</span> <span class="n">p2</span>
-    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">p1</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
@@ -149,7 +159,7 @@
     <span class="k">return</span> <span class="n">ret</span>
 
 
-<div class="viewcode-block" id="load"><a class="viewcode-back" href="../../../gotran.common.html#gotran.common.disk.load">[docs]</a><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span> <span class="n">latest_timestamp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">collect</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="load"><a class="viewcode-back" href="../../../gotran.common.html#gotran.load">[docs]</a><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span> <span class="n">latest_timestamp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">collect</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Load data using cPickle</span>
 
@@ -238,11 +248,10 @@
 
 <span class="k">def</span> <span class="nf">get_data_filenames</span><span class="p">(</span><span class="n">basename</span><span class="p">):</span>
     <span class="s2">&quot;Helper functions for getting data filenames&quot;</span>
-    <span class="kn">import</span> <span class="nn">glob</span><span class="o">,</span> <span class="nn">re</span>
 
     <span class="n">basename</span> <span class="o">=</span> <span class="n">basename</span> <span class="k">if</span> <span class="s2">&quot;.cpickle&quot;</span> <span class="ow">in</span> <span class="n">basename</span> <span class="k">else</span> <span class="n">basename</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.cpickle&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
     <span class="n">pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">basename</span><span class="si">}</span><span class="s2">-[0-9]+</span><span class="se">\\</span><span class="s2">.[0-9]+</span><span class="se">\\</span><span class="s2">.[0-9]+-[0-9]+</span><span class="se">\\</span><span class="s2">.[0-9]+</span><span class="se">\\</span><span class="s2">.[0-9]+.cpickle&quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">basename</span><span class="si">}</span><span class="s2">-[0-9]+</span><span class="se">\\</span><span class="s2">.[0-9]+</span><span class="se">\\</span><span class="s2">.[0-9]+-[0-9]+</span><span class="se">\\</span><span class="s2">.[0-9]+</span><span class="se">\\</span><span class="s2">.[0-9]+.cpickle&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="n">filenames</span> <span class="o">=</span> <span class="p">[</span>
@@ -265,7 +274,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

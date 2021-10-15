@@ -95,22 +95,24 @@
     <span class="s2">&quot;RateDict&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">weakref</span>
+
 <span class="c1"># System imports</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
-<span class="kn">import</span> <span class="nn">weakref</span>
-<span class="kn">import</span> <span class="nn">re</span>
 
-<span class="kn">from</span> <span class="nn">sympy.core.function</span> <span class="kn">import</span> <span class="n">AppliedUndef</span>
-<span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">preorder_traversal</span><span class="p">,</span> <span class="n">Symbol</span>
+<span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">error</span>
 
 <span class="c1"># ModelParameters imports</span>
 <span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">sp</span>
-<span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">tuplewrap</span>
+<span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">check_arg</span><span class="p">,</span> <span class="n">tuplewrap</span>
+<span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">Symbol</span><span class="p">,</span> <span class="n">preorder_traversal</span>
+<span class="kn">from</span> <span class="nn">sympy.core.function</span> <span class="kn">import</span> <span class="n">AppliedUndef</span>
+
+<span class="kn">from</span> <span class="nn">.expressions</span> <span class="kn">import</span> <span class="n">State</span>
 
 <span class="c1"># Local imports</span>
-<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="n">error</span><span class="p">,</span> <span class="n">debug</span><span class="p">,</span> <span class="n">check_arg</span><span class="p">,</span> <span class="n">check_kwarg</span><span class="p">,</span> <span class="n">scalars</span>
-<span class="kn">from</span> <span class="nn">gotran.model.odeobjects</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">gotran.model.expressions</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.odeobjects</span> <span class="kn">import</span> <span class="n">ODEObject</span>
 
 
 <div class="viewcode-block" id="ode_primitives"><a class="viewcode-back" href="../../../gotran.model.html#gotran.model.utils.ode_primitives">[docs]</a><span class="k">def</span> <span class="nf">ode_primitives</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
@@ -143,8 +145,8 @@
     <span class="k">return</span> <span class="n">symbols</span></div>
 
 
-<span class="n">_derivative_name_template</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s2">&quot;\Ad([a-zA-Z]\w*)_d([a-zA-Z]\w*)\Z&quot;</span><span class="p">)</span>
-<span class="n">_algebraic_name_template</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s2">&quot;\Aalg_([a-zA-Z]\w*)_0\Z&quot;</span><span class="p">)</span>
+<span class="n">_derivative_name_template</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\Ad([a-zA-Z]\w*)_d([a-zA-Z]\w*)\Z&quot;</span><span class="p">)</span>
+<span class="n">_algebraic_name_template</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\Aalg_([a-zA-Z]\w*)_0\Z&quot;</span><span class="p">)</span>
 
 <span class="c1"># Flags for determine special expressions</span>
 <span class="n">INTERMEDIATE</span> <span class="o">=</span> <span class="mi">0</span>
@@ -333,7 +335,7 @@
             <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">item</span> <span class="o">==</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">):</span>
             <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">):</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">):</span>
             <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">ODEObjectList</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__contains__</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
         <span class="k">return</span> <span class="kc">False</span>
 
@@ -342,7 +344,7 @@
             <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">item</span> <span class="o">==</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">):</span>
             <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">):</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">):</span>
             <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">ODEObjectList</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
         <span class="k">return</span> <span class="mi">0</span></div>
 
@@ -355,7 +357,7 @@
             <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
                 <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
                     <span class="k">return</span> <span class="n">ind</span>
-        <span class="k">elif</span> <span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">):</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">):</span>
             <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
                 <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="n">obj</span><span class="p">:</span>
                     <span class="k">return</span> <span class="n">ind</span>
@@ -422,7 +424,7 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">states</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
                 <span class="n">error</span><span class="p">(</span>
                     <span class="s2">&quot;Expected a tuple of size 2 with states when &quot;</span>
-                    <span class="s2">&quot;registering a single rate.&quot;</span>
+                    <span class="s2">&quot;registering a single rate.&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
 
             <span class="c1"># NOTE: the actuall item is set by the component while calling this</span>
@@ -443,7 +445,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

@@ -52,7 +52,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#module-gotran.codegeneration.latexcodegenerator">gotran.codegeneration.latexcodegenerator module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-gotran.codegeneration.oderepresentation">gotran.codegeneration.oderepresentation module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-gotran.codegeneration.solvercomponents">gotran.codegeneration.solvercomponents module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#module-gotran.codegeneration.sympy_cse">gotran.codegeneration.sympy_cse module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#gotran-codegeneration-sympy-cse-module">gotran.codegeneration.sympy_cse module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-gotran.codegeneration">Module contents</a></li>
 </ul>
 </li>
@@ -60,7 +60,6 @@
 <li class="toctree-l3"><a class="reference internal" href="gotran.input.html">gotran.input package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="gotran.model.html">gotran.model package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="gotran.scripts.html">gotran.scripts package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="gotran.solver.html">gotran.solver package</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="gotran.html#module-gotran">Module contents</a></li>
@@ -1384,183 +1383,8 @@ implicit Euler method</p>
 </dd></dl>
 
 </section>
-<section id="module-gotran.codegeneration.sympy_cse">
-<span id="gotran-codegeneration-sympy-cse-module"></span><h2>gotran.codegeneration.sympy_cse module<a class="headerlink" href="#module-gotran.codegeneration.sympy_cse" title="Permalink to this headline"></a></h2>
-<p>Tools for doing common subexpression elimination.</p>
-<dl class="py function">
-<dt class="sig sig-object py" id="gotran.codegeneration.sympy_cse.cse">
-<span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.sympy_cse.</span></span><span class="sig-name descname"><span class="pre">cse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exprs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">symbols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">postprocess</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'canonical'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/sympy_cse.html#cse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.sympy_cse.cse" title="Permalink to this definition"></a></dt>
-<dd><p>Perform common subexpression elimination on an expression.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>exprs</strong> (<em>list of sympy expressions</em><em>, or </em><em>a single sympy expression</em>) – The expressions to reduce.</p></li>
-<li><p><strong>symbols</strong> (<em>infinite iterator yielding unique Symbols</em>) – The symbols used to label the common subexpressions which are pulled
-out. The <code class="docutils literal notranslate"><span class="pre">numbered_symbols</span></code> generator is useful. The default is a
-stream of symbols of the form “x0”, “x1”, etc. This must be an
-infinite iterator.</p></li>
-<li><p><strong>optimizations</strong> (<em>list of</em><em> (</em><em>callable</em><em>, </em><em>callable</em><em>) </em><em>pairs</em>) – The (preprocessor, postprocessor) pairs of external optimization
-functions. Optionally ‘basic’ can be passed for a set of predefined
-basic optimizations. Such ‘basic’ optimizations were used by default
-in old implementation, however they can be really slow on larger
-expressions. Now, no pre or post optimizations are made by default.</p></li>
-<li><p><strong>postprocess</strong> (<em>a function which accepts the two return values of cse and</em>) – returns the desired form of output from cse, e.g. if you want the
-replacements reversed the function might be the following lambda:
-lambda r, e: return reversed(r), e</p></li>
-<li><p><strong>order</strong> (<em>string</em><em>, </em><em>'none'</em><em> or </em><em>'canonical'</em>) – The order by which Mul and Add arguments are processed. If set to
-‘canonical’, arguments will be canonically ordered. If set to ‘none’,
-ordering will be faster but dependent on expressions hashes, thus
-machine dependent and variable. For large expressions where speed is a
-concern, use the setting order=’none’.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><strong>replacements</strong> (<em>list of (Symbol, expression) pairs</em>) – All of the common subexpressions that were replaced. Subexpressions
-earlier in this list might show up in subexpressions later in this
-list.</p></li>
-<li><p><strong>reduced_exprs</strong> (<em>list of sympy expressions</em>) – The reduced expressions with all of the replacements above.</p></li>
-</ul>
-</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="gotran.codegeneration.sympy_cse.cse_separate">
-<span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.sympy_cse.</span></span><span class="sig-name descname"><span class="pre">cse_separate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/sympy_cse.html#cse_separate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.sympy_cse.cse_separate" title="Permalink to this definition"></a></dt>
-<dd><p>Move expressions that are in the form (symbol, expr) out of the
-expressions and sort them into the replacements using the reps_toposort.</p>
-<p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sympy.simplify.cse_main</span> <span class="kn">import</span> <span class="n">cse_separate</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sympy.abc</span> <span class="kn">import</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">cos</span><span class="p">,</span> <span class="n">exp</span><span class="p">,</span> <span class="n">cse</span><span class="p">,</span> <span class="n">Eq</span><span class="p">,</span> <span class="n">symbols</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s1">&#39;x:2&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">eq</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">exp</span><span class="p">((</span><span class="n">x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">y</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="o">+</span> <span class="n">cos</span><span class="p">(</span><span class="n">y</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">cse</span><span class="p">([</span><span class="n">eq</span><span class="p">,</span> <span class="n">Eq</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">z</span> <span class="o">-</span> <span class="mi">2</span><span class="p">],</span> <span class="n">postprocess</span><span class="o">=</span><span class="n">cse_separate</span><span class="p">)</span> <span class="ow">in</span> <span class="p">[</span>
-<span class="gp">... </span><span class="p">[[(</span><span class="n">x0</span><span class="p">,</span> <span class="n">y</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)],</span>
-<span class="gp">... </span> <span class="p">[</span><span class="n">x1</span> <span class="o">+</span> <span class="n">exp</span><span class="p">(</span><span class="n">x1</span><span class="o">/</span><span class="n">x0</span><span class="p">)</span> <span class="o">+</span> <span class="n">cos</span><span class="p">(</span><span class="n">x0</span><span class="p">),</span> <span class="n">z</span> <span class="o">-</span> <span class="mi">2</span><span class="p">]],</span>
-<span class="gp">... </span><span class="p">[[(</span><span class="n">x1</span><span class="p">,</span> <span class="n">y</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)],</span>
-<span class="gp">... </span> <span class="p">[</span><span class="n">x0</span> <span class="o">+</span> <span class="n">exp</span><span class="p">(</span><span class="n">x0</span><span class="o">/</span><span class="n">x1</span><span class="p">)</span> <span class="o">+</span> <span class="n">cos</span><span class="p">(</span><span class="n">x1</span><span class="p">),</span> <span class="n">z</span> <span class="o">-</span> <span class="mi">2</span><span class="p">]]]</span>
-<span class="gp">...</span>
-<span class="go">True</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="gotran.codegeneration.sympy_cse.opt_cse">
-<span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.sympy_cse.</span></span><span class="sig-name descname"><span class="pre">opt_cse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exprs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'canonical'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/sympy_cse.html#opt_cse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.sympy_cse.opt_cse" title="Permalink to this definition"></a></dt>
-<dd><p>Find optimization opportunities in Adds, Muls, Pows and negative
-coefficient Muls</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>exprs</strong> (<em>list of sympy expressions</em>) – The expressions to optimize.</p></li>
-<li><p><strong>order</strong> (<em>string</em><em>, </em><em>'none'</em><em> or </em><em>'canonical'</em>) – The order by which Mul and Add arguments are processed. For large
-expressions where speed is a concern, use the setting order=’none’.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>opt_subs</strong> – The expression substitutions which can be useful to optimize CSE.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>dictionary of expression substitutions</p>
-</dd>
-</dl>
-<p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sympy.simplify.cse_main</span> <span class="kn">import</span> <span class="n">opt_cse</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sympy.abc</span> <span class="kn">import</span> <span class="n">x</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">opt_subs</span> <span class="o">=</span> <span class="n">opt_cse</span><span class="p">([</span><span class="n">x</span><span class="o">**-</span><span class="mi">2</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">opt_subs</span><span class="p">)</span>
-<span class="go">{x**(-2): 1/(x**2)}</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="gotran.codegeneration.sympy_cse.postprocess_for_cse">
-<span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.sympy_cse.</span></span><span class="sig-name descname"><span class="pre">postprocess_for_cse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizations</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/sympy_cse.html#postprocess_for_cse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.sympy_cse.postprocess_for_cse" title="Permalink to this definition"></a></dt>
-<dd><p>Postprocess an expression after common subexpression elimination to
-return the expression to canonical sympy form.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>expr</strong> (<em>sympy expression</em>) – The target expression to transform.</p></li>
-<li><p><strong>optimizations</strong> (<em>list of</em><em> (</em><em>callable</em><em>, </em><em>callable</em><em>) </em><em>pairs</em><em>, </em><em>optional</em>) – The (preprocessor, postprocessor) pairs.  The postprocessors will be
-applied in reversed order to undo the effects of the preprocessors
-correctly.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>expr</strong> – The transformed expression.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>sympy expression</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="gotran.codegeneration.sympy_cse.preprocess_for_cse">
-<span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.sympy_cse.</span></span><span class="sig-name descname"><span class="pre">preprocess_for_cse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizations</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/sympy_cse.html#preprocess_for_cse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.sympy_cse.preprocess_for_cse" title="Permalink to this definition"></a></dt>
-<dd><p>Preprocess an expression to optimize for common subexpression
-elimination.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>expr</strong> (<em>sympy expression</em>) – The target expression to optimize.</p></li>
-<li><p><strong>optimizations</strong> (<em>list of</em><em> (</em><em>callable</em><em>, </em><em>callable</em><em>) </em><em>pairs</em>) – The (preprocessor, postprocessor) pairs.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>expr</strong> – The transformed expression.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>sympy expression</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="gotran.codegeneration.sympy_cse.reps_toposort">
-<span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.sympy_cse.</span></span><span class="sig-name descname"><span class="pre">reps_toposort</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/sympy_cse.html#reps_toposort"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.sympy_cse.reps_toposort" title="Permalink to this definition"></a></dt>
-<dd><p>Sort replacements <cite>r</cite> so (k1, v1) appears before (k2, v2)
-if k2 is in v1’s free symbols. This orders items in the
-way that cse returns its results (hence, in order to use the
-replacements in a substitution option it would make sense
-to reverse the order).</p>
-<p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sympy.simplify.cse_main</span> <span class="kn">import</span> <span class="n">reps_toposort</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sympy.abc</span> <span class="kn">import</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">Eq</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">reps_toposort</span><span class="p">([(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">2</span><span class="p">)]):</span>
-<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">Eq</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">))</span>
-<span class="gp">...</span>
-<span class="go">y == 2</span>
-<span class="go">x == y + 1</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="gotran.codegeneration.sympy_cse.tree_cse">
-<span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.sympy_cse.</span></span><span class="sig-name descname"><span class="pre">tree_cse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exprs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">symbols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opt_subs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'canonical'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/sympy_cse.html#tree_cse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.sympy_cse.tree_cse" title="Permalink to this definition"></a></dt>
-<dd><p>Perform raw CSE on expression tree, taking opt_subs into account.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>exprs</strong> (<em>list of sympy expressions</em>) – The expressions to reduce.</p></li>
-<li><p><strong>symbols</strong> (<em>infinite iterator yielding unique Symbols</em>) – The symbols used to label the common subexpressions which are pulled
-out.</p></li>
-<li><p><strong>opt_subs</strong> (<em>dictionary of expression substitutions</em>) – The expressions to be substituted before any CSE action is performed.</p></li>
-<li><p><strong>order</strong> (<em>string</em><em>, </em><em>'none'</em><em> or </em><em>'canonical'</em>) – The order by which Mul and Add arguments are processed. For large
-expressions where speed is a concern, use the setting order=’none’.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
+<section id="gotran-codegeneration-sympy-cse-module">
+<h2>gotran.codegeneration.sympy_cse module<a class="headerlink" href="#gotran-codegeneration-sympy-cse-module" title="Permalink to this headline"></a></h2>
 </section>
 <section id="module-gotran.codegeneration">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-gotran.codegeneration" title="Permalink to this headline"></a></h2>
@@ -1873,6 +1697,13 @@ of the derivative expressions.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="gotran.codegeneration.ExplicitEuler">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.</span></span><span class="sig-name descname"><span class="pre">ExplicitEuler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'forward_explicit_euler'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/solvercomponents.html#ExplicitEuler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.ExplicitEuler" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gotran.codegeneration.codecomponent.CodeComponent" title="gotran.codegeneration.codecomponent.CodeComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.codegeneration.codecomponent.CodeComponent</span></code></a></p>
+<p>An ODEComponent which compute one step of the explicit Euler scheme</p>
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="gotran.codegeneration.FactorizedJacobianComponent">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.</span></span><span class="sig-name descname"><span class="pre">FactorizedJacobianComponent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jacobian</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'lu_factorize'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/algorithmcomponents.html#FactorizedJacobianComponent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.FactorizedJacobianComponent" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#gotran.codegeneration.codecomponent.CodeComponent" title="gotran.codegeneration.codecomponent.CodeComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.codegeneration.codecomponent.CodeComponent</span></code></a></p>
@@ -1885,6 +1716,20 @@ of the derivative expressions.</p>
 <dd><p>Bases: <a class="reference internal" href="#gotran.codegeneration.codecomponent.CodeComponent" title="gotran.codegeneration.codecomponent.CodeComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.codegeneration.codecomponent.CodeComponent</span></code></a></p>
 <p>Class to generate a forward backward substiution algorithm for
 symbolically factorized jacobian</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gotran.codegeneration.GeneralizedRushLarsen">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.</span></span><span class="sig-name descname"><span class="pre">GeneralizedRushLarsen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'forward_generalized_rush_larsen'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/solvercomponents.html#GeneralizedRushLarsen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.GeneralizedRushLarsen" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gotran.codegeneration.codecomponent.CodeComponent" title="gotran.codegeneration.codecomponent.CodeComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.codegeneration.codecomponent.CodeComponent</span></code></a></p>
+<p>An ODEComponent which compute one step of the Generalized Rush-Larsen (GRL1) scheme</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gotran.codegeneration.HybridGeneralizedRushLarsen">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.</span></span><span class="sig-name descname"><span class="pre">HybridGeneralizedRushLarsen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'forward_hybrid_generalized_rush_larsen'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stiff_state_variables</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/solvercomponents.html#HybridGeneralizedRushLarsen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.HybridGeneralizedRushLarsen" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gotran.codegeneration.codecomponent.CodeComponent" title="gotran.codegeneration.codecomponent.CodeComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.codegeneration.codecomponent.CodeComponent</span></code></a></p>
+<p>An ODEComponent which compute one step of the hybrid explicit Euler / Generalized Rush-Larsen (GRL1) scheme</p>
 </dd></dl>
 
 <dl class="py class">
@@ -2374,10 +2219,48 @@ state, parameters or monitored will be generated.</p></li>
 
 </dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="gotran.codegeneration.RushLarsen">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.</span></span><span class="sig-name descname"><span class="pre">RushLarsen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'forward_rush_larsen'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/solvercomponents.html#RushLarsen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.RushLarsen" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gotran.codegeneration.codecomponent.CodeComponent" title="gotran.codegeneration.codecomponent.CodeComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.codegeneration.codecomponent.CodeComponent</span></code></a></p>
+<p>An ODEComponent which compute one step of the Rush-Larsen scheme</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gotran.codegeneration.SimplifiedImplicitEuler">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.</span></span><span class="sig-name descname"><span class="pre">SimplifiedImplicitEuler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'forward_simplified_implicit_euler'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">numeric_jacobian</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/solvercomponents.html#SimplifiedImplicitEuler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.SimplifiedImplicitEuler" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gotran.codegeneration.codecomponent.CodeComponent" title="gotran.codegeneration.codecomponent.CodeComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.codegeneration.codecomponent.CodeComponent</span></code></a></p>
+<p>An ODEComponent which compute one step of a simplified Implicit Euler
+scheme</p>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="gotran.codegeneration.class_name">
 <span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.</span></span><span class="sig-name descname"><span class="pre">class_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/codegenerators.html#class_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.class_name" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gotran.codegeneration.compile_module">
+<span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.</span></span><span class="sig-name descname"><span class="pre">compile_module</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ode</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gotran.model.html#gotran.model.ode.ODE" title="gotran.model.ode.ODE"><span class="pre">gotran.model.ode.ODE</span></a><span class="p"><span class="pre">,</span> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">language</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">gotran.codegeneration.compilemodule.Languange</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">Languange.c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">monitored</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generation_params</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">module</span></span></span><a class="reference internal" href="_modules/gotran/codegeneration/compilemodule.html#compile_module"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.compile_module" title="Permalink to this definition"></a></dt>
+<dd><p>JIT compile an ode</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ode</strong> (<em>typing.Union</em><em>[</em><a class="reference internal" href="gotran.html#gotran.ODE" title="gotran.ODE"><em>ODE</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a><em>]</em>) – The gotran ode</p></li>
+<li><p><strong>language</strong> (<em>Languange</em><em>, </em><em>optional</em>) – The language of the generated code, by default Languange.c</p></li>
+<li><p><strong>monitored</strong> (<em>typing.Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.10)"><em>typing.List</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a><em>]</em><em>]</em><em>, </em><em>optional</em>) – A list of names of intermediates of the ODE. Code for monitoring
+the intermediates will be generated, by default None</p></li>
+<li><p><strong>generation_params</strong> (<em>typing.Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.10)"><em>typing.Dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a><em>, </em><em>typing.Any</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – Parameters controling the code generation, by default None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Module with ode functions</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/types.html#types.ModuleType" title="(in Python v3.10)">types.ModuleType</a></p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="gotran.codegeneration.componentwise_derivative">
@@ -2430,6 +2313,21 @@ state derivative</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="gotran.codegeneration.explicit_euler_solver">
+<span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.</span></span><span class="sig-name descname"><span class="pre">explicit_euler_solver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'forward_explicit_euler'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/solvercomponents.html#explicit_euler_solver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.explicit_euler_solver" title="Permalink to this definition"></a></dt>
+<dd><p>Return an ODEComponent holding expressions for the explicit Euler method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ode</strong> (<a class="reference internal" href="gotran.html#gotran.ODE" title="gotran.ODE"><em>gotran.ODE</em></a>) – The ODE for which the jacobian expressions should be computed</p></li>
+<li><p><strong>function_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The name of the function which should be generated</p></li>
+<li><p><strong>params</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><em>dict</em></a>) – Parameters determining how the code should be generated</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="gotran.codegeneration.factorized_jacobian_expressions">
 <span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.</span></span><span class="sig-name descname"><span class="pre">factorized_jacobian_expressions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jacobian</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'lu_factorize'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/algorithmcomponents.html#factorized_jacobian_expressions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.factorized_jacobian_expressions" title="Permalink to this definition"></a></dt>
 <dd><p>Return an ODEComponent holding expressions for the factorized jacobian</p>
@@ -2456,6 +2354,44 @@ substitions for a factorized jacobian</p>
 <li><p><strong>result_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The name of the result (increment)</p></li>
 <li><p><strong>residual_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The name of the residual</p></li>
 <li><p><strong>params</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><em>dict</em></a>) – Parameters determining how the code should be generated</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gotran.codegeneration.generalized_rush_larsen_solver">
+<span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.</span></span><span class="sig-name descname"><span class="pre">generalized_rush_larsen_solver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'forward_generalized_rush_larsen'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/solvercomponents.html#generalized_rush_larsen_solver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.generalized_rush_larsen_solver" title="Permalink to this definition"></a></dt>
+<dd><p>Return an ODEComponent holding expressions for the generalized Rush-Larsen method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ode</strong> (<a class="reference internal" href="gotran.html#gotran.ODE" title="gotran.ODE"><em>gotran.ODE</em></a>) – The ODE for which the jacobian expressions should be computed</p></li>
+<li><p><strong>function_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The name of the function which should be generated</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – Value to safeguard the evaluation of the Rush-Larsen step.</p></li>
+<li><p><strong>params</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><em>dict</em></a>) – Parameters determining how the code should be generated</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gotran.codegeneration.get_solver_fn">
+<span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.</span></span><span class="sig-name descname"><span class="pre">get_solver_fn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">solver_type</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/solvercomponents.html#get_solver_fn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.get_solver_fn" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gotran.codegeneration.hybrid_generalized_rush_larsen_solver">
+<span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.</span></span><span class="sig-name descname"><span class="pre">hybrid_generalized_rush_larsen_solver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'forward_hybrid_generalized_rush_larsen'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stiff_states</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/solvercomponents.html#hybrid_generalized_rush_larsen_solver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.hybrid_generalized_rush_larsen_solver" title="Permalink to this definition"></a></dt>
+<dd><p>Return an ODEComponent holding expressions for the generalized Rush-Larsen method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ode</strong> (<a class="reference internal" href="gotran.html#gotran.ODE" title="gotran.ODE"><em>gotran.ODE</em></a>) – The ODE for which the jacobian expressions should be computed</p></li>
+<li><p><strong>function_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The name of the function which should be generated</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – Value to safeguard the evaluation of the Rush-Larsen step.</p></li>
+<li><p><strong>params</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><em>dict</em></a>) – Parameters determining how the code should be generated</p></li>
+<li><p><strong>stiff_state_variables</strong> (<em>list of str</em>) – States that are stiff and should be solved with GRL1. The remaining states are solved with explicit euler</p></li>
 </ul>
 </dd>
 </dl>
@@ -2547,6 +2483,39 @@ rhs evaluation if that is included.</p></li>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="gotran.codegeneration.rush_larsen_solver">
+<span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.</span></span><span class="sig-name descname"><span class="pre">rush_larsen_solver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'forward_rush_larsen'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/solvercomponents.html#rush_larsen_solver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.rush_larsen_solver" title="Permalink to this definition"></a></dt>
+<dd><p>Return an ODEComponent holding expressions for the Rush-Larsen method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ode</strong> (<a class="reference internal" href="gotran.html#gotran.ODE" title="gotran.ODE"><em>gotran.ODE</em></a>) – The ODE for which the jacobian expressions should be computed</p></li>
+<li><p><strong>function_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The name of the function which should be generated</p></li>
+<li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – Value to safeguard the evaluation of the Rush-Larsen step.</p></li>
+<li><p><strong>params</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><em>dict</em></a>) – Parameters determining how the code should be generated</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gotran.codegeneration.simplified_implicit_euler_solver">
+<span class="sig-prename descclassname"><span class="pre">gotran.codegeneration.</span></span><span class="sig-name descname"><span class="pre">simplified_implicit_euler_solver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'forward_simplified_implicit_euler'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">numeric_jacobian</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/codegeneration/solvercomponents.html#simplified_implicit_euler_solver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.codegeneration.simplified_implicit_euler_solver" title="Permalink to this definition"></a></dt>
+<dd><p>Return an ODEComponent holding expressions for the simplified
+implicit Euler method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ode</strong> (<a class="reference internal" href="gotran.html#gotran.ODE" title="gotran.ODE"><em>gotran.ODE</em></a>) – The ODE for which the jacobian expressions should be computed</p></li>
+<li><p><strong>function_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The name of the function which should be generated</p></li>
+<li><p><strong>numeric_jacobian</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – If True use numeric calculated diagonal jacobian.</p></li>
+<li><p><strong>params</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><em>dict</em></a>) – Parameters determining how the code should be generated</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 </section>
 
@@ -2561,7 +2530,7 @@ rhs evaluation if that is included.</p></li>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

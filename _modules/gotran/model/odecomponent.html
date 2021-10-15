@@ -83,23 +83,47 @@
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ODEComponent&quot;</span><span class="p">]</span>
 
+<span class="kn">import</span> <span class="nn">weakref</span>
+
 <span class="c1"># System imports</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">defaultdict</span>
-<span class="kn">import</span> <span class="nn">weakref</span>
-<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
 
-<span class="kn">from</span> <span class="nn">sympy.core.function</span> <span class="kn">import</span> <span class="n">AppliedUndef</span>
+<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">_all_keywords</span><span class="p">,</span> <span class="n">sympycode</span>
+
+<span class="c1"># Local imports</span>
+<span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">debug</span><span class="p">,</span> <span class="n">error</span>
 
 <span class="c1"># ModelParameters imports</span>
 <span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">sp</span><span class="p">,</span> <span class="n">symbols_from_expr</span>
-<span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">Timer</span>
-<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">sympycode</span><span class="p">,</span> <span class="n">_all_keywords</span>
+<span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">Timer</span><span class="p">,</span> <span class="n">check_arg</span><span class="p">,</span> <span class="n">scalars</span>
+<span class="kn">from</span> <span class="nn">sympy.core.function</span> <span class="kn">import</span> <span class="n">AppliedUndef</span>
 
-<span class="c1"># Local imports</span>
-<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="n">error</span><span class="p">,</span> <span class="n">debug</span><span class="p">,</span> <span class="n">check_arg</span><span class="p">,</span> <span class="n">check_kwarg</span><span class="p">,</span> <span class="n">scalars</span>
-<span class="kn">from</span> <span class="nn">gotran.model.odeobjects</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">gotran.model.expressions</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">gotran.model.utils</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.expressions</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AlgebraicExpression</span><span class="p">,</span>
+    <span class="n">DerivativeExpression</span><span class="p">,</span>
+    <span class="n">Expression</span><span class="p">,</span>
+    <span class="n">IndexedExpression</span><span class="p">,</span>
+    <span class="n">IndexedObject</span><span class="p">,</span>
+    <span class="n">Intermediate</span><span class="p">,</span>
+    <span class="n">RateExpression</span><span class="p">,</span>
+    <span class="n">State</span><span class="p">,</span>
+    <span class="n">StateDerivative</span><span class="p">,</span>
+    <span class="n">StateExpression</span><span class="p">,</span>
+    <span class="n">StateSolution</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.odeobjects</span> <span class="kn">import</span> <span class="n">Comment</span><span class="p">,</span> <span class="n">ODEObject</span><span class="p">,</span> <span class="n">Parameter</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ALGEBRAIC_EXPRESSION</span><span class="p">,</span>
+    <span class="n">DERIVATIVE_EXPRESSION</span><span class="p">,</span>
+    <span class="n">INTERMEDIATE</span><span class="p">,</span>
+    <span class="n">STATE_SOLUTION_EXPRESSION</span><span class="p">,</span>
+    <span class="n">ODEObjectList</span><span class="p">,</span>
+    <span class="n">RateDict</span><span class="p">,</span>
+    <span class="n">iter_objects</span><span class="p">,</span>
+    <span class="n">ode_components</span><span class="p">,</span>
+    <span class="n">ode_objects</span><span class="p">,</span>
+    <span class="n">special_expression</span><span class="p">,</span>
+<span class="p">)</span>
 
 
 <div class="viewcode-block" id="ODEComponent"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODEComponent">[docs]</a><span class="k">class</span> <span class="nc">ODEComponent</span><span class="p">(</span><span class="n">ODEObject</span><span class="p">):</span>
@@ -230,7 +254,7 @@
 <span class="sd">        init : scalar, modelparameters.ScalarParam</span>
 <span class="sd">            The initial value of the state</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Add states&quot;</span><span class="p">)</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Add states&quot;</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
 
         <span class="c1"># Create state</span>
         <span class="n">state</span> <span class="o">=</span> <span class="n">State</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">init</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
@@ -262,7 +286,7 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
                 <span class="n">error</span><span class="p">(</span>
                     <span class="s2">&quot;excpected tuple with lenght 2 with state name (str) &quot;</span>
-                    <span class="s2">&quot;and init values as the args argument.&quot;</span>
+                    <span class="s2">&quot;and init values as the args argument.&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="n">state_name</span><span class="p">,</span> <span class="n">init</span> <span class="o">=</span> <span class="n">arg</span>
 
@@ -280,7 +304,7 @@
 <span class="sd">        init : scalar, modelparameters.ScalarParam</span>
 <span class="sd">            The initial value of the parameter</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Add parameters&quot;</span><span class="p">)</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Add parameters&quot;</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
 
         <span class="n">param</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">init</span><span class="p">)</span>
 
@@ -311,7 +335,7 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
                 <span class="n">error</span><span class="p">(</span>
                     <span class="s2">&quot;excpected tuple with lenght 2 with parameter name (str) &quot;</span>
-                    <span class="s2">&quot;and init values as the args argument.&quot;</span>
+                    <span class="s2">&quot;and init values as the args argument.&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="n">parameter_name</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">arg</span>
 
@@ -365,13 +389,13 @@
             <span class="k">if</span> <span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">sym</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">sym</span> <span class="ow">in</span> <span class="n">sym</span><span class="o">.</span><span class="n">atoms</span><span class="p">()):</span>
                 <span class="n">error</span><span class="p">(</span>
                     <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">, a sub expression of the expression, cannot depend &quot;</span>
-                    <span class="s2">&quot;on the state for which we try to solve for.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sym</span><span class="p">)</span>
+                    <span class="s2">&quot;on the state for which we try to solve for.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sym</span><span class="p">),</span>
                 <span class="p">)</span>
 
         <span class="c1"># Try solve the passed expr</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">solved_expr</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">sym</span><span class="p">)</span>
-        <span class="k">except</span><span class="p">:</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Could not solve the passed expression&quot;</span><span class="p">)</span>
 
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">solved_expr</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
@@ -405,13 +429,13 @@
         <span class="k">if</span> <span class="sa">f</span><span class="s2">&quot;d</span><span class="si">{</span><span class="n">state</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_dt&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ode_objects</span><span class="p">:</span>
             <span class="n">error</span><span class="p">(</span>
                 <span class="s2">&quot;Cannot registered a state solution for a state &quot;</span>
-                <span class="s2">&quot;that has a state derivative registered.&quot;</span>
+                <span class="s2">&quot;that has a state derivative registered.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="k">if</span> <span class="sa">f</span><span class="s2">&quot;alg_</span><span class="si">{</span><span class="n">state</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_0&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ode_objects</span><span class="p">:</span>
             <span class="n">error</span><span class="p">(</span>
                 <span class="s2">&quot;Cannot registered a state solution for a state &quot;</span>
-                <span class="s2">&quot;that has an algebraic expression registered.&quot;</span>
+                <span class="s2">&quot;that has an algebraic expression registered.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="c1"># Create a StateSolution in the present component</span>
@@ -435,7 +459,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># Create an Intermediate in the present component</span>
-        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Add intermediate&quot;</span><span class="p">)</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Add intermediate&quot;</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
         <span class="n">expr</span> <span class="o">=</span> <span class="n">Intermediate</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">dependent</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_register_component_object</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">dependent</span><span class="p">)</span>
@@ -458,7 +482,7 @@
 <span class="sd">            If given the count of this expression will follow as a</span>
 <span class="sd">            fractional count based on the count of the dependent object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Add derivatives&quot;</span><span class="p">)</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Add derivatives&quot;</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">der_expr</span><span class="p">,</span> <span class="n">AppliedUndef</span><span class="p">):</span>
             <span class="n">name</span> <span class="o">=</span> <span class="n">sympycode</span><span class="p">(</span><span class="n">der_expr</span><span class="p">)</span>
@@ -509,13 +533,13 @@
         <span class="k">if</span> <span class="sa">f</span><span class="s2">&quot;d</span><span class="si">{</span><span class="n">state</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_dt&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ode_objects</span><span class="p">:</span>
             <span class="n">error</span><span class="p">(</span>
                 <span class="s2">&quot;Cannot registered an algebraic expression for a state &quot;</span>
-                <span class="s2">&quot;that has a state derivative registered.&quot;</span>
+                <span class="s2">&quot;that has a state derivative registered.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">is_solved</span><span class="p">:</span>
             <span class="n">error</span><span class="p">(</span>
                 <span class="s2">&quot;Cannot registered an algebraic expression for a state &quot;</span>
-                <span class="s2">&quot;which is registered solved.&quot;</span>
+                <span class="s2">&quot;which is registered solved.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="c1"># Create an AlgebraicExpression in the present component</span>
@@ -697,7 +721,7 @@
         <span class="p">):</span>
             <span class="n">debug</span><span class="p">(</span>
                 <span class="s2">&quot;Not registering: </span><span class="si">{0}</span><span class="s2"> as attribut. It does not contain &quot;</span>
-                <span class="s2">&quot;any symbols or scalars.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="s2">&quot;any symbols or scalars.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">),</span>
             <span class="p">)</span>
 
             <span class="c1"># FIXME: Should we raise an error?</span>
@@ -788,7 +812,7 @@
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">State</span><span class="p">)</span> <span class="ow">and</span> <span class="n">state</span><span class="o">.</span><span class="n">is_solved</span><span class="p">:</span>
             <span class="n">error</span><span class="p">(</span>
                 <span class="s2">&quot;Cannot registered a state expression for a state &quot;</span>
-                <span class="s2">&quot;which is registered solved.&quot;</span>
+                <span class="s2">&quot;which is registered solved.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">state</span>
@@ -801,7 +825,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_finalized</span><span class="p">:</span>
             <span class="n">error</span><span class="p">(</span>
                 <span class="s2">&quot;Cannot add </span><span class="si">{0}</span><span class="s2"> </span><span class="si">{1}</span><span class="s2"> to component </span><span class="si">{2}</span><span class="s2"> it is &quot;</span>
-                <span class="s2">&quot;already finalized.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+                <span class="s2">&quot;already finalized.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="p">),</span>
             <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_check_reserved_wordings</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
@@ -817,13 +841,13 @@
                 <span class="n">error</span><span class="p">(</span>
                     <span class="s2">&quot;A component cannot have both state expressions &quot;</span>
                     <span class="s2">&quot;(derivative and algebraic expressions) and rate &quot;</span>
-                    <span class="s2">&quot;expressions.&quot;</span>
+                    <span class="s2">&quot;expressions.&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
 
             <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">state</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_local_state_expressions</span><span class="p">:</span>
                 <span class="n">error</span><span class="p">(</span>
                     <span class="s2">&quot;A StateExpression for state </span><span class="si">{0}</span><span class="s2"> is already registered &quot;</span>
-                    <span class="s2">&quot;in this component.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="s2">&quot;in this component.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
                 <span class="p">)</span>
 
             <span class="c1"># Check that the state is registered in this component</span>
@@ -831,7 +855,7 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">state_obj</span><span class="p">,</span> <span class="n">State</span><span class="p">):</span>
                 <span class="n">error</span><span class="p">(</span>
                     <span class="s2">&quot;The state expression </span><span class="si">{0}</span><span class="s2"> defines state </span><span class="si">{1}</span><span class="s2">, which is &quot;</span>
-                    <span class="s2">&quot;not registered in the </span><span class="si">{2}</span><span class="s2"> component.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+                    <span class="s2">&quot;not registered in the </span><span class="si">{2}</span><span class="s2"> component.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="bp">self</span><span class="p">),</span>
                 <span class="p">)</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">_local_state_expressions</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">state</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span>
@@ -843,7 +867,8 @@
             <span class="c1"># If indexed expression or object register the basename as a dict</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="n">IndexedExpression</span><span class="p">,</span> <span class="n">IndexedObject</span><span class="p">)):</span>
                 <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">basename</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">basename</span><span class="p">],</span> <span class="nb">dict</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">basename</span><span class="p">],</span>
+                    <span class="nb">dict</span><span class="p">,</span>
                 <span class="p">):</span>
                     <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">basename</span><span class="p">][</span><span class="n">obj</span><span class="o">.</span><span class="n">indices</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">sym</span>
                 <span class="k">else</span><span class="p">:</span>
@@ -861,7 +886,7 @@
         <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">_all_keywords</span><span class="p">:</span>
             <span class="n">error</span><span class="p">(</span>
                 <span class="s2">&quot;Cannot register a </span><span class="si">{0}</span><span class="s2"> with a computer language &quot;</span>
-                <span class="s2">&quot;keyword name: </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="s2">&quot;keyword name: </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
             <span class="p">)</span>
 
         <span class="c1"># Check for reserved Expression wordings</span>
@@ -906,9 +931,6 @@
         <span class="p">):</span>
             <span class="n">error</span><span class="p">(</span><span class="s2">&quot;expected a tuple of 2 lists with states as the &quot;</span> <span class="s2">&quot;states argument&quot;</span><span class="p">)</span>
 
-        <span class="c1"># Get all states associated with this Markov model</span>
-        <span class="n">local_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">states</span>
-
         <span class="c1"># Check index arguments</span>
         <span class="c1"># for list_of_states in states:</span>
         <span class="c1">#    print list_of_states, local_states</span>
@@ -919,7 +941,7 @@
         <span class="c1"># Check that the length of the state lists corresponds with the shape of</span>
         <span class="c1"># the rate matrix</span>
         <span class="k">if</span> <span class="n">rate_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">or</span> <span class="n">rate_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span>
-            <span class="n">states</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">states</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
         <span class="p">):</span>
             <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Shape of rates does not match given states&quot;</span><span class="p">)</span>
 
@@ -947,7 +969,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_expressions</span><span class="p">:</span>
             <span class="n">error</span><span class="p">(</span>
                 <span class="s2">&quot;A component cannot have both state expressions (derivative &quot;</span>
-                <span class="s2">&quot;and algebraic expressions) and rate expressions.&quot;</span>
+                <span class="s2">&quot;and algebraic expressions) and rate expressions.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="n">check_arg</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">scalars</span> <span class="o">+</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">Basic</span><span class="p">,),</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ODEComponent</span><span class="o">.</span><span class="n">_add_single_rate</span><span class="p">)</span>
@@ -955,10 +977,14 @@
         <span class="n">expr</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sympify</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
 
         <span class="n">to_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expect_state</span><span class="p">(</span>
-            <span class="n">to_state</span><span class="p">,</span> <span class="n">allow_state_solution</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">only_local_states</span><span class="o">=</span><span class="kc">True</span>
+            <span class="n">to_state</span><span class="p">,</span>
+            <span class="n">allow_state_solution</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">only_local_states</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">from_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expect_state</span><span class="p">(</span>
-            <span class="n">from_state</span><span class="p">,</span> <span class="n">allow_state_solution</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">only_local_states</span><span class="o">=</span><span class="kc">True</span>
+            <span class="n">from_state</span><span class="p">,</span>
+            <span class="n">allow_state_solution</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">only_local_states</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">to_state</span> <span class="o">==</span> <span class="n">from_state</span><span class="p">:</span>
@@ -966,7 +992,7 @@
 
         <span class="k">if</span> <span class="p">(</span><span class="n">to_state</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span> <span class="n">from_state</span><span class="o">.</span><span class="n">sym</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rates</span><span class="p">:</span>
             <span class="n">error</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Rate between state </span><span class="si">{</span><span class="n">from_state</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">to_state</span><span class="si">}</span><span class="s2"> is already registered.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Rate between state </span><span class="si">{</span><span class="n">from_state</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">to_state</span><span class="si">}</span><span class="s2"> is already registered.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="c1"># FIXME: It should also not be possible to include other</span>
@@ -974,7 +1000,7 @@
         <span class="n">syms_expr</span> <span class="o">=</span> <span class="n">symbols_from_expr</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">to_state</span><span class="o">.</span><span class="n">sym</span> <span class="ow">in</span> <span class="n">syms_expr</span> <span class="ow">or</span> <span class="n">from_state</span><span class="o">.</span><span class="n">sym</span> <span class="ow">in</span> <span class="n">syms_expr</span><span class="p">:</span>
             <span class="n">error</span><span class="p">(</span>
-                <span class="s2">&quot;The rate expression cannot be dependent on the &quot;</span> <span class="s2">&quot;states it connects.&quot;</span>
+                <span class="s2">&quot;The rate expression cannot be dependent on the &quot;</span> <span class="s2">&quot;states it connects.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="c1"># Create a RateExpression</span>
@@ -1003,7 +1029,7 @@
             <span class="n">incomplete_states</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ode_objects</span><span class="p">:</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">State</span><span class="p">):</span>
-                    <span class="k">if</span> <span class="ow">not</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_local_state_expressions</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_local_state_expressions</span><span class="p">:</span>
                         <span class="n">incomplete_states</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
 
             <span class="n">incomplete_state_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">incomplete_states</span><span class="p">]</span>
@@ -1062,7 +1088,10 @@
             <span class="k">if</span> <span class="n">times</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
                 <span class="n">error</span><span class="p">(</span>
                     <span class="s2">&quot;Only one rate between the states </span><span class="si">{0}</span><span class="s2"> and </span><span class="si">{1}</span><span class="s2"> was &quot;</span>
-                    <span class="s2">&quot;registered, expected two.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">states</span><span class="p">[</span><span class="n">ind_from</span><span class="p">],</span> <span class="n">states</span><span class="p">[</span><span class="n">ind_to</span><span class="p">])</span>
+                    <span class="s2">&quot;registered, expected two.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">states</span><span class="p">[</span><span class="n">ind_from</span><span class="p">],</span>
+                        <span class="n">states</span><span class="p">[</span><span class="n">ind_to</span><span class="p">],</span>
+                    <span class="p">),</span>
                 <span class="p">)</span>
 
         <span class="c1"># Add derivatives</span>
@@ -1082,7 +1111,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

@@ -80,25 +80,18 @@
 <span class="c1">#</span>
 <span class="c1"># You should have received a copy of the GNU Lesser General Public License</span>
 <span class="c1"># along with Gotran. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
-
-<span class="c1"># System imports</span>
 <span class="kn">import</span> <span class="nn">re</span>
-
-<span class="c1"># Gotran imports</span>
-<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="n">warning</span>
-<span class="kn">from</span> <span class="nn">gotran.model.odeobjects</span> <span class="kn">import</span> <span class="n">SingleODEObjects</span>
-<span class="kn">from</span> <span class="nn">gotran.model.expressions</span> <span class="kn">import</span> <span class="n">Expression</span><span class="p">,</span> <span class="n">StateDerivative</span>
-
-<span class="c1"># Model parameters imports</span>
-<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">latex</span> <span class="k">as</span> <span class="n">mp_latex</span>
-<span class="kn">from</span> <span class="nn">modelparameters.parameters</span> <span class="kn">import</span> <span class="n">Param</span><span class="p">,</span> <span class="n">ScalarParam</span><span class="p">,</span> <span class="n">ArrayParam</span>
-<span class="kn">from</span> <span class="nn">modelparameters.parameterdict</span> <span class="kn">import</span> <span class="n">ParameterDict</span>
-
-<span class="c1"># Other imports</span>
 <span class="kn">import</span> <span class="nn">string</span>
-<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">StringIO</span>
-<span class="kn">import</span> <span class="nn">sympy</span>
 <span class="kn">import</span> <span class="nn">tokenize</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">StringIO</span>
+
+<span class="kn">import</span> <span class="nn">sympy</span>
+<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">latex</span> <span class="k">as</span> <span class="n">mp_latex</span>
+<span class="kn">from</span> <span class="nn">modelparameters.parameterdict</span> <span class="kn">import</span> <span class="n">ParameterDict</span>
+<span class="kn">from</span> <span class="nn">modelparameters.parameters</span> <span class="kn">import</span> <span class="n">Param</span>
+
+<span class="kn">from</span> <span class="nn">..model.expressions</span> <span class="kn">import</span> <span class="n">Expression</span>
+<span class="kn">from</span> <span class="nn">..model.expressions</span> <span class="kn">import</span> <span class="n">StateDerivative</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;LatexCodeGenerator&quot;</span><span class="p">]</span>
 
@@ -132,7 +125,7 @@
 <span class="se">\\</span><span class="s2">endfirsthead</span>
 <span class="se">\\</span><span class="s2">multicolumn{{3}}{{c}}%</span>
 <span class="s2">{{{{</span><span class="se">\\</span><span class="s2">bfseries</span><span class="se">\\</span><span class="s2">tablename</span><span class="se">\\</span><span class="s2"> </span><span class="se">\\</span><span class="s2">thetable{{}} --- continued from previous page}}}}</span>
-<span class="se">\\\\</span><span class="s2"> \hline</span>
+<span class="se">\\\\</span><span class="s2"> </span><span class="se">\\</span><span class="s2">hline</span>
 <span class="se">\\</span><span class="s2">multicolumn{{1}}{{|c}}{{</span><span class="se">\\</span><span class="s2">textbf{{Parameter</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}} &amp;</span>
 <span class="se">\\</span><span class="s2">multicolumn{{1}}{{c}}{{</span><span class="se">\\</span><span class="s2">textbf{{Value</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}} &amp;</span>
 <span class="se">\\</span><span class="s2">multicolumn{{1}}{{c|}}{{</span><span class="se">\\</span><span class="s2">textbf{{Description</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}}</span><span class="se">\\\\</span><span class="s2"> </span><span class="se">\\</span><span class="s2">hline</span>
@@ -165,7 +158,7 @@
 <span class="se">\\</span><span class="s2">endfirsthead</span>
 <span class="se">\\</span><span class="s2">multicolumn{{3}}{{c}}%</span>
 <span class="s2">{{{{</span><span class="se">\\</span><span class="s2">bfseries</span><span class="se">\\</span><span class="s2">tablename</span><span class="se">\\</span><span class="s2"> </span><span class="se">\\</span><span class="s2">thetable{{}} --- continued from previous page}}}}</span>
-<span class="se">\\\\</span><span class="s2"> \hline</span>
+<span class="se">\\\\</span><span class="s2"> </span><span class="se">\\</span><span class="s2">hline</span>
 <span class="se">\\</span><span class="s2">multicolumn{{1}}{{|c}}{{</span><span class="se">\\</span><span class="s2">textbf{{State</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}} &amp;</span>
 <span class="se">\\</span><span class="s2">multicolumn{{1}}{{c}}{{</span><span class="se">\\</span><span class="s2">textbf{{Value</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}} &amp;</span>
 <span class="se">\\</span><span class="s2">multicolumn{{1}}{{c|}}{{</span><span class="se">\\</span><span class="s2">textbf{{Description</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}}</span><span class="se">\\\\</span><span class="s2"> </span><span class="se">\\</span><span class="s2">hline</span>
@@ -218,7 +211,8 @@
     <span class="c1">#     1, ge=1, description=&quot;Set number of columns per page in &quot;</span>
     <span class="c1">#     &quot;LaTeX document&quot;)</span>
     <span class="n">params</span><span class="p">[</span><span class="s2">&quot;page_columns&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
-        <span class="mi">1</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Set number of columns per page in &quot;</span> <span class="s2">&quot;LaTeX document&quot;</span>
+        <span class="mi">1</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Set number of columns per page in &quot;</span> <span class="s2">&quot;LaTeX document&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># Set equation font size</span>
@@ -227,7 +221,8 @@
     <span class="c1"># params[&quot;font_size&quot;] = ScalarParam(</span>
     <span class="c1">#     10, ge=1, description=&quot;Set global font size for LaTeX document&quot;)</span>
     <span class="n">params</span><span class="p">[</span><span class="s2">&quot;font_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
-        <span class="mf">10.0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Set global font size for LaTeX document&quot;</span>
+        <span class="mf">10.0</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Set global font size for LaTeX document&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># Set font size for mathematical expressions.</span>
@@ -245,7 +240,8 @@
 
     <span class="c1"># Toggle bold equation labels</span>
     <span class="n">params</span><span class="p">[</span><span class="s2">&quot;bold_equation_labels&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
-        <span class="kc">True</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Give equation labels a bold typeface in &quot;</span> <span class="s2">&quot;LaTeX document&quot;</span>
+        <span class="kc">True</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Give equation labels a bold typeface in &quot;</span> <span class="s2">&quot;LaTeX document&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># If set to False, does not generate the preamble</span>
@@ -257,12 +253,14 @@
 
     <span class="c1"># If set to true, sets document to a landscape page layout</span>
     <span class="n">params</span><span class="p">[</span><span class="s2">&quot;landscape&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
-        <span class="kc">False</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Set LaTeX document to landscape layout&quot;</span>
+        <span class="kc">False</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Set LaTeX document to landscape layout&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># Latex separator between factors in products</span>
     <span class="n">params</span><span class="p">[</span><span class="s2">&quot;mul_symbol&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
-        <span class="s2">&quot;dot&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Multiplication symbol for Sympy LatexPrinter&quot;</span>
+        <span class="s2">&quot;dot&quot;</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Multiplication symbol for Sympy LatexPrinter&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># Flag to enable page numbers</span>
@@ -278,7 +276,8 @@
 
     <span class="c1"># Set headline types for States, Parameters and Components</span>
     <span class="n">params</span><span class="p">[</span><span class="s2">&quot;section_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
-        <span class="s2">&quot;section&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Section type (e.g. &#39;section&#39;, &#39;subsection&#39;)&quot;</span>
+        <span class="s2">&quot;section&quot;</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Section type (e.g. &#39;section&#39;, &#39;subsection&#39;)&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># Set page margins</span>
@@ -305,12 +304,14 @@
     <span class="c1"># Flag to let the code generator attempt automatically converting</span>
     <span class="c1"># state and parameter names in descriptions to math-mode</span>
     <span class="n">params</span><span class="p">[</span><span class="s2">&quot;auto_format_description&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
-        <span class="kc">False</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Automatically format state and parameter &quot;</span> <span class="s2">&quot;descriptions&quot;</span>
+        <span class="kc">False</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Automatically format state and parameter &quot;</span> <span class="s2">&quot;descriptions&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># Flag to toggle numbering style for equations.</span>
     <span class="n">params</span><span class="p">[</span><span class="s2">&quot;equation_subnumbering&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
-        <span class="kc">True</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Use component-wise equation subnumbering&quot;</span>
+        <span class="kc">True</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Use component-wise equation subnumbering&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="n">params</span><span class="p">[</span><span class="s2">&quot;parameter_description_cell_style&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
@@ -374,7 +375,7 @@
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">document_opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_options</span><span class="p">(</span>
-                <span class="n">override</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;font_size&quot;</span><span class="p">,</span> <span class="s2">&quot;landscape&quot;</span><span class="p">,</span> <span class="s2">&quot;page_numbers&quot;</span><span class="p">]</span>
+                <span class="n">override</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;font_size&quot;</span><span class="p">,</span> <span class="s2">&quot;landscape&quot;</span><span class="p">,</span> <span class="s2">&quot;page_numbers&quot;</span><span class="p">],</span>
             <span class="p">)</span>
             <span class="n">latex_output</span> <span class="o">=</span> <span class="n">_latex_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                 <span class="n">FONTSIZE</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">font_size</span><span class="p">,</span>
@@ -467,7 +468,9 @@
             <span class="c1"># Iterate over all objects of the component</span>
             <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">body</span><span class="p">:</span>
                 <span class="n">format_body</span> <span class="o">+=</span> <span class="n">eqn_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">_repr_latex_name</span><span class="p">(),</span> <span class="n">obj</span><span class="o">.</span><span class="n">_repr_latex_expr</span><span class="p">()</span>
+                    <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="n">obj</span><span class="o">.</span><span class="n">_repr_latex_name</span><span class="p">(),</span>
+                    <span class="n">obj</span><span class="o">.</span><span class="n">_repr_latex_expr</span><span class="p">(),</span>
                 <span class="p">)</span>
 
             <span class="n">components_str</span> <span class="o">+=</span> <span class="n">comp_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -478,7 +481,7 @@
             <span class="p">)</span>
 
         <span class="n">components_opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_options</span><span class="p">(</span>
-            <span class="n">override</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;page_columns&quot;</span><span class="p">,</span> <span class="s2">&quot;math_font_size&quot;</span><span class="p">]</span>
+            <span class="n">override</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;page_columns&quot;</span><span class="p">,</span> <span class="s2">&quot;math_font_size&quot;</span><span class="p">],</span>
         <span class="p">)</span>
         <span class="n">components_output</span> <span class="o">=</span> <span class="n">_components_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
             <span class="n">SECTIONTYPE</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;section_type&quot;</span><span class="p">],</span>
@@ -534,7 +537,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">label_opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_options</span><span class="p">(</span><span class="n">override</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;bold_equation_labels&quot;</span><span class="p">])</span>
         <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{0}{1}{2}</span><span class="se">\\\\</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">label_opts</span><span class="p">[</span><span class="s2">&quot;begin&quot;</span><span class="p">],</span> <span class="n">label</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">_&quot;</span><span class="p">),</span> <span class="n">label_opts</span><span class="p">[</span><span class="s2">&quot;end&quot;</span><span class="p">]</span>
+            <span class="n">label_opts</span><span class="p">[</span><span class="s2">&quot;begin&quot;</span><span class="p">],</span>
+            <span class="n">label</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">_&quot;</span><span class="p">),</span>
+            <span class="n">label_opts</span><span class="p">[</span><span class="s2">&quot;end&quot;</span><span class="p">],</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="LatexCodeGenerator.format_description"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.format_description">[docs]</a>    <span class="k">def</span> <span class="nf">format_description</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
@@ -549,7 +554,7 @@
         <span class="n">formatted_description</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
         <span class="n">first</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">for</span> <span class="n">ttype</span><span class="p">,</span> <span class="n">token</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">tokenize</span><span class="o">.</span><span class="n">generate_tokens</span><span class="p">(</span>
-            <span class="n">StringIO</span><span class="p">(</span><span class="n">description</span><span class="p">)</span><span class="o">.</span><span class="n">readline</span>
+            <span class="n">StringIO</span><span class="p">(</span><span class="n">description</span><span class="p">)</span><span class="o">.</span><span class="n">readline</span><span class="p">,</span>
         <span class="p">):</span>
             <span class="k">if</span> <span class="n">tokenize</span><span class="o">.</span><span class="n">ISEOF</span><span class="p">(</span><span class="n">ttype</span><span class="p">):</span>
                 <span class="k">break</span>
@@ -608,7 +613,8 @@
         <span class="k">if</span> <span class="s2">&quot;font_size&quot;</span> <span class="ow">in</span> <span class="n">override</span><span class="p">:</span>
             <span class="n">begin_str</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="s2">&quot;{{</span><span class="se">\\</span><span class="s2">fontsize{{</span><span class="si">{0}</span><span class="s2">}}{{</span><span class="si">{1:.1f}</span><span class="s2">}}</span><span class="se">\\</span><span class="s2">selectfont</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">opts</span><span class="o">.</span><span class="n">font_size</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">font_size</span> <span class="o">*</span> <span class="mf">1.2</span>
+                    <span class="n">opts</span><span class="o">.</span><span class="n">font_size</span><span class="p">,</span>
+                    <span class="n">opts</span><span class="o">.</span><span class="n">font_size</span> <span class="o">*</span> <span class="mf">1.2</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="o">+</span> <span class="n">begin_str</span>
             <span class="p">)</span>
@@ -617,7 +623,8 @@
         <span class="k">if</span> <span class="s2">&quot;math_font_size&quot;</span> <span class="ow">in</span> <span class="n">override</span> <span class="ow">and</span> <span class="n">opts</span><span class="o">.</span><span class="n">math_font_size</span><span class="p">:</span>
             <span class="n">begin_str</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="s2">&quot;{{</span><span class="se">\\</span><span class="s2">fontsize{{</span><span class="si">{0}</span><span class="s2">}}{{</span><span class="si">{1:.1f}</span><span class="s2">}}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">opts</span><span class="o">.</span><span class="n">math_font_size</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">math_font_size</span> <span class="o">*</span> <span class="mf">1.2</span>
+                    <span class="n">opts</span><span class="o">.</span><span class="n">math_font_size</span><span class="p">,</span>
+                    <span class="n">opts</span><span class="o">.</span><span class="n">math_font_size</span> <span class="o">*</span> <span class="mf">1.2</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="o">+</span> <span class="n">begin_str</span>
             <span class="p">)</span>
@@ -628,7 +635,7 @@
             <span class="n">end_str</span> <span class="o">+=</span> <span class="s2">&quot;}&quot;</span>
 
         <span class="k">if</span> <span class="s2">&quot;landscape&quot;</span> <span class="ow">in</span> <span class="n">override</span> <span class="ow">and</span> <span class="n">opts</span><span class="o">.</span><span class="n">landscape</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;pdflscape&quot;</span> <span class="ow">in</span> <span class="p">(</span><span class="n">package_name</span> <span class="k">for</span> <span class="n">package_name</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">packages</span><span class="p">):</span>
+            <span class="k">if</span> <span class="s2">&quot;pdflscape&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">package_name</span> <span class="k">for</span> <span class="n">package_name</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">packages</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">packages</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;pdflscape&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
             <span class="n">begin_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">begin</span><span class="si">{landscape}</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">begin_str</span>
             <span class="n">end_str</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">end</span><span class="si">{landscape}</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -652,11 +659,11 @@
 
         <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">columnseprule</span><span class="p">:</span>
             <span class="n">additional_options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">setlength</span><span class="se">{{\\</span><span class="s2">columnseprule</span><span class="se">}}{{</span><span class="si">{</span><span class="n">opts</span><span class="o">.</span><span class="n">columnseprule</span><span class="si">}</span><span class="se">}}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">setlength</span><span class="se">{{\\</span><span class="s2">columnseprule</span><span class="se">}}{{</span><span class="si">{</span><span class="n">opts</span><span class="o">.</span><span class="n">columnseprule</span><span class="si">}</span><span class="se">}}</span><span class="s2">&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="n">global_options</span> <span class="o">=</span> <span class="n">option_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">GLOBALOPTS</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">additional_options</span><span class="p">)</span>
+            <span class="n">GLOBALOPTS</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">additional_options</span><span class="p">),</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">global_options</span></div>
@@ -708,7 +715,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

@@ -80,30 +80,34 @@
 <span class="c1">#</span>
 <span class="c1"># You should have received a copy of the GNU Lesser General Public License</span>
 <span class="c1"># along with Gotran. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
-
 <span class="c1"># FIXME: This is a deprecated module. Most of it should be</span>
 <span class="c1"># incorporated into other modules by now.</span>
-
-<span class="c1"># System imports</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">deque</span><span class="p">,</span> <span class="n">OrderedDict</span>
 <span class="kn">import</span> <span class="nn">hashlib</span>
 <span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
 <span class="kn">from</span> <span class="nn">distutils.version</span> <span class="kn">import</span> <span class="n">LooseVersion</span> <span class="k">as</span> <span class="n">_V</span>
 
+<span class="kn">import</span> <span class="nn">sympy</span>
+<span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">info</span>
+<span class="kn">from</span> <span class="nn">modelparameters.parameterdict</span> <span class="kn">import</span> <span class="n">Param</span>
+<span class="kn">from</span> <span class="nn">modelparameters.parameterdict</span> <span class="kn">import</span> <span class="n">ParameterDict</span>
+<span class="kn">from</span> <span class="nn">modelparameters.parameterdict</span> <span class="kn">import</span> <span class="n">ScalarParam</span>
+<span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">iter_symbol_params_from_expr</span>
+<span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">sp</span>
+<span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">check_arg</span>
+<span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">check_kwarg</span>
+<span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">cse</span>
+
+<span class="kn">from</span> <span class="nn">..model.ode</span> <span class="kn">import</span> <span class="n">ODE</span>
+<span class="kn">from</span> <span class="nn">..model.odecomponent</span> <span class="kn">import</span> <span class="n">Comment</span>
+<span class="kn">from</span> <span class="nn">..model.odecomponent</span> <span class="kn">import</span> <span class="n">ODEComponent</span>
+
+<span class="c1"># System imports</span>
 <span class="c1"># Model parametrs imports</span>
-<span class="kn">from</span> <span class="nn">modelparameters.parameterdict</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">sp</span><span class="p">,</span> <span class="n">iter_symbol_params_from_expr</span>
+<span class="c1"># Local gotran imports</span>
 
 <span class="n">_current_sympy_version</span> <span class="o">=</span> <span class="n">_V</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
-
-<span class="c1"># Local gotran imports</span>
-<span class="kn">from</span> <span class="nn">gotran.model.ode</span> <span class="kn">import</span> <span class="n">ODE</span>
-<span class="kn">from</span> <span class="nn">gotran.model.odecomponent</span> <span class="kn">import</span> <span class="n">ODEComponent</span><span class="p">,</span> <span class="n">Comment</span>
-<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="n">check_arg</span><span class="p">,</span> <span class="n">check_kwarg</span><span class="p">,</span> <span class="n">info</span>
-
-<span class="kn">from</span> <span class="nn">.sympy_cse</span> <span class="kn">import</span> <span class="n">cse</span>
-
 <span class="n">_jacobian_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s2">&quot;_([0-9]+)&quot;</span><span class="p">)</span>
 
 
@@ -141,14 +145,16 @@
     <span class="k">if</span> <span class="s2">&quot;keep_intermediates&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exclude</span><span class="p">:</span>
         <span class="c1"># Keep all intermediates</span>
         <span class="n">params</span><span class="p">[</span><span class="s2">&quot;keep_intermediates&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
-            <span class="kc">True</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Keep intermediates in code&quot;</span>
+            <span class="kc">True</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Keep intermediates in code&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">if</span> <span class="s2">&quot;use_variables&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exclude</span><span class="p">:</span>
         <span class="c1"># If True, code for altering variables are created</span>
         <span class="c1"># FIXME: Not used</span>
         <span class="n">params</span><span class="p">[</span><span class="s2">&quot;use_variables&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
-            <span class="kc">False</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;If True, code for altering variables are created&quot;</span>
+            <span class="kc">False</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;If True, code for altering variables are created&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">if</span> <span class="s2">&quot;parameter_contraction&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exclude</span><span class="p">:</span>
@@ -190,25 +196,29 @@
     <span class="k">if</span> <span class="s2">&quot;generate_jacobian&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exclude</span><span class="p">:</span>
         <span class="c1"># Generate code for the computation of the jacobian</span>
         <span class="n">params</span><span class="p">[</span><span class="s2">&quot;generate_jacobian&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
-            <span class="kc">True</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Generate code for the computation of the jacobian&quot;</span>
+            <span class="kc">True</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Generate code for the computation of the jacobian&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">if</span> <span class="s2">&quot;transposed_jacobian&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exclude</span><span class="p">:</span>
         <span class="c1"># Generate code for the computation of the jacobian</span>
         <span class="n">params</span><span class="p">[</span><span class="s2">&quot;transposed_jacobian&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
-            <span class="kc">False</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The Jacobian is transposed&quot;</span>
+            <span class="kc">False</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The Jacobian is transposed&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">if</span> <span class="s2">&quot;generate_lu_factorization&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exclude</span><span class="p">:</span>
         <span class="c1"># Generate code for the factorization of the jacobian</span>
         <span class="n">params</span><span class="p">[</span><span class="s2">&quot;generate_lu_factorization&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
-            <span class="kc">True</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Generate code for the factorization of the jacobian&quot;</span>
+            <span class="kc">True</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Generate code for the factorization of the jacobian&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">if</span> <span class="s2">&quot;generate_forward_backward_subst&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exclude</span><span class="p">:</span>
         <span class="c1"># Generate code for the forward backward substitution code</span>
         <span class="n">params</span><span class="p">[</span><span class="s2">&quot;generate_forward_backward_subst&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span>
-            <span class="kc">True</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Generate code for the forward backward substitution code&quot;</span>
+            <span class="kc">True</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Generate code for the forward backward substitution code&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">if</span> <span class="s2">&quot;generate_linearized_evaluation&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exclude</span><span class="p">:</span>
@@ -378,7 +388,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_cse_monitored_counts</span> <span class="o">=</span> <span class="n">cse_counts</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_used_in_monitoring</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_used_in_monitoring</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_used_in_monitoring</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">],</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_used_in_monitoring</span><span class="p">[</span><span class="s2">&quot;states&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_used_in_monitoring</span><span class="p">[</span><span class="s2">&quot;states&quot;</span><span class="p">])</span>
@@ -392,7 +402,7 @@
         <span class="k">if</span> <span class="n">ode</span><span class="o">.</span><span class="n">num_states</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
             <span class="n">info</span><span class="p">(</span>
                 <span class="s2">&quot;Calculating jacobian for </span><span class="si">{0}</span><span class="s2"> states. &quot;</span>
-                <span class="s2">&quot;May take some time...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="o">.</span><span class="n">num_states</span><span class="p">)</span>
+                <span class="s2">&quot;May take some time...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ode</span><span class="o">.</span><span class="n">num_states</span><span class="p">),</span>
             <span class="p">)</span>
             <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 
@@ -412,7 +422,9 @@
 
         <span class="c1"># Create the Jacobian</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_jacobian_mat</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">SparseMatrix</span><span class="p">(</span>
-            <span class="n">ode</span><span class="o">.</span><span class="n">num_states</span><span class="p">,</span> <span class="n">ode</span><span class="o">.</span><span class="n">num_states</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="n">sym_map</span><span class="o">.</span><span class="n">get</span><span class="p">((</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">ode</span><span class="o">.</span><span class="n">num_states</span><span class="p">,</span>
+            <span class="n">ode</span><span class="o">.</span><span class="n">num_states</span><span class="p">,</span>
+            <span class="k">lambda</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="n">sym_map</span><span class="o">.</span><span class="n">get</span><span class="p">((</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">),</span> <span class="mi">0</span><span class="p">),</span>
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimization</span><span class="o">.</span><span class="n">transposed_jacobian</span><span class="p">:</span>
@@ -446,7 +458,7 @@
 
         <span class="n">info</span><span class="p">(</span>
             <span class="s2">&quot;Calculating jacobian action common sub expressions for </span><span class="si">{0}</span><span class="s2"> entries. &quot;</span>
-            <span class="s2">&quot;May take some time...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_jacobian_action_expr</span><span class="p">))</span>
+            <span class="s2">&quot;May take some time...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_jacobian_action_expr</span><span class="p">)),</span>
         <span class="p">)</span>
         <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 
@@ -476,7 +488,7 @@
                     <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cse_jacobian_action_expr</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">atoms</span><span class="p">()</span>
                 <span class="p">):</span>
                     <span class="n">cse_jacobian_action_counts</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                        <span class="n">j</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cse_jacobian_action_subs</span><span class="p">)</span>
+                        <span class="n">j</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cse_jacobian_action_subs</span><span class="p">),</span>
                     <span class="p">)</span>
 
         <span class="c1"># Store usage count</span>
@@ -494,7 +506,7 @@
 
         <span class="n">info</span><span class="p">(</span>
             <span class="s2">&quot;Calculating jacobi common sub expressions for </span><span class="si">{0}</span><span class="s2"> entries. &quot;</span>
-            <span class="s2">&quot;May take some time...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_jacobian_expr</span><span class="p">))</span>
+            <span class="s2">&quot;May take some time...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_jacobian_expr</span><span class="p">)),</span>
         <span class="p">)</span>
         <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 
@@ -534,7 +546,7 @@
         <span class="n">AA</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jacobian_mat</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">AA</span><span class="o">.</span><span class="n">is_square</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">NonSquareMatrixError</span><span class="p">()</span>
+            <span class="k">raise</span> <span class="n">sympy</span><span class="o">.</span><span class="n">NonSquareMatrixError</span><span class="p">()</span>
 
         <span class="c1"># Get copy</span>
         <span class="n">n</span> <span class="o">=</span> <span class="n">AA</span><span class="o">.</span><span class="n">rows</span>
@@ -574,12 +586,15 @@
             <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">operations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                     <span class="s2">&quot;jac[</span><span class="si">{i}</span><span class="s2">*</span><span class="si">{n}</span><span class="s2">+</span><span class="si">{j}</span><span class="s2">] -= jac[</span><span class="si">{i}</span><span class="s2">*</span><span class="si">{n}</span><span class="s2">+</span><span class="si">{k}</span><span class="s2">]*jac[</span><span class="si">{k}</span><span class="s2">*</span><span class="si">{n}</span><span class="s2">+</span><span class="si">{j}</span><span class="s2">]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="o">=</span><span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span>
-                    <span class="p">)</span>
+                        <span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="p">,</span>
+                        <span class="n">j</span><span class="o">=</span><span class="n">j</span><span class="p">,</span>
+                        <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+                        <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+                    <span class="p">),</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">operations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="s2">&quot;jac[</span><span class="si">{j}</span><span class="s2">] -= jac[</span><span class="si">{k}</span><span class="s2">]*jac[</span><span class="si">{k}</span><span class="s2">*</span><span class="si">{n}</span><span class="s2">+</span><span class="si">{j}</span><span class="s2">]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">j</span><span class="o">=</span><span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">)</span>
+                    <span class="s2">&quot;jac[</span><span class="si">{j}</span><span class="s2">] -= jac[</span><span class="si">{k}</span><span class="s2">]*jac[</span><span class="si">{k}</span><span class="s2">*</span><span class="si">{n}</span><span class="s2">+</span><span class="si">{j}</span><span class="s2">]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">j</span><span class="o">=</span><span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">),</span>
                 <span class="p">)</span>
 
             <span class="n">new_sym</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;j_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">j</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">new_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -630,7 +645,7 @@
 
                 <span class="c1"># Store operation</span>
                 <span class="n">operations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="s2">&quot;jac[</span><span class="si">{i}</span><span class="s2">*</span><span class="si">{n}</span><span class="s2">+</span><span class="si">{j}</span><span class="s2">] /= jac[</span><span class="si">{j}</span><span class="s2">*</span><span class="si">{n}</span><span class="s2">+</span><span class="si">{j}</span><span class="s2">]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">j</span><span class="o">=</span><span class="n">j</span><span class="p">)</span>
+                    <span class="s2">&quot;jac[</span><span class="si">{i}</span><span class="s2">*</span><span class="si">{n}</span><span class="s2">+</span><span class="si">{j}</span><span class="s2">] /= jac[</span><span class="si">{j}</span><span class="s2">*</span><span class="si">{n}</span><span class="s2">+</span><span class="si">{j}</span><span class="s2">]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">j</span><span class="o">=</span><span class="n">j</span><span class="p">),</span>
                 <span class="p">)</span>
 
                 <span class="c1"># Create new symbol and store the representation</span>
@@ -672,7 +687,6 @@
                 <span class="nb">int</span><span class="p">(</span><span class="n">zero_operations</span> <span class="o">*</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">total_op</span> <span class="o">*</span> <span class="mi">100</span><span class="p">),</span>
                 <span class="s2">&quot;%&quot;</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="n">factorizing_nnz_operations</span> <span class="o">=</span> <span class="n">new_count</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_jacobian_factorization_operations</span> <span class="o">=</span> <span class="n">operations</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_factorized_jacobian</span> <span class="o">=</span> <span class="n">A</span>
@@ -709,7 +723,7 @@
 
             <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">operations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="s2">&quot;dx[</span><span class="si">{i}</span><span class="s2">] -= dx[</span><span class="si">{j}</span><span class="s2">]*jac[</span><span class="si">{i}</span><span class="s2">*</span><span class="si">{n}</span><span class="s2">+</span><span class="si">{j}</span><span class="s2">]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="o">=</span><span class="n">j</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">)</span>
+                    <span class="s2">&quot;dx[</span><span class="si">{i}</span><span class="s2">] -= dx[</span><span class="si">{j}</span><span class="s2">]*jac[</span><span class="si">{i}</span><span class="s2">*</span><span class="si">{n}</span><span class="s2">+</span><span class="si">{j}</span><span class="s2">]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="o">=</span><span class="n">j</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">),</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">operations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;dx[</span><span class="si">{i}</span><span class="s2">] -= dx[</span><span class="si">{j}</span><span class="s2">]*jac[</span><span class="si">{j}</span><span class="s2">]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="o">=</span><span class="n">j</span><span class="p">))</span>
@@ -769,7 +783,7 @@
             <span class="k">return</span>
 
         <span class="n">info</span><span class="p">(</span>
-            <span class="s2">&quot;Calculating common sub expressions for single components of ODE. May take some time...&quot;</span>
+            <span class="s2">&quot;Calculating common sub expressions for single components of ODE. May take some time...&quot;</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
         <span class="n">ode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ode</span>
@@ -789,7 +803,7 @@
 
         <span class="n">info</span><span class="p">(</span><span class="s2">&quot; done&quot;</span><span class="p">)</span>
         <span class="n">info</span><span class="p">(</span>
-            <span class="s2">&quot;Calculating common sub expressions for linearized ODE. May take some time...&quot;</span>
+            <span class="s2">&quot;Calculating common sub expressions for linearized ODE. May take some time...&quot;</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cse_linearized_subs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cse_linearized_derivative_expr</span> <span class="o">=</span> <span class="n">cse</span><span class="p">(</span>
             <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span> <span class="k">for</span> <span class="n">expr</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_linearized_exprs</span><span class="o">.</span><span class="n">values</span><span class="p">())],</span>
@@ -821,7 +835,7 @@
                     <span class="n">used_parameters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">sym</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
             <span class="n">used_in_single_dy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="nb">dict</span><span class="p">(</span><span class="n">parameters</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">used_parameters</span><span class="p">),</span> <span class="n">states</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">used_states</span><span class="p">))</span>
+                <span class="nb">dict</span><span class="p">(</span><span class="n">parameters</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">used_parameters</span><span class="p">),</span> <span class="n">states</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">used_states</span><span class="p">)),</span>
             <span class="p">)</span>
 
             <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">ders</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
@@ -971,7 +985,8 @@
             <span class="k">return</span> <span class="p">(</span>
                 <span class="p">(</span><span class="n">derivatives</span><span class="p">,</span> <span class="n">cse_expr</span><span class="p">)</span>
                 <span class="k">for</span> <span class="p">((</span><span class="n">derivatives</span><span class="p">,</span> <span class="n">expr</span><span class="p">),</span> <span class="n">cse_expr</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="o">.</span><span class="n">get_derivative_expr</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cse_derivative_expr</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="o">.</span><span class="n">get_derivative_expr</span><span class="p">(),</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_cse_derivative_expr</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="p">)</span></div>
 
@@ -1013,7 +1028,8 @@
         <span class="c1"># Yield the CSE</span>
         <span class="k">yield</span> <span class="s2">&quot;Common Sub Expressions for jacobi intermediates&quot;</span><span class="p">,</span> <span class="s2">&quot;COMMENT&quot;</span>
         <span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">expr</span><span class="p">),</span> <span class="n">cse_count</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_cse_jacobian_subs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cse_jacobian_counts</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cse_jacobian_subs</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cse_jacobian_counts</span><span class="p">,</span>
         <span class="p">):</span>
             <span class="k">if</span> <span class="n">cse_count</span><span class="p">:</span>
                 <span class="k">yield</span> <span class="n">expr</span><span class="p">,</span> <span class="n">name</span></div>
@@ -1028,14 +1044,15 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimization</span><span class="o">.</span><span class="n">use_cse</span><span class="p">:</span>
 
             <span class="k">for</span> <span class="p">((</span><span class="n">name</span><span class="p">,</span> <span class="n">expr</span><span class="p">),</span> <span class="n">cse_expr</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
-                <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_jacobian_expr</span><span class="o">.</span><span class="n">items</span><span class="p">()),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cse_jacobian_expr</span>
+                <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_jacobian_expr</span><span class="o">.</span><span class="n">items</span><span class="p">()),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_cse_jacobian_expr</span><span class="p">,</span>
             <span class="p">):</span>
                 <span class="k">yield</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">_jacobian_pattern</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">)))),</span> <span class="n">cse_expr</span>
         <span class="k">else</span><span class="p">:</span>
 
             <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">expr</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_jacobian_expr</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
                 <span class="k">yield</span> <span class="nb">list</span><span class="p">(</span>
-                    <span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">_jacobian_pattern</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">)))</span>
+                    <span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">_jacobian_pattern</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">))),</span>
                 <span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="ODERepresentation.iter_jacobian_action_body"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.oderepresentation.ODERepresentation.iter_jacobian_action_body">[docs]</a>    <span class="k">def</span> <span class="nf">iter_jacobian_action_body</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1051,7 +1068,8 @@
         <span class="c1"># Yield the CSE</span>
         <span class="k">yield</span> <span class="s2">&quot;Common Sub Expressions for jacobi action intermediates&quot;</span><span class="p">,</span> <span class="s2">&quot;COMMENT&quot;</span>
         <span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">expr</span><span class="p">),</span> <span class="n">cse_count</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_cse_jacobian_action_subs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cse_jacobian_action_counts</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cse_jacobian_action_subs</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cse_jacobian_action_counts</span><span class="p">,</span>
         <span class="p">):</span>
             <span class="k">if</span> <span class="n">cse_count</span><span class="p">:</span>
                 <span class="k">yield</span> <span class="n">expr</span><span class="p">,</span> <span class="n">name</span></div>
@@ -1084,7 +1102,8 @@
         <span class="c1"># Yield the CSE</span>
         <span class="k">yield</span> <span class="s2">&quot;Common Sub Expressions for monitored intermediates&quot;</span><span class="p">,</span> <span class="s2">&quot;COMMENT&quot;</span>
         <span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">expr</span><span class="p">),</span> <span class="n">cse_count</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_cse_monitored_subs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cse_monitored_counts</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cse_monitored_subs</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cse_monitored_counts</span><span class="p">,</span>
         <span class="p">):</span>
             <span class="k">if</span> <span class="n">cse_count</span><span class="p">:</span>
                 <span class="k">yield</span> <span class="n">expr</span><span class="p">,</span> <span class="n">name</span></div>
@@ -1101,7 +1120,8 @@
         <span class="k">yield</span> <span class="s2">&quot;COMMENT&quot;</span><span class="p">,</span> <span class="s2">&quot;Monitored intermediates&quot;</span>
 
         <span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">cse_expr</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="o">.</span><span class="n">monitored_intermediates</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cse_monitored_expr</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="o">.</span><span class="n">monitored_intermediates</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cse_monitored_expr</span><span class="p">,</span>
         <span class="p">):</span>
             <span class="k">yield</span> <span class="n">name</span><span class="p">,</span> <span class="n">cse_expr</span></div>
 
@@ -1121,7 +1141,8 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimization</span><span class="o">.</span><span class="n">use_cse</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_compute_linearized_dy_cse</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">cse_expr</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_linearized_exprs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cse_linearized_derivative_expr</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_linearized_exprs</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_cse_linearized_derivative_expr</span><span class="p">,</span>
             <span class="p">):</span>
                 <span class="k">yield</span> <span class="n">idx</span><span class="p">,</span> <span class="n">cse_expr</span>
 
@@ -1135,7 +1156,8 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimization</span><span class="o">.</span><span class="n">use_cse</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_compute_linearized_dy_cse</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">subs</span><span class="p">,</span> <span class="n">expr</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_cse_subs_single_dy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cse_derivative_expr_single_dy</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_cse_subs_single_dy</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_cse_derivative_expr_single_dy</span><span class="p">,</span>
             <span class="p">):</span>
                 <span class="k">yield</span> <span class="n">subs</span><span class="p">,</span> <span class="n">expr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
@@ -1152,7 +1174,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

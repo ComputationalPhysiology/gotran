@@ -80,26 +80,30 @@
 <span class="c1">#</span>
 <span class="c1"># You should have received a copy of the GNU Lesser General Public License</span>
 <span class="c1"># along with Gotran. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
-
 <span class="kn">import</span> <span class="nn">re</span>
-<span class="kn">from</span> <span class="nn">future.standard_library</span> <span class="kn">import</span> <span class="n">install_aliases</span>
-
-<span class="n">install_aliases</span><span class="p">()</span>
-<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">import</span> <span class="nn">urllib.request</span><span class="o">,</span> <span class="nn">urllib.parse</span><span class="o">,</span> <span class="nn">urllib.error</span>
-<span class="kn">from</span> <span class="nn">xml.etree</span> <span class="kn">import</span> <span class="n">ElementTree</span>
+<span class="kn">import</span> <span class="nn">urllib.error</span>
+<span class="kn">import</span> <span class="nn">urllib.parse</span>
+<span class="kn">import</span> <span class="nn">urllib.request</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">deque</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">cmp_to_key</span>
-
-<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">deque</span><span class="p">,</span> <span class="n">defaultdict</span>
-<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="n">info</span><span class="p">,</span> <span class="n">warning</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">check_arg</span><span class="p">,</span> <span class="n">begin_log</span><span class="p">,</span> <span class="n">end_log</span>
-<span class="kn">from</span> <span class="nn">gotran.model.odeobjects</span> <span class="kn">import</span> <span class="n">cmp</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">xml.etree</span> <span class="kn">import</span> <span class="n">ElementTree</span>
 
 <span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">_all_keywords</span>
-<span class="kn">from</span> <span class="nn">modelparameters.parameterdict</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">begin_log</span>
+<span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">end_log</span>
+<span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">error</span>
+<span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">info</span>
+<span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">warning</span>
+<span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">check_arg</span>
 
-<span class="c1"># Local imports</span>
 <span class="kn">from</span> <span class="nn">gotran.common.options</span> <span class="kn">import</span> <span class="n">parameters</span>
 <span class="kn">from</span> <span class="nn">gotran.input.mathml</span> <span class="kn">import</span> <span class="n">MathMLBaseParser</span>
+<span class="kn">from</span> <span class="nn">gotran.model.odeobjects</span> <span class="kn">import</span> <span class="n">cmp</span>
+
+<span class="c1"># Local imports</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;cellml2ode&quot;</span><span class="p">,</span> <span class="s2">&quot;CellMLParser&quot;</span><span class="p">]</span>
 
@@ -220,18 +224,18 @@
             <span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">variables</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">state_variables</span>
         <span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">state</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_variables</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">variable_info</span><span class="p">[</span><span class="n">state</span><span class="p">]</span> <span class="o">=</span> <span class="n">info</span>
+        <span class="k">for</span> <span class="n">state</span><span class="p">,</span> <span class="n">_info</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_variables</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">variable_info</span><span class="p">[</span><span class="n">state</span><span class="p">]</span> <span class="o">=</span> <span class="n">_info</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">variable_info</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;state_variable&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
-            <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">variables</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
-            <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;init&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">_info</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">_info</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">variables</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">_info</span><span class="p">[</span><span class="s2">&quot;init&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">variable_info</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">=</span> <span class="n">info</span>
+        <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">_info</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">variable_info</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">=</span> <span class="n">_info</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">variable_info</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;parameter&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span> <span class="o">=</span> <span class="n">state_variables</span>
@@ -270,7 +274,6 @@
         <span class="c1"># Check if reserved name for state derivativeis is used as equation</span>
         <span class="c1"># name</span>
         <span class="n">derivative_names</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;d</span><span class="si">{</span><span class="n">der</span><span class="si">}</span><span class="s2">_dt&quot;</span> <span class="k">for</span> <span class="n">der</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span><span class="p">]</span>
-        <span class="n">removal</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="k">for</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">equations</span><span class="p">[:]:</span>
             <span class="k">if</span> <span class="p">(</span>
@@ -356,7 +359,7 @@
 
         <span class="n">warning</span><span class="p">(</span>
             <span class="s2">&quot;Locally change parameter name &#39;</span><span class="si">{0}</span><span class="s2">&#39; to &#39;</span><span class="si">{1}</span><span class="s2">&#39; in &quot;</span>
-            <span class="s2">&quot;component &#39;</span><span class="si">{2}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">oldname</span><span class="p">,</span> <span class="n">newname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="s2">&quot;component &#39;</span><span class="si">{2}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">oldname</span><span class="p">,</span> <span class="n">newname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
         <span class="p">)</span>
 
         <span class="c1"># Update parameters</span>
@@ -385,7 +388,7 @@
 
         <span class="n">warning</span><span class="p">(</span>
             <span class="s2">&quot;Locally change state name &#39;</span><span class="si">{0}</span><span class="s2">&#39; to &#39;</span><span class="si">{1}</span><span class="s2">&#39; in component &quot;</span>
-            <span class="s2">&quot;&#39;</span><span class="si">{2}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">oldname</span><span class="p">,</span> <span class="n">newname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="s2">&quot;&#39;</span><span class="si">{2}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">oldname</span><span class="p">,</span> <span class="n">newname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
         <span class="p">)</span>
 
         <span class="c1"># Update parameters</span>
@@ -413,7 +416,8 @@
         <span class="n">old_eq_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;d</span><span class="si">{</span><span class="n">oldname</span><span class="si">}</span><span class="s2">_dt&quot;</span>
         <span class="n">new_eq_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;d</span><span class="si">{</span><span class="n">newname</span><span class="si">}</span><span class="s2">_dt&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">variable_info</span><span class="p">[</span><span class="n">new_eq_name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_info</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span>
-            <span class="n">old_eq_name</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="n">private</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;equation&quot;</span><span class="p">)</span>
+            <span class="n">old_eq_name</span><span class="p">,</span>
+            <span class="nb">dict</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="n">private</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;equation&quot;</span><span class="p">),</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">newname</span>
@@ -431,7 +435,7 @@
 
         <span class="n">warning</span><span class="p">(</span>
             <span class="s2">&quot;Locally change equation name &#39;</span><span class="si">{0}</span><span class="s2">&#39; to &#39;</span><span class="si">{1}</span><span class="s2">&#39; in &quot;</span>
-            <span class="s2">&quot;component &#39;</span><span class="si">{2}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">oldname</span><span class="p">,</span> <span class="n">newname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="s2">&quot;component &#39;</span><span class="si">{2}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">oldname</span><span class="p">,</span> <span class="n">newname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
         <span class="p">)</span>
 
         <span class="c1"># Go through all equations and change the name used locally</span>
@@ -453,7 +457,7 @@
         <span class="k">if</span> <span class="n">oldname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_info</span><span class="p">:</span>
             <span class="n">error</span><span class="p">(</span>
                 <span class="s2">&quot;Cannot change variable name. </span><span class="si">{0}</span><span class="s2"> is not a variable &quot;</span>
-                <span class="s2">&quot;in component </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">oldname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="s2">&quot;in component </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">oldname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
             <span class="p">)</span>
             <span class="k">return</span>
 
@@ -507,7 +511,7 @@
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">fp</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="n">model_source</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">cellml</span> <span class="o">=</span> <span class="n">ElementTree</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span><span class="o">.</span><span class="n">getroot</span><span class="p">()</span>
-            <span class="k">except</span><span class="p">:</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
                 <span class="n">error</span><span class="p">(</span><span class="s2">&quot;ERROR: Unable to open &quot;</span> <span class="o">+</span> <span class="n">model_source</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">model_source</span> <span class="o">=</span> <span class="n">model_source</span>
@@ -548,7 +552,7 @@
                 <span class="k">for</span> <span class="n">par</span> <span class="ow">in</span> <span class="n">child</span><span class="o">.</span><span class="n">iter</span><span class="p">(</span><span class="n">namespace</span> <span class="o">+</span> <span class="s2">&quot;para&quot;</span><span class="p">):</span>
                     <span class="c1"># Get lines</span>
                     <span class="n">splitted_line</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span>
-                        <span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">par</span><span class="o">.</span><span class="n">itertext</span><span class="p">()))</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+                        <span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">par</span><span class="o">.</span><span class="n">itertext</span><span class="p">()))</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">),</span>
                     <span class="p">)</span>
 
                     <span class="c1"># Cut them in lines which are not longer than 80 characters</span>
@@ -633,7 +637,7 @@
                     <span class="k">if</span> <span class="n">prefix</span><span class="p">:</span>
                         <span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipping prefix of unit &#39;</span><span class="si">{</span><span class="n">cellml_unit</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
                     <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">fullnam</span><span class="p">,</span> <span class="n">part_exponent</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span>
-                        <span class="n">collected_units</span><span class="p">[</span><span class="n">cellml_unit</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                        <span class="n">collected_units</span><span class="p">[</span><span class="n">cellml_unit</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span>
                     <span class="p">):</span>
                         <span class="n">new_exponent</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">part_exponent</span><span class="p">)</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">exponent</span><span class="p">)</span>
 
@@ -654,7 +658,9 @@
                     <span class="n">parsed_twice</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">units</span><span class="p">)</span>
                     <span class="k">break</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Unknown unit &#39;</span><span class="si">{0}</span><span class="s2">&#39; in &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cellml_unit</span><span class="p">,</span> <span class="n">units</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]))</span>
+                    <span class="n">warning</span><span class="p">(</span>
+                        <span class="s2">&quot;Unknown unit &#39;</span><span class="si">{0}</span><span class="s2">&#39; in </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cellml_unit</span><span class="p">,</span> <span class="n">units</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]),</span>
+                    <span class="p">)</span>
 
             <span class="k">else</span><span class="p">:</span>
                 <span class="c1"># Try change mole*l**-1 to mM...</span>
@@ -681,7 +687,11 @@
         <span class="k">return</span> <span class="n">item</span><span class="o">.</span><span class="n">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cellml_namespace</span> <span class="o">+</span> <span class="n">name</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="CellMLParser.check_and_register_component_variables"><a class="viewcode-back" href="../../../gotran.input.html#gotran.CellMLParser.check_and_register_component_variables">[docs]</a>    <span class="k">def</span> <span class="nf">check_and_register_component_variables</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">comp</span><span class="p">,</span> <span class="n">collected_states</span><span class="p">,</span> <span class="n">collected_parameters</span><span class="p">,</span> <span class="n">collected_equations</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">comp</span><span class="p">,</span>
+        <span class="n">collected_states</span><span class="p">,</span>
+        <span class="n">collected_parameters</span><span class="p">,</span>
+        <span class="n">collected_equations</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Check if component variables are allready collected</span>
@@ -700,7 +710,7 @@
                 <span class="n">state_comp</span> <span class="o">=</span> <span class="n">collected_states</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
                 <span class="n">begin_log</span><span class="p">(</span>
                     <span class="s2">&quot;Same state name: &#39;</span><span class="si">{0}</span><span class="s2">&#39; is used in component: &#39;</span><span class="si">{1}</span><span class="s2">&#39; &quot;</span>
-                    <span class="s2">&quot;and &#39;</span><span class="si">{2}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">state_comp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="s2">&quot;and &#39;</span><span class="si">{2}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">state_comp</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
                 <span class="p">)</span>
                 <span class="k">for</span> <span class="n">change_comp</span> <span class="ow">in</span> <span class="p">[</span><span class="n">comp</span><span class="p">,</span> <span class="n">state_comp</span><span class="p">]:</span>
                     <span class="k">if</span> <span class="p">(</span>
@@ -715,7 +725,7 @@
                     <span class="n">warning</span><span class="p">(</span>
                         <span class="s2">&quot;Could not resolve duplicated state name </span><span class="si">{0}</span><span class="s2"> in &quot;</span>
                         <span class="s2">&quot;component </span><span class="si">{1}</span><span class="s2"> and </span><span class="si">{2}</span><span class="s2">. None of them are private &quot;</span>
-                        <span class="s2">&quot;to the components.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">state_comp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="s2">&quot;to the components.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">state_comp</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
                     <span class="p">)</span>
                 <span class="n">end_log</span><span class="p">()</span>
 
@@ -725,8 +735,10 @@
                 <span class="n">begin_log</span><span class="p">(</span>
                     <span class="s2">&quot;State name: &#39;</span><span class="si">{0}</span><span class="s2">&#39; from component &#39;</span><span class="si">{1}</span><span class="s2">&#39; is used as &quot;</span>
                     <span class="s2">&quot;parameter in component &#39;</span><span class="si">{2}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">param_comp</span><span class="o">.</span><span class="n">name</span>
-                    <span class="p">)</span>
+                        <span class="n">name</span><span class="p">,</span>
+                        <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                        <span class="n">param_comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="p">),</span>
                 <span class="p">)</span>
 
                 <span class="c1"># If parameter is private we change that</span>
@@ -747,7 +759,7 @@
                         <span class="s2">&quot;Could not resolve duplicated state and &quot;</span>
                         <span class="s2">&quot;parameter name </span><span class="si">{0}</span><span class="s2"> in component </span><span class="si">{1}</span><span class="s2"> and </span><span class="si">{2}</span><span class="s2">. &quot;</span>
                         <span class="s2">&quot;None of them are private to the &quot;</span>
-                        <span class="s2">&quot;components.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">param_comp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="s2">&quot;components.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">param_comp</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
                     <span class="p">)</span>
                 <span class="n">end_log</span><span class="p">()</span>
 
@@ -757,8 +769,10 @@
                 <span class="n">begin_log</span><span class="p">(</span>
                     <span class="s2">&quot;State name &#39;</span><span class="si">{0}</span><span class="s2">&#39; from component &#39;</span><span class="si">{1}</span><span class="s2">&#39; is used as &quot;</span>
                     <span class="s2">&quot;parameter in component &#39;</span><span class="si">{2}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">eq_comp</span><span class="o">.</span><span class="n">name</span>
-                    <span class="p">)</span>
+                        <span class="n">name</span><span class="p">,</span>
+                        <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                        <span class="n">eq_comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="p">),</span>
                 <span class="p">)</span>
 
                 <span class="c1"># If state is private we change it</span>
@@ -769,15 +783,15 @@
                     <span class="n">name</span> <span class="o">=</span> <span class="n">comp</span><span class="o">.</span><span class="n">change_state_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
                 <span class="k">elif</span> <span class="n">eq_comp</span><span class="o">.</span><span class="n">variable_info</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="s2">&quot;private&quot;</span><span class="p">]:</span>
                     <span class="n">new_name</span> <span class="o">=</span> <span class="n">eq_comp</span><span class="o">.</span><span class="n">change_equation_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-                    <span class="n">collected_equation</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-                    <span class="n">collected_equation</span><span class="p">[</span><span class="n">new_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">eq_comp</span>
+                    <span class="n">collected_equations</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                    <span class="n">collected_equations</span><span class="p">[</span><span class="n">new_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">eq_comp</span>
 
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">warning</span><span class="p">(</span>
                         <span class="s2">&quot;Could not resolve duplicated state and &quot;</span>
                         <span class="s2">&quot;equation name </span><span class="si">{0}</span><span class="s2"> in component </span><span class="si">{1}</span><span class="s2"> and </span><span class="si">{2}</span><span class="s2">. &quot;</span>
                         <span class="s2">&quot;None of them are private to the &quot;</span>
-                        <span class="s2">&quot;components.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">eq_comp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="s2">&quot;components.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">eq_comp</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
                     <span class="p">)</span>
                 <span class="n">end_log</span><span class="p">()</span>
 
@@ -794,8 +808,10 @@
                 <span class="n">begin_log</span><span class="p">(</span>
                     <span class="s2">&quot;Same parameter and state name: &#39;</span><span class="si">{0}</span><span class="s2">&#39; is used in &quot;</span>
                     <span class="s2">&quot;component &#39;</span><span class="si">{1}</span><span class="s2">&#39; and &#39;</span><span class="si">{2}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">state_comp</span><span class="o">.</span><span class="n">name</span>
-                    <span class="p">)</span>
+                        <span class="n">name</span><span class="p">,</span>
+                        <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                        <span class="n">state_comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="p">),</span>
                 <span class="p">)</span>
                 <span class="c1"># If parameter is private we change that</span>
                 <span class="k">if</span> <span class="n">comp</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="s2">&quot;private&quot;</span><span class="p">]:</span>
@@ -812,7 +828,7 @@
                     <span class="n">warning</span><span class="p">(</span>
                         <span class="s2">&quot;Could not resolve duplicated state name </span><span class="si">{0}</span><span class="s2"> in &quot;</span>
                         <span class="s2">&quot;component </span><span class="si">{1}</span><span class="s2"> and </span><span class="si">{2}</span><span class="s2">. None of them are private &quot;</span>
-                        <span class="s2">&quot;to the components.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">state_comp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="s2">&quot;to the components.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">state_comp</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
                     <span class="p">)</span>
                 <span class="n">end_log</span><span class="p">()</span>
 
@@ -822,8 +838,10 @@
                 <span class="n">begin_log</span><span class="p">(</span>
                     <span class="s2">&quot;Parameter name &#39;</span><span class="si">{0}</span><span class="s2">&#39; from component &#39;</span><span class="si">{1}</span><span class="s2">&#39; is used as &quot;</span>
                     <span class="s2">&quot;parameter in component &#39;</span><span class="si">{2}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">param_comp</span><span class="o">.</span><span class="n">name</span>
-                    <span class="p">)</span>
+                        <span class="n">name</span><span class="p">,</span>
+                        <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                        <span class="n">param_comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="p">),</span>
                 <span class="p">)</span>
 
                 <span class="c1"># If registered parameter is private we change that</span>
@@ -841,7 +859,7 @@
                         <span class="s2">&quot;Could not resolve duplicated parameter names &quot;</span>
                         <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> in component </span><span class="si">{1}</span><span class="s2"> and </span><span class="si">{2}</span><span class="s2">. &quot;</span>
                         <span class="s2">&quot;None of them are private to the &quot;</span>
-                        <span class="s2">&quot;components.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">param_comp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="s2">&quot;components.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">param_comp</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
                     <span class="p">)</span>
                 <span class="n">end_log</span><span class="p">()</span>
 
@@ -851,8 +869,10 @@
                 <span class="n">begin_log</span><span class="p">(</span>
                     <span class="s2">&quot;Parameter name &#39;</span><span class="si">{0}</span><span class="s2">&#39; from component &#39;</span><span class="si">{1}</span><span class="s2">&#39; &quot;</span>
                     <span class="s2">&quot;is used as parameter in component &#39;</span><span class="si">{2}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">eq_comp</span><span class="o">.</span><span class="n">name</span>
-                    <span class="p">)</span>
+                        <span class="n">name</span><span class="p">,</span>
+                        <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                        <span class="n">eq_comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="p">),</span>
                 <span class="p">)</span>
 
                 <span class="c1"># If parameter is private we change it</span>
@@ -860,15 +880,15 @@
                     <span class="n">name</span> <span class="o">=</span> <span class="n">comp</span><span class="o">.</span><span class="n">change_parameter_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
                 <span class="k">elif</span> <span class="n">eq_comp</span><span class="o">.</span><span class="n">variable_info</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="s2">&quot;private&quot;</span><span class="p">]:</span>
                     <span class="n">new_name</span> <span class="o">=</span> <span class="n">eq_comp</span><span class="o">.</span><span class="n">change_equation_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-                    <span class="n">collected_equation</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-                    <span class="n">collected_equation</span><span class="p">[</span><span class="n">new_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">eq_comp</span>
+                    <span class="n">collected_equations</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                    <span class="n">collected_equations</span><span class="p">[</span><span class="n">new_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">eq_comp</span>
 
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">warning</span><span class="p">(</span>
                         <span class="s2">&quot;Could not resolve duplicated parameter and &quot;</span>
                         <span class="s2">&quot;equation names </span><span class="si">{0}</span><span class="s2"> in component </span><span class="si">{1}</span><span class="s2"> and </span><span class="si">{2}</span><span class="s2">. &quot;</span>
                         <span class="s2">&quot;None of them are private to the &quot;</span>
-                        <span class="s2">&quot;components.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">eq_comp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="s2">&quot;components.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">eq_comp</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
                     <span class="p">)</span>
                 <span class="n">end_log</span><span class="p">()</span>
 
@@ -896,8 +916,10 @@
                 <span class="n">begin_log</span><span class="p">(</span>
                     <span class="s2">&quot;Same equation and state name &#39;</span><span class="si">{0}</span><span class="s2">&#39; is used in &quot;</span>
                     <span class="s2">&quot;component &#39;</span><span class="si">{1}</span><span class="s2">&#39; and &#39;</span><span class="si">{2}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">state_comp</span><span class="o">.</span><span class="n">name</span>
-                    <span class="p">)</span>
+                        <span class="n">name</span><span class="p">,</span>
+                        <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                        <span class="n">state_comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="p">),</span>
                 <span class="p">)</span>
                 <span class="c1"># If equation is private we change that</span>
                 <span class="c1"># if comp.variable_info[name][&quot;private&quot;]:</span>
@@ -915,7 +937,7 @@
                         <span class="s2">&quot;Could not resolve duplicated state and &quot;</span>
                         <span class="s2">&quot;equation name </span><span class="si">{0}</span><span class="s2"> in component </span><span class="si">{1}</span><span class="s2"> and </span><span class="si">{2}</span><span class="s2">. &quot;</span>
                         <span class="s2">&quot;None of them are private to the &quot;</span>
-                        <span class="s2">&quot;components.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">state_comp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="s2">&quot;components.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">state_comp</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
                     <span class="p">)</span>
                 <span class="n">end_log</span><span class="p">()</span>
 
@@ -925,8 +947,10 @@
                 <span class="n">begin_log</span><span class="p">(</span>
                     <span class="s2">&quot;Equation name &#39;</span><span class="si">{0}</span><span class="s2">&#39; from component &#39;</span><span class="si">{1}</span><span class="s2">&#39; is used as &quot;</span>
                     <span class="s2">&quot;parameter in component &#39;</span><span class="si">{2}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">param_comp</span><span class="o">.</span><span class="n">name</span>
-                    <span class="p">)</span>
+                        <span class="n">name</span><span class="p">,</span>
+                        <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                        <span class="n">param_comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="p">),</span>
                 <span class="p">)</span>
 
                 <span class="c1"># If registered parameter is private we change that</span>
@@ -944,7 +968,7 @@
                         <span class="s2">&quot;Could not resolve duplicated parameter and &quot;</span>
                         <span class="s2">&quot;equation name </span><span class="si">{0}</span><span class="s2"> in component </span><span class="si">{1}</span><span class="s2"> and </span><span class="si">{2}</span><span class="s2">. &quot;</span>
                         <span class="s2">&quot;None of them are private to the &quot;</span>
-                        <span class="s2">&quot;components.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">param_comp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="s2">&quot;components.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">param_comp</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
                     <span class="p">)</span>
 
                 <span class="n">end_log</span><span class="p">()</span>
@@ -955,8 +979,10 @@
                 <span class="n">info</span><span class="p">(</span>
                     <span class="s2">&quot;Equation name &#39;</span><span class="si">{0}</span><span class="s2">&#39; from component &#39;</span><span class="si">{1}</span><span class="s2">&#39; is used as &quot;</span>
                     <span class="s2">&quot;equation name in component &#39;</span><span class="si">{2}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="n">name</span><span class="p">,</span> <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">eq_comp</span><span class="o">.</span><span class="n">name</span>
-                    <span class="p">)</span>
+                        <span class="n">name</span><span class="p">,</span>
+                        <span class="n">comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                        <span class="n">eq_comp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="p">),</span>
                 <span class="p">)</span>
 
                 <span class="c1"># If equation is private we change it</span>
@@ -1013,7 +1039,10 @@
         <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">components</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">check_and_register_component_variables</span><span class="p">(</span>
-                <span class="n">comp</span><span class="p">,</span> <span class="n">collected_states</span><span class="p">,</span> <span class="n">collected_parameters</span><span class="p">,</span> <span class="n">collected_equations</span>
+                <span class="n">comp</span><span class="p">,</span>
+                <span class="n">collected_states</span><span class="p">,</span>
+                <span class="n">collected_parameters</span><span class="p">,</span>
+                <span class="n">collected_equations</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">components</span><span class="p">,</span> <span class="n">collected_states</span><span class="p">,</span> <span class="n">collected_parameters</span><span class="p">,</span> <span class="n">collected_equations</span></div>
@@ -1062,7 +1091,11 @@
         <span class="k">return</span> <span class="n">encapsulations</span><span class="p">,</span> <span class="n">all_parents</span></div>
 
 <div class="viewcode-block" id="CellMLParser.parse_single_component"><a class="viewcode-back" href="../../../gotran.input.html#gotran.CellMLParser.parse_single_component">[docs]</a>    <span class="k">def</span> <span class="nf">parse_single_component</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">comp</span><span class="p">,</span> <span class="n">collected_states</span><span class="p">,</span> <span class="n">collected_parameters</span><span class="p">,</span> <span class="n">collected_equations</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">comp</span><span class="p">,</span>
+        <span class="n">collected_states</span><span class="p">,</span>
+        <span class="n">collected_parameters</span><span class="p">,</span>
+        <span class="n">collected_equations</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parse a single component and create a Component object</span>
@@ -1076,9 +1109,12 @@
         <span class="c1"># derivatives = []</span>
 
         <span class="c1"># Get variables that are used outside the component</span>
-        <span class="n">variables_used_in_connections</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">new_variable_connections</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">comp_name</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
-        <span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">same_variable_connections</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">comp_name</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">variables_used_in_connections</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">list</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">new_variable_connections</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">comp_name</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span>
+            <span class="p">)</span>
+            <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">same_variable_connections</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">comp_name</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="p">)</span>
 
         <span class="c1"># Get variable and initial values</span>
         <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_iterator</span><span class="p">(</span><span class="s2">&quot;variable&quot;</span><span class="p">,</span> <span class="n">comp</span><span class="p">):</span>
@@ -1123,7 +1159,7 @@
                 <span class="c1"># Discard collected equation name from used variables</span>
                 <span class="n">used_variables</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">eq_name</span><span class="p">)</span>
 
-                <span class="k">assert</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s2">&quot;(\w+)&quot;</span><span class="p">,</span> <span class="n">eq_name</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">eq_name</span>
+                <span class="k">assert</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(\w+)&quot;</span><span class="p">,</span> <span class="n">eq_name</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">eq_name</span>
                 <span class="k">assert</span> <span class="n">equation_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">mathmlparser</span><span class="p">[</span><span class="s2">&quot;eq&quot;</span><span class="p">]</span>
                 <span class="n">equations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Equation</span><span class="p">(</span><span class="n">eq_name</span><span class="p">,</span> <span class="n">equation_list</span><span class="p">[</span><span class="mi">2</span><span class="p">:],</span> <span class="n">used_variables</span><span class="p">))</span>
 
@@ -1136,7 +1172,10 @@
 
         <span class="c1"># Collect and check variables</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_and_register_component_variables</span><span class="p">(</span>
-            <span class="n">comp</span><span class="p">,</span> <span class="n">collected_states</span><span class="p">,</span> <span class="n">collected_parameters</span><span class="p">,</span> <span class="n">collected_equations</span>
+            <span class="n">comp</span><span class="p">,</span>
+            <span class="n">collected_states</span><span class="p">,</span>
+            <span class="n">collected_parameters</span><span class="p">,</span>
+            <span class="n">collected_equations</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">comp</span></div>
@@ -1185,10 +1224,10 @@
 
         <span class="k">try</span><span class="p">:</span>
             <span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
-        <span class="k">except</span><span class="p">:</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
             <span class="n">warning</span><span class="p">(</span>
                 <span class="s2">&quot;networkx could not be imported. Circular &quot;</span>
-                <span class="s2">&quot;dependencies between components will not be sorted out.&quot;</span>
+                <span class="s2">&quot;dependencies between components will not be sorted out.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">return</span> <span class="n">sorted_components</span> <span class="o">+</span> <span class="n">circular_components</span>
 
@@ -1222,7 +1261,7 @@
                         <span class="n">equation_map</span><span class="p">[</span><span class="n">equation</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">equation</span>
                         <span class="n">one_dep_equations</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">equation</span><span class="p">)</span>
                         <span class="n">one_dep_zero_dep</span><span class="p">[</span><span class="n">equation</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
-                            <span class="n">equation</span><span class="o">.</span><span class="n">dependent_equations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
+                            <span class="n">equation</span><span class="o">.</span><span class="n">dependent_equations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
                         <span class="p">)</span>
 
         <span class="c1"># Try to eliminate circular dependency</span>
@@ -1305,7 +1344,7 @@
                         <span class="nb">sorted</span><span class="p">(</span>
                             <span class="n">local_breakers</span><span class="p">,</span>
                             <span class="n">key</span><span class="o">=</span><span class="n">cmp_to_key</span><span class="p">(</span><span class="k">lambda</span> <span class="n">o0</span><span class="p">,</span> <span class="n">o1</span><span class="p">:</span> <span class="n">cmp</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">o0</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">o1</span><span class="p">))),</span>
-                        <span class="p">)</span>
+                        <span class="p">),</span>
                     <span class="p">):</span>
 
                         <span class="c1"># If the removed edge is in the local edges</span>
@@ -1363,7 +1402,7 @@
                     <span class="n">new_dependent_componets</span><span class="p">[</span><span class="n">dep_comp</span><span class="p">]</span> <span class="o">=</span> <span class="n">old_comp</span><span class="o">.</span><span class="n">used_in</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">dep_comp</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">new_dependent_componets</span><span class="p">[</span><span class="n">dep_comp</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
-                        <span class="n">old_comp</span><span class="o">.</span><span class="n">used_in</span><span class="p">[</span><span class="n">dep_comp</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">equations</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">eq</span><span class="p">))</span>
+                        <span class="n">old_comp</span><span class="o">.</span><span class="n">used_in</span><span class="p">[</span><span class="n">dep_comp</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">equations</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">eq</span><span class="p">)),</span>
                     <span class="p">]</span>
 
                 <span class="c1"># Change component dependencies</span>
@@ -1503,7 +1542,10 @@
 
             <span class="c1"># Store component</span>
             <span class="n">components</span><span class="p">[</span><span class="n">comp_name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_single_component</span><span class="p">(</span>
-                <span class="n">comp</span><span class="p">,</span> <span class="n">collected_states</span><span class="p">,</span> <span class="n">collected_parameters</span><span class="p">,</span> <span class="n">collected_equations</span>
+                <span class="n">comp</span><span class="p">,</span>
+                <span class="n">collected_states</span><span class="p">,</span>
+                <span class="n">collected_parameters</span><span class="p">,</span>
+                <span class="n">collected_equations</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="c1"># Add parent information</span>
@@ -1604,7 +1646,8 @@
                         <span class="k">if</span> <span class="n">old_name_used</span><span class="p">:</span>
                             <span class="k">for</span> <span class="n">other_comp</span> <span class="ow">in</span> <span class="n">old_name_used</span><span class="p">:</span>
                                 <span class="n">components</span><span class="p">[</span><span class="n">other_comp</span><span class="p">]</span><span class="o">.</span><span class="n">change_variable_name</span><span class="p">(</span>
-                                    <span class="n">oldname</span><span class="p">,</span> <span class="n">newname</span>
+                                    <span class="n">oldname</span><span class="p">,</span>
+                                    <span class="n">newname</span><span class="p">,</span>
                                 <span class="p">)</span>
 
                         <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">components</span><span class="p">[</span><span class="n">comp</span><span class="p">]</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
@@ -1730,32 +1773,38 @@
             <span class="k">if</span> <span class="n">comp</span><span class="o">.</span><span class="n">state_variables</span><span class="p">:</span>
                 <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
                 <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;states(</span><span class="si">{</span><span class="n">comp_name</span><span class="si">}</span><span class="s2">,&quot;</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">state_variables</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
-                    <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">_info</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">state_variables</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+                    <span class="k">if</span> <span class="n">_info</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
                         <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                             <span class="s2">&quot;       </span><span class="si">{0}</span><span class="s2"> = ScalarParam(</span><span class="si">{1}</span><span class="s2">&quot;</span>
                             <span class="s1">&#39;, unit=&quot;</span><span class="si">{2}</span><span class="s1">&quot;),&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                                <span class="n">name</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;init&quot;</span><span class="p">]),</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span>
-                            <span class="p">)</span>
+                                <span class="n">name</span><span class="p">,</span>
+                                <span class="nb">float</span><span class="p">(</span><span class="n">_info</span><span class="p">[</span><span class="s2">&quot;init&quot;</span><span class="p">]),</span>
+                                <span class="n">_info</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">],</span>
+                            <span class="p">),</span>
                         <span class="p">)</span>
                     <span class="k">else</span><span class="p">:</span>
-                        <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;       </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;init&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">,&quot;</span><span class="p">)</span>
+                        <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;       </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">_info</span><span class="p">[</span><span class="s1">&#39;init&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">,&quot;</span><span class="p">)</span>
                 <span class="n">declaration_lines</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">declaration_lines</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
 
             <span class="c1"># Collect initial parameters values</span>
             <span class="k">if</span> <span class="n">comp</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
                 <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
                 <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;parameters(</span><span class="si">{</span><span class="n">comp_name</span><span class="si">}</span><span class="s2">,&quot;</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
-                    <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">_info</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+                    <span class="k">if</span> <span class="n">_info</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
                         <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                             <span class="s2">&quot;           </span><span class="si">{0}</span><span class="s2"> = ScalarParam(</span><span class="si">{1}</span><span class="s2">&quot;</span>
                             <span class="s1">&#39;, unit=&quot;</span><span class="si">{2}</span><span class="s1">&quot;),&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                                <span class="n">name</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;init&quot;</span><span class="p">]),</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span>
-                            <span class="p">)</span>
+                                <span class="n">name</span><span class="p">,</span>
+                                <span class="nb">float</span><span class="p">(</span><span class="n">_info</span><span class="p">[</span><span class="s2">&quot;init&quot;</span><span class="p">]),</span>
+                                <span class="n">_info</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">],</span>
+                            <span class="p">),</span>
                         <span class="p">)</span>
                     <span class="k">else</span><span class="p">:</span>
-                        <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;           </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;init&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">,&quot;</span><span class="p">)</span>
+                        <span class="n">declaration_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;           </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">_info</span><span class="p">[</span><span class="s1">&#39;init&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">,&quot;</span><span class="p">,</span>
+                        <span class="p">)</span>
                 <span class="n">declaration_lines</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">declaration_lines</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
 
             <span class="c1"># Collect all intermediate equations</span>
@@ -1786,7 +1835,7 @@
                 <span class="p">)</span>
 
         <span class="n">gotran_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;# gotran file generated by cellml2gotran from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_source</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;# gotran file generated by cellml2gotran from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_source</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">gotran_lines</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">declaration_lines</span><span class="p">)</span>
         <span class="n">gotran_lines</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">equation_lines</span><span class="p">)</span>
@@ -1827,7 +1876,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

@@ -15,7 +15,6 @@
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
-        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -48,7 +47,7 @@
 <li class="toctree-l3"><a class="reference internal" href="gotran.input.html">gotran.input package</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">gotran.model package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#submodules">Submodules</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#module-gotran.model.cellmodel">gotran.model.cellmodel module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#gotran-model-cellmodel-module">gotran.model.cellmodel module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-gotran.model.expressions">gotran.model.expressions module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-gotran.model.loadmodel">gotran.model.loadmodel module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-gotran.model.ode">gotran.model.ode module</a></li>
@@ -59,7 +58,6 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="gotran.scripts.html">gotran.scripts package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="gotran.solver.html">gotran.solver package</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="gotran.html#module-gotran">Module contents</a></li>
@@ -97,266 +95,8 @@
 <section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline"></a></h2>
 </section>
-<section id="module-gotran.model.cellmodel">
-<span id="gotran-model-cellmodel-module"></span><h2>gotran.model.cellmodel module<a class="headerlink" href="#module-gotran.model.cellmodel" title="Permalink to this headline"></a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">gotran.model.cellmodel.</span></span><span class="sig-name descname"><span class="pre">CellModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.cellmodel.CellModel" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.ode.ODE" title="gotran.model.ode.ODE"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.ode.ODE</span></code></a></p>
-<p>Basic class for storing information of a cell model
-You can either initialize an empty CellModel similar to
-an ODE.
-(Maybe if we can create a library of th cellmodels
-then it the string matched that of the library we return
-the model in the library, e.g <cite>cell = CellModel(“Noble_1962”)</cite>)
-Or you can initialize the cell using an existing ODE
-If you have an ODE and want to have a cell, then save the
-ODE to an .ode file and load it using <cite>load_cell</cite> (in stead of
-<cite>load_ode</cite>)</p>
-<p class="rubric">Example</p>
-<p class="rubric">Example</p>
-<dl class="py property">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.component_names">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">component_names</span></span><a class="headerlink" href="#gotran.model.cellmodel.CellModel.component_names" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.currents">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">currents</span></span><a class="headerlink" href="#gotran.model.cellmodel.CellModel.currents" title="Permalink to this definition"></a></dt>
-<dd><p>Return a list of the currents used in the
-computation of the membrane potential.
-Note that intermediate currents (not involved in
-th computation of the membrane potential)
-are not retured</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.get_beattime">
-<span class="sig-name descname"><span class="pre">get_beattime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.get_beattime"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.cellmodel.CellModel.get_beattime" title="Permalink to this definition"></a></dt>
-<dd><p>Return number timepoints for one beat</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>dt</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – Time increment in the same time unit
-as the model</p></li>
-<li><p><strong>extra</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – Add some extra time (in ms) to prolonge the
-the time. Default 60 ms</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.get_component">
-<span class="sig-name descname"><span class="pre">get_component</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.get_component"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.cellmodel.CellModel.get_component" title="Permalink to this definition"></a></dt>
-<dd><p>Get the component with the given name</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Name of the component</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>par</strong> – The component</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>gotran.ODECompoenent</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.get_intermediate">
-<span class="sig-name descname"><span class="pre">get_intermediate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.get_intermediate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.cellmodel.CellModel.get_intermediate" title="Permalink to this definition"></a></dt>
-<dd><p>Get the intermediate with the given name</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Name of the intermediate</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>par</strong> – The parameter</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="gotran.html#gotran.Parameter" title="gotran.Parameter">gotran.Parameter</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.get_parameter">
-<span class="sig-name descname"><span class="pre">get_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.get_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.cellmodel.CellModel.get_parameter" title="Permalink to this definition"></a></dt>
-<dd><p>Get the parameter with the given name</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Name of the parameter</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>par</strong> – The parameter</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="gotran.html#gotran.Parameter" title="gotran.Parameter">gotran.Parameter</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.get_state">
-<span class="sig-name descname"><span class="pre">get_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.get_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.cellmodel.CellModel.get_state" title="Permalink to this definition"></a></dt>
-<dd><p>Get the state with the given name</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Name of the state variable</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>par</strong> – The state</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="gotran.html#gotran.Parameter" title="gotran.Parameter">gotran.Parameter</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.get_time_steps">
-<span class="sig-name descname"><span class="pre">get_time_steps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nbeats</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.get_time_steps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.cellmodel.CellModel.get_time_steps" title="Permalink to this definition"></a></dt>
-<dd><p>Get list with time steps given the number
-of beats and time increment</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>nbeats</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Nuber of beats (Default:1)</p></li>
-<li><p><strong>dt</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – Time increament between two time steps in ms. (Default:1.0)
-Note that you can provide <cite>dt</cite> as a Parameter with unit different
-from ms.</p></li>
-<li><p><strong>t1</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – End time. If not provided then end time will determined from
-the number of beats</p></li>
-<li><p><strong>t0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – Start time (Default: 0.0)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.intermediate_symbols">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">intermediate_symbols</span></span><a class="headerlink" href="#gotran.model.cellmodel.CellModel.intermediate_symbols" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.intermediate_unit">
-<span class="sig-name descname"><span class="pre">intermediate_unit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'si'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.intermediate_unit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.cellmodel.CellModel.intermediate_unit" title="Permalink to this definition"></a></dt>
-<dd><p>Get unit of intermediate expression
-Note that we neglect units within a funtion like
-exponential and logaritm.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Name of intermediate</p></li>
-<li><p><strong>unit_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Type of unit, options <cite>si</cite>, <cite>base</cite> or <cite>original</cite></p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>unit</strong> – Unit of the expression for the intermediate</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)">str</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.parameter_symbols">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">parameter_symbols</span></span><a class="headerlink" href="#gotran.model.cellmodel.CellModel.parameter_symbols" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.parameter_values">
-<span class="sig-name descname"><span class="pre">parameter_values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.parameter_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.cellmodel.CellModel.parameter_values" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.residual_current">
-<span class="sig-name descname"><span class="pre">residual_current</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.residual_current"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.cellmodel.CellModel.residual_current" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.set_parameter">
-<span class="sig-name descname"><span class="pre">set_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.set_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.cellmodel.CellModel.set_parameter" title="Permalink to this definition"></a></dt>
-<dd><p>Set the parameter in the model to a
-given value</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Name of the parmaeter</p></li>
-<li><p><strong>value</strong> (<em>scalar</em><em>, </em><a class="reference internal" href="gotran.html#gotran.ScalarParam" title="gotran.ScalarParam"><em>gotran.ScalarParam</em></a>) – The new value of the parameter. Note that
-if the parameter is of type <cite>ScalarParam</cite>
-while the provided value is a scalar then the value
-will be updated while keeping the unit</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.set_residual_current">
-<span class="sig-name descname"><span class="pre">set_residual_current</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.set_residual_current"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.cellmodel.CellModel.set_residual_current" title="Permalink to this definition"></a></dt>
-<dd><p>Set rediual current</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>t</strong> (<em>array</em>) – List of times</p></li>
-<li><p><strong>current</strong> (<em>array</em>) – List with residual current</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.simulate">
-<span class="sig-name descname"><span class="pre">simulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.simulate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.cellmodel.CellModel.simulate" title="Permalink to this definition"></a></dt>
-<dd><p>Simulate the ODE to <span class="math notranslate nohighlight">\(t_{\mathrm{end}}\)</span>
-with the given number points</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>t_end</strong> (<em>scalar</em>) – The end time</p></li>
-<li><p><strong>nbeats</strong> (<em>scalar</em>) – Number of beats based on stimulus protocol</p></li>
-<li><p><strong>npts</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Number of communication points used in the solver</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.state_symbols">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">state_symbols</span></span><a class="headerlink" href="#gotran.model.cellmodel.CellModel.state_symbols" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.state_values">
-<span class="sig-name descname"><span class="pre">state_values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.state_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.cellmodel.CellModel.state_values" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.stimulation_parameters">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">stimulation_parameters</span></span><a class="headerlink" href="#gotran.model.cellmodel.CellModel.stimulation_parameters" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.stimulation_protocol">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">stimulation_protocol</span></span><a class="headerlink" href="#gotran.model.cellmodel.CellModel.stimulation_protocol" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.CellModel.update_parameter">
-<span class="sig-name descname"><span class="pre">update_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.update_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.cellmodel.CellModel.update_parameter" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="gotran.model.cellmodel.gccm">
-<span class="sig-prename descclassname"><span class="pre">gotran.model.cellmodel.</span></span><span class="sig-name descname"><span class="pre">gccm</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#gccm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.cellmodel.gccm" title="Permalink to this definition"></a></dt>
-<dd><p>Return the current CellModel</p>
-</dd></dl>
-
+<section id="gotran-model-cellmodel-module">
+<h2>gotran.model.cellmodel module<a class="headerlink" href="#gotran-model-cellmodel-module" title="Permalink to this headline"></a></h2>
 </section>
 <section id="module-gotran.model.expressions">
 <span id="gotran-model-expressions-module"></span><h2>gotran.model.expressions module<a class="headerlink" href="#module-gotran.model.expressions" title="Permalink to this headline"></a></h2>
@@ -519,22 +259,6 @@ associated with it</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ode_str</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The ode as a str</p></li>
 <li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The name of ODE</p></li>
-<li><p><strong>arguments</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><em>dict</em></a><em> (</em><em>optional</em><em>)</em>) – Optional arguments which can control loading of model</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="gotran.model.loadmodel.load_cell">
-<span class="sig-prename descclassname"><span class="pre">gotran.model.loadmodel.</span></span><span class="sig-name descname"><span class="pre">load_cell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">arguments</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/loadmodel.html#load_cell"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.loadmodel.load_cell" title="Permalink to this definition"></a></dt>
-<dd><p>Load a Cell from file and return the instance</p>
-<p>The method looks for a file with .ode extension.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Name of the ode file to load</p></li>
-<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a><em> (</em><em>optional</em><em>)</em>) – Set the name of ODE (defaults to filename)</p></li>
 <li><p><strong>arguments</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><em>dict</em></a><em> (</em><em>optional</em><em>)</em>) – Optional arguments which can control loading of model</p></li>
 </ul>
 </dd>
@@ -1194,8 +918,8 @@ seconds in stead of milliseconds</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="gotran.model.odeobjects.cmp_to_key">
-<span class="sig-prename descclassname"><span class="pre">gotran.model.odeobjects.</span></span><span class="sig-name descname"><span class="pre">cmp_to_key</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gotran.model.odeobjects.cmp_to_key" title="Permalink to this definition"></a></dt>
-<dd><p>Convert a cmp= function into a key= function.</p>
+<span class="sig-prename descclassname"><span class="pre">gotran.model.odeobjects.</span></span><span class="sig-name descname"><span class="pre">cmp_to_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mycmp</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelparameters/parameterdict.html#cmp_to_key"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.odeobjects.cmp_to_key" title="Permalink to this definition"></a></dt>
+<dd><p>Convert a cmp= function into a key= function</p>
 </dd></dl>
 
 </section>
@@ -1370,258 +1094,6 @@ childrens</p>
 <dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.StateExpression" title="gotran.model.expressions.StateExpression"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.expressions.StateExpression</span></code></a></p>
 <p>A class for algebraic expressions which relates a State with an
 expression which should equal to 0</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="gotran.model.CellModel">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">CellModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.CellModel" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.ode.ODE" title="gotran.model.ode.ODE"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.ode.ODE</span></code></a></p>
-<p>Basic class for storing information of a cell model
-You can either initialize an empty CellModel similar to
-an ODE.
-(Maybe if we can create a library of th cellmodels
-then it the string matched that of the library we return
-the model in the library, e.g <cite>cell = CellModel(“Noble_1962”)</cite>)
-Or you can initialize the cell using an existing ODE
-If you have an ODE and want to have a cell, then save the
-ODE to an .ode file and load it using <cite>load_cell</cite> (in stead of
-<cite>load_ode</cite>)</p>
-<p class="rubric">Example</p>
-<p class="rubric">Example</p>
-<dl class="py property">
-<dt class="sig sig-object py" id="gotran.model.CellModel.component_names">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">component_names</span></span><a class="headerlink" href="#gotran.model.CellModel.component_names" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="gotran.model.CellModel.currents">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">currents</span></span><a class="headerlink" href="#gotran.model.CellModel.currents" title="Permalink to this definition"></a></dt>
-<dd><p>Return a list of the currents used in the
-computation of the membrane potential.
-Note that intermediate currents (not involved in
-th computation of the membrane potential)
-are not retured</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.CellModel.get_beattime">
-<span class="sig-name descname"><span class="pre">get_beattime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.get_beattime"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.CellModel.get_beattime" title="Permalink to this definition"></a></dt>
-<dd><p>Return number timepoints for one beat</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>dt</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – Time increment in the same time unit
-as the model</p></li>
-<li><p><strong>extra</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – Add some extra time (in ms) to prolonge the
-the time. Default 60 ms</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.CellModel.get_component">
-<span class="sig-name descname"><span class="pre">get_component</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.get_component"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.CellModel.get_component" title="Permalink to this definition"></a></dt>
-<dd><p>Get the component with the given name</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Name of the component</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>par</strong> – The component</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>gotran.ODECompoenent</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.CellModel.get_intermediate">
-<span class="sig-name descname"><span class="pre">get_intermediate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.get_intermediate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.CellModel.get_intermediate" title="Permalink to this definition"></a></dt>
-<dd><p>Get the intermediate with the given name</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Name of the intermediate</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>par</strong> – The parameter</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="gotran.html#gotran.Parameter" title="gotran.Parameter">gotran.Parameter</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.CellModel.get_parameter">
-<span class="sig-name descname"><span class="pre">get_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.get_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.CellModel.get_parameter" title="Permalink to this definition"></a></dt>
-<dd><p>Get the parameter with the given name</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Name of the parameter</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>par</strong> – The parameter</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="gotran.html#gotran.Parameter" title="gotran.Parameter">gotran.Parameter</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.CellModel.get_state">
-<span class="sig-name descname"><span class="pre">get_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.get_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.CellModel.get_state" title="Permalink to this definition"></a></dt>
-<dd><p>Get the state with the given name</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Name of the state variable</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>par</strong> – The state</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="gotran.html#gotran.Parameter" title="gotran.Parameter">gotran.Parameter</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.CellModel.get_time_steps">
-<span class="sig-name descname"><span class="pre">get_time_steps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nbeats</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.get_time_steps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.CellModel.get_time_steps" title="Permalink to this definition"></a></dt>
-<dd><p>Get list with time steps given the number
-of beats and time increment</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>nbeats</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Nuber of beats (Default:1)</p></li>
-<li><p><strong>dt</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – Time increament between two time steps in ms. (Default:1.0)
-Note that you can provide <cite>dt</cite> as a Parameter with unit different
-from ms.</p></li>
-<li><p><strong>t1</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – End time. If not provided then end time will determined from
-the number of beats</p></li>
-<li><p><strong>t0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – Start time (Default: 0.0)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="gotran.model.CellModel.intermediate_symbols">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">intermediate_symbols</span></span><a class="headerlink" href="#gotran.model.CellModel.intermediate_symbols" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.CellModel.intermediate_unit">
-<span class="sig-name descname"><span class="pre">intermediate_unit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'si'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.intermediate_unit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.CellModel.intermediate_unit" title="Permalink to this definition"></a></dt>
-<dd><p>Get unit of intermediate expression
-Note that we neglect units within a funtion like
-exponential and logaritm.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Name of intermediate</p></li>
-<li><p><strong>unit_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Type of unit, options <cite>si</cite>, <cite>base</cite> or <cite>original</cite></p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>unit</strong> – Unit of the expression for the intermediate</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)">str</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="gotran.model.CellModel.parameter_symbols">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">parameter_symbols</span></span><a class="headerlink" href="#gotran.model.CellModel.parameter_symbols" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.CellModel.parameter_values">
-<span class="sig-name descname"><span class="pre">parameter_values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.parameter_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.CellModel.parameter_values" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.CellModel.residual_current">
-<span class="sig-name descname"><span class="pre">residual_current</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.residual_current"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.CellModel.residual_current" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.CellModel.set_parameter">
-<span class="sig-name descname"><span class="pre">set_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.set_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.CellModel.set_parameter" title="Permalink to this definition"></a></dt>
-<dd><p>Set the parameter in the model to a
-given value</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Name of the parmaeter</p></li>
-<li><p><strong>value</strong> (<em>scalar</em><em>, </em><a class="reference internal" href="gotran.html#gotran.ScalarParam" title="gotran.ScalarParam"><em>gotran.ScalarParam</em></a>) – The new value of the parameter. Note that
-if the parameter is of type <cite>ScalarParam</cite>
-while the provided value is a scalar then the value
-will be updated while keeping the unit</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.CellModel.set_residual_current">
-<span class="sig-name descname"><span class="pre">set_residual_current</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.set_residual_current"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.CellModel.set_residual_current" title="Permalink to this definition"></a></dt>
-<dd><p>Set rediual current</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>t</strong> (<em>array</em>) – List of times</p></li>
-<li><p><strong>current</strong> (<em>array</em>) – List with residual current</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.CellModel.simulate">
-<span class="sig-name descname"><span class="pre">simulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.simulate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.CellModel.simulate" title="Permalink to this definition"></a></dt>
-<dd><p>Simulate the ODE to <span class="math notranslate nohighlight">\(t_{\mathrm{end}}\)</span>
-with the given number points</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>t_end</strong> (<em>scalar</em>) – The end time</p></li>
-<li><p><strong>nbeats</strong> (<em>scalar</em>) – Number of beats based on stimulus protocol</p></li>
-<li><p><strong>npts</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Number of communication points used in the solver</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="gotran.model.CellModel.state_symbols">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">state_symbols</span></span><a class="headerlink" href="#gotran.model.CellModel.state_symbols" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.CellModel.state_values">
-<span class="sig-name descname"><span class="pre">state_values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.state_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.CellModel.state_values" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="gotran.model.CellModel.stimulation_parameters">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">stimulation_parameters</span></span><a class="headerlink" href="#gotran.model.CellModel.stimulation_parameters" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="gotran.model.CellModel.stimulation_protocol">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">stimulation_protocol</span></span><a class="headerlink" href="#gotran.model.CellModel.stimulation_protocol" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gotran.model.CellModel.update_parameter">
-<span class="sig-name descname"><span class="pre">update_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/cellmodel.html#CellModel.update_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.CellModel.update_parameter" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
@@ -2347,8 +1819,8 @@ seconds in stead of milliseconds</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="gotran.model.cmp_to_key">
-<span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">cmp_to_key</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gotran.model.cmp_to_key" title="Permalink to this definition"></a></dt>
-<dd><p>Convert a cmp= function into a key= function.</p>
+<span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">cmp_to_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mycmp</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modelparameters/parameterdict.html#cmp_to_key"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.cmp_to_key" title="Permalink to this definition"></a></dt>
+<dd><p>Convert a cmp= function into a key= function</p>
 </dd></dl>
 
 <dl class="py function">
@@ -2360,22 +1832,6 @@ seconds in stead of milliseconds</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ode_str</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The ode as a str</p></li>
 <li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The name of ODE</p></li>
-<li><p><strong>arguments</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><em>dict</em></a><em> (</em><em>optional</em><em>)</em>) – Optional arguments which can control loading of model</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="gotran.model.load_cell">
-<span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">load_cell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">arguments</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/loadmodel.html#load_cell"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.load_cell" title="Permalink to this definition"></a></dt>
-<dd><p>Load a Cell from file and return the instance</p>
-<p>The method looks for a file with .ode extension.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Name of the ode file to load</p></li>
-<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a><em> (</em><em>optional</em><em>)</em>) – Set the name of ODE (defaults to filename)</p></li>
 <li><p><strong>arguments</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><em>dict</em></a><em> (</em><em>optional</em><em>)</em>) – Optional arguments which can control loading of model</p></li>
 </ul>
 </dd>
@@ -2418,7 +1874,7 @@ seconds in stead of milliseconds</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

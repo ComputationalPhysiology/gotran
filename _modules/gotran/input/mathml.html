@@ -82,9 +82,10 @@
 <span class="c1"># along with Gotran. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;MathMLBaseParser&quot;</span><span class="p">,</span> <span class="s2">&quot;MathMLCPPParser&quot;</span><span class="p">]</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="n">error</span>
 <span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">_all_keywords</span>
+<span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">error</span>
 
 
 <div class="viewcode-block" id="MathMLBaseParser"><a class="viewcode-back" href="../../../gotran.input.html#gotran.input.mathml.MathMLBaseParser">[docs]</a><span class="k">class</span> <span class="nc">MathMLBaseParser</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -227,9 +228,13 @@
                         <span class="n">use_parent</span> <span class="o">=</span> <span class="kc">False</span>
 
                     <span class="c1"># If an unary minus is infront of a plus we always use parenthesize</span>
-                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gettag</span><span class="p">(</span><span class="n">root</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="s2">&quot;apply&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gettag</span><span class="p">(</span>
-                        <span class="nb">list</span><span class="p">(</span><span class="n">root</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
-                    <span class="p">)</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;plus&quot;</span><span class="p">,</span> <span class="s2">&quot;minus&quot;</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_gettag</span><span class="p">(</span><span class="n">root</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="s2">&quot;apply&quot;</span>
+                        <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gettag</span><span class="p">(</span>
+                            <span class="nb">list</span><span class="p">(</span><span class="n">root</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span><span class="p">],</span>
+                        <span class="p">)</span>
+                        <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;plus&quot;</span><span class="p">,</span> <span class="s2">&quot;minus&quot;</span><span class="p">]</span>
+                    <span class="p">):</span>
                         <span class="n">use_parent</span> <span class="o">=</span> <span class="kc">True</span>
 
                     <span class="n">eq</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;-&quot;</span><span class="p">]</span>
@@ -418,7 +423,7 @@
             <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;(&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cond</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;?&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">true</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;:&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">false</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;)&quot;</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span>
-                <span class="s2">&quot;ERROR: No support for cases with other than two &quot;</span> <span class="s2">&quot;possibilities.&quot;</span>
+                <span class="s2">&quot;ERROR: No support for cases with other than two &quot;</span> <span class="s2">&quot;possibilities.&quot;</span><span class="p">,</span>
             <span class="p">)</span></div>
 </pre></div>
 
@@ -429,7 +434,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

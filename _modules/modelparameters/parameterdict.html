@@ -117,7 +117,7 @@
 <span class="n">FORMAT_CONVERTER</span> <span class="o">=</span> <span class="p">{</span><span class="nb">int</span><span class="p">:</span><span class="s2">&quot;int&quot;</span><span class="p">,</span> <span class="nb">float</span><span class="p">:</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">:</span><span class="s2">&quot;string&quot;</span><span class="p">,</span> \
                     <span class="nb">list</span><span class="p">:</span><span class="kc">None</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">:</span><span class="kc">None</span><span class="p">,</span> <span class="nb">bool</span><span class="p">:</span><span class="s2">&quot;int&quot;</span><span class="p">}</span>
 
-<span class="k">def</span> <span class="nf">cmp_to_key</span><span class="p">(</span><span class="n">mycmp</span><span class="p">):</span>
+<div class="viewcode-block" id="cmp_to_key"><a class="viewcode-back" href="../../gotran.model.html#gotran.cmp_to_key">[docs]</a><span class="k">def</span> <span class="nf">cmp_to_key</span><span class="p">(</span><span class="n">mycmp</span><span class="p">):</span>
     <span class="s1">&#39;Convert a cmp= function into a key= function&#39;</span>
     <span class="k">class</span> <span class="nc">K</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
         <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
@@ -134,7 +134,7 @@
             <span class="k">return</span> <span class="n">mycmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span>
         <span class="k">def</span> <span class="fm">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">mycmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span>
-    <span class="k">return</span> <span class="n">K</span>
+    <span class="k">return</span> <span class="n">K</span></div>
 
 <span class="k">def</span> <span class="nf">_par_cmp</span><span class="p">(</span><span class="n">obj1</span><span class="p">,</span> <span class="n">obj2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -154,7 +154,7 @@
 
 <span class="n">par_cmp</span> <span class="o">=</span> <span class="n">cmp_to_key</span><span class="p">(</span><span class="n">_par_cmp</span><span class="p">)</span>
 
-<div class="viewcode-block" id="ParameterDict"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict">[docs]</a><span class="k">class</span> <span class="nc">ParameterDict</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">ParameterDict</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A dictionary with attribute-style access,</span>
 <span class="sd">    that maps attribute access to the real dictionary.</span>
@@ -222,14 +222,14 @@
     <span class="k">def</span> <span class="fm">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="n">type_error</span><span class="p">(</span><span class="s2">&quot;ParameterDict does not support item deletion&quot;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="ParameterDict.pop"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.pop">[docs]</a>    <span class="k">def</span> <span class="nf">pop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
-        <span class="n">type_error</span><span class="p">(</span><span class="s2">&quot;ParameterDict does not support item removal&quot;</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">pop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="n">type_error</span><span class="p">(</span><span class="s2">&quot;ParameterDict does not support item removal&quot;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="ParameterDict.clear"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">type_error</span><span class="p">(</span><span class="s2">&quot;ParameterDict does not support item removal&quot;</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">type_error</span><span class="p">(</span><span class="s2">&quot;ParameterDict does not support item removal&quot;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="ParameterDict.fromkeys"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.fromkeys">[docs]</a>    <span class="k">def</span> <span class="nf">fromkeys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
-        <span class="n">type_error</span><span class="p">(</span><span class="s2">&quot;ParameterDict does not support fromkeys&quot;</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">fromkeys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="n">type_error</span><span class="p">(</span><span class="s2">&quot;ParameterDict does not support fromkeys&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
 
@@ -282,7 +282,7 @@
     <span class="k">def</span> <span class="nf">__members__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_members</span>
 
-<div class="viewcode-block" id="ParameterDict.iterparams"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.iterparams">[docs]</a>    <span class="k">def</span> <span class="nf">iterparams</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recurse</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">iterparams</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recurse</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Iterate over all Param</span>
 
@@ -297,9 +297,9 @@
                 <span class="k">for</span> <span class="n">new_value</span> <span class="ow">in</span> <span class="n">value</span><span class="o">.</span><span class="n">iterparams</span><span class="p">(</span><span class="n">recurse</span><span class="p">):</span>
                     <span class="k">yield</span> <span class="n">new_value</span>
             <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Param</span><span class="p">):</span>
-                <span class="k">yield</span> <span class="n">value</span></div>
+                <span class="k">yield</span> <span class="n">value</span>
 
-<div class="viewcode-block" id="ParameterDict.iterparameterdicts"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.iterparameterdicts">[docs]</a>    <span class="k">def</span> <span class="nf">iterparameterdicts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">iterparameterdicts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Iterate over all ParameterDicts</span>
 
@@ -311,10 +311,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="n">par_cmp</span><span class="p">):</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ParameterDict</span><span class="p">):</span>
-                <span class="k">yield</span> <span class="n">value</span></div>
+                <span class="k">yield</span> <span class="n">value</span>
 
     <span class="c1"># A nice string to use &#39;\xe2\x88\x88&#39;= \in and &#39;\xe2\x88\x9e&#39;= \infty</span>
-<div class="viewcode-block" id="ParameterDict.format_data"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.format_data">[docs]</a>    <span class="k">def</span> <span class="nf">format_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">format_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Make a recursive indented pretty-print string of</span>
 <span class="sd">        self and parameter subsets.</span>
@@ -350,9 +350,9 @@
                      <span class="p">(</span><span class="n">KEY_JUST</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">max_key_length</span><span class="p">),</span> \
                       <span class="n">VALUE_JUST</span><span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="n">max_value_length</span><span class="p">)))</span>
 
-        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
 
-<div class="viewcode-block" id="ParameterDict.copy"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">to_dict</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">to_dict</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Make a deep copy of self, including recursive copying of parameter</span>
 <span class="sd">        subsets.</span>
@@ -385,9 +385,9 @@
             <span class="n">ch</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="o">**</span><span class="n">items</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">ch</span> <span class="o">=</span> <span class="n">ParameterDict</span><span class="p">(</span><span class="o">**</span><span class="n">items</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">ch</span></div>
+        <span class="k">return</span> <span class="n">ch</span>
 
-<div class="viewcode-block" id="ParameterDict.update"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A recursive update that handles parameter subsets</span>
 <span class="sd">        correctly unlike dict.update.</span>
@@ -406,9 +406,9 @@
                 <span class="c1"># Set my own value to others value</span>
                 <span class="n">self_value</span><span class="o">.</span><span class="n">setvalue</span><span class="p">(</span><span class="n">other_value</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">other_value</span></div>
+                <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">other_value</span>
 
-<div class="viewcode-block" id="ParameterDict.parse_args"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.parse_args">[docs]</a>    <span class="k">def</span> <span class="nf">parse_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">usage</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">parse_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">usage</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parse a list of options. use sys.argv as default</span>
 
@@ -540,9 +540,9 @@
         <span class="k">if</span> <span class="n">options</span><span class="p">:</span>
             <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span></div>
+            <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
-<div class="viewcode-block" id="ParameterDict.optstr"><a class="viewcode-back" href="../../gotran.html#gotran.ParameterDict.optstr">[docs]</a>    <span class="k">def</span> <span class="nf">optstr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">optstr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a string with option set</span>
 
@@ -580,7 +580,7 @@
 
             <span class="k">return</span> <span class="n">ret_list</span>
 
-        <span class="k">return</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">option_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">PAR_PREFIX</span><span class="p">))</span></div></div>
+        <span class="k">return</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">option_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">PAR_PREFIX</span><span class="p">))</span>
 </pre></div>
 
            </div>
@@ -590,7 +590,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

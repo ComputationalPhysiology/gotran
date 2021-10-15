@@ -11,9 +11,9 @@ Gotran:
 * provides a Python interface to declare arbitrary ODEs.
 * provides an interface for generating CUDA/C/C++/Python/Matlab code
   for a number of functions including the right hand side and symbolic
-  generation of a Jacobian. 
+  generation of a Jacobian.
 * is intentionally lightweight, and could be interfaced by other
-  Python libraries needing functionalities to abstract a general ODE. 
+  Python libraries needing functionalities to abstract a general ODE.
 * depends on NumPy, and on SymPy. See further instructions in ...
 * can load models from external ODE desciption files such as CellML
 

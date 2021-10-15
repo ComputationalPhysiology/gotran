@@ -83,46 +83,45 @@
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;CodeComponent&quot;</span><span class="p">]</span>
 
-<span class="c1"># System imports</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">deque</span><span class="p">,</span> <span class="n">defaultdict</span>
-<span class="kn">from</span> <span class="nn">sympy.core.function</span> <span class="kn">import</span> <span class="n">AppliedUndef</span>
 <span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="c1"># System imports</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">defaultdict</span><span class="p">,</span> <span class="n">deque</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">cmp_to_key</span>
+
+<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">sympycode</span>
+<span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">debug</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">warning</span>
 
 <span class="c1"># ModelParameters imports</span>
 <span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">sp</span>
-<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">sympycode</span>
+<span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">Timer</span><span class="p">,</span> <span class="n">check_arg</span><span class="p">,</span> <span class="n">check_kwarg</span><span class="p">,</span> <span class="n">tuplewrap</span>
+<span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">cse</span>
+<span class="kn">from</span> <span class="nn">sympy.core.function</span> <span class="kn">import</span> <span class="n">AppliedUndef</span>
 
-<span class="c1"># Local imports</span>
-<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">error</span><span class="p">,</span>
-    <span class="n">info</span><span class="p">,</span>
-    <span class="n">debug</span><span class="p">,</span>
-    <span class="n">check_arg</span><span class="p">,</span>
-    <span class="n">check_kwarg</span><span class="p">,</span>
-    <span class="n">scalars</span><span class="p">,</span>
-    <span class="n">Timer</span><span class="p">,</span>
-    <span class="n">warning</span><span class="p">,</span>
-    <span class="n">tuplewrap</span><span class="p">,</span>
-    <span class="n">parameters</span><span class="p">,</span>
+<span class="kn">from</span> <span class="nn">gotran.model.expressions</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Derivatives</span><span class="p">,</span>
+    <span class="n">Expression</span><span class="p">,</span>
+    <span class="n">IndexedExpression</span><span class="p">,</span>
+    <span class="n">Intermediate</span><span class="p">,</span>
+    <span class="n">ParameterIndexedExpression</span><span class="p">,</span>
+    <span class="n">StateDerivative</span><span class="p">,</span>
+    <span class="n">StateIndexedExpression</span><span class="p">,</span>
+    <span class="n">recreate_expression</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span> <span class="nn">gotran.model.ode</span> <span class="kn">import</span> <span class="n">ODE</span>
+<span class="kn">from</span> <span class="nn">gotran.model.odecomponent</span> <span class="kn">import</span> <span class="n">ODEComponent</span>
 <span class="kn">from</span> <span class="nn">gotran.model.odeobjects</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">State</span><span class="p">,</span>
-    <span class="n">Parameter</span><span class="p">,</span>
-    <span class="n">IndexedObject</span><span class="p">,</span>
-    <span class="n">StateIndexedObject</span><span class="p">,</span>
-    <span class="n">ParameterIndexedObject</span><span class="p">,</span>
     <span class="n">Comment</span><span class="p">,</span>
+    <span class="n">IndexedObject</span><span class="p">,</span>
+    <span class="n">Parameter</span><span class="p">,</span>
+    <span class="n">ParameterIndexedObject</span><span class="p">,</span>
+    <span class="n">State</span><span class="p">,</span>
+    <span class="n">StateIndexedObject</span><span class="p">,</span>
     <span class="n">cmp</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">gotran.model.expressions</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">gotran.model.odecomponent</span> <span class="kn">import</span> <span class="n">ODEComponent</span>
-<span class="kn">from</span> <span class="nn">gotran.model.ode</span> <span class="kn">import</span> <span class="n">ODE</span>
 
-<span class="c1"># FIXME: Remove our own cse, or move to this module?</span>
-<span class="kn">from</span> <span class="nn">gotran.codegeneration.sympy_cse</span> <span class="kn">import</span> <span class="n">cse</span>
-
-<span class="c1"># from sympy import cse</span>
+<span class="c1"># Local imports</span>
+<span class="kn">from</span> <span class="nn">..common</span> <span class="kn">import</span> <span class="n">parameters</span>
 
 
 <div class="viewcode-block" id="CodeComponent"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.CodeComponent">[docs]</a><span class="k">class</span> <span class="nc">CodeComponent</span><span class="p">(</span><span class="n">ODEComponent</span><span class="p">):</span>
@@ -193,7 +192,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_allow_magic_attributes</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">for</span> <span class="n">result_name</span><span class="p">,</span> <span class="n">result_expressions</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
             <span class="n">check_kwarg</span><span class="p">(</span>
-                <span class="n">result_expressions</span><span class="p">,</span> <span class="n">result_name</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="n">itemtypes</span><span class="o">=</span><span class="p">(</span><span class="n">Expression</span><span class="p">,</span> <span class="n">Comment</span><span class="p">)</span>
+                <span class="n">result_expressions</span><span class="p">,</span>
+                <span class="n">result_name</span><span class="p">,</span>
+                <span class="nb">list</span><span class="p">,</span>
+                <span class="n">itemtypes</span><span class="o">=</span><span class="p">(</span><span class="n">Expression</span><span class="p">,</span> <span class="n">Comment</span><span class="p">),</span>
             <span class="p">)</span>
 
         <span class="c1"># Store parameters</span>
@@ -229,7 +231,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">additional_arguments</span> <span class="o">=</span> <span class="n">additional_arguments</span>
 
 <div class="viewcode-block" id="CodeComponent.add_indexed_expression"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.CodeComponent.add_indexed_expression">[docs]</a>    <span class="k">def</span> <span class="nf">add_indexed_expression</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">basename</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">add_offset</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enum</span><span class="o">=</span><span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">basename</span><span class="p">,</span>
+        <span class="n">indices</span><span class="p">,</span>
+        <span class="n">expr</span><span class="p">,</span>
+        <span class="n">add_offset</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">dependent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">enum</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Add an indexed expression using a basename and the indices</span>
@@ -249,21 +257,21 @@
 <span class="sd">            fractional count based on the count of the dependent object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Create an IndexedExpression in the present component</span>
-        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Add indexed expression&quot;</span><span class="p">)</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Add indexed expression&quot;</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
         <span class="n">indices</span> <span class="o">=</span> <span class="n">tuplewrap</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
 
         <span class="c1"># Check that provided indices fit with the registered shape</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">])</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">):</span>
             <span class="n">error</span><span class="p">(</span>
                 <span class="s2">&quot;Shape mismatch between indices </span><span class="si">{0}</span><span class="s2"> and registered &quot;</span>
-                <span class="s2">&quot;shape for </span><span class="si">{1}{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="n">basename</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">])</span>
+                <span class="s2">&quot;shape for </span><span class="si">{1}{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="n">basename</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">]),</span>
             <span class="p">)</span>
 
         <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">shape_ind</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">])):</span>
             <span class="k">if</span> <span class="n">index</span> <span class="o">&gt;=</span> <span class="n">shape_ind</span><span class="p">:</span>
                 <span class="n">error</span><span class="p">(</span>
                     <span class="s2">&quot;Indices must be smaller or equal to the shape. Mismatch &quot;</span>
-                    <span class="s2">&quot;in dim </span><span class="si">{0}</span><span class="s2">: </span><span class="si">{1}</span><span class="s2">&gt;=</span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">shape_ind</span><span class="p">)</span>
+                    <span class="s2">&quot;in dim </span><span class="si">{0}</span><span class="s2">: </span><span class="si">{1}</span><span class="s2">&gt;=</span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">shape_ind</span><span class="p">),</span>
                 <span class="p">)</span>
 
         <span class="c1"># Create the indexed expression</span>
@@ -321,7 +329,7 @@
 <span class="sd">        add_offset : bool</span>
 <span class="sd">            Add offset to indices</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Add indexed object&quot;</span><span class="p">)</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Add indexed object&quot;</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
 
         <span class="n">indices</span> <span class="o">=</span> <span class="n">tuplewrap</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
 
@@ -329,19 +337,23 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">])</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">):</span>
             <span class="n">error</span><span class="p">(</span>
                 <span class="s2">&quot;Shape mismatch between indices </span><span class="si">{0}</span><span class="s2"> and registered &quot;</span>
-                <span class="s2">&quot;shape for </span><span class="si">{1}{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="n">basename</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">])</span>
+                <span class="s2">&quot;shape for </span><span class="si">{1}{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="n">basename</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">]),</span>
             <span class="p">)</span>
 
         <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">shape_ind</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">])):</span>
             <span class="k">if</span> <span class="n">index</span> <span class="o">&gt;=</span> <span class="n">shape_ind</span><span class="p">:</span>
                 <span class="n">error</span><span class="p">(</span>
                     <span class="s2">&quot;Indices must be smaller or equal to the shape. Mismatch &quot;</span>
-                    <span class="s2">&quot;in dim </span><span class="si">{0}</span><span class="s2">: </span><span class="si">{1}</span><span class="s2">&gt;=</span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">shape_ind</span><span class="p">)</span>
+                    <span class="s2">&quot;in dim </span><span class="si">{0}</span><span class="s2">: </span><span class="si">{1}</span><span class="s2">&gt;=</span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">shape_ind</span><span class="p">),</span>
                 <span class="p">)</span>
 
         <span class="c1"># Create IndexedObject</span>
         <span class="n">obj</span> <span class="o">=</span> <span class="n">IndexedObject</span><span class="p">(</span>
-            <span class="n">basename</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">add_offset</span>
+            <span class="n">basename</span><span class="p">,</span>
+            <span class="n">indices</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">basename</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">array</span><span class="p">,</span>
+            <span class="n">add_offset</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_register_component_object</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
 
@@ -385,7 +397,7 @@
         <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">field_parameters</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="p">[</span><span class="n">param</span><span class="p">],</span> <span class="n">Parameter</span><span class="p">):</span>
                 <span class="n">error</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Field parameter &#39;</span><span class="si">{</span><span class="n">param</span><span class="si">}</span><span class="s2">&#39; is not a parameter in the &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Field parameter &#39;</span><span class="si">{</span><span class="n">param</span><span class="si">}</span><span class="s2">&#39; is not a parameter in the &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
 
         <span class="n">state_repr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">[</span><span class="s2">&quot;states&quot;</span><span class="p">][</span><span class="s2">&quot;representation&quot;</span><span class="p">]</span>
@@ -397,7 +409,7 @@
         <span class="c1"># Create a map between states, parameters and the corresponding</span>
         <span class="c1"># IndexedObjects</span>
         <span class="n">param_state_map</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
-            <span class="p">[(</span><span class="s2">&quot;states&quot;</span><span class="p">,</span> <span class="n">OrderedDict</span><span class="p">()),</span> <span class="p">(</span><span class="s2">&quot;parameters&quot;</span><span class="p">,</span> <span class="n">OrderedDict</span><span class="p">())]</span>
+            <span class="p">[(</span><span class="s2">&quot;states&quot;</span><span class="p">,</span> <span class="n">OrderedDict</span><span class="p">()),</span> <span class="p">(</span><span class="s2">&quot;parameters&quot;</span><span class="p">,</span> <span class="n">OrderedDict</span><span class="p">())],</span>
         <span class="p">)</span>
 
         <span class="c1"># Add states</span>
@@ -428,7 +440,12 @@
                 <span class="n">offset</span> <span class="o">=</span> <span class="n">param_offset</span>
 
             <span class="n">parameters</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">=</span> <span class="n">ParameterIndexedObject</span><span class="p">(</span>
-                <span class="n">basename</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">array_params</span><span class="p">,</span> <span class="n">offset</span>
+                <span class="n">basename</span><span class="p">,</span>
+                <span class="n">index</span><span class="p">,</span>
+                <span class="n">param</span><span class="p">,</span>
+                <span class="n">shape</span><span class="p">,</span>
+                <span class="n">array_params</span><span class="p">,</span>
+                <span class="n">offset</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="c1"># If not having named parameters</span>
@@ -509,12 +526,9 @@
             <span class="n">expanded_result_exprs</span><span class="p">,</span>
         <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expanded_result_expressions</span><span class="p">(</span><span class="o">**</span><span class="n">results</span><span class="p">)</span>
 
-        <span class="n">body_expressions</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">new_results</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
-
     <span class="k">def</span> <span class="nf">_body_from_cse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">):</span>
 
-        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Compute common sub expressions for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Compute common sub expressions for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
 
         <span class="p">(</span>
             <span class="n">orig_result_expressions</span><span class="p">,</span>
@@ -533,13 +547,15 @@
         <span class="k">if</span> <span class="n">might_take_time</span><span class="p">:</span>
             <span class="n">info</span><span class="p">(</span>
                 <span class="s2">&quot;Computing common sub expressions for </span><span class="si">{0}</span><span class="s2">. Might take &quot;</span>
-                <span class="s2">&quot;some time...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="s2">&quot;some time...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
             <span class="p">)</span>
             <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 
         <span class="c1"># Call sympy common sub expression reduction</span>
         <span class="n">cse_exprs</span><span class="p">,</span> <span class="n">cse_result_exprs</span> <span class="o">=</span> <span class="n">cse</span><span class="p">(</span>
-            <span class="n">expanded_result_exprs</span><span class="p">,</span> <span class="n">symbols</span><span class="o">=</span><span class="n">sp</span><span class="o">.</span><span class="n">numbered_symbols</span><span class="p">(</span><span class="s2">&quot;cse_&quot;</span><span class="p">),</span> <span class="n">optimizations</span><span class="o">=</span><span class="p">[]</span>
+            <span class="n">expanded_result_exprs</span><span class="p">,</span>
+            <span class="n">symbols</span><span class="o">=</span><span class="n">sp</span><span class="o">.</span><span class="n">numbered_symbols</span><span class="p">(</span><span class="s2">&quot;cse_&quot;</span><span class="p">),</span>
+            <span class="n">optimizations</span><span class="o">=</span><span class="p">[],</span>
         <span class="p">)</span>
 
         <span class="c1"># Map the cse_expr to an OrderedDict</span>
@@ -561,9 +577,6 @@
         <span class="c1"># last cse_expr it uses.</span>
         <span class="n">last_cse_expr_used_in_result_expr</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
 
-        <span class="c1"># A map between replaced cse_sym and result_expressions</span>
-        <span class="n">cse_sym_to_result_expr</span> <span class="o">=</span> <span class="p">{}</span>
-
         <span class="c1"># Result expressions that does not contain any cse_sym</span>
         <span class="n">result_expr_without_cse_syms</span> <span class="o">=</span> <span class="p">[]</span>
 
@@ -571,7 +584,7 @@
         <span class="n">cse_subs</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="p">(</span><span class="n">orig_result_expr</span><span class="p">,</span> <span class="n">result_expr</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
-            <span class="nb">zip</span><span class="p">(</span><span class="n">orig_result_expressions</span><span class="p">,</span> <span class="n">cse_result_exprs</span><span class="p">)</span>
+            <span class="nb">zip</span><span class="p">(</span><span class="n">orig_result_expressions</span><span class="p">,</span> <span class="n">cse_result_exprs</span><span class="p">),</span>
         <span class="p">):</span>
 
             <span class="c1"># Collect information so that we can recreate the result</span>
@@ -582,7 +595,7 @@
                     <span class="n">orig_result_expr</span><span class="o">.</span><span class="n">indices</span>
                     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">orig_result_expr</span><span class="p">,</span> <span class="n">IndexedExpression</span><span class="p">)</span>
                     <span class="k">else</span> <span class="n">ind</span><span class="p">,</span>
-                <span class="p">)</span>
+                <span class="p">),</span>
             <span class="p">)</span>
 
             <span class="c1"># If result_expr does not contain any cse_sym</span>
@@ -602,8 +615,8 @@
 
         <span class="n">debug</span><span class="p">(</span>
             <span class="s2">&quot;Found </span><span class="si">{0}</span><span class="s2"> result expressions without any cse_syms.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                <span class="nb">len</span><span class="p">(</span><span class="n">result_expr_without_cse_syms</span><span class="p">)</span>
-            <span class="p">)</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">result_expr_without_cse_syms</span><span class="p">),</span>
+            <span class="p">),</span>
         <span class="p">)</span>
 
         <span class="c1"># print &quot;&quot;</span>
@@ -618,7 +631,7 @@
         <span class="n">used_parameters</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span>
-            <span class="s2">&quot;Common sub expressions for the body and the &quot;</span> <span class="s2">&quot;result expressions&quot;</span>
+            <span class="s2">&quot;Common sub expressions for the body and the &quot;</span> <span class="s2">&quot;result expressions&quot;</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">body_expressions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ode_objects</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
 
@@ -633,7 +646,8 @@
             <span class="c1"># in Piecewise otherwise kicks in and destroys things for</span>
             <span class="c1"># us.</span>
             <span class="k">if</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">atoms</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span>
-                <span class="n">expr</span><span class="p">,</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">Piecewise</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">relational</span><span class="o">.</span><span class="n">Relational</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">relational</span><span class="o">.</span><span class="n">Boolean</span><span class="p">)</span>
+                <span class="n">expr</span><span class="p">,</span>
+                <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">Piecewise</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">relational</span><span class="o">.</span><span class="n">Relational</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">relational</span><span class="o">.</span><span class="n">Boolean</span><span class="p">),</span>
             <span class="p">):</span>
                 <span class="n">cse_subs</span><span class="p">[</span><span class="n">cse_sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">cse_subs</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
@@ -662,7 +676,10 @@
                         <span class="n">exp_expr</span> <span class="o">=</span> <span class="n">result_expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">cse_subs</span><span class="p">)</span>
 
                         <span class="n">sym</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
-                            <span class="n">result_name</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">exp_expr</span><span class="p">,</span> <span class="n">add_offset</span><span class="o">=</span><span class="n">state_offset</span>
+                            <span class="n">result_name</span><span class="p">,</span>
+                            <span class="n">indices</span><span class="p">,</span>
+                            <span class="n">exp_expr</span><span class="p">,</span>
+                            <span class="n">add_offset</span><span class="o">=</span><span class="n">state_offset</span><span class="p">,</span>
                         <span class="p">)</span>
 
                         <span class="n">expr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ode_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">sympycode</span><span class="p">(</span><span class="n">sym</span><span class="p">))</span>
@@ -688,7 +705,7 @@
 
     <span class="k">def</span> <span class="nf">_body_from_dependencies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">results</span><span class="p">):</span>
 
-        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Compute dependencies for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Compute dependencies for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
 
         <span class="c1"># Extract all result expressions</span>
         <span class="n">result_expressions</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="p">[])</span>
@@ -702,7 +719,9 @@
 
         <span class="k">for</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">result_expressions</span><span class="p">:</span>
             <span class="n">check_arg</span><span class="p">(</span>
-                <span class="n">expr</span><span class="p">,</span> <span class="p">(</span><span class="n">Expression</span><span class="p">,</span> <span class="n">Comment</span><span class="p">),</span> <span class="n">context</span><span class="o">=</span><span class="n">CodeComponent</span><span class="o">.</span><span class="n">_body_from_results</span>
+                <span class="n">expr</span><span class="p">,</span>
+                <span class="p">(</span><span class="n">Expression</span><span class="p">,</span> <span class="n">Comment</span><span class="p">),</span>
+                <span class="n">context</span><span class="o">=</span><span class="n">CodeComponent</span><span class="o">.</span><span class="n">_body_from_results</span><span class="p">,</span>
             <span class="p">)</span>
 
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">Comment</span><span class="p">):</span>
@@ -727,7 +746,7 @@
             <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">ode_expr_deps</span><span class="p">[</span><span class="n">dep_expr</span><span class="p">]:</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="n">Expression</span><span class="p">,</span> <span class="n">Comment</span><span class="p">)):</span>
                     <span class="k">if</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exprs</span><span class="p">:</span>
-                        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">not_checked_list</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">not_checked_list</span><span class="p">:</span>
                             <span class="n">not_checked_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
                 <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">State</span><span class="p">):</span>
                     <span class="n">used_states</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
@@ -777,7 +796,7 @@
             <span class="k">for</span> <span class="n">result_expr</span> <span class="ow">in</span> <span class="n">result_exprs</span>
         <span class="p">)</span>
 
-        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Recreate body expressions for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Recreate body expressions for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
 
         <span class="c1"># Initialize the replace_dictionaries</span>
         <span class="n">replace_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_state_replace_dict</span>
@@ -802,7 +821,6 @@
         <span class="k">if</span> <span class="s2">&quot;array&quot;</span> <span class="ow">in</span> <span class="n">body_repr</span><span class="p">:</span>
             <span class="n">body_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">[</span><span class="s2">&quot;body&quot;</span><span class="p">][</span><span class="s2">&quot;array_name&quot;</span><span class="p">]</span>
             <span class="n">available_indices</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>
-            <span class="n">body_indices</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">max_index</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
             <span class="n">body_ind</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="n">index_available_at</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
@@ -827,8 +845,9 @@
 
         <span class="k">def</span> <span class="nf">store_expressions</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">new_expr</span><span class="p">):</span>
             <span class="s2">&quot;Help function to store new expressions&quot;</span>
-
-            <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Store expression while recreating body of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span>  <span class="c1"># noqa: F841</span>
+                <span class="sa">f</span><span class="s2">&quot;Store expression while recreating body of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="p">)</span>  <span class="c1"># noqa: F841</span>
 
             <span class="c1"># Update sym replace dict</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">Derivatives</span><span class="p">):</span>
@@ -870,7 +889,9 @@
             <span class="c1"># 2) Check for expression optimizations</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">optimize_exprs</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span> <span class="ow">or</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">result_expressions</span><span class="p">):</span>
 
-                <span class="n">timer_opt</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Handle expression optimization for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">timer_opt</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span>  <span class="c1"># noqa: F841</span>
+                    <span class="sa">f</span><span class="s2">&quot;Handle expression optimization for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>  <span class="c1"># noqa: F841</span>
 
                 <span class="c1"># If expr is just a number we exchange the expression with the</span>
                 <span class="c1"># number</span>
@@ -895,7 +916,7 @@
 
                     <span class="c1"># Add a replace rule based on the stored sympy expression</span>
                     <span class="n">sympy_expr</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">der_replace_dict</span><span class="p">)</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span>
-                        <span class="n">replace_dict</span>
+                        <span class="n">replace_dict</span><span class="p">,</span>
                     <span class="p">)</span>
 
                     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Derivative</span><span class="p">):</span>
@@ -966,7 +987,9 @@
             <span class="c1"># 4) Handle result expression</span>
             <span class="k">if</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">result_expressions</span><span class="p">:</span>
 
-                <span class="n">timer_result</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Handle result expressions for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">timer_result</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span>  <span class="c1"># noqa: F841</span>
+                    <span class="sa">f</span><span class="s2">&quot;Handle result expressions for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>  <span class="c1"># noqa: F841</span>
 
                 <span class="c1"># Get the result name</span>
                 <span class="n">result_name</span> <span class="o">=</span> <span class="n">result_names</span><span class="p">[</span><span class="n">expr</span><span class="p">]</span>
@@ -1024,7 +1047,9 @@
             <span class="c1"># sympy expressions</span>
             <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">IndexedExpression</span><span class="p">):</span>
 
-                <span class="n">timer_indexed</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Handle indexed expressions for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">timer_indexed</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span>  <span class="c1"># noqa: F841</span>
+                    <span class="sa">f</span><span class="s2">&quot;Handle indexed expressions for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>  <span class="c1"># noqa: F841</span>
 
                 <span class="n">new_expr</span> <span class="o">=</span> <span class="n">recreate_expression</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">der_replace_dict</span><span class="p">,</span> <span class="n">replace_dict</span><span class="p">)</span>
 
@@ -1036,7 +1061,9 @@
             <span class="c1"># 5) If replacing all body exressions with an indexed expression</span>
             <span class="k">elif</span> <span class="s2">&quot;array&quot;</span> <span class="ow">in</span> <span class="n">body_repr</span><span class="p">:</span>
 
-                <span class="n">timer_body</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Handle body expressions for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">timer_body</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span>  <span class="c1"># noqa: F841</span>
+                    <span class="sa">f</span><span class="s2">&quot;Handle body expressions for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>  <span class="c1"># noqa: F841</span>
 
                 <span class="c1"># 5a) If we reuse array indices</span>
                 <span class="k">if</span> <span class="s2">&quot;reused&quot;</span> <span class="ow">in</span> <span class="n">body_repr</span><span class="p">:</span>
@@ -1089,7 +1116,7 @@
             <span class="c1">#    are using named representation of body</span>
             <span class="k">else</span><span class="p">:</span>
 
-                <span class="n">timer_expr</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Handle expressions for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">timer_expr</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Handle expressions for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
                 <span class="c1"># If the expression is a state derivative we need to add a</span>
                 <span class="c1"># replacement for the Derivative symbol</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">StateDerivative</span><span class="p">):</span>
@@ -1136,7 +1163,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

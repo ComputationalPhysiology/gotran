@@ -103,33 +103,25 @@
 <span class="c1"># System imports</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 
+<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">sympycode</span>
+<span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">error</span><span class="p">,</span> <span class="n">info</span>
+
 <span class="c1"># ModelParameters imports</span>
 <span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">sp</span>
-<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">sympycode</span>
+<span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">Timer</span><span class="p">,</span> <span class="n">check_arg</span><span class="p">,</span> <span class="n">check_kwarg</span><span class="p">,</span> <span class="n">listwrap</span>
+<span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">cse</span>
 
-<span class="c1"># Local imports</span>
-<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">error</span><span class="p">,</span>
-    <span class="n">info</span><span class="p">,</span>
-    <span class="n">debug</span><span class="p">,</span>
-    <span class="n">check_arg</span><span class="p">,</span>
-    <span class="n">check_kwarg</span><span class="p">,</span>
-    <span class="n">scalars</span><span class="p">,</span>
-    <span class="n">Timer</span><span class="p">,</span>
-    <span class="n">warning</span><span class="p">,</span>
-    <span class="n">tuplewrap</span><span class="p">,</span>
-    <span class="n">parameters</span><span class="p">,</span>
-    <span class="n">warning</span><span class="p">,</span>
+<span class="kn">from</span> <span class="nn">gotran.model.expressions</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AlgebraicExpression</span><span class="p">,</span>
+    <span class="n">Expression</span><span class="p">,</span>
+    <span class="n">IndexedExpression</span><span class="p">,</span>
+    <span class="n">StateDerivative</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="n">listwrap</span>
-<span class="kn">from</span> <span class="nn">gotran.model.utils</span> <span class="kn">import</span> <span class="n">ode_primitives</span>
-<span class="kn">from</span> <span class="nn">gotran.model.odeobjects</span> <span class="kn">import</span> <span class="n">State</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">IndexedObject</span><span class="p">,</span> <span class="n">Comment</span>
-<span class="kn">from</span> <span class="nn">gotran.model.expressions</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">gotran.model.ode</span> <span class="kn">import</span> <span class="n">ODE</span>
-<span class="kn">from</span> <span class="nn">gotran.codegeneration.codecomponent</span> <span class="kn">import</span> <span class="n">CodeComponent</span>
 
-<span class="c1"># FIXME: Remove our own cse, or move to this module?</span>
-<span class="kn">from</span> <span class="nn">gotran.codegeneration.sympy_cse</span> <span class="kn">import</span> <span class="n">cse</span>
+<span class="kn">from</span> <span class="nn">..model.ode</span> <span class="kn">import</span> <span class="n">ODE</span>
+<span class="kn">from</span> <span class="nn">..model.odeobjects</span> <span class="kn">import</span> <span class="n">Comment</span>
+<span class="kn">from</span> <span class="nn">..model.utils</span> <span class="kn">import</span> <span class="n">ode_primitives</span>
+<span class="kn">from</span> <span class="nn">.codecomponent</span> <span class="kn">import</span> <span class="n">CodeComponent</span>
 
 
 <div class="viewcode-block" id="rhs_expressions"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.rhs_expressions">[docs]</a><span class="k">def</span> <span class="nf">rhs_expressions</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;rhs&quot;</span><span class="p">,</span> <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;dy&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -151,7 +143,7 @@
     <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">ode</span><span class="o">.</span><span class="n">is_finalized</span><span class="p">:</span>
         <span class="n">error</span><span class="p">(</span>
-            <span class="s2">&quot;Cannot compute right hand side expressions if the ODE is &quot;</span> <span class="s2">&quot;not finalized&quot;</span>
+            <span class="s2">&quot;Cannot compute right hand side expressions if the ODE is &quot;</span> <span class="s2">&quot;not finalized&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="n">descr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Compute the right hand side of the </span><span class="si">{</span><span class="n">ode</span><span class="si">}</span><span class="s2"> ODE&quot;</span>
@@ -193,7 +185,7 @@
     <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">ode</span><span class="o">.</span><span class="n">is_finalized</span><span class="p">:</span>
         <span class="n">error</span><span class="p">(</span>
-            <span class="s2">&quot;Cannot compute right hand side expressions if the ODE is &quot;</span> <span class="s2">&quot;not finalized&quot;</span>
+            <span class="s2">&quot;Cannot compute right hand side expressions if the ODE is &quot;</span> <span class="s2">&quot;not finalized&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="n">check_arg</span><span class="p">(</span><span class="n">monitored</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span> <span class="n">itemtypes</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
@@ -248,7 +240,7 @@
         <span class="k">if</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">index</span> <span class="o">&gt;=</span> <span class="n">ode</span><span class="o">.</span><span class="n">num_full_states</span><span class="p">:</span>
             <span class="n">error</span><span class="p">(</span>
                 <span class="s2">&quot;Expected the passed indices to be between 0 and the &quot;</span>
-                <span class="s2">&quot;number of states in the ode, got </span><span class="si">{0}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+                <span class="s2">&quot;number of states in the ode, got </span><span class="si">{0}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">index</span><span class="p">),</span>
             <span class="p">)</span>
         <span class="k">if</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">registered</span><span class="p">:</span>
             <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Index </span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2"> appeared twice.&quot;</span><span class="p">)</span>
@@ -315,7 +307,10 @@
 
 
 <div class="viewcode-block" id="jacobian_expressions"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.jacobian_expressions">[docs]</a><span class="k">def</span> <span class="nf">jacobian_expressions</span><span class="p">(</span>
-    <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;compute_jacobian&quot;</span><span class="p">,</span> <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;jac&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span>
+    <span class="n">ode</span><span class="p">,</span>
+    <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;compute_jacobian&quot;</span><span class="p">,</span>
+    <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;jac&quot;</span><span class="p">,</span>
+    <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return an ODEComponent holding expressions for the jacobian</span>
@@ -335,7 +330,10 @@
         <span class="n">error</span><span class="p">(</span><span class="s2">&quot;The ODE is not finalized&quot;</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">JacobianComponent</span><span class="p">(</span>
-        <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="n">function_name</span><span class="p">,</span> <span class="n">result_name</span><span class="o">=</span><span class="n">result_name</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+        <span class="n">ode</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="o">=</span><span class="n">function_name</span><span class="p">,</span>
+        <span class="n">result_name</span><span class="o">=</span><span class="n">result_name</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 
@@ -365,7 +363,11 @@
 
     <span class="n">check_arg</span><span class="p">(</span><span class="n">jacobian</span><span class="p">,</span> <span class="n">JacobianComponent</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">JacobianActionComponent</span><span class="p">(</span>
-        <span class="n">jacobian</span><span class="p">,</span> <span class="n">with_body</span><span class="p">,</span> <span class="n">function_name</span><span class="p">,</span> <span class="n">result_name</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+        <span class="n">jacobian</span><span class="p">,</span>
+        <span class="n">with_body</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="p">,</span>
+        <span class="n">result_name</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 
@@ -390,7 +392,10 @@
 <span class="sd">        Parameters determining how the code should be generated</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">DiagonalJacobianComponent</span><span class="p">(</span>
-        <span class="n">jacobian</span><span class="p">,</span> <span class="n">function_name</span><span class="p">,</span> <span class="n">result_name</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+        <span class="n">jacobian</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="p">,</span>
+        <span class="n">result_name</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 
@@ -420,12 +425,18 @@
 
     <span class="n">check_arg</span><span class="p">(</span><span class="n">diagonal_jacobian</span><span class="p">,</span> <span class="n">DiagonalJacobianComponent</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">DiagonalJacobianActionComponent</span><span class="p">(</span>
-        <span class="n">diagonal_jacobian</span><span class="p">,</span> <span class="n">with_body</span><span class="p">,</span> <span class="n">function_name</span><span class="p">,</span> <span class="n">result_name</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+        <span class="n">diagonal_jacobian</span><span class="p">,</span>
+        <span class="n">with_body</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="p">,</span>
+        <span class="n">result_name</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="factorized_jacobian_expressions"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.factorized_jacobian_expressions">[docs]</a><span class="k">def</span> <span class="nf">factorized_jacobian_expressions</span><span class="p">(</span>
-    <span class="n">jacobian</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;lu_factorize&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span>
+    <span class="n">jacobian</span><span class="p">,</span>
+    <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;lu_factorize&quot;</span><span class="p">,</span>
+    <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return an ODEComponent holding expressions for the factorized jacobian</span>
@@ -481,7 +492,11 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;compute_jacobian&quot;</span><span class="p">,</span> <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;jac&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ode</span><span class="p">,</span>
+        <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;compute_jacobian&quot;</span><span class="p">,</span>
+        <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;jac&quot;</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a JacobianComponent</span>
@@ -502,11 +517,15 @@
         <span class="c1"># Call base class using empty result_expressions</span>
         <span class="n">descr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Compute the jacobian of the right hand side of the </span><span class="si">{</span><span class="n">ode</span><span class="si">}</span><span class="s2"> ODE&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">JacobianComponent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="s2">&quot;Jacobian&quot;</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="p">,</span> <span class="n">descr</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+            <span class="s2">&quot;Jacobian&quot;</span><span class="p">,</span>
+            <span class="n">ode</span><span class="p">,</span>
+            <span class="n">function_name</span><span class="p">,</span>
+            <span class="n">descr</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">check_arg</span><span class="p">(</span><span class="n">result_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
 
-        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Computing jacobian&quot;</span><span class="p">)</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Computing jacobian&quot;</span><span class="p">)</span>  <span class="c1"># noqa:F841</span>
 
         <span class="c1"># Gather state expressions and states</span>
         <span class="n">state_exprs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">state_expressions</span>
@@ -548,7 +567,10 @@
                 <span class="k">del</span> <span class="n">time_diff</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">num_nonzero</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="n">jac_ij</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
-                    <span class="n">result_name</span><span class="p">,</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">),</span> <span class="n">jac_ij</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="n">expr</span>
+                    <span class="n">result_name</span><span class="p">,</span>
+                    <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">),</span>
+                    <span class="n">jac_ij</span><span class="p">,</span>
+                    <span class="n">dependent</span><span class="o">=</span><span class="n">expr</span><span class="p">,</span>
                 <span class="p">)</span>
 
                 <span class="bp">self</span><span class="o">.</span><span class="n">jacobian</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">jac_ij</span>
@@ -596,11 +618,15 @@
             <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">jacobian</span><span class="o">.</span><span class="n">root</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">DiagonalJacobianComponent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="s2">&quot;DiagonalJacobian&quot;</span><span class="p">,</span> <span class="n">jacobian</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">function_name</span><span class="p">,</span> <span class="n">descr</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+            <span class="s2">&quot;DiagonalJacobian&quot;</span><span class="p">,</span>
+            <span class="n">jacobian</span><span class="o">.</span><span class="n">root</span><span class="p">,</span>
+            <span class="n">function_name</span><span class="p">,</span>
+            <span class="n">descr</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">what</span> <span class="o">=</span> <span class="s2">&quot;Computing diagonal jacobian&quot;</span>
-        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="n">what</span><span class="p">)</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="n">what</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span><span class="n">what</span><span class="p">)</span>
 
@@ -654,14 +680,18 @@
 <span class="sd">        params : dict</span>
 <span class="sd">            Parameters determining how the code should be generated</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Computing jacobian action component&quot;</span><span class="p">)</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Computing jacobian action component&quot;</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
         <span class="n">check_arg</span><span class="p">(</span><span class="n">jacobian</span><span class="p">,</span> <span class="n">JacobianComponent</span><span class="p">)</span>
         <span class="n">descr</span> <span class="o">=</span> <span class="p">(</span>
             <span class="s2">&quot;Compute the jacobian action of the right hand side of the &quot;</span>
             <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">jacobian</span><span class="o">.</span><span class="n">root</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">JacobianActionComponent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="s2">&quot;JacobianAction&quot;</span><span class="p">,</span> <span class="n">jacobian</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">function_name</span><span class="p">,</span> <span class="n">descr</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+            <span class="s2">&quot;JacobianAction&quot;</span><span class="p">,</span>
+            <span class="n">jacobian</span><span class="o">.</span><span class="n">root</span><span class="p">,</span>
+            <span class="n">function_name</span><span class="p">,</span>
+            <span class="n">descr</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">full_state_vector</span>
@@ -718,7 +748,7 @@
 <span class="sd">        params : dict</span>
 <span class="sd">            Parameters determining how the code should be generated</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Computing jacobian action component&quot;</span><span class="p">)</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Computing jacobian action component&quot;</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
         <span class="n">check_arg</span><span class="p">(</span><span class="n">diagonal_jacobian</span><span class="p">,</span> <span class="n">DiagonalJacobianComponent</span><span class="p">)</span>
         <span class="n">descr</span> <span class="o">=</span> <span class="p">(</span>
             <span class="s2">&quot;Compute the diagonal jacobian action of the right hand side &quot;</span>
@@ -774,7 +804,7 @@
 <span class="sd">            Parameters determining how the code should be generated</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Computing factorization of jacobian&quot;</span><span class="p">)</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Computing factorization of jacobian&quot;</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
         <span class="n">check_arg</span><span class="p">(</span><span class="n">jacobian</span><span class="p">,</span> <span class="n">JacobianComponent</span><span class="p">)</span>
         <span class="n">descr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Symbolically factorize the jacobian of the </span><span class="si">{</span><span class="n">jacobian</span><span class="o">.</span><span class="n">root</span><span class="si">}</span><span class="s2"> ODE&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">FactorizedJacobianComponent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
@@ -920,10 +950,9 @@
 <span class="sd">        params : dict</span>
 <span class="sd">            Parameters determining how the code should be generated</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Computing forward backward substituion component&quot;</span><span class="p">)</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Computing forward backward substituion component&quot;</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
         <span class="n">check_arg</span><span class="p">(</span><span class="n">factorized</span><span class="p">,</span> <span class="n">FactorizedJacobianComponent</span><span class="p">)</span>
         <span class="n">jacobian_name</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">factorized</span><span class="o">.</span><span class="n">shapes</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">additional_indexed_arguments</span> <span class="o">=</span> <span class="n">factorized</span><span class="o">.</span><span class="n">additional_arguments</span> <span class="o">+</span> <span class="p">[</span><span class="n">residual_name</span><span class="p">]</span>
         <span class="n">descr</span> <span class="o">=</span> <span class="p">(</span>
             <span class="s2">&quot;Symbolically forward backward substitute linear system &quot;</span>
             <span class="s2">&quot;of </span><span class="si">{0}</span><span class="s2"> ODE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">factorized</span><span class="o">.</span><span class="n">root</span><span class="p">)</span>
@@ -939,7 +968,7 @@
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Forward backward substituting factorized linear system </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Forward backward substituting factorized linear system </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># Recreate jacobian using only sympy Symbols</span>
@@ -980,7 +1009,9 @@
                 <span class="k">if</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">is_zero</span><span class="p">:</span>
                     <span class="k">continue</span>
                 <span class="n">dx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
-                    <span class="n">result_name</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">dx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">dx</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                    <span class="n">result_name</span><span class="p">,</span>
+                    <span class="n">i</span><span class="p">,</span>
+                    <span class="n">dx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">dx</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span>
                 <span class="p">)</span>
 
         <span class="c1"># backward substitution</span>
@@ -989,7 +1020,9 @@
                 <span class="k">if</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">is_zero</span><span class="p">:</span>
                     <span class="k">continue</span>
                 <span class="n">dx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
-                    <span class="n">result_name</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">dx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">dx</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                    <span class="n">result_name</span><span class="p">,</span>
+                    <span class="n">i</span><span class="p">,</span>
+                    <span class="n">dx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">dx</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span>
                 <span class="p">)</span>
 
             <span class="n">dx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span><span class="n">result_name</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">dx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">])</span>
@@ -1047,7 +1080,11 @@
 
         <span class="n">descr</span> <span class="o">=</span> <span class="s2">&quot;Computes the linearized derivatives for all linear derivatives&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">LinearizedDerivativeComponent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="s2">&quot;LinearizedDerivatives&quot;</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="p">,</span> <span class="n">descr</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+            <span class="s2">&quot;LinearizedDerivatives&quot;</span><span class="p">,</span>
+            <span class="n">ode</span><span class="p">,</span>
+            <span class="n">function_name</span><span class="p">,</span>
+            <span class="n">descr</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">)</span>
@@ -1076,14 +1113,20 @@
                 <span class="n">nonlinear_exprs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">linearized_name</span><span class="p">,</span> <span class="n">ind</span><span class="p">,</span> <span class="n">expr_diff</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
-                    <span class="n">linearized_name</span><span class="p">,</span> <span class="n">ind</span><span class="p">,</span> <span class="n">expr_diff</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="n">expr</span>
+                    <span class="n">linearized_name</span><span class="p">,</span>
+                    <span class="n">ind</span><span class="p">,</span>
+                    <span class="n">expr_diff</span><span class="p">,</span>
+                    <span class="n">dependent</span><span class="o">=</span><span class="n">expr</span><span class="p">,</span>
                 <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">nonlinear_exprs</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span><span class="s2">&quot;Nonlinear linearized expressions&quot;</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="n">expr</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">linearized_name</span><span class="p">,</span> <span class="n">ind</span><span class="p">,</span> <span class="n">expr_diff</span> <span class="ow">in</span> <span class="n">nonlinear_exprs</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">add_indexed_expression</span><span class="p">(</span>
-                    <span class="n">linearized_name</span><span class="p">,</span> <span class="n">ind</span><span class="p">,</span> <span class="n">expr_diff</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="n">expr</span>
+                    <span class="n">linearized_name</span><span class="p">,</span>
+                    <span class="n">ind</span><span class="p">,</span>
+                    <span class="n">expr_diff</span><span class="p">,</span>
+                    <span class="n">dependent</span><span class="o">=</span><span class="n">expr</span><span class="p">,</span>
                 <span class="p">)</span>
 
         <span class="c1"># Call recreate body with the jacobian action expressions as the</span>
@@ -1106,7 +1149,7 @@
         <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">ODE</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">ode</span><span class="o">.</span><span class="n">is_finalized</span>
 
-        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Extract common sub expressions&quot;</span><span class="p">)</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Extract common sub expressions&quot;</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
 
         <span class="n">newname</span> <span class="o">=</span> <span class="n">ode</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_CSE&quot;</span>
 
@@ -1129,7 +1172,9 @@
 
         <span class="c1"># Call sympy common sub expression reduction</span>
         <span class="n">cse_exprs</span><span class="p">,</span> <span class="n">cse_state_exprs</span> <span class="o">=</span> <span class="n">cse</span><span class="p">(</span>
-            <span class="n">expanded_state_exprs</span><span class="p">,</span> <span class="n">symbols</span><span class="o">=</span><span class="n">sp</span><span class="o">.</span><span class="n">numbered_symbols</span><span class="p">(</span><span class="s2">&quot;cse_&quot;</span><span class="p">),</span> <span class="n">optimizations</span><span class="o">=</span><span class="p">[]</span>
+            <span class="n">expanded_state_exprs</span><span class="p">,</span>
+            <span class="n">symbols</span><span class="o">=</span><span class="n">sp</span><span class="o">.</span><span class="n">numbered_symbols</span><span class="p">(</span><span class="s2">&quot;cse_&quot;</span><span class="p">),</span>
+            <span class="n">optimizations</span><span class="o">=</span><span class="p">[],</span>
         <span class="p">)</span>
         <span class="n">cse_cnt</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">cse_subs</span> <span class="o">=</span> <span class="p">{}</span>
@@ -1143,7 +1188,8 @@
                 <span class="n">cse_subs</span><span class="p">[</span><span class="n">sub</span><span class="p">]</span> <span class="o">=</span> <span class="n">expr</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">cse_subs</span><span class="p">[</span><span class="n">sub</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_intermediate</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;cse_</span><span class="si">{</span><span class="n">cse_cnt</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">cse_subs</span><span class="p">)</span>
+                    <span class="sa">f</span><span class="s2">&quot;cse_</span><span class="si">{</span><span class="n">cse_cnt</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">expr</span><span class="o">.</span><span class="n">xreplace</span><span class="p">(</span><span class="n">cse_subs</span><span class="p">),</span>
                 <span class="p">)</span>
                 <span class="n">cse_cnt</span> <span class="o">+=</span> <span class="mi">1</span>
 
@@ -1174,7 +1220,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

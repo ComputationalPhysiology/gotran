@@ -13,7 +13,6 @@ Subpackages
    gotran.input
    gotran.model
    gotran.scripts
-   gotran.solver
 
 Module contents
 ---------------

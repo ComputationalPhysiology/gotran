@@ -83,24 +83,38 @@
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ODE&quot;</span><span class="p">]</span>
 
-<span class="c1"># System imports</span>
-<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
 <span class="kn">import</span> <span class="nn">weakref</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">cmp_to_key</span>
 
-<span class="kn">from</span> <span class="nn">sympy.core.function</span> <span class="kn">import</span> <span class="n">AppliedUndef</span>
+<span class="c1"># System imports</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">sympycode</span>
+
+<span class="c1"># Local imports</span>
+<span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">debug</span><span class="p">,</span> <span class="n">error</span>
 
 <span class="c1"># ModelParameters imports</span>
 <span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">sp</span>
-<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">sympycode</span><span class="p">,</span> <span class="n">pythoncode</span>
-<span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">Timer</span>
+<span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">Timer</span><span class="p">,</span> <span class="n">check_arg</span>
+<span class="kn">from</span> <span class="nn">sympy.core.function</span> <span class="kn">import</span> <span class="n">AppliedUndef</span>
 
-<span class="c1"># Local imports</span>
-<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="n">error</span><span class="p">,</span> <span class="n">debug</span><span class="p">,</span> <span class="n">check_arg</span><span class="p">,</span> <span class="n">check_kwarg</span><span class="p">,</span> <span class="n">scalars</span>
-<span class="kn">from</span> <span class="nn">gotran.model.odeobjects</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">gotran.model.expressions</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">gotran.model.odecomponent</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.expressions</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AlgebraicExpression</span><span class="p">,</span>
+    <span class="n">DerivativeExpression</span><span class="p">,</span>
+    <span class="n">Derivatives</span><span class="p">,</span>
+    <span class="n">Expression</span><span class="p">,</span>
+    <span class="n">Intermediate</span><span class="p">,</span>
+    <span class="n">RateExpression</span><span class="p">,</span>
+    <span class="n">State</span><span class="p">,</span>
+    <span class="n">StateDerivative</span><span class="p">,</span>
+    <span class="n">StateExpression</span><span class="p">,</span>
+    <span class="n">StateSolution</span><span class="p">,</span>
+    <span class="n">recreate_expression</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.odecomponent</span> <span class="kn">import</span> <span class="n">Comment</span><span class="p">,</span> <span class="n">ODEComponent</span>
+<span class="kn">from</span> <span class="nn">.odeobjects</span> <span class="kn">import</span> <span class="n">Dt</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">Time</span><span class="p">,</span> <span class="n">cmp</span>
 
 
 <div class="viewcode-block" id="ODE"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODE">[docs]</a><span class="k">class</span> <span class="nc">ODE</span><span class="p">(</span><span class="n">ODEComponent</span><span class="p">):</span>
@@ -229,7 +243,7 @@
 <span class="sd">            Optional arguments which can control loading of model</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Import ode&quot;</span><span class="p">)</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Import ode&quot;</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
 
         <span class="n">components</span> <span class="o">=</span> <span class="n">components</span> <span class="ow">or</span> <span class="p">[]</span>
         <span class="n">check_arg</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">,</span> <span class="n">ODE</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">ODE</span><span class="o">.</span><span class="n">import_ode</span><span class="p">)</span>
@@ -337,7 +351,9 @@
 
                             <span class="n">states</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">states</span>
                             <span class="n">added</span><span class="o">.</span><span class="n">_add_single_rate</span><span class="p">(</span>
-                                <span class="n">subs</span><span class="p">[</span><span class="n">states</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sym</span><span class="p">],</span> <span class="n">subs</span><span class="p">[</span><span class="n">states</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">sym</span><span class="p">],</span> <span class="n">new_expr</span>
+                                <span class="n">subs</span><span class="p">[</span><span class="n">states</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sym</span><span class="p">],</span>
+                                <span class="n">subs</span><span class="p">[</span><span class="n">states</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">sym</span><span class="p">],</span>
+                                <span class="n">new_expr</span><span class="p">,</span>
                             <span class="p">)</span>
                             <span class="k">continue</span>
 
@@ -356,7 +372,9 @@
 
                         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">StateDerivative</span><span class="p">):</span>
                             <span class="n">subs</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">added</span><span class="o">.</span><span class="n">add_derivative</span><span class="p">(</span>
-                                <span class="n">state</span><span class="p">,</span> <span class="n">added</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">new_expr</span>
+                                <span class="n">state</span><span class="p">,</span>
+                                <span class="n">added</span><span class="o">.</span><span class="n">t</span><span class="p">,</span>
+                                <span class="n">new_expr</span><span class="p">,</span>
                             <span class="p">)</span>
 
                         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">StateSolution</span><span class="p">):</span>
@@ -378,7 +396,7 @@
 
                             <span class="c1"># If not found try prefixed version</span>
                             <span class="n">der_expr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-                                <span class="n">prefix</span> <span class="o">+</span> <span class="n">obj</span><span class="o">.</span><span class="n">der_expr</span><span class="o">.</span><span class="n">name</span>
+                                <span class="n">prefix</span> <span class="o">+</span> <span class="n">obj</span><span class="o">.</span><span class="n">der_expr</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
                             <span class="p">)</span>
 
                             <span class="k">if</span> <span class="n">der_expr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -386,14 +404,14 @@
                                     <span class="n">error</span><span class="p">(</span>
                                         <span class="s2">&quot;Could not find expression: &quot;</span>
                                         <span class="s2">&quot;(</span><span class="si">{0}</span><span class="s2">)</span><span class="si">{1}</span><span class="s2"> while adding &quot;</span>
-                                        <span class="s2">&quot;derivative&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">der_expr</span><span class="p">)</span>
+                                        <span class="s2">&quot;derivative&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">der_expr</span><span class="p">),</span>
                                     <span class="p">)</span>
                                 <span class="k">else</span><span class="p">:</span>
                                     <span class="n">error</span><span class="p">(</span>
                                         <span class="s2">&quot;Could not find expression: &quot;</span>
-                                        <span class="s2">&quot;</span><span class="si">{1}</span><span class="s2"> while adding derivative&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                                            <span class="n">obj</span><span class="o">.</span><span class="n">der_expr</span>
-                                        <span class="p">)</span>
+                                        <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> while adding derivative&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                            <span class="n">obj</span><span class="o">.</span><span class="n">der_expr</span><span class="p">,</span>
+                                        <span class="p">),</span>
                                     <span class="p">)</span>
 
                         <span class="n">dep_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">dep_var</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
@@ -405,7 +423,7 @@
 
                             <span class="c1"># If not found try prefixed version</span>
                             <span class="n">dep_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">present_ode_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-                                <span class="n">prefix</span> <span class="o">+</span> <span class="n">obj</span><span class="o">.</span><span class="n">dep_var</span><span class="o">.</span><span class="n">name</span>
+                                <span class="n">prefix</span> <span class="o">+</span> <span class="n">obj</span><span class="o">.</span><span class="n">dep_var</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
                             <span class="p">)</span>
 
                             <span class="k">if</span> <span class="n">dep_var</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -413,24 +431,27 @@
                                     <span class="n">error</span><span class="p">(</span>
                                         <span class="s2">&quot;Could not find expression: &quot;</span>
                                         <span class="s2">&quot;(</span><span class="si">{0}</span><span class="s2">)</span><span class="si">{1}</span><span class="s2"> while adding &quot;</span>
-                                        <span class="s2">&quot;derivative&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">dep_var</span><span class="p">)</span>
+                                        <span class="s2">&quot;derivative&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">dep_var</span><span class="p">),</span>
                                     <span class="p">)</span>
                                 <span class="k">else</span><span class="p">:</span>
                                     <span class="n">error</span><span class="p">(</span>
                                         <span class="s2">&quot;Could not find expression: &quot;</span>
-                                        <span class="s2">&quot;</span><span class="si">{1}</span><span class="s2"> while adding derivative&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                                            <span class="n">obj</span><span class="o">.</span><span class="n">dep_var</span>
-                                        <span class="p">)</span>
+                                        <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> while adding derivative&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                            <span class="n">obj</span><span class="o">.</span><span class="n">dep_var</span><span class="p">,</span>
+                                        <span class="p">),</span>
                                     <span class="p">)</span>
 
                         <span class="n">subs</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">added</span><span class="o">.</span><span class="n">add_derivative</span><span class="p">(</span>
-                            <span class="n">der_expr</span><span class="p">,</span> <span class="n">dep_var</span><span class="p">,</span> <span class="n">new_expr</span>
+                            <span class="n">der_expr</span><span class="p">,</span>
+                            <span class="n">dep_var</span><span class="p">,</span>
+                            <span class="n">new_expr</span><span class="p">,</span>
                         <span class="p">)</span>
 
                     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Intermediate</span><span class="p">):</span>
 
                         <span class="n">subs</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">sym</span><span class="p">]</span> <span class="o">=</span> <span class="n">added</span><span class="o">.</span><span class="n">add_intermediate</span><span class="p">(</span>
-                            <span class="n">prefix</span> <span class="o">+</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">new_expr</span>
+                            <span class="n">prefix</span> <span class="o">+</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                            <span class="n">new_expr</span><span class="p">,</span>
                         <span class="p">)</span>
 
                     <span class="k">else</span><span class="p">:</span>
@@ -451,7 +472,7 @@
 <span class="sd">            given the basename will be the same as the name of the ode.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Save &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Save &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_finalized_ode</span><span class="p">:</span>
             <span class="n">error</span><span class="p">(</span><span class="s2">&quot;ODE need to be finalized to be saved to file.&quot;</span><span class="p">)</span>
@@ -533,7 +554,7 @@
                                     <span class="n">sympycode</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">states</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
                                     <span class="n">sympycode</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">states</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
                                     <span class="n">sympycode</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">expr</span><span class="p">),</span>
-                                <span class="p">)</span>
+                                <span class="p">),</span>
                             <span class="p">)</span>
                             <span class="k">continue</span>
 
@@ -599,7 +620,7 @@
                 <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="n">State</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">))</span>
             <span class="p">):</span>
 
-                <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Replace objects&quot;</span><span class="p">)</span>
+                <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Replace objects&quot;</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
 
                 <span class="c1"># Remove the object</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">ode_objects</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">dup_obj</span><span class="p">)</span>
@@ -644,7 +665,7 @@
             <span class="p">):</span>
                 <span class="n">error</span><span class="p">(</span>
                     <span class="s2">&quot;Cannot replace an ODE parameter with an Expression, &quot;</span>
-                    <span class="s2">&quot;only with Parameters and States.&quot;</span>
+                    <span class="s2">&quot;only with Parameters and States.&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
 
             <span class="c1"># If State, Parameter or DerivativeExpression we always raise an error</span>
@@ -666,8 +687,10 @@
                 <span class="n">error</span><span class="p">(</span>
                     <span class="s2">&quot;Cannot register </span><span class="si">{0}</span><span class="s2">. A </span><span class="si">{1}</span><span class="s2"> with name &#39;</span><span class="si">{2}</span><span class="s2">&#39; is &quot;</span>
                     <span class="s2">&quot;already registered in this ODE.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">dup_obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">dup_obj</span><span class="o">.</span><span class="n">name</span>
-                    <span class="p">)</span>
+                        <span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                        <span class="nb">type</span><span class="p">(</span><span class="n">dup_obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                        <span class="n">dup_obj</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="p">),</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
 
@@ -700,7 +723,11 @@
             <span class="n">derivative_expression_list</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">sort_key</span><span class="p">())</span>
             <span class="k">for</span> <span class="n">der_expr</span> <span class="ow">in</span> <span class="n">derivative_expression_list</span><span class="p">:</span>
                 <span class="n">expression_added</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expand_single_derivative</span><span class="p">(</span>
-                    <span class="n">comp</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">der_expr</span><span class="p">,</span> <span class="n">replace_dict</span><span class="p">,</span> <span class="n">dependent</span>
+                    <span class="n">comp</span><span class="p">,</span>
+                    <span class="n">obj</span><span class="p">,</span>
+                    <span class="n">der_expr</span><span class="p">,</span>
+                    <span class="n">replace_dict</span><span class="p">,</span>
+                    <span class="n">dependent</span><span class="p">,</span>
                 <span class="p">)</span>
 
             <span class="c1"># If expressions need to be re-created</span>
@@ -725,7 +752,7 @@
                 <span class="k">if</span> <span class="n">dep_obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">error</span><span class="p">(</span>
                         <span class="s2">&quot;The symbol &#39;</span><span class="si">{0}</span><span class="s2">&#39; is not declared within the &#39;</span><span class="si">{1}</span><span class="s2">&#39; &quot;</span>
-                        <span class="s2">&quot;ODE.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="s2">&quot;ODE.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
                     <span class="p">)</span>
 
                 <span class="c1"># Store object dependencies</span>
@@ -739,8 +766,9 @@
                 <span class="n">error</span><span class="p">(</span>
                     <span class="s2">&quot;A state solution cannot have been used in &quot;</span>
                     <span class="s2">&quot;any previous expressions. </span><span class="si">{0}</span><span class="s2"> is used in: </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="n">obj</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="n">used_in</span>
-                    <span class="p">)</span>
+                        <span class="n">obj</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+                        <span class="n">used_in</span><span class="p">,</span>
+                    <span class="p">),</span>
                 <span class="p">)</span></div>
 
 <div class="viewcode-block" id="ODE.expanded_expression"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODE.expanded_expression">[docs]</a>    <span class="k">def</span> <span class="nf">expanded_expression</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">):</span>
@@ -752,7 +780,7 @@
 <span class="sd">        IndexedObjects)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Expand expression&quot;</span><span class="p">)</span>
+        <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="s2">&quot;Expand expression&quot;</span><span class="p">)</span>  <span class="c1"># noqa: F841</span>
 
         <span class="n">check_arg</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">Expression</span><span class="p">)</span>
 
@@ -816,8 +844,8 @@
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">components</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">error</span><span class="p">(</span>
                     <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> are not a components of this ODE.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;&#39;</span><span class="si">{0}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp</span><span class="p">)</span> <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">components</span><span class="p">)</span>
-                    <span class="p">)</span>
+                        <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;&#39;</span><span class="si">{0}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp</span><span class="p">)</span> <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">components</span><span class="p">),</span>
+                    <span class="p">),</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">components</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39; is not a component of this ODE.&quot;</span><span class="p">)</span>
@@ -911,7 +939,9 @@
 
                             <span class="n">states</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">states</span>
                             <span class="n">added</span><span class="o">.</span><span class="n">_add_single_rate</span><span class="p">(</span>
-                                <span class="n">states</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span> <span class="n">states</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span> <span class="n">new_expr</span>
+                                <span class="n">states</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span>
+                                <span class="n">states</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span>
+                                <span class="n">new_expr</span><span class="p">,</span>
                             <span class="p">)</span>
                             <span class="k">continue</span>
 
@@ -1113,13 +1143,13 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">der_expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">AppliedUndef</span><span class="p">):</span>
             <span class="n">error</span><span class="p">(</span>
                 <span class="s2">&quot;Can only register Derivatives of allready registered &quot;</span>
-                <span class="s2">&quot;Expressions. Got: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sympycode</span><span class="p">(</span><span class="n">der_expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+                <span class="s2">&quot;Expressions. Got: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sympycode</span><span class="p">(</span><span class="n">der_expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])),</span>
             <span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">der_expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">(</span><span class="n">AppliedUndef</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">)):</span>
             <span class="n">error</span><span class="p">(</span>
                 <span class="s2">&quot;Can only register Derivatives with a single dependent &quot;</span>
-                <span class="s2">&quot;variabe. Got: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sympycode</span><span class="p">(</span><span class="n">der_expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+                <span class="s2">&quot;variabe. Got: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sympycode</span><span class="p">(</span><span class="n">der_expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span>
             <span class="p">)</span>
 
         <span class="c1"># Get the expr and dependent variable objects</span>
@@ -1133,8 +1163,9 @@
             <span class="n">error</span><span class="p">(</span>
                 <span class="s2">&quot;The expression </span><span class="si">{0}</span><span class="s2"> is dependent on the state &quot;</span>
                 <span class="s2">&quot;derivative of </span><span class="si">{1}</span><span class="s2"> which is not registered in this ODE.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">obj</span><span class="p">,</span> <span class="n">expr_obj</span>
-                <span class="p">)</span>
+                    <span class="n">obj</span><span class="p">,</span>
+                    <span class="n">expr_obj</span><span class="p">,</span>
+                <span class="p">),</span>
             <span class="p">)</span>
 
         <span class="c1"># If we get a Derivative(expr, t) we issue an error</span>
@@ -1146,7 +1177,7 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr_obj</span><span class="p">,</span> <span class="n">Expression</span><span class="p">):</span>
             <span class="n">error</span><span class="p">(</span>
                 <span class="s2">&quot;Can only differentiate expressions or states. Got </span><span class="si">{0}</span><span class="s2"> as &quot;</span>
-                <span class="s2">&quot;the derivative expression.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">expr_obj</span><span class="p">)</span>
+                <span class="s2">&quot;the derivative expression.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">expr_obj</span><span class="p">),</span>
             <span class="p">)</span>
 
         <span class="c1"># Expand derivative and see if it is trivial</span>
@@ -1181,7 +1212,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

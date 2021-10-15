@@ -97,25 +97,24 @@
     <span class="s2">&quot;recreate_expression&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
+<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">latex</span><span class="p">,</span> <span class="n">sympycode</span>
+<span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">error</span>
+
 <span class="c1"># ModelParameters imports</span>
 <span class="kn">from</span> <span class="nn">modelparameters.parameters</span> <span class="kn">import</span> <span class="n">SlaveParam</span>
 <span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">sp</span>
-<span class="kn">from</span> <span class="nn">modelparameters.codegeneration</span> <span class="kn">import</span> <span class="n">sympycode</span><span class="p">,</span> <span class="n">latex</span>
-<span class="kn">from</span> <span class="nn">sympy.core.function</span> <span class="kn">import</span> <span class="n">AppliedUndef</span>
+<span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">check_arg</span><span class="p">,</span> <span class="n">scalars</span>
 
-<span class="c1"># Local imports</span>
-<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">error</span><span class="p">,</span>
-    <span class="n">check_arg</span><span class="p">,</span>
-    <span class="n">scalars</span><span class="p">,</span>
-    <span class="n">debug</span><span class="p">,</span>
-    <span class="n">DEBUG</span><span class="p">,</span>
-    <span class="n">get_log_level</span><span class="p">,</span>
-    <span class="n">Timer</span><span class="p">,</span>
-    <span class="n">tuplewrap</span><span class="p">,</span>
-    <span class="n">parameters</span><span class="p">,</span>
+<span class="kn">from</span> <span class="nn">.odeobjects</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">IndexedObject</span><span class="p">,</span>
+    <span class="n">ODEValueObject</span><span class="p">,</span>
+    <span class="n">ParameterIndexedObject</span><span class="p">,</span>
+    <span class="n">State</span><span class="p">,</span>
+    <span class="n">StateIndexedObject</span><span class="p">,</span>
+    <span class="n">Time</span><span class="p">,</span>
+    <span class="n">cmp</span><span class="p">,</span>
+    <span class="n">cmp_to_key</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">gotran.model.odeobjects</span> <span class="kn">import</span> <span class="o">*</span>
 
 
 <div class="viewcode-block" id="recreate_expression"><a class="viewcode-back" href="../../../gotran.model.html#gotran.recreate_expression">[docs]</a><span class="k">def</span> <span class="nf">recreate_expression</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="o">*</span><span class="n">replace_dicts</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -124,10 +123,10 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">replace_type</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;replace_type&quot;</span><span class="p">,</span> <span class="s2">&quot;xreplace&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">replace_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;xreplace&quot;</span><span class="p">,</span> <span class="s2">&quot;subs&quot;</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">replace_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;xreplace&quot;</span><span class="p">,</span> <span class="s2">&quot;subs&quot;</span><span class="p">]:</span>
         <span class="n">error</span><span class="p">(</span>
             <span class="s2">&quot;Valid alternatives for replace_type is: &#39;xreplace&#39;, &quot;</span>
-            <span class="s2">&quot;&#39;subs&#39; got </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">replace_type</span><span class="p">)</span>
+            <span class="s2">&quot;&#39;subs&#39; got </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">replace_type</span><span class="p">),</span>
         <span class="p">)</span>
 
     <span class="c1"># First do the replacements</span>
@@ -238,7 +237,7 @@
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">symbols_from_expr</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">include_numbers</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
             <span class="n">error</span><span class="p">(</span>
-                <span class="s2">&quot;expected the expression to contain at least one &quot;</span> <span class="s2">&quot;Symbol or Number.&quot;</span>
+                <span class="s2">&quot;expected the expression to contain at least one &quot;</span> <span class="s2">&quot;Symbol or Number.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="c1"># Call super class with expression as the &quot;value&quot;</span>
@@ -249,7 +248,7 @@
             <span class="nb">sorted</span><span class="p">(</span>
                 <span class="n">symbols_from_expr</span><span class="p">(</span><span class="n">expr</span><span class="p">),</span>
                 <span class="n">key</span><span class="o">=</span><span class="n">cmp_to_key</span><span class="p">(</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">cmp</span><span class="p">(</span><span class="n">sympycode</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">sympycode</span><span class="p">(</span><span class="n">b</span><span class="p">))),</span>
-            <span class="p">)</span>
+            <span class="p">),</span>
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">dependent</span><span class="p">:</span>
@@ -404,7 +403,7 @@
         <span class="k">if</span> <span class="n">dep_var</span><span class="o">.</span><span class="n">sym</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">der_expr</span><span class="o">.</span><span class="n">sym</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
             <span class="n">error</span><span class="p">(</span>
                 <span class="s2">&quot;Cannot create a DerivativeExpression as </span><span class="si">{0}</span><span class="s2"> is not &quot;</span>
-                <span class="s2">&quot;dependent on </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">der_expr</span><span class="p">,</span> <span class="n">dep_var</span><span class="p">)</span>
+                <span class="s2">&quot;dependent on </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">der_expr</span><span class="p">,</span> <span class="n">dep_var</span><span class="p">),</span>
             <span class="p">)</span>
 
         <span class="n">der_sym</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Derivative</span><span class="p">(</span><span class="n">der_expr</span><span class="o">.</span><span class="n">sym</span><span class="p">,</span> <span class="n">dep_var</span><span class="o">.</span><span class="n">sym</span><span class="p">)</span>
@@ -435,7 +434,8 @@
 
     <span class="k">def</span> <span class="nf">_repr_latex_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">frac{{d</span><span class="si">{0}</span><span class="s2">}}{{d</span><span class="si">{1}</span><span class="s2">}}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">latex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_der_expr</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="n">latex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dep_var</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">latex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_der_expr</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+            <span class="n">latex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dep_var</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 
@@ -450,7 +450,9 @@
         <span class="n">check_arg</span><span class="p">(</span><span class="n">from_state</span><span class="p">,</span> <span class="p">(</span><span class="n">State</span><span class="p">,</span> <span class="n">StateSolution</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">RateExpression</span><span class="p">)</span>
 
         <span class="nb">super</span><span class="p">(</span><span class="n">RateExpression</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;rates_</span><span class="si">{</span><span class="n">to_state</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">from_state</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">dependent</span>
+            <span class="sa">f</span><span class="s2">&quot;rates_</span><span class="si">{</span><span class="n">to_state</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">from_state</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">expr</span><span class="p">,</span>
+            <span class="n">dependent</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_to_state</span> <span class="o">=</span> <span class="n">to_state</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_from_state</span> <span class="o">=</span> <span class="n">from_state</span>
@@ -460,7 +462,9 @@
 <span class="sd">        Return a formatted str of __init__ arguments</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">, </span><span class="si">{1}</span><span class="s2">, </span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_state</span><span class="p">),</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_from_state</span><span class="p">),</span> <span class="n">sympycode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">)</span>
+            <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_state</span><span class="p">),</span>
+            <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_from_state</span><span class="p">),</span>
+            <span class="n">sympycode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">),</span>
         <span class="p">)</span>
 
     <span class="nd">@property</span>
@@ -508,7 +512,7 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a formatted str of __init__ arguments</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;, </span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="n">state</span><span class="p">)</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">sympycode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span></div>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;, </span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">)</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">sympycode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span></div>
 
 
 <div class="viewcode-block" id="StateDerivative"><a class="viewcode-back" href="../../../gotran.model.html#gotran.StateDerivative">[docs]</a><span class="k">class</span> <span class="nc">StateDerivative</span><span class="p">(</span><span class="n">StateExpression</span><span class="p">):</span>
@@ -580,7 +584,10 @@
         <span class="n">check_arg</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">State</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">AlgebraicExpression</span><span class="p">)</span>
 
         <span class="nb">super</span><span class="p">(</span><span class="n">AlgebraicExpression</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;alg_</span><span class="si">{</span><span class="n">state</span><span class="si">}</span><span class="s2">_0&quot;</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">dependent</span>
+            <span class="sa">f</span><span class="s2">&quot;alg_</span><span class="si">{</span><span class="n">state</span><span class="si">}</span><span class="s2">_0&quot;</span><span class="p">,</span>
+            <span class="n">state</span><span class="p">,</span>
+            <span class="n">expr</span><span class="p">,</span>
+            <span class="n">dependent</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># Check that the expr is dependent on the state</span>
@@ -641,7 +648,14 @@
 <span class="sd">            String that can be used for enumeration</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">IndexedObject</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span> <span class="n">basename</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">array_params</span><span class="p">,</span> <span class="n">add_offset</span><span class="p">,</span> <span class="n">dependent</span><span class="p">,</span> <span class="n">enum</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">basename</span><span class="p">,</span>
+            <span class="n">indices</span><span class="p">,</span>
+            <span class="n">shape</span><span class="p">,</span>
+            <span class="n">array_params</span><span class="p">,</span>
+            <span class="n">add_offset</span><span class="p">,</span>
+            <span class="n">dependent</span><span class="p">,</span>
+            <span class="n">enum</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">Expression</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">dependent</span><span class="p">)</span></div>
 
@@ -690,7 +704,14 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">StateIndexedObject</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span> <span class="n">basename</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">array_params</span><span class="p">,</span> <span class="n">add_offset</span><span class="p">,</span> <span class="n">dependent</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">basename</span><span class="p">,</span>
+            <span class="n">indices</span><span class="p">,</span>
+            <span class="n">state</span><span class="p">,</span>
+            <span class="n">shape</span><span class="p">,</span>
+            <span class="n">array_params</span><span class="p">,</span>
+            <span class="n">add_offset</span><span class="p">,</span>
+            <span class="n">dependent</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">Expression</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">dependent</span><span class="p">)</span></div>
 
@@ -761,7 +782,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

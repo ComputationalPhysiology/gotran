@@ -80,36 +80,30 @@
 <span class="c1">#</span>
 <span class="c1"># You should have received a copy of the GNU Lesser General Public License</span>
 <span class="c1"># along with Gotran. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
-
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">import</span> <span class="nn">typing</span>
 <span class="kn">import</span> <span class="nn">hashlib</span>
-<span class="kn">import</span> <span class="nn">types</span>
 <span class="kn">import</span> <span class="nn">importlib.util</span>
-<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">types</span>
+<span class="kn">import</span> <span class="nn">typing</span>
 <span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 
-
-<span class="kn">import</span> <span class="nn">gotran</span>
-<span class="kn">from</span> <span class="nn">gotran.common</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">GotranException</span><span class="p">,</span>
-    <span class="n">check_arg</span><span class="p">,</span>
-    <span class="n">check_kwarg</span><span class="p">,</span>
-    <span class="n">info</span><span class="p">,</span>
-    <span class="n">debug</span><span class="p">,</span>
-    <span class="n">value_error</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="kn">from</span> <span class="nn">gotran.model.ode</span> <span class="kn">import</span> <span class="n">ODE</span>
-<span class="kn">from</span> <span class="nn">gotran.model.loadmodel</span> <span class="kn">import</span> <span class="n">load_ode</span>
-<span class="kn">from</span> <span class="nn">gotran.common.options</span> <span class="kn">import</span> <span class="n">parameters</span>
-<span class="kn">from</span> <span class="nn">gotran.codegeneration.codegenerators</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">PythonCodeGenerator</span><span class="p">,</span>
-    <span class="n">CCodeGenerator</span><span class="p">,</span>
-    <span class="n">class_name</span><span class="p">,</span>
-    <span class="n">DOLFINCodeGenerator</span><span class="p">,</span>
-<span class="p">)</span>
 <span class="kn">import</span> <span class="nn">dijitso</span>
+<span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">debug</span>
+<span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">info</span>
+<span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">value_error</span>
+<span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">check_arg</span>
+<span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">check_kwarg</span>
 
+<span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">__version__</span>
+<span class="kn">from</span> <span class="nn">..common</span> <span class="kn">import</span> <span class="n">GotranException</span>
+<span class="kn">from</span> <span class="nn">..common.options</span> <span class="kn">import</span> <span class="n">parameters</span>
+<span class="kn">from</span> <span class="nn">..model.loadmodel</span> <span class="kn">import</span> <span class="n">load_ode</span>
+<span class="kn">from</span> <span class="nn">..model.ode</span> <span class="kn">import</span> <span class="n">ODE</span>
+<span class="kn">from</span> <span class="nn">.codegenerators</span> <span class="kn">import</span> <span class="n">CCodeGenerator</span>
+<span class="kn">from</span> <span class="nn">.codegenerators</span> <span class="kn">import</span> <span class="n">class_name</span>
+<span class="kn">from</span> <span class="nn">.codegenerators</span> <span class="kn">import</span> <span class="n">DOLFINCodeGenerator</span>
+<span class="kn">from</span> <span class="nn">.codegenerators</span> <span class="kn">import</span> <span class="n">PythonCodeGenerator</span>
 
 <span class="n">module_template</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;import dijitso as _dijitso</span>
 <span class="s2">import numpy as _np</span>
@@ -246,8 +240,8 @@
     <span class="k">if</span> <span class="n">language</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">valid_languages</span><span class="p">:</span>
         <span class="n">value_error</span><span class="p">(</span>
             <span class="s2">&quot;Expected one of </span><span class="si">{0}</span><span class="s2"> for the language kwarg.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;&#39;</span><span class="si">{0}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">lang</span><span class="p">)</span> <span class="k">for</span> <span class="n">lang</span> <span class="ow">in</span> <span class="n">valid_languages</span><span class="p">)</span>
-            <span class="p">)</span>
+                <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;&#39;</span><span class="si">{0}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">lang</span><span class="p">)</span> <span class="k">for</span> <span class="n">lang</span> <span class="ow">in</span> <span class="n">valid_languages</span><span class="p">),</span>
+            <span class="p">),</span>
         <span class="p">)</span>
 
     <span class="n">params</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="n">generation</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -327,25 +321,25 @@
             <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;states&quot;</span><span class="p">)</span>
             <span class="n">args_doc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;&quot;&quot;    </span><span class="si">{</span><span class="n">params</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">array_name</span><span class="si">}</span><span class="s2"> : np.ndarray</span>
-<span class="s2">        The state values&quot;&quot;&quot;</span>
+<span class="s2">        The state values&quot;&quot;&quot;</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">elif</span> <span class="n">arg</span> <span class="o">==</span> <span class="s2">&quot;t&quot;</span><span class="p">:</span>
             <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;time&quot;</span><span class="p">)</span>
             <span class="n">args_doc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="sd">&quot;&quot;&quot;    time : scalar</span>
-<span class="sd">        The present time&quot;&quot;&quot;</span>
+<span class="sd">        The present time&quot;&quot;&quot;</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">elif</span> <span class="n">arg</span> <span class="o">==</span> <span class="s2">&quot;p&quot;</span> <span class="ow">and</span> <span class="n">params</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">representation</span> <span class="o">!=</span> <span class="s2">&quot;numerals&quot;</span><span class="p">:</span>
             <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;parameters&quot;</span><span class="p">)</span>
             <span class="n">args_doc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;&quot;&quot;    </span><span class="si">{</span><span class="n">params</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">array_name</span><span class="si">}</span><span class="s2"> : np.ndarray</span>
-<span class="s2">        The parameter values&quot;&quot;&quot;</span>
+<span class="s2">        The parameter values&quot;&quot;&quot;</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">elif</span> <span class="n">arg</span> <span class="o">==</span> <span class="s2">&quot;b&quot;</span> <span class="ow">and</span> <span class="n">params</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">representation</span> <span class="o">!=</span> <span class="s2">&quot;named&quot;</span><span class="p">:</span>
             <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;body&quot;</span><span class="p">)</span>
             <span class="n">args_doc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;&quot;&quot;    </span><span class="si">{</span><span class="n">params</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">array_name</span><span class="si">}</span><span class="s2"> : np.ndarray</span>
-<span class="s2">        The body values&quot;&quot;&quot;</span>
+<span class="s2">        The body values&quot;&quot;&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
     <span class="n">args</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
@@ -441,9 +435,9 @@
                 <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">monitored</span><span class="p">)</span>
                 <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
                 <span class="o">+</span> <span class="n">languange</span>
-                <span class="o">+</span> <span class="n">gotran</span><span class="o">.</span><span class="n">__version__</span>
-                <span class="o">+</span> <span class="n">dijitso</span><span class="o">.</span><span class="n">__version__</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+                <span class="o">+</span> <span class="n">__version__</span>
+                <span class="o">+</span> <span class="n">dijitso</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">),</span>
         <span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">(),</span>
     <span class="p">)</span>
 
@@ -480,7 +474,10 @@
     <span class="n">pgen</span> <span class="o">=</span> <span class="n">PythonCodeGenerator</span><span class="p">(</span><span class="n">python_params</span><span class="p">)</span>
     <span class="n">cgen</span> <span class="o">=</span> <span class="n">CCodeGenerator</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
     <span class="n">code_dict</span> <span class="o">=</span> <span class="n">cgen</span><span class="o">.</span><span class="n">code_dict</span><span class="p">(</span>
-        <span class="n">ode</span><span class="p">,</span> <span class="n">monitored</span><span class="o">=</span><span class="n">monitored</span><span class="p">,</span> <span class="n">include_init</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">include_index_map</span><span class="o">=</span><span class="kc">False</span>
+        <span class="n">ode</span><span class="p">,</span>
+        <span class="n">monitored</span><span class="o">=</span><span class="n">monitored</span><span class="p">,</span>
+        <span class="n">include_init</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">include_index_map</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="n">pcode</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">pgen</span><span class="o">.</span><span class="n">code_dict</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">monitored</span><span class="o">=</span><span class="n">monitored</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
@@ -498,19 +495,25 @@
         <span class="n">states_name</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">array_name</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">rhs_binding</span> <span class="o">=</span> <span class="n">binding_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-        <span class="n">funcname</span><span class="o">=</span><span class="s2">&quot;rhs&quot;</span><span class="p">,</span> <span class="n">argtypes</span><span class="o">=</span><span class="n">argtypes</span><span class="p">,</span> <span class="n">restype</span><span class="o">=</span><span class="s2">&quot;None&quot;</span>
+        <span class="n">funcname</span><span class="o">=</span><span class="s2">&quot;rhs&quot;</span><span class="p">,</span>
+        <span class="n">argtypes</span><span class="o">=</span><span class="n">argtypes</span><span class="p">,</span>
+        <span class="n">restype</span><span class="o">=</span><span class="s2">&quot;None&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="n">monitor_binding</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
     <span class="k">if</span> <span class="n">monitor_code</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
         <span class="n">monitor_binding</span> <span class="o">=</span> <span class="n">binding_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">funcname</span><span class="o">=</span><span class="s2">&quot;monitor&quot;</span><span class="p">,</span> <span class="n">argtypes</span><span class="o">=</span><span class="n">argtypes</span><span class="p">,</span> <span class="n">restype</span><span class="o">=</span><span class="s2">&quot;None&quot;</span>
+            <span class="n">funcname</span><span class="o">=</span><span class="s2">&quot;monitor&quot;</span><span class="p">,</span>
+            <span class="n">argtypes</span><span class="o">=</span><span class="n">argtypes</span><span class="p">,</span>
+            <span class="n">restype</span><span class="o">=</span><span class="s2">&quot;None&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="n">jacobian_binding</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
     <span class="k">if</span> <span class="n">jacobian_code</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
         <span class="n">jacobian_binding</span> <span class="o">=</span> <span class="n">binding_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">funcname</span><span class="o">=</span><span class="s2">&quot;compute_jacobian&quot;</span><span class="p">,</span> <span class="n">argtypes</span><span class="o">=</span><span class="n">argtypes</span><span class="p">,</span> <span class="n">restype</span><span class="o">=</span><span class="s2">&quot;None&quot;</span>
+            <span class="n">funcname</span><span class="o">=</span><span class="s2">&quot;compute_jacobian&quot;</span><span class="p">,</span>
+            <span class="n">argtypes</span><span class="o">=</span><span class="n">argtypes</span><span class="p">,</span>
+            <span class="n">restype</span><span class="o">=</span><span class="s2">&quot;None&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="n">compiled_module_code</span> <span class="o">=</span> <span class="n">module_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -539,7 +542,9 @@
 
 
 <span class="k">def</span> <span class="nf">save_module</span><span class="p">(</span>
-    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">signature</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cache_dir</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">signature</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">cache_dir</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">with</span> <span class="nb">open</span><span class="p">(</span>
         <span class="n">cache_path</span><span class="p">(</span><span class="n">signature</span><span class="o">=</span><span class="n">signature</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span><span class="p">),</span>
@@ -555,7 +560,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg.</p>
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
