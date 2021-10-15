@@ -18,7 +18,7 @@ from gotran.input.cellml import cellml2ode
 _here = Path(__file__).absolute().parent
 
 supported_models_form = """
-\documentclass[a4paper,12pt]{{article}}
+\\documentclass[a4paper,12pt]{{article}}
 \\usepackage{{fullpage}}
 \\usepackage{{longtable}}
 \\usepackage{{multicol}}
@@ -26,17 +26,17 @@ supported_models_form = """
 \\usepackage{{mathpazo}}
 \\usepackage[mathpazo]{{flexisym}}
 \\usepackage{{breqn}}
-\setkeys{{breqn}}{{breakdepth={{1}}}}
+\\setkeys{{breqn}}{{breakdepth={{1}}}}
 \\begin{{document}}
-\section{{Supported and tested CellML models in Gotran}}
+\\section{{Supported and tested CellML models in Gotran}}
 \\begin{{itemize}}
 {0}
-\end{{itemize}}
-\section{{Gotran fails to convert the following CellML models}}
+\\end{{itemize}}
+\\section{{Gotran fails to convert the following CellML models}}
 \\begin{{itemize}}
 {1}
-\end{{itemize}}
-\end{{document}}
+\\end{{itemize}}
+\\end{{document}}
 """
 
 # not_supported = cellml_models[:]

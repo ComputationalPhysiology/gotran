@@ -79,8 +79,8 @@ def ode_primitives(expr, time):
     return symbols
 
 
-_derivative_name_template = re.compile("\Ad([a-zA-Z]\w*)_d([a-zA-Z]\w*)\Z")
-_algebraic_name_template = re.compile("\Aalg_([a-zA-Z]\w*)_0\Z")
+_derivative_name_template = re.compile(r"\Ad([a-zA-Z]\w*)_d([a-zA-Z]\w*)\Z")
+_algebraic_name_template = re.compile(r"\Aalg_([a-zA-Z]\w*)_0\Z")
 
 # Flags for determine special expressions
 INTERMEDIATE = 0
