@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
+from modelparameters.parameterdict import ParameterDict
+from modelparameters.parameters import Param
 
-import os
-
-from gotran.model.loadmodel import load_ode
 from gotran.codegeneration.codegenerators import CCodeGenerator
-from gotran.common.options import parameters
-from gotran.common import error, list_timings, Timer, info
-from modelparameters.parameterdict import *
+from gotran.common import info
+from gotran.common import list_timings
+from gotran.common import Timer
+from gotran.model.loadmodel import load_ode
 
 
 def gotran2c(filename, params):
@@ -53,7 +53,8 @@ def gotran2c(filename, params):
 
 
 def main():
-    import sys, os
+    import os
+    import sys
 
     generation_params = CCodeGenerator.default_parameters()
 

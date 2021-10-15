@@ -1,14 +1,17 @@
 """test for odecomponent module"""
 # import unittest
 import os
-import pytest
-import gotran
 from pathlib import Path
+
+import pytest
+from modelparameters import ScalarParam
 from modelparameters.codegeneration import sympycode
 from modelparameters.sympytools import symbols_from_expr
-from modelparameters import ScalarParam
+from sympy import exp
+from sympy import log
+from sympy import Matrix
 
-from sympy import Matrix, exp, log
+import gotran
 
 _here = Path(__file__).absolute().parent
 
@@ -28,11 +31,11 @@ def test_creation():
     kk = ode.add_parameter("kk", 0.0)
 
     # Try overwriting state
-    with pytest.raises(gotran.GotranException) as cm:
+    with pytest.raises(gotran.GotranException):
         ode.add_parameter("j", 1.0)
 
     # Try overwriting parameter
-    with pytest.raises(gotran.GotranException) as cm:
+    with pytest.raises(gotran.GotranException):
         ode.add_state("ii", 1.0)
 
     assert ode.num_states == 3
@@ -78,7 +81,7 @@ def test_creation():
     assert ode.num_intermediates == 4
 
     # Try overwriting parameter with expression
-    with pytest.raises(gotran.GotranException) as cm:
+    with pytest.raises(gotran.GotranException):
         jada.ll = jada.tmp * jada.tmp2
 
     # Create a derivative expression
@@ -93,7 +96,7 @@ def test_creation():
     assert ode.num_full_states == 6
 
     # Try adding expressions to ode component
-    with pytest.raises(gotran.GotranException) as cm:
+    with pytest.raises(gotran.GotranException):
         ode.p = 1.0
 
     # Check used in and dependencies for one intermediate
@@ -148,13 +151,13 @@ def test_creation():
 
     with pytest.raises(gotran.GotranException):
         markov.rates[[markov.tt, markov.u, markov.v]] = Matrix(
-            [[1, 2 * i, 0.0], [0.0, 2.0, 4.0]]
+            [[1, 2 * i, 0.0], [0.0, 2.0, 4.0]],
         )
     with pytest.raises(gotran.GotranException):
         markov.rates[markov.tt, markov.tt] = 5.0
 
     markov.rates[[markov.tt, markov.u, markov.v]] = Matrix(
-        [[0.0, 2 * i, 2.0], [4.0, 0.0, 2.0], [5.0, 2.0, 0.0]]
+        [[0.0, 2 * i, 2.0], [4.0, 0.0, 2.0], [5.0, 2.0, 0.0]],
     )
 
     ode.finalize()
@@ -279,7 +282,7 @@ def test_subode():
         mem.R
         * mem.T
         * log(
-            (ode.Na_o * rev_pot.P_kna + ode.K_o) / (ode.K_i + ode.Na_i * rev_pot.P_kna)
+            (ode.Na_o * rev_pot.P_kna + ode.K_o) / (ode.K_i + ode.Na_i * rev_pot.P_kna),
         )
         / mem.F
     )

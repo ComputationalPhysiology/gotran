@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 " A script to check the length of the lines in the code"
-
 # Copyright (C) 2011-2014 Johan Hake
 #
 # This file is part of Gotran.
@@ -17,7 +16,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
-
 from instant import get_status_output
 
 
@@ -29,8 +27,8 @@ def list_python_files():
         f
         for f in sorted(
             get_status_output("git ls-tree --name-only --full-tree -r HEAD")[1].split(
-                "\n"
-            )
+                "\n",
+            ),
         )
         if ".py" == f[-3:]
     ]

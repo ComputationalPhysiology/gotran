@@ -14,19 +14,21 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
+# from modelparameters.logger import set_default_exception, set_log_level, INFO
+# import modelparameters.commands as commands
+from .dicts import adict
+from .dicts import odict
+from .disk import GotranException
+from .disk import load
+from .disk import present_time_str
+from .disk import save
+from .options import parameters
 
 # ModelParameters imports
-from modelparameters.logger import *
-import modelparameters.commands as commands
 
 # Base class for ModelParameters exceptions
-class GotranException(RuntimeError):
-    "Base class for ModelParameters exceptions"
-    pass
 
-
-set_default_exception(GotranException)
-from modelparameters.utils import *
+# from modelparameters.utils import *
 
 # from modelparameters.utils import (Range, Timer, list_types, clear_timings, tic,
 #                              toc, is_iterable, add_iterable, camel_capitalize,
@@ -34,14 +36,21 @@ from modelparameters.utils import *
 #                              check_kwarg, quote_join, deprecated, format_time,
 #                              value_formatter, param2value)
 # # gotran imports
-from gotran.common.dicts import adict, odict
-from gotran.common.disk import load, save, present_time_str
-from gotran.common.options import parameters
+
 
 # Set initial log level to INFO
-set_log_level(INFO)
 
-__all__ = [_name for _name in list(globals().keys()) if _name[0] != "_"]
+
+__all__ = [
+    "adict",
+    "odict",
+    "load",
+    "save",
+    "present_time_str",
+    "parameters",
+    "GotranException",
+]
+# __all__ = [_name for _name in list(globals().keys()) if _name[0] != "_"]
 # __all__ = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", "Logger", "commands",
 #            "Range", "Timer", "list_types", "clear_timings", "tic",
 #            "toc", "is_iterable", "add_iterable", "camel_capitalize",

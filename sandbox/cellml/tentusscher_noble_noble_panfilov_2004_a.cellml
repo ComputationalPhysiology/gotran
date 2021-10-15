@@ -22,10 +22,10 @@ http://www.CellML.org/
     </affiliation>
   </author>
 </articleinfo>
-  <section id="sec_status">   
+  <section id="sec_status">
     <title>Model Status</title>
     <para>
-            This variant of the model was created by Penny Noble of Oxford University, and represents the parameters given for the M-cell variant in Ten Tusscher et al. 2004. A stimulus protocol component has been added to the model to allow simulation of trains of action potentials. This file is known to run in OpenCell and COR to recreate the published results.  The units have been checked and they are consistent. 
+            This variant of the model was created by Penny Noble of Oxford University, and represents the parameters given for the M-cell variant in Ten Tusscher et al. 2004. A stimulus protocol component has been added to the model to allow simulation of trains of action potentials. This file is known to run in OpenCell and COR to recreate the published results.  The units have been checked and they are consistent.
           </para>
   </section>
   <sect1 id="sec_structure">
@@ -40,7 +40,7 @@ The original paper reference is cited below:
 </para>
 
 <para>
-A model for human ventricular tissue, K.H.W.J. ten Tusscher, D. Noble, P.J. Noble, and A.V. Panfilov, 2004, 
+A model for human ventricular tissue, K.H.W.J. ten Tusscher, D. Noble, P.J. Noble, and A.V. Panfilov, 2004,
             <emphasis>American Journal of Physiology</emphasis>
           , 286, H1573-H1589. <ulink url="http://www.ncbi.nlm.nih.gov/pubmed/14656705">PubMed ID: 14656705</ulink>
 </para>
@@ -3491,7 +3491,7 @@ A model for human ventricular tissue, K.H.W.J. ten Tusscher, D. Noble, P.J. Nobl
       <map_components component_1="potassium_pump_current" component_2="potassium_dynamics"/>
       <map_variables variable_1="i_p_K" variable_2="i_p_K"/>
    </connection>
-   
+
    <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
   <rdf:Bag rdf:about="rdf:#8fc9f990-0f48-460b-8074-2cd2d341a3c6">
     <rdf:li>cardiac</rdf:li>

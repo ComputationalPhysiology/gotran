@@ -351,4 +351,3 @@ dV_dt = -(i_K1 + i_to + i_Kr + i_Ks + i_CaL + i_NaK + i_Na + i_b_Na + i_NaCa + i
 
 expressions("Potassium dynamics")
 dK_i_dt = -1*(i_K1 + i_to + i_Kr + i_Ks + i_p_K + i_Stim - 2*i_NaK)/(1*V_c*F)*Cm
-

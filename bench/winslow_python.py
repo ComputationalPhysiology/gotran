@@ -1,3 +1,4 @@
+# flake8: noqa
 from gotran import *
 from gotran.codegeneration.codegenerator import *
 
@@ -28,12 +29,12 @@ for keep, use_cse, numerals, use_names in [
             parameter_numerals=numerals,
             use_parameter_names=use_names,
             use_state_names=use_names,
-        )
+        ),
     )
 
     # print gen.dy_code()
     code = "\n\n".join(
-        [gen.init_states_code(), gen.init_param_code(), gen.dy_code()]
+        [gen.init_states_code(), gen.init_param_code(), gen.dy_code()],
     )  # , gen.monitored_code()])
 
     params = "{0}_{1}_{2}_{3}".format(
@@ -70,7 +71,7 @@ use_names          = {use_names}""\"''',
    5.88955498e-02,  -2.32646624e-06,   5.76675699e-08,   0.00000000e+00,
   -2.39030665e-04,   2.32912903e-04,   1.06656494e-10,   0.00000000e+00,
    0.00000000e+00,   0.00000000e+00])))<1e-6)""",
-        ]
+        ],
     )
 
     # open("winslow_code_{0}.py".format(params), "w").write(code)

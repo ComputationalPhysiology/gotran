@@ -1,26 +1,31 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-from __future__ import division
+from itertools import cycle
+
+import matplotlib.pyplot as plt
+import numpy as np
+from modelparameters.codegeneration import latex
+from modelparameters.logger import error
+from modelparameters.logger import warning
+from modelparameters.parameterdict import ParameterDict
+from modelparameters.parameters import OptionParam
+from modelparameters.parameters import Param
+from modelparameters.parameters import ScalarParam
+
+from gotran.codegeneration.compilemodule import compile_module
+from gotran.common.options import parameters
+from gotran.model.loadmodel import load_ode
+from gotran.model.utils import DERIVATIVE_EXPRESSION
+from gotran.model.utils import special_expression
 
 __author__ = "Johan Hake (hake.dev@gmail.com)"
 __date__ = "2013-03-13 -- 2015-06-24"
 __copyright__ = "Copyright (C) 2013 " + __author__
 __license__ = "GNU LGPL Version 3.0 or later"
-from modelparameters.codegeneration import latex
 
 try:
     from scipy.optimize import root
-except:
+except ImportError:
     root = None
-from itertools import cycle
-import matplotlib.pyplot as plt
-import numpy as np
-from gotran.model.loadmodel import load_ode
-from gotran.model.utils import DERIVATIVE_EXPRESSION, special_expression
-from gotran.codegeneration.compilemodule import compile_module
-from gotran.common.options import parameters
-from gotran.common import error, warning
-from modelparameters.parameterdict import *
 
 
 def gotranrun(filename, params):
@@ -75,7 +80,7 @@ def gotranrun(filename, params):
     if ode.is_dae:
         error(
             "Can only integrate pure ODEs. {0} includes algebraic states "
-            "and is hence a DAE.".format(ode.name)
+            "and is hence a DAE.".format(ode.name),
         )
 
     # Get monitored and plot states
@@ -107,7 +112,7 @@ def gotranrun(filename, params):
     if x_name not in ["time"] + monitored + state_names:
         error(
             "Expected plot_x to be either 'time' or one of the plotable "
-            "variables, got {}".format(x_name)
+            "variables, got {}".format(x_name),
         )
 
     # Logic if x_name is not 'time' as we then need to add the name to
@@ -216,18 +221,19 @@ def gotranrun(filename, params):
     # allocate memory for saving results
     if params.save_results:
         save_results = np.zeros(
-            (len(results), 1 + len(state_names) + len(all_monitored_names))
+            (len(results), 1 + len(state_names) + len(all_monitored_names)),
         )
         all_monitor_inds = np.array(
-            [monitored.index(monitor) for monitor in all_monitored_names], dtype=int
+            [monitored.index(monitor) for monitor in all_monitored_names],
+            dtype=int,
         )
         all_results_header = ", ".join(["time"] + state_names + all_monitored_names)
 
     plot_inds = [module.state_indices(state) for state in plot_states]
 
-    monitored_values = [[] for monitor in monitored_plot]
     monitor_inds = np.array(
-        [monitored.index(monitor) for monitor in monitored_plot], dtype=int
+        [monitored.index(monitor) for monitor in monitored_plot],
+        dtype=int,
     )
     monitored_get_values = np.zeros(len(monitored), dtype=np.float_)
 
@@ -290,7 +296,7 @@ def gotranrun(filename, params):
             c + s
             for s in ["-", "--", "-.", ":"]
             for c in ["b", "g", "r", "c", "m", "y", "k"]
-        ]
+        ],
     )
 
     plotted_items = 0
@@ -312,7 +318,8 @@ def gotranrun(filename, params):
 
 
 def main():
-    import sys, os
+    import os
+    import sys
 
     body_params = parameters.generation.code.body.copy()
 
@@ -322,7 +329,8 @@ def main():
         use_cse=dict.__getitem__(body_params, "use_cse"),
         optimize_exprs=dict.__getitem__(body_params, "optimize_exprs"),
         generate_jacobian=Param(
-            False, description="Generate and use analytic " "jacobian when integrating."
+            False,
+            description="Generate and use analytic " "jacobian when integrating.",
         ),
     )
 

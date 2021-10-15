@@ -1,20 +1,18 @@
 __all__ = ["CUDAODESystemSolver", "ODECUDAHandler"]
 
-from gotran import CUDACodeGenerator, get_solver_fn, parameters
-from gotran.common import Timer
-
 import hashlib
 import os
-
-from modelparameters.parameters import Param, OptionParam, ScalarParam, TypelessParam
-from modelparameters.parameterdict import ParameterDict
-
-import pycuda.driver as cuda
-import pycuda.autoinit
-from pycuda.compiler import SourceModule
 import time
 
 import numpy as np
+import pycuda.autoinit
+import pycuda.driver as cuda
+from modelparameters.parameterdict import ParameterDict
+from modelparameters.parameters import OptionParam, Param, ScalarParam, TypelessParam
+from pycuda.compiler import SourceModule
+
+from gotran import CUDACodeGenerator
+from gotran.common import Timer
 
 
 def get_float_type(code_params):
@@ -46,7 +44,7 @@ class ODECUDAHandler(object):
     def num_nodes(self, value):
         if self.is_ready():
             raise Exception(
-                "Cannot change number of nodes while CUDA handler " "is initialised."
+                "Cannot change number of nodes while CUDA handler " "is initialised.",
             )
         else:
             self._num_nodes = value
@@ -64,7 +62,7 @@ class ODECUDAHandler(object):
         self._cuda_code = ccg.solver_code(self._ode, self.params.solver)
 
         self.ctx = pycuda.autoinit.device.make_context()
-        dev = self.ctx.get_device()
+        # dev = self.ctx.get_device()
         nvcc = self.params.nvcc or "nvcc"
         gpu_arch = self.params.gpu_arch if self.params.gpu_arch else None
         gpu_code = self.params.gpu_code if self.params.gpu_code else None
@@ -99,7 +97,7 @@ class ODECUDAHandler(object):
         init_states_fn = self._mod.get_function("init_state_values")
         self._h_states = np.zeros(self._num_nodes * self._ode.num_states, dtype=float_t)
         self._d_states = cuda.mem_alloc(
-            float_sz * self._num_nodes * self._ode.num_states
+            float_sz * self._num_nodes * self._ode.num_states,
         )
         field_states = self.params.code.states.field_states
         # FIXME: modelparameters needs a ListParam
@@ -108,7 +106,7 @@ class ODECUDAHandler(object):
         self._d_field_states = None
         if len(field_states) > 0:
             self._d_field_states = cuda.mem_alloc(
-                float_sz * self._num_nodes * len(field_states)
+                float_sz * self._num_nodes * len(field_states),
             )
         init_states_fn(self._d_states, block=self._get_block(), grid=self._get_grid())
         cuda.memcpy_dtoh(self._h_states, self._d_states)
@@ -125,10 +123,12 @@ class ODECUDAHandler(object):
         if len(field_parameters) > 0:
             init_fparams_fn = self._mod.get_function("init_field_parameters")
             self._d_field_parameters = cuda.mem_alloc(
-                float_sz * self._num_nodes * len(field_parameters)
+                float_sz * self._num_nodes * len(field_parameters),
             )
             init_fparams_fn(
-                self._d_field_parameters, block=self._get_block(), grid=self._get_grid()
+                self._d_field_parameters,
+                block=self._get_block(),
+                grid=self._get_grid(),
             )
         cuda.memcpy_htod(self._d_parameters, self._h_parameters)
 
@@ -172,7 +172,7 @@ class ODECUDAHandler(object):
             if synchronize:
                 self.ctx.synchronize()
             if update_host_states:
-                timer = Timer("update host states")
+                timer = Timer("update host states")  # noqa: F841
                 cuda.memcpy_dtoh(self._h_states, self._d_states)
 
     def is_ready(self):
@@ -207,7 +207,7 @@ class ODECUDAHandler(object):
                 block=self._get_block(),
                 grid=self._get_grid(),
             )
-            timer = Timer("get_fs_cpy")
+            timer = Timer("get_fs_cpy")  # noqa: F841
             cuda.memcpy_dtoh(h_field_states, self._d_field_states)
 
     def set_field_states(self, h_field_states):
@@ -219,9 +219,9 @@ class ODECUDAHandler(object):
                 # TODO: ERROR!!
                 pass
             set_field_states_fn = self._mod.get_function("set_field_states")
-            timer = Timer("set_fs_cpy")
+            timer = Timer("set_fs_cpy")  # noqa: F841
             cuda.memcpy_htod(self._d_field_states, h_field_states)
-            timer = Timer("set_fs_fn")
+            timer = Timer("set_fs_fn")  # noqa: F841
             set_field_states_fn(
                 self._d_field_states,
                 self._d_states,
@@ -288,7 +288,8 @@ class CUDAODESystemSolver(object):
         # FIXME: modelparameters needs a ListParam
         if len(p_field_states) > 0 and p_field_states[0] != "":
             self.field_states = np.zeros(
-                self._num_nodes * len(p_field_states), dtype=float_t
+                self._num_nodes * len(p_field_states),
+                dtype=float_t,
             )
         p_field_parameters = params.code.parameters.field_parameters
 
@@ -317,11 +318,13 @@ class CUDAODESystemSolver(object):
             solvers=default_params.solvers,
             solver=OptionParam(
                 "explicit_euler",
-                default_params.solvers.keys(),
+                list(default_params.solvers.keys()),
                 description="Default solver type",
             ),
             block_size=ScalarParam(
-                256, ge=1, description="Number of threads per CUDA block"
+                256,
+                ge=1,
+                description="Number of threads per CUDA block",
             ),
             ode_substeps=ScalarParam(
                 1,
@@ -337,7 +340,8 @@ class CUDAODESystemSolver(object):
                 "be compiled",
             ),
             gpu_code=TypelessParam(
-                None, description="The names of nVidia GPUs to generate code " "for"
+                None,
+                description="The names of nVidia GPUs to generate code " "for",
             ),
             keep_cuda_code=Param(
                 False,
@@ -387,7 +391,7 @@ class CUDAODESystemSolver(object):
         if update_field_states and self.field_states is not None:
             self.set_field_states()
 
-        for _ in xrange(self.ode_substeps):
+        for _ in range(self.ode_substeps):
             self._cudahandler.forward(t, dt, update_host_states)
             t += dt
 
@@ -442,13 +446,13 @@ class CUDAODESystemSolver(object):
         self._cudahandler.clean_up()
 
     def get_field_states(self, field_states=None):
-        timer = Timer("get field states")
+        timer = Timer("get field states")  # noqa: F841
         field_states = field_states if field_states is not None else self.field_states
         if field_states is not None:
             self._cudahandler.get_field_states(field_states)
 
     def set_field_states(self, field_states=None):
-        timer = Timer("set field states")
+        timer = Timer("set field states")  # noqa: F841
         field_states = field_states if field_states is not None else self.field_states
         if field_states is not None:
             self._cudahandler.set_field_states(field_states)
@@ -478,7 +482,7 @@ class CUDAODESystemSolver(object):
         # TODO: Remove this. num_nodes should not be modifiable.
         if self._cudahandler.is_ready():
             raise Exception(
-                "Cannot change number of nodes while CUDA handler " "is initialised."
+                "Cannot change number of nodes while CUDA handler " "is initialised.",
             )
         else:
             self._num_nodes = value

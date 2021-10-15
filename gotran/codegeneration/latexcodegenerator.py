@@ -14,25 +14,18 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
-
-# System imports
 import re
-
-# Gotran imports
-from gotran.common import warning
-from gotran.model.odeobjects import SingleODEObjects
-from gotran.model.expressions import Expression, StateDerivative
-
-# Model parameters imports
-from modelparameters.codegeneration import latex as mp_latex
-from modelparameters.parameters import Param, ScalarParam, ArrayParam
-from modelparameters.parameterdict import ParameterDict
-
-# Other imports
 import string
-from io import StringIO
-import sympy
 import tokenize
+from io import StringIO
+
+import sympy
+from modelparameters.codegeneration import latex as mp_latex
+from modelparameters.parameterdict import ParameterDict
+from modelparameters.parameters import Param
+
+from ..model.expressions import Expression
+from ..model.expressions import StateDerivative
 
 __all__ = ["LatexCodeGenerator"]
 
@@ -66,7 +59,7 @@ _param_table_template = """
 \\endfirsthead
 \\multicolumn{{3}}{{c}}%
 {{{{\\bfseries\\tablename\\ \\thetable{{}} --- continued from previous page}}}}
-\\\\ \hline
+\\\\ \\hline
 \\multicolumn{{1}}{{|c}}{{\\textbf{{Parameter\\hspace{{0.5cm}}}}}} &
 \\multicolumn{{1}}{{c}}{{\\textbf{{Value\\hspace{{0.5cm}}}}}} &
 \\multicolumn{{1}}{{c|}}{{\\textbf{{Description\\hspace{{0.5cm}}}}}}\\\\ \\hline
@@ -99,7 +92,7 @@ _state_table_template = """
 \\endfirsthead
 \\multicolumn{{3}}{{c}}%
 {{{{\\bfseries\\tablename\\ \\thetable{{}} --- continued from previous page}}}}
-\\\\ \hline
+\\\\ \\hline
 \\multicolumn{{1}}{{|c}}{{\\textbf{{State\\hspace{{0.5cm}}}}}} &
 \\multicolumn{{1}}{{c}}{{\\textbf{{Value\\hspace{{0.5cm}}}}}} &
 \\multicolumn{{1}}{{c|}}{{\\textbf{{Description\\hspace{{0.5cm}}}}}}\\\\ \\hline
@@ -152,7 +145,8 @@ def _default_latex_params():
     #     1, ge=1, description="Set number of columns per page in "
     #     "LaTeX document")
     params["page_columns"] = Param(
-        1, description="Set number of columns per page in " "LaTeX document"
+        1,
+        description="Set number of columns per page in " "LaTeX document",
     )
 
     # Set equation font size
@@ -161,7 +155,8 @@ def _default_latex_params():
     # params["font_size"] = ScalarParam(
     #     10, ge=1, description="Set global font size for LaTeX document")
     params["font_size"] = Param(
-        10.0, description="Set global font size for LaTeX document"
+        10.0,
+        description="Set global font size for LaTeX document",
     )
 
     # Set font size for mathematical expressions.
@@ -179,7 +174,8 @@ def _default_latex_params():
 
     # Toggle bold equation labels
     params["bold_equation_labels"] = Param(
-        True, description="Give equation labels a bold typeface in " "LaTeX document"
+        True,
+        description="Give equation labels a bold typeface in " "LaTeX document",
     )
 
     # If set to False, does not generate the preamble
@@ -191,12 +187,14 @@ def _default_latex_params():
 
     # If set to true, sets document to a landscape page layout
     params["landscape"] = Param(
-        False, description="Set LaTeX document to landscape layout"
+        False,
+        description="Set LaTeX document to landscape layout",
     )
 
     # Latex separator between factors in products
     params["mul_symbol"] = Param(
-        "dot", description="Multiplication symbol for Sympy LatexPrinter"
+        "dot",
+        description="Multiplication symbol for Sympy LatexPrinter",
     )
 
     # Flag to enable page numbers
@@ -212,7 +210,8 @@ def _default_latex_params():
 
     # Set headline types for States, Parameters and Components
     params["section_type"] = Param(
-        "section", description="Section type (e.g. 'section', 'subsection')"
+        "section",
+        description="Section type (e.g. 'section', 'subsection')",
     )
 
     # Set page margins
@@ -239,12 +238,14 @@ def _default_latex_params():
     # Flag to let the code generator attempt automatically converting
     # state and parameter names in descriptions to math-mode
     params["auto_format_description"] = Param(
-        False, description="Automatically format state and parameter " "descriptions"
+        False,
+        description="Automatically format state and parameter " "descriptions",
     )
 
     # Flag to toggle numbering style for equations.
     params["equation_subnumbering"] = Param(
-        True, description="Use component-wise equation subnumbering"
+        True,
+        description="Use component-wise equation subnumbering",
     )
 
     params["parameter_description_cell_style"] = Param(
@@ -308,7 +309,7 @@ class LatexCodeGenerator(object):
             )
         else:
             document_opts = self.format_options(
-                override=["font_size", "landscape", "page_numbers"]
+                override=["font_size", "landscape", "page_numbers"],
             )
             latex_output = _latex_template.format(
                 FONTSIZE=params.font_size,
@@ -401,7 +402,9 @@ class LatexCodeGenerator(object):
             # Iterate over all objects of the component
             for obj in body:
                 format_body += eqn_template.format(
-                    obj.name, obj._repr_latex_name(), obj._repr_latex_expr()
+                    obj.name,
+                    obj._repr_latex_name(),
+                    obj._repr_latex_expr(),
                 )
 
             components_str += comp_template.format(
@@ -412,7 +415,7 @@ class LatexCodeGenerator(object):
             )
 
         components_opts = self.format_options(
-            override=["page_columns", "math_font_size"]
+            override=["page_columns", "math_font_size"],
         )
         components_output = _components_template.format(
             SECTIONTYPE=params["section_type"],
@@ -468,7 +471,9 @@ class LatexCodeGenerator(object):
         """
         label_opts = self.format_options(override=["bold_equation_labels"])
         return "{0}{1}{2}\\\\".format(
-            label_opts["begin"], label.replace("_", "\\_"), label_opts["end"]
+            label_opts["begin"],
+            label.replace("_", "\\_"),
+            label_opts["end"],
         )
 
     def format_description(self, description, name):
@@ -483,7 +488,7 @@ class LatexCodeGenerator(object):
         formatted_description = ""
         first = True
         for ttype, token, _, _, _ in tokenize.generate_tokens(
-            StringIO(description).readline
+            StringIO(description).readline,
         ):
             if tokenize.ISEOF(ttype):
                 break
@@ -542,7 +547,8 @@ class LatexCodeGenerator(object):
         if "font_size" in override:
             begin_str = (
                 "{{\\fontsize{{{0}}}{{{1:.1f}}}\\selectfont\n".format(
-                    opts.font_size, opts.font_size * 1.2
+                    opts.font_size,
+                    opts.font_size * 1.2,
                 )
                 + begin_str
             )
@@ -551,7 +557,8 @@ class LatexCodeGenerator(object):
         if "math_font_size" in override and opts.math_font_size:
             begin_str = (
                 "{{\\fontsize{{{0}}}{{{1:.1f}}}\n".format(
-                    opts.math_font_size, opts.math_font_size * 1.2
+                    opts.math_font_size,
+                    opts.math_font_size * 1.2,
                 )
                 + begin_str
             )
@@ -562,7 +569,7 @@ class LatexCodeGenerator(object):
             end_str += "}"
 
         if "landscape" in override and opts.landscape:
-            if not "pdflscape" in (package_name for package_name, _ in self.packages):
+            if "pdflscape" not in (package_name for package_name, _ in self.packages):
                 self.packages.append(("pdflscape", ""))
             begin_str = "\\begin{landscape}\n" + begin_str
             end_str += "\\end{landscape}\n"
@@ -586,11 +593,11 @@ class LatexCodeGenerator(object):
 
         if opts.columnseprule:
             additional_options.append(
-                f"\\setlength{{\\columnseprule}}{{{opts.columnseprule}}}"
+                f"\\setlength{{\\columnseprule}}{{{opts.columnseprule}}}",
             )
 
         global_options = option_template.format(
-            GLOBALOPTS="\n".join(additional_options)
+            GLOBALOPTS="\n".join(additional_options),
         )
 
         return global_options

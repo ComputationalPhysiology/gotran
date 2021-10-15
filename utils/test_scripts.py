@@ -3,6 +3,7 @@ Run test for all scripts
 """
 import os
 import time
+
 from modelparameters.commands import get_status_output
 
 root_dir = os.path.abspath(os.path.curdir)
@@ -71,7 +72,8 @@ for command in commands:
             if not os.path.isfile(f):
                 failed = 1
                 msg = ("Command {} failed: " "File {} does not exist.").format(
-                    command, f
+                    command,
+                    f,
                 )
                 failed_output.append(msg)
             else:

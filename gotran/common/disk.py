@@ -17,18 +17,29 @@
 
 __all__ = ["load", "save", "present_time_str"]
 
+import glob
+import os
+import re
+
 # System imports
 import time
-import os
+from pickle import Pickler, Unpickler
+
 import numpy
-
-from pickle import Unpickler, Pickler
-from os.path import isdir, join
-
-# gotran imports
-from gotran.common import *
+from modelparameters.logger import INFO, info, set_default_exception, set_log_level
+from modelparameters.utils import check_arg
 
 TIME_FORMAT = "%Y.%m.%d-%H.%M.%S"
+
+set_log_level(INFO)
+
+
+class GotranException(RuntimeError):
+    "Base class for ModelParameters exceptions"
+    pass
+
+
+set_default_exception(GotranException)
 
 
 def present_time_str():
@@ -70,7 +81,7 @@ def compare_dicts(p1, p2):
     assert isinstance(p2, dict)
     try:
         ret = p1 == p2
-    except ValueError as e:
+    except ValueError:
         ret = True
         for key, value in p1.items():
             if isinstance(value, numpy.ndarray):
@@ -171,11 +182,10 @@ def load_single_data(basename, latest_timestamp):
 
 def get_data_filenames(basename):
     "Helper functions for getting data filenames"
-    import glob, re
 
     basename = basename if ".cpickle" in basename else basename.replace(".cpickle", "")
     pattern = re.compile(
-        f"{basename}-[0-9]+\\.[0-9]+\\.[0-9]+-[0-9]+\\.[0-9]+\\.[0-9]+.cpickle"
+        f"{basename}-[0-9]+\\.[0-9]+\\.[0-9]+-[0-9]+\\.[0-9]+\\.[0-9]+.cpickle",
     )
 
     filenames = [

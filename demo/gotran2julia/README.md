@@ -5,7 +5,7 @@ your ODE. To illustrate the usage we will use the
 `tentusscher_panfilov_2006_M_cell.ode` file.
 [Julia](https://docs.julialang.org/en/v1/)
 
-To generate the relevant julia 
+To generate the relevant julia
 
 ```
 gotran2julia tentusscher_panfilov_2006_M_cell.ode
@@ -27,12 +27,9 @@ A file called `results_julia.png` will be save in this directory with
 a plot of the membrane potential and the Kr current.
 
 
-Note that by typing 
+Note that by typing
 ```
 gotran2py --help
 ```
 
-you can get all the options for codegeneration. 
-
-
-
+you can get all the options for codegeneration.

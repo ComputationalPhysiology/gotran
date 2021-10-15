@@ -1,7 +1,7 @@
 constants(Rgas)
 parameters(ist)
 
-input(y)  
+input(y)
 output(dy)
 
 default_states(dummy = -9.3280358e+001, y1 =         7.3339490e-001,y2 = 	     3.6293532e-006,y3 = 	     7.0595027e-008,y4 = 	     4.9239092e-003,y5 = 	     1.0110244e-005,y6 = 	     3.3335692e-002,y7 = 	     1.6499818e-007,y8 = 	     7.0123010e-008,y9 = 	     2.2298029e-004,y10 =	     4.5721917e-007,y11 = 	     2.5346874e-007,y12 = 	     1.3794198e-012,y13 = 	     2.3430651e-011,y14 = 	     2.2427345e-009,y15 = 	     4.6119478e-012,y16 = 	     1.0284733e-008,y17 = 	     5.0513547e-014,y18 = 	     2.2118998e-014,y19 = 	     7.6039529e-011,y20 = 	     1.5633682e-013,y21 = 	     2.1582373e-005,y22 = 	     6.4088015e-010,y23 = 	     1.4079987e-006,y24 = 	     1.7370543e-005,y25 = 	     3.5649988e-008,y26 = 	     2.8130536e-007,y27 = 	     1.3961118e-012,y28 = 	     6.1530051e-013,y29 = 	     2.3037094e-007,y30 = 	     4.7241499e-010,y31 = 	     2.1553707e-001,y32 = 	     1.0668244e-006,y33 = 	     5.1754412e-007,y34 = 	     1.4819990e-003,y35 = 	     3.0415484e-006,y36 = 	     8.5495357e-003,y37 = 	     4.2313101e-008,y38 = 	     1.7984273e-008,y39 = 	     5.7694490e-005,y40 = 	     1.1777211e-007,V = 	     -9.3280358e+001,P_UO =      1.7441541e-008,P_UIF =     3.0503807e-007,P_UC2 =     1.1190614e-002,Nai = 	     1.0638607e+001,Ki = 	     1.3126535e+002,Cai = 	     1.2908536e-004,CaSR =      9.4008170e-001,LTRPNCa =   1.1454207e-001,HTRPNCa =   9.7822696e-001,xKs = 	     1.7315831e-004,C0Kv43 =    7.7067212e-001,C1Kv43 =    1.5747921e-001,C2Kv43 =    1.2067272e-002,C3Kv43 =    4.1097812e-004,OKv43 =     5.2485683e-006,CI0Kv43 =   6.1199608e-003,CI1Kv43 =   1.6040227e-002,CI2Kv43 =   2.1294558e-002,CI3Kv43 =   1.4881526e-002,OIKv43 =    3.1254533e-003,C0Kv14 =    7.6976189e-001,C1Kv14 =    9.0762111e-002,C2Kv14 =    4.0131646e-003,C3Kv14 =    7.8871758e-005,OKv14 =     5.8311669e-007,CI0Kv14 =   1.2542472e-001,CI1Kv14 =   6.5975926e-003,CI2Kv14 =   2.5135115e-003,CI3Kv14 =   9.3343580e-004,OIKv14 =    5.7286124e-004,C1Herg =    9.9957296e-001,C2Herg =    3.5656289e-004,C3Herg =    6.2706532e-005,OHerg =     6.8139808e-006,IHerg =     9.6131236e-007,P_UC3 =     2.9347837e+000,OIKv43Ca =  2.3365783e-006,P_UIM1 =    5.7141846e-010,P_UC1 =     1.6155023e-005,P_IC3 =     5.5412991e-002,P_IC2 =     2.1129545e-004,P_UIM2 =    1.6823625e-008,P_LC3 =     7.6377957e-004,P_LC2 =     2.9123655e-006,P_LC1 =     4.2043564e-009,P_LO =      4.5391720e-012)
@@ -129,22 +129,22 @@ Cli = 20;                       #   Intracellular [Cl] (mM)
 KdIto2 = 0.1502;                #   Dissociation constant of Cl channel (Ito2) for Ca (mM)
 PCl = 2.65e-15;                 #   Cl single channel permeability (cm**3/s)
 
-i768v = 1.0;                    # Mutation = 1.0 for normal, 1.5 for mutation.    
+i768v = 1.0;                    # Mutation = 1.0 for normal, 1.5 for mutation.
 
-              
-GKs = 0.02;                    #    Maximal conductance of IKs (mS/microF)   
+
+GKs = 0.02;                    #    Maximal conductance of IKs (mS/microF)
 kNaCa = 0.27;                  #    Scale factor for Na/Ca exchanger (A/F) - potentially heterogeneous
-KSR = 2;#1.0*2.0;              #    Scale factor for SR Ca ATPase         
-GNal = 1.15;                   #    Maximal conductance of INal(mS/uF) 
+KSR = 2;#1.0*2.0;              #    Scale factor for SR Ca ATPase
+GNal = 1.15;                   #    Maximal conductance of INal(mS/uF)
 Kv4p3Scale = 3.0;              #    Scale factor for kv4.3 current. New paramete.
-k_alphai = 2.25;               #    Scale factor for kv4.3 current. New paramete.         
+k_alphai = 2.25;               #    Scale factor for kv4.3 current. New paramete.
 k_betai = 1.125;               #    Scale factor for kv4.3 current. New paramete.
 k_alphaoi = 1000;              #    Scale factor for kv4.3 current. New prameter.
 k_betaoi = 16*5.2310e-4;       #    Scale factor for kv4.3 current. New parameter.
 betaoi = 0.038;                #    Scale factor for kv4.3 current. New parameter.
 betaa0Kv43 = 0.080185;         #    Scale factor for kv4.3 current. New parameter.
 Ito2scale = 0.5;               #    Scale factor for icacl current. New parameter.
-Cm = 182;                      #   Capacitance - not used. 
+Cm = 182;                      #   Capacitance - not used.
 
 
 GKr = 0.029;                    #   Maximal conductance of IKr (mS/microF)
@@ -172,8 +172,8 @@ vmaxf = KSR*2.0961e-4;              #   SR Ca ATPase forward rate parameter (mM/
 vmaxr = KSR*2.0961e-4;              #   SR Ca ATPase reverse rate parameter (mM/ms)
 
 KvScale = 1.5876;               #   Scale factor for Kv4.3 and Kv1.4 currents
-Kv43Frac = 0.85;                #   Fraction of Ito1 (peak current at 40 mV) that is made up of Kv4.3 
-#Kv43Frac = 0.70;                #   Fraction of Ito1 (peak current at 40 mV) that is made up of Kv4.3 
+Kv43Frac = 0.85;                #   Fraction of Ito1 (peak current at 40 mV) that is made up of Kv4.3
+#Kv43Frac = 0.70;                #   Fraction of Ito1 (peak current at 40 mV) that is made up of Kv4.3
 GKv43 = Kv43Frac*KvScale*0.1*Kv4p3Scale;   #   Maximal conductance of IKv43 (mS/microF)
 PKv14 = (1-Kv43Frac)*KvScale*4.792933e-7;       #   Maximal conductance of IKv14 (mS/microF)
 
@@ -421,7 +421,7 @@ Jss2b = NCaRU*r_xfer * ( PCaSS_4*(CaSS_4 - Cai) + PCaSS_3*(CaSS_3 - Cai)        
 CaSSavg = PCaSS_1*CaSS_1 + PCaSS_2*CaSS_2 + PCaSS_3*CaSS_3 + PCaSS_4*CaSS_4;        # Average dyadic Ca concentration
 
 
-                                    #   Evaluate currents and state derivatives of global model 
+                                    #   Evaluate currents and state derivatives of global model
 ENa = RT_over_F*log(Nao/Nai);
 EK =  RT_over_F*log(Ko/Ki);
 EKs = RT_over_F*log((Ko+0.01833*Nao)/(Ki+0.01833*Nai));
@@ -437,7 +437,7 @@ b13= 0.4*exp(-(V-10)/20.3)/4.5; #Clancy et al, 2003 (WT/I1768V)
 a3= (3.7933e-7*exp(-V/7.7))*5*i768v;#Clancy et al, 2003 (WT/I1768V)
 b3= (0.0084+.00002*V);
 a2= ((9.178*exp(V/29.68))/4.5);#Clancy et al, 2003 (WT/I1768V)
-b2= ((a13*a2*a3)/(b13*b3));	
+b2= ((a13*a2*a3)/(b13*b3));
 a4= (a2/100)*1.5; #Clancy et al, 2003 (WT/I1768V)
 b4 = a3*5*i768v;#Clancy et al, 2003 (WT/I1768V)
 a5= (a2/95000)*1.5; #Clancy et al, 2003 (WT/I1768V)
@@ -465,7 +465,7 @@ dP_LO = (P_LC1*a13+P_UO*mu1)-(P_LO*(b13+mu2));
 
 
 GNa = 4.6; # mS/uF
-INa = GNa*(P_UO)*(V-ENa); # INa 
+INa = GNa*(P_UO)*(V-ENa); # INa
 
 INal = GNal*(P_LO)*(V-ENa); # INal
 
@@ -490,8 +490,8 @@ IK1 = GK1*Ko/(Ko+KmK1)*K1_inf*(V-EK);
 INab = GNab*(V-ENa);
 
 KpV = 1/(1+exp((7.488-V)/5.98));
-IKp = GKp*KpV*(V-EK);				
-      
+IKp = GKp*KpV*(V-EK);
+
 sigma = (exp(Nao/67.3)-1)/7;
 a1 = 1+0.1245*exp(-0.1*VF_over_RT);
 a2 = 0.0365*sigma*exp(-VF_over_RT);
@@ -542,11 +542,11 @@ a1 = 7.19e-5*(V-10)/(1-exp(-0.148*(V-10)));
 a2 = 1.31e-4*(V-10)/(exp(0.0687*(V-10))-1);
 tau_xKs = 1/(a1+a2);
 dxKs = (xKs_inf-xKs)/tau_xKs;
-	
+
 fb = (Cai/Kfb)**Nfb;
 rb = (CaSR/Krb)**Nrb;
 Jup = (vmaxf*fb - vmaxr*rb)/(1 + fb + rb);
- 
+
 dLTRPNCa = kltrpn_plus*Cai*(1 - LTRPNCa) - kltrpn_minus * LTRPNCa;
 dHTRPNCa = khtrpn_plus*Cai*(1 - HTRPNCa) - khtrpn_minus * HTRPNCa;
 Jtrpn = LTRPNtot*dLTRPNCa+HTRPNtot*dHTRPNCa;
@@ -787,6 +787,3 @@ dy[84] = dP_LC3;
 dy[85] = dP_LC2;
 dy[86] = dP_LC1;
 dy[87] = dP_LO;
-
-
-

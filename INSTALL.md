@@ -29,7 +29,7 @@ You are now ready to install the packages
 
 ## Install the dependencies
 
-To install the requrements simply do 
+To install the requrements simply do
 ```
 pip install -r requirements.txt
 ```

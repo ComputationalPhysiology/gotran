@@ -17,15 +17,17 @@
 
 __all__ = ["parameters"]
 
-# ModelParameter imports
-from modelparameters.parameters import Param, OptionParam, ScalarParam
 from modelparameters.parameterdict import ParameterDict
+
+# ModelParameter imports
+from modelparameters.parameters import OptionParam, Param, ScalarParam
 
 parameters = ParameterDict(
     # Generation parameters
     generation=ParameterDict(
         class_code=Param(
-            False, description="If true methods are contained " "inside a class"
+            False,
+            description="If true methods are contained " "inside a class",
         ),
         # Code generation parameters
         code=ParameterDict(
@@ -46,7 +48,7 @@ parameters = ParameterDict(
             time=ParameterDict(name=Param("t", description="Name of time argument")),
             # Parameter for the time step parameter name
             dt=ParameterDict(
-                name=Param("dt", description="Name of time step argument")
+                name=Param("dt", description="Name of time step argument"),
             ),
             # Number of nodes for solvers
             n_nodes=ScalarParam(0, ge=0, description="Number of nodes for simulation"),
@@ -58,7 +60,9 @@ parameters = ParameterDict(
                     description="The format of index notations.",
                 ),
                 index_offset=ScalarParam(
-                    0, ge=0, description="A global offset to all indexed variables."
+                    0,
+                    ge=0,
+                    description="A global offset to all indexed variables.",
                 ),
                 flatten=Param(
                     True,
@@ -176,10 +180,12 @@ parameters = ParameterDict(
                     "evaluation of the right hand side evaluation.",
                 ),
                 function_name=Param(
-                    "rhs", description="The name of " "the generated function."
+                    "rhs",
+                    description="The name of " "the generated function.",
                 ),
                 result_name=Param(
-                    "values", description="The name of " "the result argument."
+                    "values",
+                    description="The name of " "the result argument.",
                 ),
             ),
             monitored=ParameterDict(
@@ -189,10 +195,12 @@ parameters = ParameterDict(
                     "evaluation of monitored intermediates.",
                 ),
                 function_name=Param(
-                    "monitor", description="The name of " "the generated function."
+                    "monitor",
+                    description="The name of " "the generated function.",
                 ),
                 result_name=Param(
-                    "monitored", description="The name of " "the result argument."
+                    "monitored",
+                    description="The name of " "the result argument.",
                 ),
             ),
             jacobian=ParameterDict(
@@ -207,7 +215,8 @@ parameters = ParameterDict(
                     description="The name " "of the generated function.",
                 ),
                 result_name=Param(
-                    "jac", description="The name of " "the result argument."
+                    "jac",
+                    description="The name of " "the result argument.",
                 ),
             ),
             lu_factorization=ParameterDict(
@@ -217,7 +226,8 @@ parameters = ParameterDict(
                     "symbolicly factorize the jacobian.",
                 ),
                 function_name=Param(
-                    "lu_factorize", description="The name " "of the generated function."
+                    "lu_factorize",
+                    description="The name " "of the generated function.",
                 ),
             ),
             forward_backward_subst=ParameterDict(
@@ -232,10 +242,12 @@ parameters = ParameterDict(
                     description="The name of the generated " "function.",
                 ),
                 residual_name=Param(
-                    "F", description="The name of " "the residual argument."
+                    "F",
+                    description="The name of " "the residual argument.",
                 ),
                 result_name=Param(
-                    "dx", description="The name of " "the incriment argument."
+                    "dx",
+                    description="The name of " "the incriment argument.",
                 ),
             ),
             componentwise_rhs_evaluation=ParameterDict(
@@ -376,7 +388,8 @@ parameters = ParameterDict(
                     description="The name of the generated " "function.",
                 ),
                 numeric_jacobian=Param(
-                    False, description="Use numeric " "calculated diagonal jacobian."
+                    False,
+                    description="Use numeric " "calculated diagonal jacobian.",
                 ),
             ),
         ),
@@ -410,6 +423,6 @@ parameters = ParameterDict(
                 "the child component it contains the name of the "
                 "parent component.",
             ),
-        )
+        ),
     ),
 )

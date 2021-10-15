@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 # Copyright (C) 2012 Johan Hake
 #
 # This file is part of Gotran.
@@ -17,9 +16,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
+import os
+
+from gotran.input.cellml import CellMLParser
 
 # Gotran imports
-from gotran.input.cellml import CellMLParser
 
 
 def define_parser(change_state_names):
@@ -29,7 +30,8 @@ def define_parser(change_state_names):
     import optparse
 
     parser = optparse.OptionParser(
-        usage="%prog [options]", description="Translate CellML files into gotran files."
+        usage="%prog [options]",
+        description="Translate CellML files into gotran files.",
     )
 
     def list_parser(option, opt_str, value, parser, arg_list):
@@ -44,7 +46,7 @@ def define_parser(change_state_names):
             else:
                 arg_list.append(rargs.pop(0))
 
-    opt = parser.add_option(
+    parser.add_option(
         "-c",
         "--change_state_names",
         help="Change the name locally of a state name. " "Usage: -c R",
@@ -80,7 +82,7 @@ def define_parser(change_state_names):
     parser.add_option(
         "-o",
         "--output",
-        help="""Name of output file. If not provided 
+        help="""Name of output file. If not provided
         then the same name as the name of the cellml file will be used""",
         default="",
         type=str,
@@ -90,8 +92,6 @@ def define_parser(change_state_names):
 
 
 def main():
-    import sys
-    import os
 
     change_state_names = []
     parser = define_parser(change_state_names)

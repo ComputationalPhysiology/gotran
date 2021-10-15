@@ -24,10 +24,10 @@ http://www.CellML.org/
 			<sect1 id="sec_status">
 				<title>Model Status</title>
 				<para>
-       This cellML model is known to run in both PCEnv and COR.  The units have been checked and they are consistent.  This second version of the CellML model has been modified by Steve Niederer.  The CellML model was compared with Jeremy Rice's original Matlab code taken from his web page.  Changes to the CellML model include:  body temperature in the Rice Matlab code is acurate to 3sf ie body temp is 310 not 310.15.  Also in the Rice Matlab code derivative 12 the force integral is fixed to be zero.  To fix the CellML model Steve introduced: 
+       This cellML model is known to run in both PCEnv and COR.  The units have been checked and they are consistent.  This second version of the CellML model has been modified by Steve Niederer.  The CellML model was compared with Jeremy Rice's original Matlab code taken from his web page.  Changes to the CellML model include:  body temperature in the Rice Matlab code is acurate to 3sf ie body temp is 310 not 310.15.  Also in the Rice Matlab code derivative 12 the force integral is fixed to be zero.  To fix the CellML model Steve introduced:
 </para>
 
-<para>       
+<para>
 SEon = 1.0;
 To cellml model and change afterload definition to:
 if (SEon == 1)
@@ -37,7 +37,7 @@ afterload = 0.0;
 end;
 </para>
 
-<para> 
+<para>
 and changed xbmodsp = 4/3 (which is the mouse specific modification for XB cycling rates)
 to xbmodsp = 1 (to represent the rat model and not the mouse)
 </para>
@@ -2432,10 +2432,10 @@ Note that the current CellMl model describes the rat model of myofilamentcontrac
   </rdf:Description>
   <rdf:Description rdf:about="rdf:#98a3adb9-69a9-4c85-b2e0-bf1550f7f8eb">
     <dcterms:modified rdf:resource="rdf:#6de1fd88-e4a8-4cdb-a0b5-e9ee4bfeacd6"/>
-    <rdf:value>This second version of the CellML model has been modified by Steve Niederer.  The CellML model was compared with Jeremy Rice's original Matlab code taken from his web page.  Changes to the CellML model include:  body temperature in the Rice Matlab code is acurate to 3sf ie body temp is 310 not 310.15.  Also in the Rice Matlab code derivative 12 the force integral is fixed to be zero.  
+    <rdf:value>This second version of the CellML model has been modified by Steve Niederer.  The CellML model was compared with Jeremy Rice's original Matlab code taken from his web page.  Changes to the CellML model include:  body temperature in the Rice Matlab code is acurate to 3sf ie body temp is 310 not 310.15.  Also in the Rice Matlab code derivative 12 the force integral is fixed to be zero.
 
-To fix the CellML model Steve introduced: 
-    
+To fix the CellML model Steve introduced:
+
 SEon = 1.0;
 To cellml model and change afterload definition to:
 if (SEon == 1)

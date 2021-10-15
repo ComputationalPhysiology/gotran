@@ -1,15 +1,14 @@
 """test for odecomponent module"""
-
 # Imports for evaluation of generated code
 from __future__ import division
-import numpy as np
+
+import importlib
 from pathlib import Path
 
+import numpy as np
 import pytest
-import itertools
-import importlib
-import gotran
 
+import gotran
 from gotran.common import parameters
 
 _here = Path(__file__).absolute().parent
@@ -27,14 +26,17 @@ def get_all_options_no_default(d, key):
 
 
 state_repr_opts = get_all_options_no_default(
-    default_params.code.states, "representation"
+    default_params.code.states,
+    "representation",
 )
 param_repr_opts = get_all_options_no_default(
-    default_params.code.parameters, "representation"
+    default_params.code.parameters,
+    "representation",
 )
 body_repr_opts = get_all_options_no_default(default_params.code.body, "representation")
 body_optimize_opts = get_all_options_no_default(
-    default_params.code.body, "optimize_exprs"
+    default_params.code.body,
+    "optimize_exprs",
 )
 
 
@@ -206,7 +208,9 @@ def test_generate_same_code():
         comps = [
             gotran.rhs_expressions(ode, params=code_params),
             gotran.monitored_expressions(
-                ode, ["i_NaK", "i_NaCa", "i_CaL", "d_fCa"], params=code_params
+                ode,
+                ["i_NaK", "i_NaCa", "i_CaL", "d_fCa"],
+                params=code_params,
             ),
             gotran.componentwise_derivative(ode, 15, params=code_params),
             gotran.linearized_derivatives(ode, params=code_params),

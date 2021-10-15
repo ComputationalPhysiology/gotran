@@ -29,22 +29,24 @@ __all__ = [
     "RateDict",
 ]
 
+import re
+import weakref
+
 # System imports
 from collections import OrderedDict
-import weakref
-import re
 
-from sympy.core.function import AppliedUndef
-from sympy import preorder_traversal, Symbol
+from modelparameters.logger import error
 
 # ModelParameters imports
 from modelparameters.sympytools import sp
-from modelparameters.utils import tuplewrap
+from modelparameters.utils import check_arg, tuplewrap
+from sympy import Symbol, preorder_traversal
+from sympy.core.function import AppliedUndef
+
+from .expressions import State
 
 # Local imports
-from gotran.common import error, debug, check_arg, check_kwarg, scalars
-from gotran.model.odeobjects import *
-from gotran.model.expressions import *
+from .odeobjects import ODEObject
 
 
 def ode_primitives(expr, time):
@@ -77,8 +79,8 @@ def ode_primitives(expr, time):
     return symbols
 
 
-_derivative_name_template = re.compile("\Ad([a-zA-Z]\w*)_d([a-zA-Z]\w*)\Z")
-_algebraic_name_template = re.compile("\Aalg_([a-zA-Z]\w*)_0\Z")
+_derivative_name_template = re.compile(r"\Ad([a-zA-Z]\w*)_d([a-zA-Z]\w*)\Z")
+_algebraic_name_template = re.compile(r"\Aalg_([a-zA-Z]\w*)_0\Z")
 
 # Flags for determine special expressions
 INTERMEDIATE = 0
@@ -267,7 +269,7 @@ class ODEObjectList(list):
             return any(item == obj.name for obj in self)
         elif isinstance(item, sp.Symbol):
             return any(item.name == obj.name for obj in self)
-        elif (item, ODEObject):
+        elif isinstance(item, ODEObject):
             return super(ODEObjectList, self).__contains__(item)
         return False
 
@@ -276,7 +278,7 @@ class ODEObjectList(list):
             return sum(item == obj.name for obj in self)
         elif isinstance(item, sp.Symbol):
             return sum(item.name == obj.name for obj in self)
-        elif (item, ODEObject):
+        elif isinstance(item, ODEObject):
             return super(ODEObjectList, self).count(item)
         return 0
 
@@ -289,7 +291,7 @@ class ODEObjectList(list):
             for ind, obj in enumerate(self):
                 if item.name == obj.name:
                     return ind
-        elif (item, ODEObject):
+        elif isinstance(item, ODEObject):
             for ind, obj in enumerate(self):
                 if item == obj:
                     return ind
@@ -356,7 +358,7 @@ class RateDict(OrderedDict):
             if not isinstance(states, tuple) or len(states) != 2:
                 error(
                     "Expected a tuple of size 2 with states when "
-                    "registering a single rate."
+                    "registering a single rate.",
                 )
 
             # NOTE: the actuall item is set by the component while calling this

@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
+from modelparameters.logger import info
+from modelparameters.parameterdict import ParameterDict
+from modelparameters.parameters import Param
+from modelparameters.utils import list_timings
 
-import os
-
-from gotran.model.loadmodel import load_ode
 from gotran.codegeneration.codegenerators import CUDACodeGenerator
-from gotran.common.options import parameters
-from gotran.common import error, list_timings, info
-from modelparameters.parameterdict import *
+from gotran.model.loadmodel import load_ode
 
 
 def gotran2cuda(filename, params):
@@ -44,7 +43,8 @@ def gotran2cuda(filename, params):
 
 
 def main():
-    import sys, os
+    import os
+    import sys
 
     generation_params = CUDACodeGenerator.default_parameters()
 

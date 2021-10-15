@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-
 import os
+import sys
 
-from gotran.model.loadmodel import load_ode
+from modelparameters.logger import info
+from modelparameters.parameterdict import ParameterDict
+from modelparameters.parameters import OptionParam
+from modelparameters.parameters import Param
+from modelparameters.utils import list_timings
+from modelparameters.utils import Timer
+
 from gotran.codegeneration.codegenerators import PythonCodeGenerator
 from gotran.common.options import parameters
-from gotran.common import error, info, list_timings, Timer
-from modelparameters.parameterdict import *
+from gotran.model.loadmodel import load_ode
 
 
 def gotran2py(filename, params):
@@ -56,7 +61,6 @@ def gotran2py(filename, params):
 
 
 def main():
-    import sys, os
 
     generation_params = parameters.generation.copy()
 
@@ -68,7 +72,8 @@ def main():
         ),
         output=Param("", description="Specify output file name"),
         import_inside_functions=Param(
-            False, description="Perform imports inside functions"
+            False,
+            description="Perform imports inside functions",
         ),
         namespace=OptionParam(
             "math",

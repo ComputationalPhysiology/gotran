@@ -14,51 +14,41 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
-
-from . import odeobjects
 from . import expressions
-from . import odecomponent
-from . import utils
-from . import ode
-from . import cellmodel
 from . import loadmodel
-
+from . import ode
+from . import odecomponent
+from . import odeobjects
+from . import utils
+from .expressions import AlgebraicExpression
+from .expressions import DerivativeExpression
+from .expressions import Derivatives
+from .expressions import Expression
+from .expressions import IndexedExpression
+from .expressions import Intermediate
+from .expressions import RateExpression
+from .expressions import recreate_expression
+from .expressions import StateDerivative
+from .expressions import StateExpression
+from .expressions import StateSolution
+from .loadmodel import exec_ode
+from .loadmodel import load_ode
+from .ode import ODE
+from .odecomponent import ODEComponent
+from .odeobjects import cmp
+from .odeobjects import cmp_to_key
+from .odeobjects import Comment
+from .odeobjects import Dt
+from .odeobjects import IndexedObject
+from .odeobjects import ODEObject
+from .odeobjects import ODEValueObject
+from .odeobjects import Parameter
+from .odeobjects import SingleODEObjects
+from .odeobjects import State
+from .odeobjects import Time
 
 # gotran imports
-# from .odeobjects import *
-from .odeobjects import (
-    ODEObject,
-    State,
-    ODEValueObject,
-    Parameter,
-    Comment,
-    IndexedObject,
-    Time,
-    Dt,
-    SingleODEObjects,
-    cmp,
-    cmp_to_key,
-)
 
-from .odecomponent import ODEComponent
-from .expressions import (
-    Expression,
-    DerivativeExpression,
-    AlgebraicExpression,
-    StateExpression,
-    StateSolution,
-    RateExpression,
-    Intermediate,
-    StateDerivative,
-    Derivatives,
-    IndexedExpression,
-    recreate_expression,
-)
-from .ode import ODE
-from .cellmodel import CellModel
-from .loadmodel import load_ode, exec_ode, load_cell
-
-# __all__ = [_name for _name in list(globals().keys()) if _name[0] != "_"]
 __all__ = [
     "odeobjects",
     "ODEObject",
@@ -94,4 +84,5 @@ __all__ = [
     "load_ode",
     "exec_ode",
     "load_cell",
+    "utils",
 ]

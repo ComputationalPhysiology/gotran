@@ -1,13 +1,13 @@
 import pycuda.driver as drv
+from pycuda.compiler import SourceModule
+
+from gotran import CCodeGenerator
+from gotran import load_ode
+from gotran import ODERepresentation
 
 drv.init()
 dev = drv.Device(0)
 
-import pycuda.tools
-import pycuda.autoinit
-import numpy as np
-from pycuda.compiler import SourceModule
-from gotran import load_ode, ODERepresentation, CCodeGenerator
 
 dev = drv.Device(0)
 arch = "sm_%d%d" % dev.compute_capability()
@@ -71,7 +71,7 @@ gpu_code = (
     + rhs_code
 )
 
-print gpu_code
+print(gpu_code)
 
 # Can be compiled with nvcc -c gpu_code.cu -arch=sm_20
 open("gpu_code.cu", "w").write(gpu_code)

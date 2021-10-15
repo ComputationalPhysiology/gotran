@@ -14,7 +14,7 @@ $(libfile): CFLAGS += -fPIC
 $(libfile): $(sources) tentusscher_panfilov_2006_M_cell.h
 	$(CC) $(CFLAGS) -shared -o $@ $<
 
-# 
+#
 demo.o: tentusscher_panfilov_2006_M_cell.h
 tentusscher_panfilov_2006_M_cell.h: tentusscher_panfilov_2006_M_cell.ode
 	gotran2c $< --solvers.explicit_euler.generate=1 --solvers.rush_larsen.generate=1 --code.body.use_enum=1 --output=$@

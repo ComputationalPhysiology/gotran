@@ -14,26 +14,15 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
-
 # Not meant to make any of the functions available from this module
 __all__ = []
 
+import mpmath.libmp as _mlib
+
 # A hack to get around evaluation of SymPy expressions
 import sympy as sp
-from sympy.core.operations import AssocOp as _AssocOp
-from sympy.core.power import Pow as _Pow
-from sympy.core.expr import Expr as _Expr
-from sympy.core.add import Add as _Add
-from sympy.core.cache import cacheit as _cacheit
 from sympy.core import function as _function
-from sympy.core.assumptions import ManagedProperties as _ManagedProperties
-
-try:
-    import sympy.mpmath.libmp as _mlib
-except ImportError as ex:
-    print(ex)
-
-import types
+from sympy.core.expr import Expr as _Expr
 
 _evaluate = False
 
@@ -71,7 +60,8 @@ def _assocop_new(cls, *args, **options):
     obj = cls._from_args(c_part + nc_part, is_commutative)
 
     if order_symbols is not None:
-        return C.Order(obj, *order_symbols)
+        # Where does this come from?
+        return C.Order(obj, *order_symbols)  # noqa: F821
     return obj
 
 
@@ -99,7 +89,12 @@ def _function_new(cls, *args, **options):
             )
             raise TypeError(
                 temp
-                % {"name": cls, "args": cls.nargs, "plural": "s" * (n != 1), "given": n}
+                % {
+                    "name": cls,
+                    "args": cls.nargs,
+                    "plural": "s" * (n != 1),
+                    "given": n,
+                },
             )
 
     evaluate = options.get("evaluate", _evaluate)

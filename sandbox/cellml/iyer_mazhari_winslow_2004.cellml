@@ -6870,7 +6870,7 @@ A computational model of the human left-ventricular epicardial myocyte, Vivek Iy
    <component name="transmembrane_currents"/>
    <component name="intracellular_currents"/>
    <component name="Ions_n_reversal_potentials"/>
-   
+
    <connection>
       <map_components component_1="environment" component_2="IKs"/>
       <map_variables variable_1="time" variable_2="time"/>

@@ -33,16 +33,16 @@ http://www.CellML.org/
         <para>
 ABSTRACT: In the mammalian heart, myocytes and fibroblasts can communicate via gap junction, or connexin-mediated current flow. Some of the effects of this electrotonic coupling on the action potential waveform of the human ventricular myocyte have been analyzed in detail. The present study employs a recently developed mathematical model of the human atrial myocyte to investigate the consequences of this heterogeneous cell-cell interaction on the action potential of the human atrium. Two independent physiological processes which alter the physiology of the human atrium have been studied. i) The effects of the autonomic transmitter acetylcholine on the atrial action potential have been investigated by inclusion of a time-independent, acetylcholine-activated K+ current in this mathematical model of the atrial myocyte. ii) A non-selective cation current which is activated by natriuretic peptides has been incorporated into a previously published mathematical model of the cardiac fibroblast. These results identify subtle effects of acetylcholine, which arise from the nonlinear interactions between ionic currents in the human atrial myocyte. They also illustrate marked alterations in the action potential waveform arising from fibroblast-myocyte source-sink principles when the natriuretic peptide-mediated cation conductance is activated. Additional calculations also illustrate the effects of simultaneous activation of both of these cell-type specific conductances within the atrial myocardium. This study provides a basis for beginning to assess the utility of mathematical modeling in understanding detailed cell-cell interactions within the complex paracrine environment of the human atrial myocardium.
 </para>
-        
+
         <para>
 The complete original paper reference is cited below:
 </para>
         <para>
-        Mathematical simulations of ligand-gated and cell-type specific effects on the action potential of human atrium, Mary M. Maleckara, Joseph L. Greensteina, Natalia A. Trayanova and Wayne R. Giles, 2009, 
+        Mathematical simulations of ligand-gated and cell-type specific effects on the action potential of human atrium, Mary M. Maleckara, Joseph L. Greensteina, Natalia A. Trayanova and Wayne R. Giles, 2009,
             <emphasis>Progress in Biophysics and Molecular Biology</emphasis> <ulink url="http://www.ncbi.nlm.nih.gov/pubmed/19186188?ordinalpos=1&amp;itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DefaultReportPanel.Pubmed_RVDocSum">PubMed ID: 19186188</ulink>
         </para>
-		
-		
+
+
         <informalfigure float="0" id="fig_cell_diagram">
           <mediaobject>
             <imageobject>
@@ -53,8 +53,8 @@ The complete original paper reference is cited below:
             </imageobject>
           </mediaobject>
           <caption>Schematic diagram of the human atrial myocyte model. It includes the main time- and voltage-dependent ion currents which contribute to the generation of the human atrial action potential: INa, ICa,L, It, Ikur, IK1, IKr, and IKs. This model also includes electrogenic pump and exchanger currents: the sarcolemmal Ca2+ pump current (ICa,P), the Na+-Ca2+ exchanger current (INaCa), and the Na+-K+ pump current (INaK). These transporters are responsible for the maintenance of intracellular ion concentrations, and are balanced by Na+ and Ca2+ time-independent or background currents, IBNa and IBCa.</caption>
-        </informalfigure> 
-		
+        </informalfigure>
+
       </sect1>
     </article>
   </documentation>
@@ -3338,8 +3338,8 @@ The complete original paper reference is cited below:
       <map_variables variable_2="time" variable_1="time"/>
       <map_variables variable_2="V" variable_1="V"/>
    </connection>
-   
-   
+
+
 <rdf:RDF>
   <rdf:Seq rdf:about="rdf:#d003b9eb-7e64-407f-80b4-2fd29cc9216a">
     <rdf:li rdf:resource="rdf:#071d5810-0c3c-4785-9f97-32accb68d991"/>

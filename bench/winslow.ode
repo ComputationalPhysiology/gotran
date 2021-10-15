@@ -23,7 +23,7 @@ states("Intracellular Ca",
 states("RyR Channel",
        C1_RyR=0.4929, O1_RyR=6.027e-4, O2_RyR=2.882e-9, C2_RyR=0.5065)
 
-states("L-type Ca Channel", 
+states("L-type Ca Channel",
        yCa=0.7959)
 
 markov_model("lcc", "L-type Ca Channel", algebraic_sum=1.0,
@@ -58,7 +58,7 @@ parameters("Ionic concentrations",
 
 parameters("Na current I_Na",
            G_NaMax = 12.8,
-           )          
+           )
 
 parameters("Rapid-activating delayed rectifier K current I_Kr",
            G_KrMax = 0.0034,
@@ -108,7 +108,7 @@ parameters("Na background current I_bNa",
            G_bNaMax= 0.0031,
            )
 
-parameters("Intracellular Ca", 
+parameters("Intracellular Ca",
            tau_tr  = 0.5747,
            tau_xfer= 26.7,
            LTRPNtot   = 70e-3,
@@ -278,7 +278,7 @@ for ind, (normal, Ca_mode) in enumerate(zip(normal_mode_states, \
 
     lcc[normal, Ca_mode] = gamma*aL**ind
     lcc[Ca_mode, normal] = omega/bL**ind
-    
+
 lcc[C4, Open] = fL
 lcc[Open, C4] = gL
 
@@ -288,7 +288,7 @@ dyCa = (yCa_inf-yCa)/tau_yCa
 
 VFsqonRT=(1000.0*F)*VFonRT
 
-a1 =  1.0e-3*exp(2.0*VFonRT)-Ca_o*0.341 
+a1 =  1.0e-3*exp(2.0*VFonRT)-Ca_o*0.341
 a2 =  exp(2.0*VFonRT)-1.0
 ICamax = PCa*4.0*VFsqonRT*(a1/a2)
 I_Ca = ICamax*yCa*Open
@@ -303,7 +303,7 @@ a1 = (Ca_ss*1000.0)**mcoop
 a2 = (Ca_ss*1000.0)**ncoop
 dC1_RyR = -kaplus*a2*C1_RyR+kaminus*O1_RyR
 dO2_RyR =  kbplus*a1*O1_RyR - kbminus*O2_RyR
-dC2_RyR =  kcplus*O1_RyR - kcminus*C2_RyR 
+dC2_RyR =  kcplus*O1_RyR - kcminus*C2_RyR
 dO1_RyR = -(dC1_RyR + dO2_RyR + dC2_RyR)
 
 J_rel = v_1*(O1_RyR+O2_RyR)*(Ca_JSR-Ca_ss)
@@ -324,13 +324,13 @@ dLTRPNCa = kltrpn_plus*Ca_i*(1.0 - LTRPNCa) - a1
 
 a1 = khtrpn_minus * HTRPNCa
 dHTRPNCa = khtrpn_plus*Ca_i*(1.0 - HTRPNCa) - a1
-	
+
 J_trpn = LTRPNtot*dLTRPNCa+HTRPNtot*dHTRPNCa
- 
+
 a1 = CMDNtot*KmCMDN/((Ca_ss+KmCMDN)**2.0)
 #a2 = 0
-beta_ss = 1.e0/(1.0+a1)#+a2) 
-		
+beta_ss = 1.e0/(1.0+a1)#+a2)
+
 a1 = CSQNtot*KmCSQN/((Ca_JSR+KmCSQN)**2.0)
 beta_JSR = 1.0/(1.0+a1)
 

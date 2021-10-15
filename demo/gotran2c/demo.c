@@ -21,7 +21,7 @@ void ode_solve_forward_euler(double* u, const double* parameters,
       u_values[save_it*NUM_STATES + j] = u[j];
     }
     save_it++;
-    
+
   }
 }
 
@@ -38,7 +38,7 @@ void ode_solve_rush_larsen(double* u, const double* parameters,
     for (j=0; j < NUM_STATES; j++) {
       u_values[save_it*NUM_STATES + j] = u[j];
     }
-    save_it++;    
+    save_it++;
   }
 }
 
@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
       num_timesteps, time_elapsed, num_timesteps/time_elapsed);
   printf("\n");
 
- 
+
   free(states);
   free(parameters);
 

@@ -63,7 +63,7 @@ class odict(dict):
                 self[key] = value
 
     def __setitem__(self, key, value):
-        if not key in self._keys:
+        if key not in self._keys:
             self._keys.append(key)
         dict.__setitem__(self, key, value)
 

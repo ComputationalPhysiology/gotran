@@ -3688,7 +3688,7 @@ Alternans and spiral breakup in a human ventricular tissue model, K.H.W.J. ten T
       <map_components component_1="potassium_pump_current" component_2="potassium_dynamics"/>
       <map_variables variable_1="i_p_K" variable_2="i_p_K"/>
    </connection>
-   
+
   <rdf:RDF>
   <rdf:Seq rdf:about="rdf:#39b48654-1d23-4568-b957-fb33e181aa23">
     <rdf:li rdf:resource="rdf:#a28bd221-2445-4352-89c2-9396d0a61816"/>
@@ -3704,7 +3704,7 @@ Alternans and spiral breakup in a human ventricular tissue model, K.H.W.J. ten T
   </rdf:Description>
   <rdf:Description rdf:about="rdf:#818bd265-436b-4998-b234-ef3a85f61102">
     <dc:creator rdf:resource="rdf:#def62f50-c35c-457a-8d69-7acb1c45da8f"/>
-    <rdf:value>The 2006 model is based on earlier ten Tusscher models, and incorporates recent experimental restitution data, an improved description of intracellular calcium dynamics - including subspace calcium dynamics which control L-type calcium current and calcium-induced calcium release (CICR,) by means of modelling CICR with a four-state Markov model for the ryanodine receptor - and incorporation of both fast and slow voltage-gated inactivation of the L-type calcium current. 
+    <rdf:value>The 2006 model is based on earlier ten Tusscher models, and incorporates recent experimental restitution data, an improved description of intracellular calcium dynamics - including subspace calcium dynamics which control L-type calcium current and calcium-induced calcium release (CICR,) by means of modelling CICR with a four-state Markov model for the ryanodine receptor - and incorporation of both fast and slow voltage-gated inactivation of the L-type calcium current.
 This is the M-CELL VARIANT of the model. This model was created by Penny Noble of Oxford University and is known to run in COR and PCEnv.</rdf:value>
   </rdf:Description>
   <rdf:Description rdf:about="rdf:#7d5140c1-8110-4167-8d49-a7302d321751">
@@ -3808,7 +3808,7 @@ Changed model cmeta:id to remove version number.</rdf:value>
   </rdf:Description>
   <rdf:Description rdf:about="rdf:#97d85a02-1782-4022-a417-7dca4ff47047">
     <dc:creator rdf:resource="rdf:#fb9e7106-ef4a-4116-9fe3-00087b0a59cd"/>
-    <rdf:value>The 2006 model is based on earlier ten Tusscher models, and incorporates recent experimental restitution data, an improved description of intracellular calcium dynamics - including subspace calcium dynamics which control L-type calcium current and calcium-induced calcium release (CICR,) by means of modelling CICR with a four-state Markov model for the ryanodine receptor - and incorporation of both fast and slow voltage-gated inactivation of the L-type calcium current. 
+    <rdf:value>The 2006 model is based on earlier ten Tusscher models, and incorporates recent experimental restitution data, an improved description of intracellular calcium dynamics - including subspace calcium dynamics which control L-type calcium current and calcium-induced calcium release (CICR,) by means of modelling CICR with a four-state Markov model for the ryanodine receptor - and incorporation of both fast and slow voltage-gated inactivation of the L-type calcium current.
 This is the M-CELL VARIANT of the model. This model was created by Penny Noble of Oxford University and is known to run in COR and PCEnv.</rdf:value>
   </rdf:Description>
   <rdf:Description rdf:about="rdf:#a3865422-09a2-4ed5-a07d-4e8b7eb2b262">

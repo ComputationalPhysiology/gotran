@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <model xmlns="http://www.cellml.org/cellml/1.1#" xmlns:cmeta="http://www.cellml.org/metadata/1.0#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqs="http://www.cellml.org/bqs/1.0#" xmlns:cellml="http://www.cellml.org/cellml/1.1#" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#" xmlns:ns7="http://www.cellml.org/metadata/simulation/1.0#" name="Pandit_Hinch_Niederer_Model" cmeta:id="Pandit_Hinch_Niederer_Model">
-  
+
 <documentation xmlns="http://cellml.org/tmp-documentation">
 <article>
   <articleinfo>
@@ -54,10 +54,10 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
 
    <units name="uL">
       <unit prefix="micro" units="litre"/>
-   </units> 
+   </units>
    <units name="uA">
       <unit prefix="micro" units="ampere"/>
-   </units> 
+   </units>
 
 <!-- These components are imported from the Pandit et al endocardial cell model -->
 	<import xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="Pandit_et_al_2001_endo.cellml">
@@ -81,7 +81,7 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
 		<units name="ms" units_ref="ms"/>
 		<units name="mM_per_ms" units_ref="mM_per_ms"/>
 		<units name="um3" units_ref="um3"/>
-	
+
 <!--		<component component_ref="cell_geometry" name="hinch_cell_geometry"/> -->
 		<component component_ref="CaRU" name="hinch_CaRU"/>
 		<component component_ref="Na_Ca_Exchanger" name="hinch_Na_Ca_Exchanger"/>
@@ -94,7 +94,7 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
 
 <!-- These components are imported from the Niederer et al model of active contraction -->
 	<import xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="Niederer_et_al_2006.cellml">
-	
+
 		<component component_ref="thinfilaments" name="niederer_thinfilaments"/>
 		<component component_ref="tropomyosin" name="niederer_tropomyosin"/>
 		<component component_ref="troponin" name="niederer_troponin"/>
@@ -103,14 +103,14 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
 		<component component_ref="length_independent_tension" name="niederer_length_independent_tension"/>
 		<component component_ref="isometric_tension" name="niederer_isometric_tension"/>
 		<component component_ref="Cross_Bridges" name="niederer_Cross_Bridges"/>
-	</import>	
-	
+	</import>
+
 <!-- This component defines the modelling environment and the time step -->
    <component name="environment">
       <variable name="time" public_interface="out" units="ms"/>
    </component>
 
-   
+
 <!-- The membrane component defines the action potential variable "V" -->
    <component name="membrane">
       <variable initial_value="-80.50146" name="V" public_interface="out" units="mV"/>
@@ -120,12 +120,12 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
 
       <variable name="time" public_interface="in" units="ms"/>
       <variable name="Cm" initial_value="0.0001" units="uF"/>
-	  
+
       <variable name="I_Stim" public_interface="out" units="uA"/>
       <variable name="stim_period" units="ms" initial_value="1e3"/>
       <variable name="stim_duration" units="ms" initial_value="10"/>
       <variable name="stim_amplitude" units="uA" initial_value="-0.6e-3"/>
-  
+
       <variable name="I_Na" public_interface="in" units="uA"/>
       <variable name="I_t" public_interface="in" units="uA"/>
       <variable name="I_ss" public_interface="in" units="uA"/>
@@ -267,7 +267,7 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
       <variable name="V_SR_uL" units="uL" initial_value="2.098e-6" public_interface="out"/>
    </component>
 
-<!-- This component converts the imported components from the Hinch Calcium Model to the correct units for the current composite model -->   
+<!-- This component converts the imported components from the Hinch Calcium Model to the correct units for the current composite model -->
    <component name="convert_hinch">
       <variable name="F" units="C_per_mole" public_interface="in"/>
       <variable name="V_myo_uL" units="uL" public_interface="in"/>
@@ -344,7 +344,7 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
       </math>
    </component>
 
-<!-- This component is a modified version of Pandit Na-K pump component. The maximum current has been increased from 0.8e-4uA to 0.95e-4uA and 
+<!-- This component is a modified version of Pandit Na-K pump component. The maximum current has been increased from 0.8e-4uA to 0.95e-4uA and
       the power applied to the intracellular sodium dependence has been increased from 1.5 to 4.0  -->
    <component name="sodium_potassium_pump">
       <variable name="i_NaK" units="uA" public_interface="out"/>
@@ -477,15 +477,15 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
             </apply>
          </apply>
       </math>
-   </component>   
+   </component>
 
-   
+
    <component name="intracellular_ion_concentrations">
       <variable initial_value="10.73519" name="Na_i" public_interface="out" units="mM"/>
       <variable initial_value="0.00007901351" name="Ca_i" public_interface="out" units="mM"/>
       <variable initial_value="700.0e-3" name="Ca_SR" public_interface="out" units="mM"/>
       <variable initial_value="139.2751" name="K_i" public_interface="out" units="mM"/>
-      <variable initial_value="0.067593139865" name="TRPN" public_interface="out" units="mM"/> 
+      <variable initial_value="0.067593139865" name="TRPN" public_interface="out" units="mM"/>
 
       <variable name="V_myo_uL" public_interface="in" units="uL"/>
       <variable name="V_SR_uL" public_interface="in" units="uL"/>
@@ -517,7 +517,7 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
 
       <variable name="I_TRPN" public_interface="in" units="mM_per_ms"/>
 	  <variable name="beta_CMDN" public_interface="in" units="dimensionless"/>
-	  
+
       <math xmlns="http://www.w3.org/1998/Math/MathML">
          <apply>
             <eq/>
@@ -770,7 +770,7 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
       <map_variables variable_1="time" variable_2="time"/>
    </connection>
 
-<!-- CONNECTIONS BETWEEN ENVIRONMENT (TIME) AND NIEDERER COMPONENTS -->   
+<!-- CONNECTIONS BETWEEN ENVIRONMENT (TIME) AND NIEDERER COMPONENTS -->
    <connection>
       <map_components component_1="niederer_tropomyosin" component_2="environment"/>
       <map_variables variable_1="time" variable_2="time"/>
@@ -800,7 +800,7 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
       <map_variables variable_1="I_Stim" variable_2="I_Stim"/>
       <map_variables variable_1="F" variable_2="F"/>
    </connection>
-   <connection> 
+   <connection>
       <map_components component_1="sodium_potassium_pump" component_2="membrane"/>
       <map_variables variable_1="i_NaK" variable_2="I_NaK"/>
       <map_variables variable_1="F" variable_2="F"/>
@@ -813,7 +813,7 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
       <map_variables variable_1="i_NaK" variable_2="I_NaK"/>
       <map_variables variable_1="Na_i" variable_2="Na_i"/>
    </connection>
-   
+
 <!-- CONNECTIONS BETWEEN PANDIT COMPONENTS AND MEMBRANE -->
    <connection>
       <map_components component_1="pandit_sodium_current" component_2="membrane"/>
@@ -876,7 +876,7 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
       <map_variables variable_1="T" variable_2="T"/>
       <map_variables variable_1="F" variable_2="F"/>
    </connection>
-   
+
 <!-- CONNECTIONS BETWEEN PANDIT COMPONENTS AND INTRACELLULAR ION CONCENTRATIONS -->
    <connection>
       <map_components component_1="pandit_sodium_current" component_2="intracellular_ion_concentrations"/>
@@ -910,7 +910,7 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
    </connection>
 
 <!-- CONNECTIONS BETWEEN FULL_CELL_MODEL COMPONENTS AND EXTRACELLULAR ION CONCENTRATIONS -->
-   <connection> 
+   <connection>
       <map_components component_1="sodium_potassium_pump" component_2="pandit_standard_ionic_concentrations"/>
       <map_variables variable_1="K_o" variable_2="K_o"/>
       <map_variables variable_1="Na_o" variable_2="Na_o"/>
@@ -929,7 +929,7 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
       <map_components component_1="pandit_inward_rectifier" component_2="pandit_standard_ionic_concentrations"/>
       <map_variables variable_1="K_o" variable_2="K_o"/>
    </connection>
-   <connection> 
+   <connection>
       <map_components component_1="pandit_background_currents" component_2="pandit_standard_ionic_concentrations"/>
       <map_variables variable_1="Ca_o" variable_2="Ca_o"/>
    </connection>
@@ -962,8 +962,8 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
       <map_variables variable_1="E_Na" variable_2="E_Na"/>
    </connection>
 
-   
-   <connection> 
+
+   <connection>
       <map_components component_1="cell_geometry" component_2="intracellular_ion_concentrations"/>
       <map_variables variable_1="V_myo_uL" variable_2="V_myo_uL"/>
       <map_variables variable_1="V_SR_uL" variable_2="V_SR_uL"/>
@@ -973,8 +973,8 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
       <map_variables variable_1="V_myo" variable_2="V_myo"/>
    </connection>
 
-   
-<!-- CONNECTIONS TO AND FROM CONVERT_HINCH -->   
+
+<!-- CONNECTIONS TO AND FROM CONVERT_HINCH -->
    <connection>
       <map_components component_1="membrane" component_2="convert_hinch"/>
       <map_variables variable_1="F" variable_2="F"/>
@@ -1052,7 +1052,7 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
       <map_variables variable_1="I_SR" variable_2="I_SR"/>
    </connection>
 
-<!-- CONNECTIONS BETWEEN HINCH COMPONENTS AND EXTRACELLULAR ION CONCENTRATIONS -->   
+<!-- CONNECTIONS BETWEEN HINCH COMPONENTS AND EXTRACELLULAR ION CONCENTRATIONS -->
    <connection>
       <map_components component_1="hinch_CaRU" component_2="pandit_standard_ionic_concentrations"/>
       <map_variables variable_1="Ca_o" variable_2="Ca_o"/>
@@ -1130,7 +1130,7 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
       <map_components component_1="niederer_Cross_Bridges" component_2="niederer_isometric_tension"/>
       <map_variables variable_1="T_0" variable_2="T_0"/>
    </connection>
-   
+
 <rdf:RDF>
   <rdf:Seq rdf:about="rdf:#0a540d49-9617-4b05-9341-8a7f17f683b3">
     <rdf:li rdf:resource="rdf:#1f27c209-2bce-4b3a-be80-c363512900f9"/>
@@ -1283,7 +1283,7 @@ Using Physiome standards to couple cellular functions for rat cardiac excitation
   </rdf:Description>
   <rdf:Description rdf:about="rdf:#01b1f3a9-8550-4c31-972a-2233ea5606b5">
     <dcterms:modified rdf:resource="rdf:#18e2d24c-8f28-4fb3-84b1-d0125c52598a"/>
-    <rdf:value>Added CellML 1.0 model to version 01's documentation. 
+    <rdf:value>Added CellML 1.0 model to version 01's documentation.
 
 Added some cmeta:ids to variables</rdf:value>
     <cmeta:modifier rdf:resource="rdf:#d864f300-bb41-438b-a374-22885e9a74e3"/>
@@ -1305,5 +1305,5 @@ Added some cmeta:ids to variables</rdf:value>
     <bqs:JournalArticle rdf:resource="rdf:#b92ac5a4-36f4-4746-b65b-68ec42ad7b53"/>
   </rdf:Description>
 </rdf:RDF>
-   
+
 </model>

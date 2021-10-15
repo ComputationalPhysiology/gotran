@@ -14,12 +14,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
-
 from . import symbolicnewtonsolution
 
-# gotran imports
-from gotran.algorithms.symbolicnewtonsolution import *
-
-__all__ = [_name for _name in list(globals().keys()) if _name[0] != "_"]
-
-# del _name
+__all__ = ["symbolicnewtonsolution"]

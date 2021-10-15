@@ -1,11 +1,9 @@
-import math
-import numpy as np
-import ctypes
-from ctypes import c_int, c_long, c_ulong, c_double
-import time
 import os
-import matplotlib.pyplot as plt
+from ctypes import c_double
+from ctypes import c_int
 
+import matplotlib.pyplot as plt
+import numpy as np
 
 libname = "libdemo.so"
 libdir = "."
@@ -26,7 +24,9 @@ def init_lib():
 
     float64_array = np.ctypeslib.ndpointer(dtype=c_double, ndim=1, flags="contiguous")
     float64_array_2d = np.ctypeslib.ndpointer(
-        dtype=c_double, ndim=2, flags="contiguous"
+        dtype=c_double,
+        ndim=2,
+        flags="contiguous",
     )
 
     libbase_model.init_state_values.restype = None  # void
@@ -79,11 +79,21 @@ def solve(t_start, t_end, dt, num_steps=None, method="fe"):
 
     if method == "fe":
         libbase_model.ode_solve_forward_euler(
-            u, parameters, u_values, t_values, num_steps, dt
+            u,
+            parameters,
+            u_values,
+            t_values,
+            num_steps,
+            dt,
         )
     elif method == "rush_larsen":
         libbase_model.ode_solve_rush_larsen(
-            u, parameters, u_values, t_values, num_steps, dt
+            u,
+            parameters,
+            u_values,
+            t_values,
+            num_steps,
+            dt,
         )
     else:
         raise ValueError(f"Invalid method {method}")

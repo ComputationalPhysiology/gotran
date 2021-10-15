@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
+import os
+import sys
 
-from gotran.codegeneration.latexcodegenerator import (
-    LatexCodeGenerator,
-    _default_latex_params,
-)
+from modelparameters.logger import info
+from modelparameters.parameterdict import ParameterDict
+from modelparameters.parameters import Param
+
+from gotran.codegeneration.latexcodegenerator import _default_latex_params
+from gotran.codegeneration.latexcodegenerator import LatexCodeGenerator
 from gotran.model.loadmodel import load_ode
-from gotran import info
 
 
 def gotran2latex(filename, params):
@@ -15,7 +18,8 @@ def gotran2latex(filename, params):
 
     if not params.sympy_contraction:
         # A hack to avoid sympy contractions
-        import gotran.codegeneration.avoidsympycontractions
+        # import gotran.codegeneration.avoidsympycontractions
+        pass
 
     # Load Gotran model
     ode = load_ode(filename)
@@ -36,9 +40,6 @@ def gotran2latex(filename, params):
 
 
 def main():
-    import os
-    import sys
-    from modelparameters.parameterdict import ParameterDict, Param
 
     params = _default_latex_params()
     params = ParameterDict(

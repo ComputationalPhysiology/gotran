@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-
-import numpy as np
 import os
+import sys
 
+from modelparameters.parameterdict import ParameterDict
+from modelparameters.parameters import Param
+
+from gotran.codegeneration.algorithmcomponents import rhs_expressions
 from gotran.codegeneration.codegenerators import DOLFINCodeGenerator
 from gotran.model.loadmodel import load_ode
-from gotran.codegeneration.algorithmcomponents import rhs_expressions
 
 
 def gotran2dolfin(filename, params):
@@ -32,13 +34,12 @@ def gotran2dolfin(filename, params):
     f.write(code_gen.init_states_code(ode) + "\n\n")
     f.write(code_gen.init_parameters_code(ode) + "\n\n")
     f.write(
-        code_gen.function_code(rhs_expressions(ode, params=code_gen.params.code)) + "\n"
+        code_gen.function_code(rhs_expressions(ode, params=code_gen.params.code))
+        + "\n",
     )
 
 
 def main():
-    import sys
-    from modelparameters.parameterdict import ParameterDict, OptionParam, Param
 
     params = ParameterDict(
         output=Param("", description="Specify output file name"),
