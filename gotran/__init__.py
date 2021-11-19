@@ -93,7 +93,7 @@ from .model import (
     recreate_expression,
 )
 
-# from . import scripts
+from modelparameters.logger import set_log_level
 
 
 __all__ = [
@@ -183,4 +183,5 @@ __all__ = [
     "cellml",
     "cellml2ode",
     "CellMLParser",
+    "set_log_level",
 ]
