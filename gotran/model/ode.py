@@ -138,6 +138,28 @@ class ODE(ODEComponent):
         self._allow_magic_attributes = True
 
     @property
+    def parameter_symbols(self):
+        return [s.name for s in self.parameters]
+
+    @property
+    def component_names(self):
+        return [s.name for s in self.components]
+
+    def parameter_values(self):
+        return [s.value for s in self.parameters]
+
+    @property
+    def state_symbols(self):
+        return [s.name for s in self.states]
+
+    def state_values(self):
+        return [s.value for s in self.states]
+
+    @property
+    def intermediate_symbols(self):
+        return [i.name for i in self.intermediates]
+
+    @property
     def ns(self):
         if isinstance(self._ns, dict):
             return self._ns
