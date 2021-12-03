@@ -27,7 +27,7 @@ here = Path(__file__).parent.absolute()
     ],
 )
 def test_gotran_codegen_scripts(script, ext):
-    modelname = Path("model").joinpath("tentusscher_2004_mcell_updated")
+    modelname = here.joinpath("model").joinpath("tentusscher_2004_mcell_updated")
     args = ["python3", "-m", "gotran", script, f"{modelname}.ode"]
     print(" ".join(args))
     output = sp.run(
