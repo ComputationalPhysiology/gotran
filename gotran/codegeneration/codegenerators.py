@@ -47,6 +47,7 @@ from .algorithmcomponents import linearized_derivatives
 from .algorithmcomponents import monitored_expressions
 from .algorithmcomponents import rhs_expressions
 from .codecomponent import CodeComponent
+from .solvercomponents import *  # noqa: F403, F401
 from .solvercomponents import get_solver_fn
 
 # System imports

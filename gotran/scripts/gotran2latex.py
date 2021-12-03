@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import sys
+from pathlib import Path
 
 from modelparameters.logger import info
 from modelparameters.parameterdict import ParameterDict
@@ -28,6 +29,10 @@ def gotran2latex(filename, params):
     # TODO: Should raise a more descriptive exception?
     if not ode.is_complete:
         raise Exception("Incomplete ODE")
+
+    params.output = (
+        params.output or Path(filename).with_name(f"{ode.name}.tex").as_posix()
+    )
 
     # Create a gotran -> LaTeX document generator
     gen = LatexCodeGenerator(ode, params)
