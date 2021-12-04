@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
+from modelparameters.logger import info
 from modelparameters.parameterdict import ParameterDict
 from modelparameters.parameters import Param
-from modelparameters.utils import info
 from modelparameters.utils import list_timings
 from modelparameters.utils import Timer
 

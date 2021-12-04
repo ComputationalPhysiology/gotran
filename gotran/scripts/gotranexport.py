@@ -8,7 +8,7 @@ __license__ = "GNU LGPL Version 3.0 or later"
 
 from modelparameters.parameterdict import ParameterDict
 from modelparameters.parameters import Param
-from modelparameters.utils import error
+from modelparameters.logger import error
 from gotran.model.loadmodel import load_ode
 from gotran.model.ode import ODE
 
