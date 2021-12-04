@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>modelparameters.logger &mdash; gotran 2019.0.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> gotran
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Programmers reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../gotran.html">gotran package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">gotran</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>modelparameters.logger</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for modelparameters.logger</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (C) 2005-2012 Martin Sandve Alnaes and Anders Logg</span>
+<span class="c1">#</span>
+<span class="c1"># This file is part of ModelParameters.</span>
+<span class="c1">#</span>
+<span class="c1"># ModelParameters is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU Lesser General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1"># (at your option) any later version.</span>
+<span class="c1">#</span>
+<span class="c1"># ModelParameters is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the</span>
+<span class="c1"># GNU Lesser General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1"># You should have received a copy of the GNU Lesser General Public License</span>
+<span class="c1"># along with ModelParameters. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="c1"># Modified by Johan Hake, 2009-2012.</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">types</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;DEBUG&quot;</span><span class="p">,</span> <span class="s2">&quot;INFO&quot;</span><span class="p">,</span> <span class="s2">&quot;WARNING&quot;</span><span class="p">,</span> <span class="s2">&quot;ERROR&quot;</span><span class="p">,</span> <span class="s2">&quot;CRITICAL&quot;</span><span class="p">,</span> <span class="s2">&quot;Logger&quot;</span><span class="p">]</span>
+
+<span class="c1"># Import default log levels</span>
+<span class="kn">from</span> <span class="nn">logging</span> <span class="kn">import</span> <span class="n">DEBUG</span><span class="p">,</span> <span class="n">INFO</span><span class="p">,</span> <span class="n">WARNING</span><span class="p">,</span> <span class="n">ERROR</span><span class="p">,</span> <span class="n">CRITICAL</span>
+
+
+<span class="c1"># Base class for ModelParameters exceptions</span>
+<span class="k">class</span> <span class="nc">ModelParametersException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="s2">&quot;Base class for ModelParameters exceptions&quot;</span>
+    <span class="k">pass</span>
+
+
+<span class="c1"># This is used to override emit() in StreamHandler for printing without newline</span>
+<span class="k">def</span> <span class="nf">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
+    <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+    <span class="n">format_string</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s2">&quot;continued&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">format_string</span> <span class="o">%</span> <span class="n">message</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+
+<span class="c1"># Colors</span>
+<span class="n">RED</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[1;37;31m</span><span class="si">%s</span><span class="se">\033</span><span class="s2">[0m&quot;</span>
+<span class="n">BLUE</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[1;37;34m</span><span class="si">%s</span><span class="se">\033</span><span class="s2">[0m&quot;</span>
+<span class="n">GREEN</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[1;37;32m</span><span class="si">%s</span><span class="se">\033</span><span class="s2">[0m&quot;</span>
+
+
+<span class="c1"># Logger class</span>
+<span class="k">class</span> <span class="nc">Logger</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="s2">&quot;Create logger instance.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
+
+        <span class="c1"># Set up handler</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span>
+
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+        <span class="n">h</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">WARNING</span><span class="p">)</span>
+        <span class="c1"># h.setFormatter(logging.Formatter(&quot;%(levelname)s, %(name)s,</span>
+        <span class="c1"># %(pathname)s, line %(lineno)s, in %(module)s\n    %(message)s\n&quot;))</span>
+
+        <span class="c1"># Override emit() in handler for indentation</span>
+        <span class="n">h</span><span class="o">.</span><span class="n">emit</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">MethodType</span><span class="p">(</span><span class="n">emit</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>  <span class="c1"># , h.__class__)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_handler</span> <span class="o">=</span> <span class="n">h</span>
+
+        <span class="c1"># Set up logger</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">handlers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">DEBUG</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_logfiles</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Set initial indentation level</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_indent_level</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># Set flag for raising errors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_raise_error</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># Setup stack with default logging level</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_level_stack</span> <span class="o">=</span> <span class="p">[</span><span class="n">DEBUG</span><span class="p">]</span>
+
+        <span class="c1"># Set prefix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="c1"># Set default Exception</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_DefaultException</span> <span class="o">=</span> <span class="n">ModelParametersException</span>
+
+    <span class="k">def</span> <span class="nf">set_default_exception</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exception</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">exception</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Expected a subclass of Exception&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_DefaultException</span> <span class="o">=</span> <span class="n">exception</span>
+
+    <span class="k">def</span> <span class="nf">add_logfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;a&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="si">}</span><span class="s2">.log&quot;</span>
+        <span class="k">if</span> <span class="n">filename</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logfiles</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Trying to add logfile </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2"> multiple times.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
+        <span class="n">h</span><span class="o">.</span><span class="n">emit</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">MethodType</span><span class="p">(</span><span class="n">emit</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">h</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span>
+        <span class="n">h</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">level</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_logfiles</span><span class="p">[</span><span class="n">filename</span><span class="p">]</span> <span class="o">=</span> <span class="n">h</span>
+        <span class="k">return</span> <span class="n">h</span>
+
+    <span class="k">def</span> <span class="nf">remove_logfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">filename</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logfiles</span><span class="p">:</span>
+            <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logfiles</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">set_raise_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_raise_error</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_logfile_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logfiles</span><span class="p">[</span><span class="n">filename</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
+        <span class="s2">&quot;Write a log message on given log level&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_raw</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">3</span> <span class="ow">and</span> <span class="n">text</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:]</span> <span class="o">==</span> <span class="s2">&quot;...&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">),</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;continued&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
+        <span class="s2">&quot;Write debug message.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">DEBUG</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
+        <span class="s2">&quot;Write info message.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">INFO</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">info_red</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
+        <span class="s2">&quot;Write info message in red.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">INFO</span><span class="p">,</span> <span class="n">RED</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_raw</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">info_green</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
+        <span class="s2">&quot;Write info message in green.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">INFO</span><span class="p">,</span> <span class="n">GREEN</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_raw</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">info_blue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
+        <span class="s2">&quot;Write info message in blue.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">INFO</span><span class="p">,</span> <span class="n">BLUE</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_raw</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">warning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
+        <span class="s2">&quot;Write warning message.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">WARNING</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_raw</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="s2">&quot;Write error message and raise an exception.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">ERROR</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_raw</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">))</span>
+        <span class="n">raise_error</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;raise_error&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_raise_error</span><span class="p">)</span>
+        <span class="ne">Exception</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exception&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_DefaultException</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">raise_error</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_format_raw</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">type_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="s2">&quot;Write error message and raise a type error exception.&quot;</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;exception&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="ne">TypeError</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">value_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="s2">&quot;Write error message and raise a value error exception.&quot;</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;exception&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="ne">ValueError</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">begin_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
+        <span class="s2">&quot;Begin task: write message and increase indentation level.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">)</span>
+        <span class="c1"># self.info(&quot;-&quot;*len(self._format_raw(*message)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_log_indent</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">end_log</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;End task: write a newline and decrease indentation level.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_log_indent</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">push_log_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">):</span>
+        <span class="s2">&quot;Push a log level on the level stack.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_level_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_log_level</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">pop_log_level</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Pop log level from the level stack, reverting to before</span>
+<span class="sd">        the last push_level.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_level_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="n">level</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_level_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_log_level</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">suppress_logging</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Suppress all logging&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_log_level</span><span class="p">(</span><span class="n">CRITICAL</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">set_log_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">):</span>
+        <span class="s2">&quot;Set log level.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_level_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">level</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_logfiles</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="n">h</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_log_level</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Get log level.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_level_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">set_log_indent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">):</span>
+        <span class="s2">&quot;Set indentation level.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_indent_level</span> <span class="o">=</span> <span class="n">level</span>
+
+    <span class="k">def</span> <span class="nf">add_log_indent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">increment</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="s2">&quot;Add to indentation level.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_indent_level</span> <span class="o">+=</span> <span class="n">increment</span>
+
+    <span class="k">def</span> <span class="nf">get_log_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Get handler for logging.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handler</span>
+
+    <span class="k">def</span> <span class="nf">flush_logger</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Flush the log handler&quot;</span>
+        <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">handlers</span><span class="p">:</span>
+            <span class="n">h</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">set_log_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">handler</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Replace handler for logging.</span>
+
+<span class="sd">        To add additional handlers instead of replacing the existing, use</span>
+<span class="sd">        log.get_logger().addHandler(myhandler).</span>
+
+<span class="sd">        See the logging module for more details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_handler</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_handler</span> <span class="o">=</span> <span class="n">handler</span>
+        <span class="n">handler</span><span class="o">.</span><span class="n">emit</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">MethodType</span><span class="p">(</span><span class="n">emit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handler</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handler</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_logger</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Return message logger.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log</span>
+
+    <span class="k">def</span> <span class="nf">set_log_prefix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">):</span>
+        <span class="s2">&quot;Set prefix for log messages.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="o">=</span> <span class="n">prefix</span>
+
+    <span class="k">def</span> <span class="nf">wrap_log_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">symbol</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">):</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">symbol</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">symbol</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">wrapping</span> <span class="o">=</span> <span class="n">symbol</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">wrapping</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">wrapping</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
+        <span class="s2">&quot;Format message including indentation.&quot;</span>
+        <span class="n">indent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_indent_level</span> <span class="o">*</span> <span class="s2">&quot; &quot;</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="n">message</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">message</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">message</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">%</span> <span class="n">message</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">indent</span> <span class="o">+</span> <span class="n">line</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">message</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)])</span>
+
+    <span class="k">def</span> <span class="nf">_format_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
+        <span class="s2">&quot;Format message without indentation.&quot;</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="n">message</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">message</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">message</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">%</span> <span class="n">message</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">return</span> <span class="n">message</span>
+
+
+<span class="c1"># --- Set up global log functions ---</span>
+
+<span class="n">_logger</span> <span class="o">=</span> <span class="n">Logger</span><span class="p">(</span><span class="s2">&quot;ModelParameters&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">set_default_exception</span><span class="p">(</span><span class="n">exception</span><span class="p">):</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">set_default_exception</span><span class="p">(</span><span class="n">exception</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">add_logfile</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;a&quot;</span><span class="p">):</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">add_logfile</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">remove_logfile</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">remove_logfile</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">set_raise_error</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">set_raise_error</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_logfile_handler</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">get_log_handler</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">):</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="o">*</span><span class="n">message</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">):</span>
+    <span class="s2">&quot;Write debug message.&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">):</span>
+    <span class="s2">&quot;Write info message.&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">info_red</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">):</span>
+    <span class="s2">&quot;Write info message in red.&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">info_red</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">info_green</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">):</span>
+    <span class="s2">&quot;Write info message in green.&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">info_green</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">info_blue</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">):</span>
+    <span class="s2">&quot;Write info message in blue.&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">info_blue</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">warning</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">):</span>
+    <span class="s2">&quot;Write warning message.&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="s2">&quot;Write error message and raise an exception.&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">type_error</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="s2">&quot;Write error message and raise a type error exception.&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">type_error</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">value_error</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="s2">&quot;Write error message and raise a value error exception.&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">value_error</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">begin_log</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">):</span>
+    <span class="s2">&quot;Begin task: write message and increase indentation level.&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">begin_log</span><span class="p">(</span><span class="o">*</span><span class="n">message</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">end_log</span><span class="p">():</span>
+    <span class="s2">&quot;End task: write a newline and decrease indentation level.&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">end_log</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">push_log_level</span><span class="p">(</span><span class="n">level</span><span class="p">):</span>
+    <span class="s2">&quot;Push a log level on the level stack.&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">push_log_level</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">pop_log_level</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Pop log level from the level stack, reverting to before</span>
+<span class="sd">    the last push_level.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">pop_log_level</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">suppress_logging</span><span class="p">():</span>
+    <span class="s2">&quot;Suppress all logging&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">suppress_logging</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="set_log_level"><a class="viewcode-back" href="../../gotran.html#gotran.set_log_level">[docs]</a><span class="k">def</span> <span class="nf">set_log_level</span><span class="p">(</span><span class="n">level</span><span class="p">):</span>
+    <span class="s2">&quot;Set log level.&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">set_log_level</span><span class="p">(</span><span class="n">level</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">get_log_level</span><span class="p">():</span>
+    <span class="s2">&quot;Get log level.&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">get_log_level</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">set_log_indent</span><span class="p">(</span><span class="n">level</span><span class="p">):</span>
+    <span class="s2">&quot;Set indentation level.&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">set_log_indent</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">add_log_indent</span><span class="p">(</span><span class="n">increment</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="s2">&quot;Add to indentation level.&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">add_log_indent</span><span class="p">(</span><span class="n">increment</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_log_handler</span><span class="p">():</span>
+    <span class="s2">&quot;Get handler for logging.&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">get_log_handler</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">flush_logger</span><span class="p">():</span>
+    <span class="s2">&quot;Flush the log handler&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">flush_logger</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">set_log_handler</span><span class="p">(</span><span class="n">handler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Replace handler for logging.</span>
+
+<span class="sd">    To add additional handlers instead of replacing the existing, use</span>
+<span class="sd">    log.get_logger().addHandler(myhandler).</span>
+
+<span class="sd">    See the logging module for more details.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">set_log_handler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_logger</span><span class="p">():</span>
+    <span class="s2">&quot;Return message logger.&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">set_log_prefix</span><span class="p">(</span><span class="n">prefix</span><span class="p">):</span>
+    <span class="s2">&quot;Set prefix for log messages.&quot;</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">set_log_prefix</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">wrap_log_message</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">symbol</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">):</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">wrap_log_message</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">symbol</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
