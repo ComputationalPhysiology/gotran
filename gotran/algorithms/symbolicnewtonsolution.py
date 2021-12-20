@@ -20,7 +20,7 @@ __all__ = ["SymbolicNewtonSolution"]
 from collections import OrderedDict
 from functools import reduce
 
-import sympy
+from modelparameters import sympy
 
 # System imports
 from modelparameters.sympytools import sp

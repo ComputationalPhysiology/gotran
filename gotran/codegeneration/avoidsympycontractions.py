@@ -20,9 +20,9 @@ __all__ = []
 import mpmath.libmp as _mlib
 
 # A hack to get around evaluation of SymPy expressions
-import sympy as sp
-from sympy.core import function as _function
-from sympy.core.expr import Expr as _Expr
+import modelparameters.sympy as sp
+from modelparameters.sympy.core import function as _function
+from modelparameters.sympy.core.expr import Expr as _Expr
 
 _evaluate = False
 

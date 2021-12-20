@@ -19,7 +19,7 @@ import string
 import tokenize
 from io import StringIO
 
-import sympy
+from modelparameters import sympy
 from modelparameters.codegeneration import latex as mp_latex
 from modelparameters.parameterdict import ParameterDict
 from modelparameters.parameters import Param

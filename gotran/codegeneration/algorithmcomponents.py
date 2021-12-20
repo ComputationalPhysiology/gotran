@@ -43,7 +43,7 @@ from modelparameters.logger import error, info
 # ModelParameters imports
 from modelparameters.sympytools import sp
 from modelparameters.utils import Timer, check_arg, check_kwarg, listwrap
-from sympy import cse
+from modelparameters.sympy import cse
 
 from gotran.model.expressions import (
     AlgebraicExpression,
