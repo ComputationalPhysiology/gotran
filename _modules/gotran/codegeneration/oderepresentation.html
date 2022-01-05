@@ -88,16 +88,16 @@
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
 <span class="kn">from</span> <span class="nn">distutils.version</span> <span class="kn">import</span> <span class="n">LooseVersion</span> <span class="k">as</span> <span class="n">_V</span>
 
-<span class="kn">import</span> <span class="nn">sympy</span>
+<span class="kn">from</span> <span class="nn">modelparameters</span> <span class="kn">import</span> <span class="n">sympy</span>
 <span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">info</span>
 <span class="kn">from</span> <span class="nn">modelparameters.parameterdict</span> <span class="kn">import</span> <span class="n">Param</span>
 <span class="kn">from</span> <span class="nn">modelparameters.parameterdict</span> <span class="kn">import</span> <span class="n">ParameterDict</span>
 <span class="kn">from</span> <span class="nn">modelparameters.parameterdict</span> <span class="kn">import</span> <span class="n">ScalarParam</span>
+<span class="kn">from</span> <span class="nn">modelparameters.sympy</span> <span class="kn">import</span> <span class="n">cse</span>
 <span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">iter_symbol_params_from_expr</span>
 <span class="kn">from</span> <span class="nn">modelparameters.sympytools</span> <span class="kn">import</span> <span class="n">sp</span>
 <span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">check_arg</span>
 <span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">check_kwarg</span>
-<span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">cse</span>
 
 <span class="kn">from</span> <span class="nn">..model.ode</span> <span class="kn">import</span> <span class="n">ODE</span>
 <span class="kn">from</span> <span class="nn">..model.odecomponent</span> <span class="kn">import</span> <span class="n">Comment</span>
