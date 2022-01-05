@@ -30,7 +30,7 @@ from modelparameters.logger import debug, error
 # ModelParameters imports
 from modelparameters.sympytools import sp, symbols_from_expr
 from modelparameters.utils import Timer, check_arg, scalars
-from sympy.core.function import AppliedUndef
+from modelparameters.sympy.core.function import AppliedUndef
 
 from .expressions import (
     AlgebraicExpression,

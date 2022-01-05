@@ -6,10 +6,10 @@ from pathlib import Path
 import pytest
 from modelparameters import ScalarParam
 from modelparameters.codegeneration import sympycode
+from modelparameters.sympy import exp
+from modelparameters.sympy import log
+from modelparameters.sympy import Matrix
 from modelparameters.sympytools import symbols_from_expr
-from sympy import exp
-from sympy import log
-from sympy import Matrix
 
 import gotran
 

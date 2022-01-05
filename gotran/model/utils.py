@@ -40,8 +40,8 @@ from modelparameters.logger import error
 # ModelParameters imports
 from modelparameters.sympytools import sp
 from modelparameters.utils import check_arg, tuplewrap
-from sympy import Symbol, preorder_traversal
-from sympy.core.function import AppliedUndef
+from modelparameters.sympy import Symbol, preorder_traversal
+from modelparameters.sympy.core.function import AppliedUndef
 
 from .expressions import State
 

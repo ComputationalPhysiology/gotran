@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 
-__version__ = "2021.0.4"
+__version__ = "2021.0.5"
 
 
 # import algorithms

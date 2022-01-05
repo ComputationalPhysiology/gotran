@@ -29,8 +29,8 @@ from modelparameters.logger import debug, error, info, warning
 # ModelParameters imports
 from modelparameters.sympytools import sp
 from modelparameters.utils import Timer, check_arg, check_kwarg, tuplewrap
-from sympy import cse
-from sympy.core.function import AppliedUndef
+from modelparameters.sympy import cse
+from modelparameters.sympy.core.function import AppliedUndef
 
 from gotran.model.expressions import (
     Derivatives,

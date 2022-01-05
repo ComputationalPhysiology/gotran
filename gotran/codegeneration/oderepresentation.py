@@ -22,16 +22,16 @@ import sys
 from collections import OrderedDict
 from distutils.version import LooseVersion as _V
 
-import sympy
+from modelparameters import sympy
 from modelparameters.logger import info
 from modelparameters.parameterdict import Param
 from modelparameters.parameterdict import ParameterDict
 from modelparameters.parameterdict import ScalarParam
+from modelparameters.sympy import cse
 from modelparameters.sympytools import iter_symbol_params_from_expr
 from modelparameters.sympytools import sp
 from modelparameters.utils import check_arg
 from modelparameters.utils import check_kwarg
-from sympy import cse
 
 from ..model.ode import ODE
 from ..model.odecomponent import Comment

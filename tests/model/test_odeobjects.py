@@ -1,7 +1,7 @@
 """test for odeobjects module"""
 import pytest
+from modelparameters.sympy import Symbol
 from modelparameters.sympytools import symbols_from_expr
-from sympy import Symbol
 
 import gotran
 from gotran.model.utils import ode_primitives
