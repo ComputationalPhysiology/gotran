@@ -6,6 +6,7 @@ from . import gotran2dolfin
 from . import gotran2julia
 from . import gotran2latex
 from . import gotran2matlab
+from . import gotran2md
 from . import gotran2opencl
 from . import gotran2py
 from . import gotranexport
@@ -26,4 +27,5 @@ __all__ = [
     "gotranexport",
     "gotranprobe",
     "gotranrun",
+    "gotran2md",
 ]

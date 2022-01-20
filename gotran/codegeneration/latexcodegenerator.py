@@ -128,6 +128,16 @@ _greek = (
 )
 
 
+def format_expr(expr, mul_symbol="dot", **print_settings):
+    if isinstance(expr, str) and expr in _greek:
+        return f"\\{expr}"
+    # Some values are treated as special cases by sympy.sympify.
+    # Return these as they are.
+    if isinstance(expr, str) and expr in [x for x in dir(sympy) if len(x) == 1]:
+        return expr
+    return mp_latex(sympy.sympify(expr), mul_symbol=mul_symbol, **print_settings)
+
+
 def _default_latex_params():
     """
     Initializes default parameters.
@@ -609,13 +619,7 @@ class LatexCodeGenerator(object):
         >>> LatexCodeGenerator.format_expr("exp(i*pi) + 1")
         'e^{i \\pi} + 1'
         """
-        if isinstance(expr, str) and expr in _greek:
-            return f"\\{expr}"
-        # Some values are treated as special cases by sympy.sympify.
-        # Return these as they are.
-        if isinstance(expr, str) and expr in [x for x in dir(sympy) if len(x) == 1]:
-            return expr
-        return mp_latex(sympy.sympify(expr), **self.print_settings)
+        return format_expr(expr, **self.print_settings)
 
     def format_unit(self, unit):
         """
