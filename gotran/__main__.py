@@ -16,6 +16,7 @@ gotran2py
 gotranexport
 gotranprob
 gotranrun
+gotran2md
 """
 
 
@@ -57,6 +58,8 @@ def main():
             scripts.gotranprobe.main()
         elif sys.argv[0] == "gotranrun":
             scripts.gotranrun.main()
+        elif sys.argv[0] == "gotran2md":
+            scripts.gotran2md.main()
         else:
             print(__doc__)
             print(f"Unknown argument {sys.argv[0]}")
