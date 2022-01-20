@@ -68,6 +68,14 @@ gotran.scripts.gotran2matlab module
    :undoc-members:
    :show-inheritance:
 
+gotran.scripts.gotran2md module
+-------------------------------
+
+.. automodule:: gotran.scripts.gotran2md
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 gotran.scripts.gotran2opencl module
 -----------------------------------
 
