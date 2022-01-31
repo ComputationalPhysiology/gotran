@@ -162,13 +162,9 @@ class MathMLBaseParser(object):
                         use_parent = False
 
                     # If an unary minus is infront of a plus we always use parenthesize
-                    if (
-                        self._gettag(root[0]) == "apply"
-                        and self._gettag(
-                            list(root[0])[0],
-                        )
-                        in ["plus", "minus"]
-                    ):
+                    if self._gettag(root[0]) == "apply" and self._gettag(
+                        list(root[0])[0],
+                    ) in ["plus", "minus"]:
                         use_parent = True
 
                     eq += ["-"]
