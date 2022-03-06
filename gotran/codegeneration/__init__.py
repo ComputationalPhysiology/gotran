@@ -18,7 +18,6 @@
 from . import algorithmcomponents
 from . import codecomponent
 from . import codegenerators
-from . import compilemodule
 from . import latexcodegenerator
 from . import oderepresentation
 from . import solvercomponents
@@ -46,7 +45,6 @@ from .codegenerators import CUDACodeGenerator
 from .codegenerators import JuliaCodeGenerator
 from .codegenerators import MatlabCodeGenerator
 from .codegenerators import PythonCodeGenerator
-from .compilemodule import compile_module
 from .latexcodegenerator import LatexCodeGenerator
 from .solvercomponents import explicit_euler_solver
 from .solvercomponents import ExplicitEuler
@@ -60,6 +58,13 @@ from .solvercomponents import RushLarsen
 from .solvercomponents import simplified_implicit_euler_solver
 from .solvercomponents import SimplifiedImplicitEuler
 
+
+try:
+    from . import compilemodule
+    from .compilemodule import compile_module
+except ImportError:
+    compilemodule = None
+    compile_module = None
 # Import classes and routines from gotran modules
 
 # Assign the __all__ attribute

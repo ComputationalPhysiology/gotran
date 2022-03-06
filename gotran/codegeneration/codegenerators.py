@@ -1999,10 +1999,12 @@ class CppCodeGenerator(CCodeGenerator):
         self.params.code.float_precision,
     )
 
-    def class_code(self, ode, monitored=None):
+    def class_code(self, ode, monitored=None, clsname=""):
         """
         Generate class code
         """
+        if clsname == "":
+            clsname = class_name(ode.name)
 
         return """
 // Gotran generated C++ class for the "{0}" model
@@ -2016,8 +2018,10 @@ public:
 }};
 """.format(
             ode.name,
-            class_name(ode.name, monitored),
-            "\n\n".join(list(self.code_dict(ode, indent=2).values())),
+            clsname,
+            "\n\n".join(
+                list(self.code_dict(ode, monitored=monitored, indent=2).values()),
+            ),
         )
 
 

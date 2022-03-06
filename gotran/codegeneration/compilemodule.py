@@ -15,14 +15,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 import hashlib
-import importlib.util
+import imp
 import sys
 import types
 import typing
 from enum import Enum
-from pathlib import Path
 
-import dijitso
+import cppyy
 from modelparameters.logger import debug
 from modelparameters.logger import info
 from modelparameters.logger import value_error
@@ -30,32 +29,22 @@ from modelparameters.utils import check_arg
 from modelparameters.utils import check_kwarg
 
 from .. import __version__
-from ..common import GotranException
 from ..common.options import parameters
 from ..model.loadmodel import load_ode
 from ..model.ode import ODE
-from .codegenerators import CCodeGenerator
 from .codegenerators import class_name
+from .codegenerators import CppCodeGenerator
 from .codegenerators import DOLFINCodeGenerator
 from .codegenerators import PythonCodeGenerator
 
 module_template = """import dijitso as _dijitso
 import numpy as _np
-import ctypes as _ctypes
-_module = _dijitso.cache.load_library("{signature}", {cache})
-
-_float64_array = _np.ctypeslib.ndpointer(
-    dtype=_ctypes.c_double, ndim=1, flags="contiguous"
-)
-
-{bindings}
+from cppyy.gbl import {clsname}
+_module = {clsname}()
 
 {code}
 """
 
-binding_template = """_module.{funcname}.argtypes = [{argtypes}]
-_module.{funcname}.restypes = {restype}
-"""
 
 rhs_template = """def {rhs_function_name}({args},{rhs_name} = None):
     '''
@@ -191,11 +180,6 @@ def compile_module(
     # Create unique module name for this application run
     modulename = module_signature(ode, monitored, params, languange="python")
 
-    # Check cache
-    python_module = load_module(modulename)
-    if python_module is not None:
-        return getattr(python_module, class_name(ode.name))()
-
     # No module in cache generate python version
     if language == "Dolfin":
         pgen = DOLFINCodeGenerator(params)
@@ -205,38 +189,9 @@ def compile_module(
     # Generate class code, execute it and collect namespace
     code = "import numpy as np\nimport math" + pgen.class_code(ode, monitored=monitored)
 
-    save_module(code, modulename)
-
-    python_module = load_module(modulename)
+    python_module = imp.new_module(modulename)
+    exec(code, python_module.__dict__)
     return getattr(python_module, class_name(ode.name))()
-
-
-def _jit_generate(class_data, module_name, signature, parameters):
-    """Helper function for ditjitso"""
-
-    template_code = """
-{includes}
-// Based on https://gcc.gnu.org/wiki/Visibility
-#if defined _WIN32 || defined __CYGWIN__
-    #ifdef __GNUC__
-        #define DLL_EXPORT __attribute__ ((dllexport))
-    #else
-        #define DLL_EXPORT __declspec(dllexport)
-    #endif
-#else
-    #define DLL_EXPORT __attribute__ ((visibility ("default")))
-#endif
-
-{code}
-"""
-    code_c = template_code.format(
-        code="\n\n".join(list(class_data["code_dict"].values())),
-        includes="\n".join(class_data["includes"]),
-    )
-    code_h = ""
-    depends = []
-
-    return code_h, code_c, depends
 
 
 def add_dll_export(code_dict):
@@ -321,58 +276,23 @@ def parse_monitor_declaration(ode, args, args_doc, params, monitored):
     return monitor_declaration
 
 
-def args_to_argtypes(args: str) -> str:
-    argtypes = {
-        "states": "_float64_array",
-        "time": "_ctypes.c_double",
-        "parameters": "_float64_array",
-        "values": "_float64_array",
-    }
-    args_split = args.split(", ")
-
-    if len(args_split) == 3:
-        # Values are optional to it is not in the list
-        args_split.append("values")
-    if len(args_split) != 4:
-        raise GotranException(f"Expected number to arguments to be 4, got {args_split}")
-    return ", ".join([argtypes[arg] for arg in args_split])
-
-
-def cache_path(signature, cache_dir=None) -> Path:
-    if cache_dir is None:
-        dijitso_params = dijitso.validate_params(dijitso.params.default_params())
-        cache_dir = dijitso_params["cache"]["cache_dir"]
-    return Path(cache_dir).joinpath(f"{signature}.py")
-
-
-def load_module(signature: str, cache_dir=None):
-
-    path = cache_path(signature, cache_dir)
-    if not path.is_file():
-        return None
-
-    spec = importlib.util.spec_from_file_location(signature, path)
-    module = importlib.util.module_from_spec(spec)
-    try:
-        spec.loader.exec_module(module)
-    except AttributeError:
-        return None
-    return module
+def signature(ode, monitored, params, languange) -> str:
+    return hashlib.sha1(
+        str(
+            ode.signature()
+            + str(monitored)
+            + repr(params)
+            + languange
+            + __version__
+            + cppyy.__version__,
+        ).encode("utf-8"),
+    ).hexdigest()
 
 
 def module_signature(ode, monitored, params, languange):
     return "gotran_compiled_module_{0}_{1}".format(
         class_name(ode.name),
-        hashlib.sha1(
-            str(
-                ode.signature()
-                + str(monitored)
-                + repr(params)
-                + languange
-                + __version__
-                + dijitso.__version__,
-            ).encode("utf-8"),
-        ).hexdigest(),
+        signature(ode, monitored, params, languange),
     )
 
 
@@ -384,16 +304,8 @@ def compile_extension_module(
     """
     Compile an extension module, based on the C code from the ode
     """
-    dijitso_params = dijitso.validate_params(dijitso.params.default_params())
 
     args, args_doc = parse_arguments(params)
-
-    # Create unique module name for this application run
-    modulename = module_signature(ode, monitored, params, languange="C")
-
-    compiled_module = load_module(modulename)
-    if compiled_module is not None:
-        return compiled_module
 
     # Do not generate any Python functions
     python_params = params.copy()
@@ -406,20 +318,18 @@ def compile_extension_module(
     monitor_code = parse_monitor_declaration(ode, args, args_doc, params, monitored)
 
     pgen = PythonCodeGenerator(python_params)
-    cgen = CCodeGenerator(params)
-    code_dict = cgen.code_dict(
-        ode,
-        monitored=monitored,
-        include_init=False,
-        include_index_map=False,
-    )
+    cgen = CppCodeGenerator(params)
+
+    clsname = class_name(ode.name) + "_" + signature(ode, monitored, params, "Cpp")
+    print(clsname)
+    class_code = cgen.class_code(ode=ode, monitored=monitored, clsname=clsname)
+    try:
+        _cppyygbl = __import__("cppyy.gbl", fromlist=[clsname])
+        getattr(_cppyygbl, clsname)()
+    except AttributeError:
+        cppyy.cppdef(class_code)
 
     pcode = "\n\n".join(list(pgen.code_dict(ode, monitored=monitored).values()))
-    argtypes = args_to_argtypes(args)
-    cpp_data = {
-        "code_dict": add_dll_export(code_dict),
-        "includes": ["#include <math.h>"],
-    }
 
     rhs_code = rhs_template.format(
         rhs_function_name=params.functions.rhs.function_name,
@@ -428,43 +338,14 @@ def compile_extension_module(
         args_doc=args_doc,
         states_name=params.code.states.array_name,
     )
-    rhs_binding = binding_template.format(
-        funcname="rhs",
-        argtypes=argtypes,
-        restype="None",
-    )
-
-    monitor_binding = ""
-    if monitor_code != "":
-        monitor_binding = binding_template.format(
-            funcname="monitor",
-            argtypes=argtypes,
-            restype="None",
-        )
-
-    jacobian_binding = ""
-    if jacobian_code != "":
-        jacobian_binding = binding_template.format(
-            funcname="compute_jacobian",
-            argtypes=argtypes,
-            restype="None",
-        )
 
     compiled_module_code = module_template.format(
-        signature=modulename,
-        cache=repr(dijitso_params["cache"]),
+        clsname=clsname,
         code="\n\n\n".join([rhs_code, pcode, monitor_code, jacobian_code]),
-        bindings="\n".join([rhs_binding, monitor_binding, jacobian_binding]),
     )
 
-    module, signature = dijitso.jit(
-        cpp_data,
-        modulename,
-        dijitso_params,
-        generate=_jit_generate,
-    )
-
-    save_module(compiled_module_code, modulename)
+    mymodule = imp.new_module(clsname)
+    exec(compiled_module_code, mymodule.__dict__)
 
     info("Calling GOTRAN just-in-time (JIT) compiler, this may take some " "time...")
     sys.stdout.flush()
@@ -472,16 +353,4 @@ def compile_extension_module(
     info(" done")
     sys.stdout.flush()
 
-    return load_module(signature)
-
-
-def save_module(
-    code: str,
-    signature: str,
-    cache_dir: typing.Optional[str] = None,
-) -> None:
-    with open(
-        cache_path(signature=signature, cache_dir=cache_dir),
-        "w",
-    ) as f:
-        f.write(code)
+    return mymodule
