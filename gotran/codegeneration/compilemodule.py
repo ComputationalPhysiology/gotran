@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 import hashlib
-import imp
+import importlib.util
 import sys
 import types
 import typing
@@ -122,6 +122,13 @@ class Languange(str, Enum):
     dolfin = "Dolfin"
 
 
+def module_from_string(code, name):
+    spec = importlib.util.spec_from_loader(name, importlib.util.Loader())
+    module = importlib.util.module_from_spec(spec)
+    exec(code, module.__dict__)
+    return module
+
+
 def compile_module(
     ode: typing.Union[ODE, str],
     language: Languange = Languange.c,
@@ -189,8 +196,8 @@ def compile_module(
     # Generate class code, execute it and collect namespace
     code = "import numpy as np\nimport math" + pgen.class_code(ode, monitored=monitored)
 
-    python_module = imp.new_module(modulename)
-    exec(code, python_module.__dict__)
+    python_module = module_from_string(code, modulename)
+
     return getattr(python_module, class_name(ode.name))()
 
 
@@ -344,8 +351,7 @@ def compile_extension_module(
         code="\n\n\n".join([rhs_code, pcode, monitor_code, jacobian_code]),
     )
 
-    mymodule = imp.new_module(clsname)
-    exec(compiled_module_code, mymodule.__dict__)
+    mymodule = module_from_string(compiled_module_code, clsname)
 
     info("Calling GOTRAN just-in-time (JIT) compiler, this may take some " "time...")
     sys.stdout.flush()
