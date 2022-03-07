@@ -20,7 +20,6 @@ import types
 import typing
 from enum import Enum
 
-import cppyy
 from modelparameters.logger import debug
 from modelparameters.logger import info
 from modelparameters.logger import value_error
@@ -35,6 +34,20 @@ from .codegenerators import class_name
 from .codegenerators import CppCodeGenerator
 from .codegenerators import DOLFINCodeGenerator
 from .codegenerators import PythonCodeGenerator
+
+try:
+    import cppyy
+
+    _has_cppyy = True
+    cppyy_version = cppyy.__version__
+except ImportError:
+    _has_cppyy = False
+    cppyy_version = 0
+
+
+def has_cppyy() -> bool:
+    return _has_cppyy
+
 
 module_template = """import dijitso as _dijitso
 import numpy as _np
@@ -289,7 +302,7 @@ def signature(ode, monitored, params, languange) -> str:
             + repr(params)
             + languange
             + __version__
-            + cppyy.__version__,
+            + cppyy_version,
         ).encode("utf-8"),
     ).hexdigest()
 
@@ -309,6 +322,8 @@ def compile_extension_module(
     """
     Compile an extension module, based on the C code from the ode
     """
+    if not has_cppyy():
+        raise ImportError("Please install 'cppyy'")
 
     args, args_doc = parse_arguments(params)
 

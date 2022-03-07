@@ -3,9 +3,16 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from gotran.codegeneration.compilemodule import compile_module
+from gotran.codegeneration import compile_module
+from gotran.codegeneration import has_cppyy
 from gotran.common.options import parameters
 from gotran.input.cellml import cellml2ode
+
+require_cppyy = pytest.mark.skipif(
+    not has_cppyy(),
+    reason="cppyy is required to run the test",
+)
+
 
 _here = Path(__file__).absolute().parent
 
@@ -22,6 +29,7 @@ def generation():
     return parameters.generation.copy()
 
 
+@require_cppyy
 def test_compile_rhs(ode, generation):
 
     # Compile ODE
@@ -47,6 +55,7 @@ def test_compile_rhs(ode, generation):
     assert python_module.state_indices("V") == c_module.state_indices("V")
 
 
+@require_cppyy
 def test_compile_monitored(ode, generation):
     generation.functions.monitored.generate = True
     monitored = [i.name for i in ode.intermediates]
@@ -85,6 +94,7 @@ def test_compile_monitored(ode, generation):
     )
 
 
+@require_cppyy
 def test_compile_jacobian(ode, generation):
     generation.functions.jacobian.generate = True
 
@@ -107,7 +117,3 @@ def test_compile_jacobian(ode, generation):
         jac_c.shape,
     )
     assert np.isclose(jac_python, jac_c).all()
-
-
-# if __name__ == "__main__":
-#     test_compile(ode(), generation())
