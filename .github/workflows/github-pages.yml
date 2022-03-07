@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt install -y pandoc
-          python3 -m pip install ".[doc,jit,plot]"
+          python3 -m pip install ".[doc,plot]"
 
       - name: Build docs
         run: |
