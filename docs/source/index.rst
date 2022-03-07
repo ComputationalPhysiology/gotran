@@ -59,7 +59,7 @@ The main contributors are
 
 License
 -------
-GNU GPLv3
+GNU LGPLv3
 
 
 .. toctree::
