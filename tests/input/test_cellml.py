@@ -11,9 +11,16 @@ import numpy as np
 import pytest
 from scipy.integrate import odeint
 
-from gotran.codegeneration.compilemodule import compile_module
 from gotran.common.options import parameters
 from gotran.input.cellml import cellml2ode
+
+from gotran.codegeneration import compile_module, has_cppyy
+
+require_cppyy = pytest.mark.skipif(
+    not has_cppyy(),
+    reason="cppyy is required to run the test",
+)
+
 
 _here = Path(__file__).absolute().parent
 
@@ -84,6 +91,7 @@ generation.functions.jacobian.generate = False
 # self.assertEqual(self.ode.num_states, cellml_data[self.name]["num_states"])
 
 # Load reference data
+@require_cppyy
 @pytest.mark.parametrize("path", cellml_models)
 def test_cellml(path):
     path = Path(path)

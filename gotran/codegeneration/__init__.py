@@ -47,6 +47,7 @@ from .codegenerators import JuliaCodeGenerator
 from .codegenerators import MatlabCodeGenerator
 from .codegenerators import PythonCodeGenerator
 from .compilemodule import compile_module
+from .compilemodule import has_cppyy
 from .latexcodegenerator import LatexCodeGenerator
 from .solvercomponents import explicit_euler_solver
 from .solvercomponents import ExplicitEuler
@@ -123,5 +124,6 @@ __all__ = [
     "simplified_implicit_euler_solver",
     "get_solver_fn",
     "compilemodule",
+    "has_cppyy",
     "oderepresentation",
 ]
