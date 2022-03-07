@@ -30,7 +30,6 @@ def gotran2dolfin(filename, params):
         output = filename.replace(".ode", "") + ".py"
 
     f = open(output, "w")
-    f.write("from __future__ import division\n\n")
     f.write(code_gen.init_states_code(ode) + "\n\n")
     f.write(code_gen.init_parameters_code(ode) + "\n\n")
     f.write(

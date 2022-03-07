@@ -1,7 +1,5 @@
 """test for odecomponent module"""
 # Imports for evaluation of generated code
-from __future__ import division
-
 import importlib
 from pathlib import Path
 

@@ -1242,7 +1242,6 @@ class {0}:
         self.params.class_code = class_code_param
 
         import_lines = [
-            "from __future__ import division",
             "",
         ]
         if not self.import_inside_functions:
