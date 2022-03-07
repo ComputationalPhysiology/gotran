@@ -72,7 +72,7 @@ def test_creation():
     assert jada.num_components == 1
 
     # Add expressions to the component
-    jada.tmp = jada.ll * jada.m ** 2 + 3 / i - ii * jj
+    jada.tmp = jada.ll * jada.m**2 + 3 / i - ii * jj
     jada.tmp2 = ode.j * exp(jada.tmp)
 
     # Reduce state n
@@ -88,7 +88,7 @@ def test_creation():
     ode.add_comment("More funky objects")
     jada.tmp3 = jada.tmp2.diff(ode.t) + jada.n + jada.o
     jada.add_derivative(jada.l, ode.t, jada.tmp3)
-    jada.add_algebraic(jada.o, jada.o ** 2 - exp(jada.o) + 2 / jada.o)
+    jada.add_algebraic(jada.o, jada.o**2 - exp(jada.o) + 2 / jada.o)
 
     assert ode.num_intermediates == 9
     assert ode.num_state_expressions == 6
