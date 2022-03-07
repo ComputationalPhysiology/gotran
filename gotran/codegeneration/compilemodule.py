@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Gotran. If not, see <http://www.gnu.org/licenses/>.
 import hashlib
-import importlib.util
 import sys
 import types
 import typing
@@ -122,9 +121,8 @@ class Languange(str, Enum):
     dolfin = "Dolfin"
 
 
-def module_from_string(code, name):
-    spec = importlib.util.spec_from_loader(name, importlib.util.Loader())
-    module = importlib.util.module_from_spec(spec)
+def module_from_string(code, name="module"):
+    module = types.ModuleType(name)
     exec(code, module.__dict__)
     return module
 
