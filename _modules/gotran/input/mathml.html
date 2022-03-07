@@ -228,13 +228,9 @@
                         <span class="n">use_parent</span> <span class="o">=</span> <span class="kc">False</span>
 
                     <span class="c1"># If an unary minus is infront of a plus we always use parenthesize</span>
-                    <span class="k">if</span> <span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_gettag</span><span class="p">(</span><span class="n">root</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="s2">&quot;apply&quot;</span>
-                        <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gettag</span><span class="p">(</span>
-                            <span class="nb">list</span><span class="p">(</span><span class="n">root</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span><span class="p">],</span>
-                        <span class="p">)</span>
-                        <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;plus&quot;</span><span class="p">,</span> <span class="s2">&quot;minus&quot;</span><span class="p">]</span>
-                    <span class="p">):</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gettag</span><span class="p">(</span><span class="n">root</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="s2">&quot;apply&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gettag</span><span class="p">(</span>
+                        <span class="nb">list</span><span class="p">(</span><span class="n">root</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="p">)</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;plus&quot;</span><span class="p">,</span> <span class="s2">&quot;minus&quot;</span><span class="p">]:</span>
                         <span class="n">use_parent</span> <span class="o">=</span> <span class="kc">True</span>
 
                     <span class="n">eq</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;-&quot;</span><span class="p">]</span>
