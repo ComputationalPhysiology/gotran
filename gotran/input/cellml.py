@@ -1043,12 +1043,9 @@ class CellMLParser(object):
         # derivatives = []
 
         # Get variables that are used outside the component
-        variables_used_in_connections = (
-            list(
-                self.new_variable_connections.get(comp_name, dict()).keys(),
-            )
-            + list(self.same_variable_connections.get(comp_name, dict()).keys())
-        )
+        variables_used_in_connections = list(
+            self.new_variable_connections.get(comp_name, dict()).keys(),
+        ) + list(self.same_variable_connections.get(comp_name, dict()).keys())
 
         # Get variable and initial values
         for var in self.get_iterator("variable", comp):

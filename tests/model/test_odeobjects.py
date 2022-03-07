@@ -86,7 +86,7 @@ def test_state():
     t_s = t.sym
 
     # Create expression from just states symbols
-    assert ode_primitives(s_s ** 2 * a_s + t_s * b_s * a_s, t_s) == set(
+    assert ode_primitives(s_s**2 * a_s + t_s * b_s * a_s, t_s) == set(
         [s_s, a_s, b_s, t_s],
     )
 
@@ -124,7 +124,7 @@ def test_param():
     t_s = t.sym
 
     # Create expression from just states symbols
-    assert ode_primitives(s_s ** 2 * a_s + t_s * b_s * a_s, t_s) == set(
+    assert ode_primitives(s_s**2 * a_s + t_s * b_s * a_s, t_s) == set(
         [s_s, a_s, b_s, t_s],
     )
 
