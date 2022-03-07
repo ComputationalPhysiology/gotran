@@ -1308,7 +1308,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">class_code</span> <span class="o">=</span> <span class="n">class_code_param</span>
 
         <span class="n">import_lines</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="s2">&quot;from __future__ import division&quot;</span><span class="p">,</span>
             <span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="p">]</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">import_inside_functions</span><span class="p">:</span>
@@ -2065,10 +2064,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">float_precision</span><span class="p">,</span>
     <span class="p">)</span>
 
-<div class="viewcode-block" id="CppCodeGenerator.class_code"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.CppCodeGenerator.class_code">[docs]</a>    <span class="k">def</span> <span class="nf">class_code</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">monitored</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="CppCodeGenerator.class_code"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.CppCodeGenerator.class_code">[docs]</a>    <span class="k">def</span> <span class="nf">class_code</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">monitored</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">clsname</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Generate class code</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">clsname</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+            <span class="n">clsname</span> <span class="o">=</span> <span class="n">class_name</span><span class="p">(</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">// Gotran generated C++ class for the &quot;</span><span class="si">{0}</span><span class="s2">&quot; model</span>
@@ -2082,8 +2083,10 @@
 <span class="s2">}};</span>
 <span class="s2">&quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
             <span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-            <span class="n">class_name</span><span class="p">(</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">monitored</span><span class="p">),</span>
-            <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">code_dict</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">())),</span>
+            <span class="n">clsname</span><span class="p">,</span>
+            <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">code_dict</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">monitored</span><span class="o">=</span><span class="n">monitored</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+            <span class="p">),</span>
         <span class="p">)</span></div></div>
 
 

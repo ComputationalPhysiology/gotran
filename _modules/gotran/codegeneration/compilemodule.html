@@ -81,14 +81,11 @@
 <span class="c1"># You should have received a copy of the GNU Lesser General Public License</span>
 <span class="c1"># along with Gotran. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
 <span class="kn">import</span> <span class="nn">hashlib</span>
-<span class="kn">import</span> <span class="nn">importlib.util</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">types</span>
 <span class="kn">import</span> <span class="nn">typing</span>
 <span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
-<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 
-<span class="kn">import</span> <span class="nn">dijitso</span>
 <span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">debug</span>
 <span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">info</span>
 <span class="kn">from</span> <span class="nn">modelparameters.logger</span> <span class="kn">import</span> <span class="n">value_error</span>
@@ -96,32 +93,36 @@
 <span class="kn">from</span> <span class="nn">modelparameters.utils</span> <span class="kn">import</span> <span class="n">check_kwarg</span>
 
 <span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">__version__</span>
-<span class="kn">from</span> <span class="nn">..common</span> <span class="kn">import</span> <span class="n">GotranException</span>
 <span class="kn">from</span> <span class="nn">..common.options</span> <span class="kn">import</span> <span class="n">parameters</span>
 <span class="kn">from</span> <span class="nn">..model.loadmodel</span> <span class="kn">import</span> <span class="n">load_ode</span>
 <span class="kn">from</span> <span class="nn">..model.ode</span> <span class="kn">import</span> <span class="n">ODE</span>
-<span class="kn">from</span> <span class="nn">.codegenerators</span> <span class="kn">import</span> <span class="n">CCodeGenerator</span>
 <span class="kn">from</span> <span class="nn">.codegenerators</span> <span class="kn">import</span> <span class="n">class_name</span>
+<span class="kn">from</span> <span class="nn">.codegenerators</span> <span class="kn">import</span> <span class="n">CppCodeGenerator</span>
 <span class="kn">from</span> <span class="nn">.codegenerators</span> <span class="kn">import</span> <span class="n">DOLFINCodeGenerator</span>
 <span class="kn">from</span> <span class="nn">.codegenerators</span> <span class="kn">import</span> <span class="n">PythonCodeGenerator</span>
 
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">cppyy</span>
+
+    <span class="n">_has_cppyy</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">cppyy_version</span> <span class="o">=</span> <span class="n">cppyy</span><span class="o">.</span><span class="n">__version__</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">_has_cppyy</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">cppyy_version</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+<div class="viewcode-block" id="has_cppyy"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.compilemodule.has_cppyy">[docs]</a><span class="k">def</span> <span class="nf">has_cppyy</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">_has_cppyy</span></div>
+
+
 <span class="n">module_template</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;import dijitso as _dijitso</span>
 <span class="s2">import numpy as _np</span>
-<span class="s2">import ctypes as _ctypes</span>
-<span class="s2">_module = _dijitso.cache.load_library(&quot;</span><span class="si">{signature}</span><span class="s2">&quot;, </span><span class="si">{cache}</span><span class="s2">)</span>
-
-<span class="s2">_float64_array = _np.ctypeslib.ndpointer(</span>
-<span class="s2">    dtype=_ctypes.c_double, ndim=1, flags=&quot;contiguous&quot;</span>
-<span class="s2">)</span>
-
-<span class="si">{bindings}</span><span class="s2"></span>
+<span class="s2">from cppyy.gbl import </span><span class="si">{clsname}</span><span class="s2"></span>
+<span class="s2">_module = </span><span class="si">{clsname}</span><span class="s2">()</span>
 
 <span class="si">{code}</span><span class="s2"></span>
 <span class="s2">&quot;&quot;&quot;</span>
 
-<span class="n">binding_template</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;_module.</span><span class="si">{funcname}</span><span class="s2">.argtypes = [</span><span class="si">{argtypes}</span><span class="s2">]</span>
-<span class="s2">_module.</span><span class="si">{funcname}</span><span class="s2">.restypes = </span><span class="si">{restype}</span><span class="s2"></span>
-<span class="s2">&quot;&quot;&quot;</span>
 
 <span class="n">rhs_template</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;def </span><span class="si">{rhs_function_name}</span><span class="s2">(</span><span class="si">{args}</span><span class="s2">,</span><span class="si">{rhs_name}</span><span class="s2"> = None):</span>
 <span class="s2">    &#39;&#39;&#39;</span>
@@ -199,6 +200,12 @@
     <span class="n">dolfin</span> <span class="o">=</span> <span class="s2">&quot;Dolfin&quot;</span>
 
 
+<span class="k">def</span> <span class="nf">module_from_string</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;module&quot;</span><span class="p">):</span>
+    <span class="n">module</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">exec</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">module</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">module</span>
+
+
 <div class="viewcode-block" id="compile_module"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.compilemodule.compile_module">[docs]</a><span class="k">def</span> <span class="nf">compile_module</span><span class="p">(</span>
     <span class="n">ode</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">ODE</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
     <span class="n">language</span><span class="p">:</span> <span class="n">Languange</span> <span class="o">=</span> <span class="n">Languange</span><span class="o">.</span><span class="n">c</span><span class="p">,</span>
@@ -257,11 +264,6 @@
     <span class="c1"># Create unique module name for this application run</span>
     <span class="n">modulename</span> <span class="o">=</span> <span class="n">module_signature</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">monitored</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">languange</span><span class="o">=</span><span class="s2">&quot;python&quot;</span><span class="p">)</span>
 
-    <span class="c1"># Check cache</span>
-    <span class="n">python_module</span> <span class="o">=</span> <span class="n">load_module</span><span class="p">(</span><span class="n">modulename</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">python_module</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">python_module</span><span class="p">,</span> <span class="n">class_name</span><span class="p">(</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="p">))()</span>
-
     <span class="c1"># No module in cache generate python version</span>
     <span class="k">if</span> <span class="n">language</span> <span class="o">==</span> <span class="s2">&quot;Dolfin&quot;</span><span class="p">:</span>
         <span class="n">pgen</span> <span class="o">=</span> <span class="n">DOLFINCodeGenerator</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
@@ -271,38 +273,9 @@
     <span class="c1"># Generate class code, execute it and collect namespace</span>
     <span class="n">code</span> <span class="o">=</span> <span class="s2">&quot;import numpy as np</span><span class="se">\n</span><span class="s2">import math&quot;</span> <span class="o">+</span> <span class="n">pgen</span><span class="o">.</span><span class="n">class_code</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">monitored</span><span class="o">=</span><span class="n">monitored</span><span class="p">)</span>
 
-    <span class="n">save_module</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">modulename</span><span class="p">)</span>
+    <span class="n">python_module</span> <span class="o">=</span> <span class="n">module_from_string</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">modulename</span><span class="p">)</span>
 
-    <span class="n">python_module</span> <span class="o">=</span> <span class="n">load_module</span><span class="p">(</span><span class="n">modulename</span><span class="p">)</span>
     <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">python_module</span><span class="p">,</span> <span class="n">class_name</span><span class="p">(</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="p">))()</span></div>
-
-
-<span class="k">def</span> <span class="nf">_jit_generate</span><span class="p">(</span><span class="n">class_data</span><span class="p">,</span> <span class="n">module_name</span><span class="p">,</span> <span class="n">signature</span><span class="p">,</span> <span class="n">parameters</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Helper function for ditjitso&quot;&quot;&quot;</span>
-
-    <span class="n">template_code</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="si">{includes}</span><span class="s2"></span>
-<span class="s2">// Based on https://gcc.gnu.org/wiki/Visibility</span>
-<span class="s2">#if defined _WIN32 || defined __CYGWIN__</span>
-<span class="s2">    #ifdef __GNUC__</span>
-<span class="s2">        #define DLL_EXPORT __attribute__ ((dllexport))</span>
-<span class="s2">    #else</span>
-<span class="s2">        #define DLL_EXPORT __declspec(dllexport)</span>
-<span class="s2">    #endif</span>
-<span class="s2">#else</span>
-<span class="s2">    #define DLL_EXPORT __attribute__ ((visibility (&quot;default&quot;)))</span>
-<span class="s2">#endif</span>
-
-<span class="si">{code}</span><span class="s2"></span>
-<span class="s2">&quot;&quot;&quot;</span>
-    <span class="n">code_c</span> <span class="o">=</span> <span class="n">template_code</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-        <span class="n">code</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">class_data</span><span class="p">[</span><span class="s2">&quot;code_dict&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">())),</span>
-        <span class="n">includes</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">class_data</span><span class="p">[</span><span class="s2">&quot;includes&quot;</span><span class="p">]),</span>
-    <span class="p">)</span>
-    <span class="n">code_h</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-    <span class="n">depends</span> <span class="o">=</span> <span class="p">[]</span>
-
-    <span class="k">return</span> <span class="n">code_h</span><span class="p">,</span> <span class="n">code_c</span><span class="p">,</span> <span class="n">depends</span>
 
 
 <span class="k">def</span> <span class="nf">add_dll_export</span><span class="p">(</span><span class="n">code_dict</span><span class="p">):</span>
@@ -387,58 +360,23 @@
     <span class="k">return</span> <span class="n">monitor_declaration</span>
 
 
-<span class="k">def</span> <span class="nf">args_to_argtypes</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="n">argtypes</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;states&quot;</span><span class="p">:</span> <span class="s2">&quot;_float64_array&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="s2">&quot;_ctypes.c_double&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="s2">&quot;_float64_array&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;values&quot;</span><span class="p">:</span> <span class="s2">&quot;_float64_array&quot;</span><span class="p">,</span>
-    <span class="p">}</span>
-    <span class="n">args_split</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args_split</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
-        <span class="c1"># Values are optional to it is not in the list</span>
-        <span class="n">args_split</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;values&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args_split</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">GotranException</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected number to arguments to be 4, got </span><span class="si">{</span><span class="n">args_split</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">argtypes</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args_split</span><span class="p">])</span>
-
-
-<span class="k">def</span> <span class="nf">cache_path</span><span class="p">(</span><span class="n">signature</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
-    <span class="k">if</span> <span class="n">cache_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">dijitso_params</span> <span class="o">=</span> <span class="n">dijitso</span><span class="o">.</span><span class="n">validate_params</span><span class="p">(</span><span class="n">dijitso</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">default_params</span><span class="p">())</span>
-        <span class="n">cache_dir</span> <span class="o">=</span> <span class="n">dijitso_params</span><span class="p">[</span><span class="s2">&quot;cache&quot;</span><span class="p">][</span><span class="s2">&quot;cache_dir&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">)</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">signature</span><span class="si">}</span><span class="s2">.py&quot;</span><span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">load_module</span><span class="p">(</span><span class="n">signature</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-
-    <span class="n">path</span> <span class="o">=</span> <span class="n">cache_path</span><span class="p">(</span><span class="n">signature</span><span class="p">,</span> <span class="n">cache_dir</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
-        <span class="k">return</span> <span class="kc">None</span>
-
-    <span class="n">spec</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">spec_from_file_location</span><span class="p">(</span><span class="n">signature</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
-    <span class="n">module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">module_from_spec</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">exec_module</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">None</span>
-    <span class="k">return</span> <span class="n">module</span>
+<span class="k">def</span> <span class="nf">signature</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">monitored</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">languange</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha1</span><span class="p">(</span>
+        <span class="nb">str</span><span class="p">(</span>
+            <span class="n">ode</span><span class="o">.</span><span class="n">signature</span><span class="p">()</span>
+            <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">monitored</span><span class="p">)</span>
+            <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+            <span class="o">+</span> <span class="n">languange</span>
+            <span class="o">+</span> <span class="n">__version__</span>
+            <span class="o">+</span> <span class="n">cppyy_version</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">),</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
 
 
 <span class="k">def</span> <span class="nf">module_signature</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">monitored</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">languange</span><span class="p">):</span>
     <span class="k">return</span> <span class="s2">&quot;gotran_compiled_module_</span><span class="si">{0}</span><span class="s2">_</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
         <span class="n">class_name</span><span class="p">(</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
-        <span class="n">hashlib</span><span class="o">.</span><span class="n">sha1</span><span class="p">(</span>
-            <span class="nb">str</span><span class="p">(</span>
-                <span class="n">ode</span><span class="o">.</span><span class="n">signature</span><span class="p">()</span>
-                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">monitored</span><span class="p">)</span>
-                <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
-                <span class="o">+</span> <span class="n">languange</span>
-                <span class="o">+</span> <span class="n">__version__</span>
-                <span class="o">+</span> <span class="n">dijitso</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">),</span>
-        <span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">(),</span>
+        <span class="n">signature</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">monitored</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">languange</span><span class="p">),</span>
     <span class="p">)</span>
 
 
@@ -450,16 +388,10 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compile an extension module, based on the C code from the ode</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">dijitso_params</span> <span class="o">=</span> <span class="n">dijitso</span><span class="o">.</span><span class="n">validate_params</span><span class="p">(</span><span class="n">dijitso</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">default_params</span><span class="p">())</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">has_cppyy</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s2">&quot;Please install &#39;cppyy&#39;&quot;</span><span class="p">)</span>
 
     <span class="n">args</span><span class="p">,</span> <span class="n">args_doc</span> <span class="o">=</span> <span class="n">parse_arguments</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
-
-    <span class="c1"># Create unique module name for this application run</span>
-    <span class="n">modulename</span> <span class="o">=</span> <span class="n">module_signature</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">monitored</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">languange</span><span class="o">=</span><span class="s2">&quot;C&quot;</span><span class="p">)</span>
-
-    <span class="n">compiled_module</span> <span class="o">=</span> <span class="n">load_module</span><span class="p">(</span><span class="n">modulename</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">compiled_module</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">compiled_module</span>
 
     <span class="c1"># Do not generate any Python functions</span>
     <span class="n">python_params</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -472,20 +404,18 @@
     <span class="n">monitor_code</span> <span class="o">=</span> <span class="n">parse_monitor_declaration</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">args_doc</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">monitored</span><span class="p">)</span>
 
     <span class="n">pgen</span> <span class="o">=</span> <span class="n">PythonCodeGenerator</span><span class="p">(</span><span class="n">python_params</span><span class="p">)</span>
-    <span class="n">cgen</span> <span class="o">=</span> <span class="n">CCodeGenerator</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
-    <span class="n">code_dict</span> <span class="o">=</span> <span class="n">cgen</span><span class="o">.</span><span class="n">code_dict</span><span class="p">(</span>
-        <span class="n">ode</span><span class="p">,</span>
-        <span class="n">monitored</span><span class="o">=</span><span class="n">monitored</span><span class="p">,</span>
-        <span class="n">include_init</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">include_index_map</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="p">)</span>
+    <span class="n">cgen</span> <span class="o">=</span> <span class="n">CppCodeGenerator</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+
+    <span class="n">clsname</span> <span class="o">=</span> <span class="n">class_name</span><span class="p">(</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">signature</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">monitored</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="s2">&quot;Cpp&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">clsname</span><span class="p">)</span>
+    <span class="n">class_code</span> <span class="o">=</span> <span class="n">cgen</span><span class="o">.</span><span class="n">class_code</span><span class="p">(</span><span class="n">ode</span><span class="o">=</span><span class="n">ode</span><span class="p">,</span> <span class="n">monitored</span><span class="o">=</span><span class="n">monitored</span><span class="p">,</span> <span class="n">clsname</span><span class="o">=</span><span class="n">clsname</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">_cppyygbl</span> <span class="o">=</span> <span class="nb">__import__</span><span class="p">(</span><span class="s2">&quot;cppyy.gbl&quot;</span><span class="p">,</span> <span class="n">fromlist</span><span class="o">=</span><span class="p">[</span><span class="n">clsname</span><span class="p">])</span>
+        <span class="nb">getattr</span><span class="p">(</span><span class="n">_cppyygbl</span><span class="p">,</span> <span class="n">clsname</span><span class="p">)()</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="n">cppyy</span><span class="o">.</span><span class="n">cppdef</span><span class="p">(</span><span class="n">class_code</span><span class="p">)</span>
 
     <span class="n">pcode</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">pgen</span><span class="o">.</span><span class="n">code_dict</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">monitored</span><span class="o">=</span><span class="n">monitored</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
-    <span class="n">argtypes</span> <span class="o">=</span> <span class="n">args_to_argtypes</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-    <span class="n">cpp_data</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;code_dict&quot;</span><span class="p">:</span> <span class="n">add_dll_export</span><span class="p">(</span><span class="n">code_dict</span><span class="p">),</span>
-        <span class="s2">&quot;includes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;#include &lt;math.h&gt;&quot;</span><span class="p">],</span>
-    <span class="p">}</span>
 
     <span class="n">rhs_code</span> <span class="o">=</span> <span class="n">rhs_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
         <span class="n">rhs_function_name</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">functions</span><span class="o">.</span><span class="n">rhs</span><span class="o">.</span><span class="n">function_name</span><span class="p">,</span>
@@ -494,43 +424,13 @@
         <span class="n">args_doc</span><span class="o">=</span><span class="n">args_doc</span><span class="p">,</span>
         <span class="n">states_name</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">array_name</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="n">rhs_binding</span> <span class="o">=</span> <span class="n">binding_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-        <span class="n">funcname</span><span class="o">=</span><span class="s2">&quot;rhs&quot;</span><span class="p">,</span>
-        <span class="n">argtypes</span><span class="o">=</span><span class="n">argtypes</span><span class="p">,</span>
-        <span class="n">restype</span><span class="o">=</span><span class="s2">&quot;None&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="n">monitor_binding</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">monitor_code</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-        <span class="n">monitor_binding</span> <span class="o">=</span> <span class="n">binding_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">funcname</span><span class="o">=</span><span class="s2">&quot;monitor&quot;</span><span class="p">,</span>
-            <span class="n">argtypes</span><span class="o">=</span><span class="n">argtypes</span><span class="p">,</span>
-            <span class="n">restype</span><span class="o">=</span><span class="s2">&quot;None&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-    <span class="n">jacobian_binding</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">jacobian_code</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-        <span class="n">jacobian_binding</span> <span class="o">=</span> <span class="n">binding_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">funcname</span><span class="o">=</span><span class="s2">&quot;compute_jacobian&quot;</span><span class="p">,</span>
-            <span class="n">argtypes</span><span class="o">=</span><span class="n">argtypes</span><span class="p">,</span>
-            <span class="n">restype</span><span class="o">=</span><span class="s2">&quot;None&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
 
     <span class="n">compiled_module_code</span> <span class="o">=</span> <span class="n">module_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-        <span class="n">signature</span><span class="o">=</span><span class="n">modulename</span><span class="p">,</span>
-        <span class="n">cache</span><span class="o">=</span><span class="nb">repr</span><span class="p">(</span><span class="n">dijitso_params</span><span class="p">[</span><span class="s2">&quot;cache&quot;</span><span class="p">]),</span>
+        <span class="n">clsname</span><span class="o">=</span><span class="n">clsname</span><span class="p">,</span>
         <span class="n">code</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">rhs_code</span><span class="p">,</span> <span class="n">pcode</span><span class="p">,</span> <span class="n">monitor_code</span><span class="p">,</span> <span class="n">jacobian_code</span><span class="p">]),</span>
-        <span class="n">bindings</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">rhs_binding</span><span class="p">,</span> <span class="n">monitor_binding</span><span class="p">,</span> <span class="n">jacobian_binding</span><span class="p">]),</span>
     <span class="p">)</span>
 
-    <span class="n">module</span><span class="p">,</span> <span class="n">signature</span> <span class="o">=</span> <span class="n">dijitso</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span>
-        <span class="n">cpp_data</span><span class="p">,</span>
-        <span class="n">modulename</span><span class="p">,</span>
-        <span class="n">dijitso_params</span><span class="p">,</span>
-        <span class="n">generate</span><span class="o">=</span><span class="n">_jit_generate</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="n">save_module</span><span class="p">(</span><span class="n">compiled_module_code</span><span class="p">,</span> <span class="n">modulename</span><span class="p">)</span>
+    <span class="n">mymodule</span> <span class="o">=</span> <span class="n">module_from_string</span><span class="p">(</span><span class="n">compiled_module_code</span><span class="p">,</span> <span class="n">clsname</span><span class="p">)</span>
 
     <span class="n">info</span><span class="p">(</span><span class="s2">&quot;Calling GOTRAN just-in-time (JIT) compiler, this may take some &quot;</span> <span class="s2">&quot;time...&quot;</span><span class="p">)</span>
     <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
@@ -538,19 +438,7 @@
     <span class="n">info</span><span class="p">(</span><span class="s2">&quot; done&quot;</span><span class="p">)</span>
     <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 
-    <span class="k">return</span> <span class="n">load_module</span><span class="p">(</span><span class="n">signature</span><span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">save_module</span><span class="p">(</span>
-    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">signature</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">cache_dir</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span>
-        <span class="n">cache_path</span><span class="p">(</span><span class="n">signature</span><span class="o">=</span><span class="n">signature</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span><span class="p">),</span>
-        <span class="s2">&quot;w&quot;</span><span class="p">,</span>
-    <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mymodule</span>
 </pre></div>
 
            </div>
