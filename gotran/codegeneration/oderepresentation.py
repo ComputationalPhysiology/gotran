@@ -32,6 +32,7 @@ from modelparameters.sympytools import iter_symbol_params_from_expr
 from modelparameters.sympytools import sp
 from modelparameters.utils import check_arg
 from modelparameters.utils import check_kwarg
+from packaging.version import Version as _V
 
 from ..model.ode import ODE
 from ..model.odecomponent import Comment
