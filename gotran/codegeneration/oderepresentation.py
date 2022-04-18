@@ -21,7 +21,6 @@ import re
 import sys
 from collections import OrderedDict
 
-from distutils.version import LooseVersion as _V
 from modelparameters import sympy
 from modelparameters.logger import info
 from modelparameters.parameterdict import Param
