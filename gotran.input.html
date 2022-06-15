@@ -14,6 +14,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -86,12 +87,12 @@
            <div itemprop="articleBody">
              
   <section id="gotran-input-package">
-<h1>gotran.input package<a class="headerlink" href="#gotran-input-package" title="Permalink to this headline"></a></h1>
+<h1>gotran.input package<a class="headerlink" href="#gotran-input-package" title="Permalink to this heading"></a></h1>
 <section id="submodules">
-<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline"></a></h2>
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
 </section>
 <section id="module-gotran.input.cellml">
-<span id="gotran-input-cellml-module"></span><h2>gotran.input.cellml module<a class="headerlink" href="#module-gotran.input.cellml" title="Permalink to this headline"></a></h2>
+<span id="gotran-input-cellml-module"></span><h2>gotran.input.cellml module<a class="headerlink" href="#module-gotran.input.cellml" title="Permalink to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.input.cellml.CellMLParser">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.input.cellml.</span></span><span class="sig-name descname"><span class="pre">CellMLParser</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/input/cellml.html#CellMLParser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.input.cellml.CellMLParser" title="Permalink to this definition"></a></dt>
@@ -186,7 +187,7 @@ component of the cellml model</p>
 
 </section>
 <section id="module-gotran.input.mathml">
-<span id="gotran-input-mathml-module"></span><h2>gotran.input.mathml module<a class="headerlink" href="#module-gotran.input.mathml" title="Permalink to this headline"></a></h2>
+<span id="gotran-input-mathml-module"></span><h2>gotran.input.mathml module<a class="headerlink" href="#module-gotran.input.mathml" title="Permalink to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.input.mathml.MathMLBaseParser">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.input.mathml.</span></span><span class="sig-name descname"><span class="pre">MathMLBaseParser</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_sympy_integers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/input/mathml.html#MathMLBaseParser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.input.mathml.MathMLBaseParser" title="Permalink to this definition"></a></dt>
@@ -209,12 +210,12 @@ together with any state variable and derivative.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.input.mathml.MathMLCPPParser">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.input.mathml.</span></span><span class="sig-name descname"><span class="pre">MathMLCPPParser</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_sympy_integers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/input/mathml.html#MathMLCPPParser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.input.mathml.MathMLCPPParser" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.input.mathml.MathMLBaseParser" title="gotran.input.mathml.MathMLBaseParser"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.input.mathml.MathMLBaseParser</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.input.mathml.MathMLBaseParser" title="gotran.input.mathml.MathMLBaseParser"><code class="xref py py-class docutils literal notranslate"><span class="pre">MathMLBaseParser</span></code></a></p>
 </dd></dl>
 
 </section>
 <section id="module-gotran.input">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-gotran.input" title="Permalink to this headline"></a></h2>
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-gotran.input" title="Permalink to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.input.CellMLParser">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.input.</span></span><span class="sig-name descname"><span class="pre">CellMLParser</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/input/cellml.html#CellMLParser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.input.CellMLParser" title="Permalink to this definition"></a></dt>

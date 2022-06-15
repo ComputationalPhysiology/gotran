@@ -14,6 +14,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -91,19 +92,19 @@
            <div itemprop="articleBody">
              
   <section id="gotran-model-package">
-<h1>gotran.model package<a class="headerlink" href="#gotran-model-package" title="Permalink to this headline"></a></h1>
+<h1>gotran.model package<a class="headerlink" href="#gotran-model-package" title="Permalink to this heading"></a></h1>
 <section id="submodules">
-<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline"></a></h2>
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
 </section>
 <section id="gotran-model-cellmodel-module">
-<h2>gotran.model.cellmodel module<a class="headerlink" href="#gotran-model-cellmodel-module" title="Permalink to this headline"></a></h2>
+<h2>gotran.model.cellmodel module<a class="headerlink" href="#gotran-model-cellmodel-module" title="Permalink to this heading"></a></h2>
 </section>
 <section id="module-gotran.model.expressions">
-<span id="gotran-model-expressions-module"></span><h2>gotran.model.expressions module<a class="headerlink" href="#module-gotran.model.expressions" title="Permalink to this headline"></a></h2>
+<span id="gotran-model-expressions-module"></span><h2>gotran.model.expressions module<a class="headerlink" href="#module-gotran.model.expressions" title="Permalink to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.expressions.AlgebraicExpression">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.expressions.</span></span><span class="sig-name descname"><span class="pre">AlgebraicExpression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#AlgebraicExpression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.expressions.AlgebraicExpression" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.StateExpression" title="gotran.model.expressions.StateExpression"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.expressions.StateExpression</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.StateExpression" title="gotran.model.expressions.StateExpression"><code class="xref py py-class docutils literal notranslate"><span class="pre">StateExpression</span></code></a></p>
 <p>A class for algebraic expressions which relates a State with an
 expression which should equal to 0</p>
 </dd></dl>
@@ -111,7 +112,7 @@ expression which should equal to 0</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.expressions.DerivativeExpression">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.expressions.</span></span><span class="sig-name descname"><span class="pre">DerivativeExpression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">der_expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dep_var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#DerivativeExpression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.expressions.DerivativeExpression" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Intermediate" title="gotran.model.expressions.Intermediate"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.expressions.Intermediate</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Intermediate" title="gotran.model.expressions.Intermediate"><code class="xref py py-class docutils literal notranslate"><span class="pre">Intermediate</span></code></a></p>
 <p>A class for Intermediate derivative expressions</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.expressions.DerivativeExpression.dep_var">
@@ -128,7 +129,7 @@ expression which should equal to 0</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.expressions.Expression">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.expressions.</span></span><span class="sig-name descname"><span class="pre">Expression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#Expression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.expressions.Expression" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.ODEValueObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEValueObject</span></code></a></p>
 <p>class for all expressions such as intermediates and derivatives</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.expressions.Expression.dependent">
@@ -163,7 +164,7 @@ expression which should equal to 0</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.expressions.IndexedExpression">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.expressions.</span></span><span class="sig-name descname"><span class="pre">IndexedExpression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">array_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#IndexedExpression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.expressions.IndexedExpression" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.IndexedObject" title="gotran.model.odeobjects.IndexedObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.IndexedObject</span></code></a>, <a class="reference internal" href="#gotran.model.expressions.Expression" title="gotran.model.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.expressions.Expression</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.IndexedObject" title="gotran.model.odeobjects.IndexedObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexedObject</span></code></a>, <a class="reference internal" href="#gotran.model.expressions.Expression" title="gotran.model.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">Expression</span></code></a></p>
 <p>An expression which represents an expression with a fixed index
 associated with it</p>
 </dd></dl>
@@ -171,14 +172,14 @@ associated with it</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.expressions.Intermediate">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.expressions.</span></span><span class="sig-name descname"><span class="pre">Intermediate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#Intermediate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.expressions.Intermediate" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Expression" title="gotran.model.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.expressions.Expression</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Expression" title="gotran.model.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">Expression</span></code></a></p>
 <p>A class for all Intermediate classes</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.expressions.ParameterIndexedExpression">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.expressions.</span></span><span class="sig-name descname"><span class="pre">ParameterIndexedExpression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">array_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#ParameterIndexedExpression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.expressions.ParameterIndexedExpression" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ParameterIndexedObject" title="gotran.model.odeobjects.ParameterIndexedObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.ParameterIndexedObject</span></code></a>, <a class="reference internal" href="#gotran.model.expressions.Expression" title="gotran.model.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.expressions.Expression</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ParameterIndexedObject" title="gotran.model.odeobjects.ParameterIndexedObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">ParameterIndexedObject</span></code></a>, <a class="reference internal" href="#gotran.model.expressions.Expression" title="gotran.model.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">Expression</span></code></a></p>
 <p>An expression which represents an expression with a fixed state index
 associated with it</p>
 </dd></dl>
@@ -186,7 +187,7 @@ associated with it</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.expressions.RateExpression">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.expressions.</span></span><span class="sig-name descname"><span class="pre">RateExpression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to_state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#RateExpression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.expressions.RateExpression" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Intermediate" title="gotran.model.expressions.Intermediate"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.expressions.Intermediate</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Intermediate" title="gotran.model.expressions.Intermediate"><code class="xref py py-class docutils literal notranslate"><span class="pre">Intermediate</span></code></a></p>
 <p>A sub class of Expression holding single rates</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.expressions.RateExpression.states">
@@ -200,7 +201,7 @@ between</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.expressions.StateDerivative">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.expressions.</span></span><span class="sig-name descname"><span class="pre">StateDerivative</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#StateDerivative"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.expressions.StateDerivative" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.StateExpression" title="gotran.model.expressions.StateExpression"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.expressions.StateExpression</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.StateExpression" title="gotran.model.expressions.StateExpression"><code class="xref py py-class docutils literal notranslate"><span class="pre">StateExpression</span></code></a></p>
 <p>A class for all state derivatives</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.expressions.StateDerivative.sym">
@@ -212,7 +213,7 @@ between</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.expressions.StateExpression">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.expressions.</span></span><span class="sig-name descname"><span class="pre">StateExpression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#StateExpression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.expressions.StateExpression" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Expression" title="gotran.model.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.expressions.Expression</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Expression" title="gotran.model.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">Expression</span></code></a></p>
 <p>An expression which determines a State.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.expressions.StateExpression.state">
@@ -224,7 +225,7 @@ between</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.expressions.StateIndexedExpression">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.expressions.</span></span><span class="sig-name descname"><span class="pre">StateIndexedExpression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">array_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#StateIndexedExpression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.expressions.StateIndexedExpression" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.StateIndexedObject" title="gotran.model.odeobjects.StateIndexedObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.StateIndexedObject</span></code></a>, <a class="reference internal" href="#gotran.model.expressions.Expression" title="gotran.model.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.expressions.Expression</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.StateIndexedObject" title="gotran.model.odeobjects.StateIndexedObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">StateIndexedObject</span></code></a>, <a class="reference internal" href="#gotran.model.expressions.Expression" title="gotran.model.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">Expression</span></code></a></p>
 <p>An expression which represents an expression with a fixed state index
 associated with it</p>
 </dd></dl>
@@ -232,7 +233,7 @@ associated with it</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.expressions.StateSolution">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.expressions.</span></span><span class="sig-name descname"><span class="pre">StateSolution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#StateSolution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.expressions.StateSolution" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Intermediate" title="gotran.model.expressions.Intermediate"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.expressions.Intermediate</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Intermediate" title="gotran.model.expressions.Intermediate"><code class="xref py py-class docutils literal notranslate"><span class="pre">Intermediate</span></code></a></p>
 <p>Sub class of Expression for state solution expressions</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.expressions.StateSolution.state">
@@ -249,7 +250,7 @@ associated with it</p>
 
 </section>
 <section id="module-gotran.model.loadmodel">
-<span id="gotran-model-loadmodel-module"></span><h2>gotran.model.loadmodel module<a class="headerlink" href="#module-gotran.model.loadmodel" title="Permalink to this headline"></a></h2>
+<span id="gotran-model-loadmodel-module"></span><h2>gotran.model.loadmodel module<a class="headerlink" href="#module-gotran.model.loadmodel" title="Permalink to this heading"></a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="gotran.model.loadmodel.exec_ode">
 <span class="sig-prename descclassname"><span class="pre">gotran.model.loadmodel.</span></span><span class="sig-name descname"><span class="pre">exec_ode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ode_str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">arguments</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/loadmodel.html#exec_ode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.loadmodel.exec_ode" title="Permalink to this definition"></a></dt>
@@ -283,11 +284,11 @@ associated with it</p>
 
 </section>
 <section id="module-gotran.model.ode">
-<span id="gotran-model-ode-module"></span><h2>gotran.model.ode module<a class="headerlink" href="#module-gotran.model.ode" title="Permalink to this headline"></a></h2>
+<span id="gotran-model-ode-module"></span><h2>gotran.model.ode module<a class="headerlink" href="#module-gotran.model.ode" title="Permalink to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.ode.ODE">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.ode.</span></span><span class="sig-name descname"><span class="pre">ODE</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/ode.html#ODE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.ode.ODE" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odecomponent.ODEComponent" title="gotran.model.odecomponent.ODEComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odecomponent.ODEComponent</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odecomponent.ODEComponent" title="gotran.model.odecomponent.ODEComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEComponent</span></code></a></p>
 <p>Root ODEComponent</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -428,11 +429,11 @@ given the basename will be the same as the name of the ode.</p>
 
 </section>
 <section id="module-gotran.model.odecomponent">
-<span id="gotran-model-odecomponent-module"></span><h2>gotran.model.odecomponent module<a class="headerlink" href="#module-gotran.model.odecomponent" title="Permalink to this headline"></a></h2>
+<span id="gotran-model-odecomponent-module"></span><h2>gotran.model.odecomponent module<a class="headerlink" href="#module-gotran.model.odecomponent" title="Permalink to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.odecomponent.ODEComponent">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.odecomponent.</span></span><span class="sig-name descname"><span class="pre">ODEComponent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/odecomponent.html#ODEComponent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.odecomponent.ODEComponent" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEObject" title="gotran.model.odeobjects.ODEObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.ODEObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEObject" title="gotran.model.odeobjects.ODEObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEObject</span></code></a></p>
 <p>Base class for all ODE components.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="gotran.model.odecomponent.ODEComponent.add_algebraic">
@@ -750,18 +751,18 @@ of registered state expressions</p>
 
 </section>
 <section id="module-gotran.model.odeobjects">
-<span id="gotran-model-odeobjects-module"></span><h2>gotran.model.odeobjects module<a class="headerlink" href="#module-gotran.model.odeobjects" title="Permalink to this headline"></a></h2>
+<span id="gotran-model-odeobjects-module"></span><h2>gotran.model.odeobjects module<a class="headerlink" href="#module-gotran.model.odeobjects" title="Permalink to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.odeobjects.Comment">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.odeobjects.</span></span><span class="sig-name descname"><span class="pre">Comment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comment</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/odeobjects.html#Comment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.odeobjects.Comment" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEObject" title="gotran.model.odeobjects.ODEObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.ODEObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEObject" title="gotran.model.odeobjects.ODEObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEObject</span></code></a></p>
 <p>A Comment. To keep track of user comments in an ODE</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.odeobjects.Dt">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.odeobjects.</span></span><span class="sig-name descname"><span class="pre">Dt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ms'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/odeobjects.html#Dt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.odeobjects.Dt" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.ODEValueObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEValueObject</span></code></a></p>
 <p>Specialization for a time step class</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="gotran.model.odeobjects.Dt.update_unit">
@@ -775,7 +776,7 @@ seconds in stead of milliseconds</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.odeobjects.IndexedObject">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.odeobjects.</span></span><span class="sig-name descname"><span class="pre">IndexedObject</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">array_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/odeobjects.html#IndexedObject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.odeobjects.IndexedObject" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEObject" title="gotran.model.odeobjects.ODEObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.ODEObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEObject" title="gotran.model.odeobjects.ODEObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEObject</span></code></a></p>
 <p>An object with a fixed index associated with it</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.odeobjects.IndexedObject.basename">
@@ -836,7 +837,7 @@ seconds in stead of milliseconds</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.odeobjects.ODEValueObject">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.odeobjects.</span></span><span class="sig-name descname"><span class="pre">ODEValueObject</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/odeobjects.html#ODEValueObject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.odeobjects.ODEValueObject" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEObject" title="gotran.model.odeobjects.ODEObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.ODEObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEObject" title="gotran.model.odeobjects.ODEObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEObject</span></code></a></p>
 <p>A class for all ODE objects which has a value</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.odeobjects.ODEValueObject.param">
@@ -874,7 +875,7 @@ seconds in stead of milliseconds</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.odeobjects.Parameter">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.odeobjects.</span></span><span class="sig-name descname"><span class="pre">Parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/odeobjects.html#Parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.odeobjects.Parameter" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.ODEValueObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEValueObject</span></code></a></p>
 <p>class for a Parameter</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.odeobjects.Parameter.init">
@@ -886,7 +887,7 @@ seconds in stead of milliseconds</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.odeobjects.ParameterIndexedObject">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.odeobjects.</span></span><span class="sig-name descname"><span class="pre">ParameterIndexedObject</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">array_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/odeobjects.html#ParameterIndexedObject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.odeobjects.ParameterIndexedObject" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.IndexedObject" title="gotran.model.odeobjects.IndexedObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.IndexedObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.IndexedObject" title="gotran.model.odeobjects.IndexedObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexedObject</span></code></a></p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.odeobjects.ParameterIndexedObject.parameter">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parameter</span></span><a class="headerlink" href="#gotran.model.odeobjects.ParameterIndexedObject.parameter" title="Permalink to this definition"></a></dt>
@@ -897,7 +898,7 @@ seconds in stead of milliseconds</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.odeobjects.State">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.odeobjects.</span></span><span class="sig-name descname"><span class="pre">State</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/odeobjects.html#State"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.odeobjects.State" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.ODEValueObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEValueObject</span></code></a></p>
 <p>class for a State variable</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.odeobjects.State.init">
@@ -919,7 +920,7 @@ seconds in stead of milliseconds</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.odeobjects.StateIndexedObject">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.odeobjects.</span></span><span class="sig-name descname"><span class="pre">StateIndexedObject</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">array_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/odeobjects.html#StateIndexedObject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.odeobjects.StateIndexedObject" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.IndexedObject" title="gotran.model.odeobjects.IndexedObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.IndexedObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.IndexedObject" title="gotran.model.odeobjects.IndexedObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexedObject</span></code></a></p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.odeobjects.StateIndexedObject.state">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">state</span></span><a class="headerlink" href="#gotran.model.odeobjects.StateIndexedObject.state" title="Permalink to this definition"></a></dt>
@@ -930,7 +931,7 @@ seconds in stead of milliseconds</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.odeobjects.Time">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.odeobjects.</span></span><span class="sig-name descname"><span class="pre">Time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ms'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/odeobjects.html#Time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.odeobjects.Time" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.ODEValueObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEValueObject</span></code></a></p>
 <p>Specialization for a Time class</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="gotran.model.odeobjects.Time.update_unit">
@@ -954,7 +955,7 @@ seconds in stead of milliseconds</p>
 
 </section>
 <section id="module-gotran.model.utils">
-<span id="gotran-model-utils-module"></span><h2>gotran.model.utils module<a class="headerlink" href="#module-gotran.model.utils" title="Permalink to this headline"></a></h2>
+<span id="gotran-model-utils-module"></span><h2>gotran.model.utils module<a class="headerlink" href="#module-gotran.model.utils" title="Permalink to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.utils.ODEObjectList">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.utils.</span></span><span class="sig-name descname"><span class="pre">ODEObjectList</span></span><a class="reference internal" href="_modules/gotran/model/utils.html#ODEObjectList"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.utils.ODEObjectList" title="Permalink to this definition"></a></dt>
@@ -1038,7 +1039,7 @@ ascending or descending, according to their function values.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.utils.RateDict">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.utils.</span></span><span class="sig-name descname"><span class="pre">RateDict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comp</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/utils.html#RateDict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.utils.RateDict" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/collections.html#collections.OrderedDict" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">collections.OrderedDict</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/collections.html#collections.OrderedDict" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">OrderedDict</span></code></a></p>
 <p>A storage class for Markov model rates</p>
 </dd></dl>
 
@@ -1117,11 +1118,11 @@ childrens</p>
 
 </section>
 <section id="module-gotran.model">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-gotran.model" title="Permalink to this headline"></a></h2>
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-gotran.model" title="Permalink to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.AlgebraicExpression">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">AlgebraicExpression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#AlgebraicExpression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.AlgebraicExpression" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.StateExpression" title="gotran.model.expressions.StateExpression"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.expressions.StateExpression</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.StateExpression" title="gotran.model.expressions.StateExpression"><code class="xref py py-class docutils literal notranslate"><span class="pre">StateExpression</span></code></a></p>
 <p>A class for algebraic expressions which relates a State with an
 expression which should equal to 0</p>
 </dd></dl>
@@ -1129,14 +1130,14 @@ expression which should equal to 0</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.Comment">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">Comment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comment</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/odeobjects.html#Comment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.Comment" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEObject" title="gotran.model.odeobjects.ODEObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.ODEObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEObject" title="gotran.model.odeobjects.ODEObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEObject</span></code></a></p>
 <p>A Comment. To keep track of user comments in an ODE</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.DerivativeExpression">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">DerivativeExpression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">der_expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dep_var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#DerivativeExpression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.DerivativeExpression" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Intermediate" title="gotran.model.expressions.Intermediate"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.expressions.Intermediate</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Intermediate" title="gotran.model.expressions.Intermediate"><code class="xref py py-class docutils literal notranslate"><span class="pre">Intermediate</span></code></a></p>
 <p>A class for Intermediate derivative expressions</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.DerivativeExpression.dep_var">
@@ -1153,7 +1154,7 @@ expression which should equal to 0</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.Dt">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">Dt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ms'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/odeobjects.html#Dt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.Dt" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.ODEValueObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEValueObject</span></code></a></p>
 <p>Specialization for a time step class</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="gotran.model.Dt.update_unit">
@@ -1167,7 +1168,7 @@ seconds in stead of milliseconds</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.Expression">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">Expression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#Expression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.Expression" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.ODEValueObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEValueObject</span></code></a></p>
 <p>class for all expressions such as intermediates and derivatives</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.Expression.dependent">
@@ -1202,7 +1203,7 @@ seconds in stead of milliseconds</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.IndexedExpression">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">IndexedExpression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">array_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#IndexedExpression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.IndexedExpression" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.IndexedObject" title="gotran.model.odeobjects.IndexedObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.IndexedObject</span></code></a>, <a class="reference internal" href="#gotran.model.expressions.Expression" title="gotran.model.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.expressions.Expression</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.IndexedObject" title="gotran.model.odeobjects.IndexedObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexedObject</span></code></a>, <a class="reference internal" href="#gotran.model.expressions.Expression" title="gotran.model.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">Expression</span></code></a></p>
 <p>An expression which represents an expression with a fixed index
 associated with it</p>
 </dd></dl>
@@ -1210,7 +1211,7 @@ associated with it</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.IndexedObject">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">IndexedObject</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">array_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/odeobjects.html#IndexedObject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.IndexedObject" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEObject" title="gotran.model.odeobjects.ODEObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.ODEObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEObject" title="gotran.model.odeobjects.ODEObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEObject</span></code></a></p>
 <p>An object with a fixed index associated with it</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.IndexedObject.basename">
@@ -1253,14 +1254,14 @@ associated with it</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.Intermediate">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">Intermediate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#Intermediate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.Intermediate" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Expression" title="gotran.model.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.expressions.Expression</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Expression" title="gotran.model.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">Expression</span></code></a></p>
 <p>A class for all Intermediate classes</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.ODE">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">ODE</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/ode.html#ODE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.ODE" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odecomponent.ODEComponent" title="gotran.model.odecomponent.ODEComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odecomponent.ODEComponent</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odecomponent.ODEComponent" title="gotran.model.odecomponent.ODEComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEComponent</span></code></a></p>
 <p>Root ODEComponent</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1402,7 +1403,7 @@ given the basename will be the same as the name of the ode.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.ODEComponent">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">ODEComponent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/odecomponent.html#ODEComponent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.ODEComponent" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEObject" title="gotran.model.odeobjects.ODEObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.ODEObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEObject" title="gotran.model.odeobjects.ODEObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEObject</span></code></a></p>
 <p>Base class for all ODE components.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="gotran.model.ODEComponent.add_algebraic">
@@ -1739,7 +1740,7 @@ of registered state expressions</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.ODEValueObject">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">ODEValueObject</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/odeobjects.html#ODEValueObject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.ODEValueObject" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEObject" title="gotran.model.odeobjects.ODEObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.ODEObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEObject" title="gotran.model.odeobjects.ODEObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEObject</span></code></a></p>
 <p>A class for all ODE objects which has a value</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.ODEValueObject.param">
@@ -1777,7 +1778,7 @@ of registered state expressions</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.Parameter">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">Parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/odeobjects.html#Parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.Parameter" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.ODEValueObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEValueObject</span></code></a></p>
 <p>class for a Parameter</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.Parameter.init">
@@ -1789,7 +1790,7 @@ of registered state expressions</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.RateExpression">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">RateExpression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to_state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#RateExpression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.RateExpression" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Intermediate" title="gotran.model.expressions.Intermediate"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.expressions.Intermediate</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Intermediate" title="gotran.model.expressions.Intermediate"><code class="xref py py-class docutils literal notranslate"><span class="pre">Intermediate</span></code></a></p>
 <p>A sub class of Expression holding single rates</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.RateExpression.states">
@@ -1803,7 +1804,7 @@ between</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.State">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">State</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/odeobjects.html#State"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.State" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.ODEValueObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEValueObject</span></code></a></p>
 <p>class for a State variable</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.State.init">
@@ -1825,7 +1826,7 @@ between</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.StateDerivative">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">StateDerivative</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#StateDerivative"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.StateDerivative" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.StateExpression" title="gotran.model.expressions.StateExpression"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.expressions.StateExpression</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.StateExpression" title="gotran.model.expressions.StateExpression"><code class="xref py py-class docutils literal notranslate"><span class="pre">StateExpression</span></code></a></p>
 <p>A class for all state derivatives</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.StateDerivative.sym">
@@ -1837,7 +1838,7 @@ between</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.StateExpression">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">StateExpression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#StateExpression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.StateExpression" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Expression" title="gotran.model.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.expressions.Expression</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Expression" title="gotran.model.expressions.Expression"><code class="xref py py-class docutils literal notranslate"><span class="pre">Expression</span></code></a></p>
 <p>An expression which determines a State.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.StateExpression.state">
@@ -1849,7 +1850,7 @@ between</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.StateSolution">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">StateSolution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/expressions.html#StateSolution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.StateSolution" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Intermediate" title="gotran.model.expressions.Intermediate"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.expressions.Intermediate</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.expressions.Intermediate" title="gotran.model.expressions.Intermediate"><code class="xref py py-class docutils literal notranslate"><span class="pre">Intermediate</span></code></a></p>
 <p>Sub class of Expression for state solution expressions</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="gotran.model.StateSolution.state">
@@ -1861,7 +1862,7 @@ between</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="gotran.model.Time">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gotran.model.</span></span><span class="sig-name descname"><span class="pre">Time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ms'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gotran/model/odeobjects.html#Time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gotran.model.Time" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">gotran.model.odeobjects.ODEValueObject</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#gotran.model.odeobjects.ODEValueObject" title="gotran.model.odeobjects.ODEValueObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">ODEValueObject</span></code></a></p>
 <p>Specialization for a Time class</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="gotran.model.Time.update_unit">
