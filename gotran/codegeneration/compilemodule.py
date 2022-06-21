@@ -35,21 +35,29 @@ from .codegenerators import CppCodeGenerator
 from .codegenerators import DOLFINCodeGenerator
 from .codegenerators import PythonCodeGenerator
 
-try:
-    import cppyy
-
-    _has_cppyy = True
-    cppyy_version = cppyy.__version__
-except ImportError:
-    _has_cppyy = False
-    cppyy_version = 0
-
 
 def has_cppyy() -> bool:
+    try:
+        import cppyy  # noqa: F401
+
+        _has_cppyy = True
+
+    except ImportError:
+        _has_cppyy = False
+
     return _has_cppyy
 
 
-module_template = """import dijitso as _dijitso
+def cppyy_version():
+    if not has_cppyy():
+        return 0
+
+    import cppyy
+
+    return cppyy.__version__
+
+
+module_template = """
 import numpy as _np
 from cppyy.gbl import {clsname}
 _module = {clsname}()
@@ -295,6 +303,7 @@ def parse_monitor_declaration(ode, args, args_doc, params, monitored):
 
 
 def signature(ode, monitored, params, languange) -> str:
+
     return hashlib.sha1(
         str(
             ode.signature()
@@ -302,7 +311,7 @@ def signature(ode, monitored, params, languange) -> str:
             + repr(params)
             + languange
             + __version__
-            + cppyy_version,
+            + cppyy_version(),
         ).encode("utf-8"),
     ).hexdigest()
 
@@ -347,6 +356,8 @@ def compile_extension_module(
         _cppyygbl = __import__("cppyy.gbl", fromlist=[clsname])
         getattr(_cppyygbl, clsname)()
     except AttributeError:
+        import cppyy
+
         cppyy.cppdef(class_code)
 
     pcode = "\n\n".join(list(pgen.code_dict(ode, monitored=monitored).values()))
