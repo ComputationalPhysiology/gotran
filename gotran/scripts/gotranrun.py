@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 from itertools import cycle
 
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
 import numpy as np
 from modelparameters.codegeneration import latex
 from modelparameters.logger import error
@@ -29,7 +32,8 @@ except ImportError:
 
 
 def gotranrun(filename, params):
-
+    if plt is None:
+        raise ImportError("Please install matplotlib - pip install matplotlib")
     # Copy of default parameters
     generation = parameters.generation.copy()
 
