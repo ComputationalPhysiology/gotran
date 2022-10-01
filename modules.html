@@ -16,6 +16,7 @@
         <script src="_static/underscore.js"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" /> 
@@ -139,7 +140,326 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="gotran.html#module-gotran">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gotran.html#module-gotran">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.AlgebraicExpression"><code class="docutils literal notranslate"><span class="pre">AlgebraicExpression</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.args"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.args()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.closure_end"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.closure_end</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.closure_start"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.closure_start</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.comment"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.comment</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.componentwise_code"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.componentwise_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.float_types"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.float_types</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.function_code"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.function_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.indent"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.indent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.indent_str"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.indent_str</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.index"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.index()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.init_parameters_code"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.init_parameters_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.init_states_code"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.init_states_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.language"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.language</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.line_cont"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.line_cont</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.line_ending"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.line_ending</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.mass_matrix"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.mass_matrix()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.module_code"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.module_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.monitor_name_to_index_code"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.monitor_name_to_index_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.monitored_enum_code"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.monitored_enum_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.obj_name"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.obj_name()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.param_name_to_index_code"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.param_name_to_index_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.parameters_enum_code"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.parameters_enum_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.state_name_to_index_code"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.state_name_to_index_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.states_enum_code"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.states_enum_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.to_code"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.to_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CCodeGenerator.wrap_body_with_function_prototype"><code class="docutils literal notranslate"><span class="pre">CCodeGenerator.wrap_body_with_function_prototype()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.CUDACodeGenerator"><code class="docutils literal notranslate"><span class="pre">CUDACodeGenerator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CUDACodeGenerator.default_parameters"><code class="docutils literal notranslate"><span class="pre">CUDACodeGenerator.default_parameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CUDACodeGenerator.field_parameters_setter_code"><code class="docutils literal notranslate"><span class="pre">CUDACodeGenerator.field_parameters_setter_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CUDACodeGenerator.field_states_getter_code"><code class="docutils literal notranslate"><span class="pre">CUDACodeGenerator.field_states_getter_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CUDACodeGenerator.field_states_setter_code"><code class="docutils literal notranslate"><span class="pre">CUDACodeGenerator.field_states_setter_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CUDACodeGenerator.function_code"><code class="docutils literal notranslate"><span class="pre">CUDACodeGenerator.function_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CUDACodeGenerator.indent"><code class="docutils literal notranslate"><span class="pre">CUDACodeGenerator.indent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CUDACodeGenerator.init_field_parameters_code"><code class="docutils literal notranslate"><span class="pre">CUDACodeGenerator.init_field_parameters_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CUDACodeGenerator.init_parameters_code"><code class="docutils literal notranslate"><span class="pre">CUDACodeGenerator.init_parameters_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CUDACodeGenerator.init_states_code"><code class="docutils literal notranslate"><span class="pre">CUDACodeGenerator.init_states_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CUDACodeGenerator.language"><code class="docutils literal notranslate"><span class="pre">CUDACodeGenerator.language</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CUDACodeGenerator.module_code"><code class="docutils literal notranslate"><span class="pre">CUDACodeGenerator.module_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CUDACodeGenerator.solver_code"><code class="docutils literal notranslate"><span class="pre">CUDACodeGenerator.solver_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CUDACodeGenerator.wrap_body_with_function_prototype"><code class="docutils literal notranslate"><span class="pre">CUDACodeGenerator.wrap_body_with_function_prototype()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.CellMLParser"><code class="docutils literal notranslate"><span class="pre">CellMLParser</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CellMLParser.check_and_register_component_variables"><code class="docutils literal notranslate"><span class="pre">CellMLParser.check_and_register_component_variables()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CellMLParser.default_parameters"><code class="docutils literal notranslate"><span class="pre">CellMLParser.default_parameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CellMLParser.get_iterator"><code class="docutils literal notranslate"><span class="pre">CellMLParser.get_iterator()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CellMLParser.get_parents"><code class="docutils literal notranslate"><span class="pre">CellMLParser.get_parents()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CellMLParser.parse_components"><code class="docutils literal notranslate"><span class="pre">CellMLParser.parse_components()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CellMLParser.parse_connections"><code class="docutils literal notranslate"><span class="pre">CellMLParser.parse_connections()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CellMLParser.parse_documentation"><code class="docutils literal notranslate"><span class="pre">CellMLParser.parse_documentation()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CellMLParser.parse_imported_model"><code class="docutils literal notranslate"><span class="pre">CellMLParser.parse_imported_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CellMLParser.parse_single_component"><code class="docutils literal notranslate"><span class="pre">CellMLParser.parse_single_component()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CellMLParser.parse_units"><code class="docutils literal notranslate"><span class="pre">CellMLParser.parse_units()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CellMLParser.sort_components"><code class="docutils literal notranslate"><span class="pre">CellMLParser.sort_components()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CellMLParser.to_gotran"><code class="docutils literal notranslate"><span class="pre">CellMLParser.to_gotran()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.CodeComponent"><code class="docutils literal notranslate"><span class="pre">CodeComponent</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CodeComponent.add_indexed_expression"><code class="docutils literal notranslate"><span class="pre">CodeComponent.add_indexed_expression()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CodeComponent.add_indexed_object"><code class="docutils literal notranslate"><span class="pre">CodeComponent.add_indexed_object()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CodeComponent.default_parameters"><code class="docutils literal notranslate"><span class="pre">CodeComponent.default_parameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CodeComponent.indexed_objects"><code class="docutils literal notranslate"><span class="pre">CodeComponent.indexed_objects()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.Comment"><code class="docutils literal notranslate"><span class="pre">Comment</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.CommonSubExpressionODE"><code class="docutils literal notranslate"><span class="pre">CommonSubExpressionODE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.CppCodeGenerator"><code class="docutils literal notranslate"><span class="pre">CppCodeGenerator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CppCodeGenerator.class_code"><code class="docutils literal notranslate"><span class="pre">CppCodeGenerator.class_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CppCodeGenerator.language"><code class="docutils literal notranslate"><span class="pre">CppCodeGenerator.language</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.CppCodeGenerator.to_code"><code class="docutils literal notranslate"><span class="pre">CppCodeGenerator.to_code()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.DerivativeExpression"><code class="docutils literal notranslate"><span class="pre">DerivativeExpression</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.DerivativeExpression.dep_var"><code class="docutils literal notranslate"><span class="pre">DerivativeExpression.dep_var</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.DerivativeExpression.der_expr"><code class="docutils literal notranslate"><span class="pre">DerivativeExpression.der_expr</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.Dt"><code class="docutils literal notranslate"><span class="pre">Dt</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.Dt.update_unit"><code class="docutils literal notranslate"><span class="pre">Dt.update_unit()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.Expression"><code class="docutils literal notranslate"><span class="pre">Expression</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.Expression.dependent"><code class="docutils literal notranslate"><span class="pre">Expression.dependent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.Expression.expr"><code class="docutils literal notranslate"><span class="pre">Expression.expr</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.Expression.is_state_expression"><code class="docutils literal notranslate"><span class="pre">Expression.is_state_expression</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.Expression.replace_expr"><code class="docutils literal notranslate"><span class="pre">Expression.replace_expr()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.Expression.sym"><code class="docutils literal notranslate"><span class="pre">Expression.sym</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.FactorizedJacobianComponent"><code class="docutils literal notranslate"><span class="pre">FactorizedJacobianComponent</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.ForwardBackwardSubstitutionComponent"><code class="docutils literal notranslate"><span class="pre">ForwardBackwardSubstitutionComponent</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.GotranException"><code class="docutils literal notranslate"><span class="pre">GotranException</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.IndexedExpression"><code class="docutils literal notranslate"><span class="pre">IndexedExpression</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.IndexedObject"><code class="docutils literal notranslate"><span class="pre">IndexedObject</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.IndexedObject.basename"><code class="docutils literal notranslate"><span class="pre">IndexedObject.basename</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.IndexedObject.default_parameters"><code class="docutils literal notranslate"><span class="pre">IndexedObject.default_parameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.IndexedObject.enum"><code class="docutils literal notranslate"><span class="pre">IndexedObject.enum</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.IndexedObject.indices"><code class="docutils literal notranslate"><span class="pre">IndexedObject.indices</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.IndexedObject.offset_str"><code class="docutils literal notranslate"><span class="pre">IndexedObject.offset_str</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.IndexedObject.shape"><code class="docutils literal notranslate"><span class="pre">IndexedObject.shape</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.IndexedObject.sym"><code class="docutils literal notranslate"><span class="pre">IndexedObject.sym</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.Intermediate"><code class="docutils literal notranslate"><span class="pre">Intermediate</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.JacobianActionComponent"><code class="docutils literal notranslate"><span class="pre">JacobianActionComponent</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.JacobianComponent"><code class="docutils literal notranslate"><span class="pre">JacobianComponent</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.args"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.args()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.closure_end"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.closure_end</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.closure_start"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.closure_start</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.comment"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.comment</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.componentwise_code"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.componentwise_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.default_parameters"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.default_parameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.function_code"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.function_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.indent"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.indent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.indent_str"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.indent_str</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.index"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.index()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.init_parameters_code"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.init_parameters_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.init_states_code"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.init_states_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.language"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.language</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.line_cont"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.line_cont</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.line_ending"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.line_ending</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.module_code"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.module_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.monitor_name_to_index_code"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.monitor_name_to_index_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.param_name_to_index_code"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.param_name_to_index_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.state_name_to_index_code"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.state_name_to_index_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.to_code"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.to_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.JuliaCodeGenerator.wrap_body_with_function_prototype"><code class="docutils literal notranslate"><span class="pre">JuliaCodeGenerator.wrap_body_with_function_prototype()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.LatexCodeGenerator"><code class="docutils literal notranslate"><span class="pre">LatexCodeGenerator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.LatexCodeGenerator.format_component_label"><code class="docutils literal notranslate"><span class="pre">LatexCodeGenerator.format_component_label()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.LatexCodeGenerator.format_description"><code class="docutils literal notranslate"><span class="pre">LatexCodeGenerator.format_description()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.LatexCodeGenerator.format_expr"><code class="docutils literal notranslate"><span class="pre">LatexCodeGenerator.format_expr()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.LatexCodeGenerator.format_global_options"><code class="docutils literal notranslate"><span class="pre">LatexCodeGenerator.format_global_options()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.LatexCodeGenerator.format_options"><code class="docutils literal notranslate"><span class="pre">LatexCodeGenerator.format_options()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.LatexCodeGenerator.format_packages"><code class="docutils literal notranslate"><span class="pre">LatexCodeGenerator.format_packages()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.LatexCodeGenerator.format_param_table_row"><code class="docutils literal notranslate"><span class="pre">LatexCodeGenerator.format_param_table_row()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.LatexCodeGenerator.format_state_table_row"><code class="docutils literal notranslate"><span class="pre">LatexCodeGenerator.format_state_table_row()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.LatexCodeGenerator.format_unit"><code class="docutils literal notranslate"><span class="pre">LatexCodeGenerator.format_unit()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.LatexCodeGenerator.generate"><code class="docutils literal notranslate"><span class="pre">LatexCodeGenerator.generate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.LatexCodeGenerator.generate_components"><code class="docutils literal notranslate"><span class="pre">LatexCodeGenerator.generate_components()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.LatexCodeGenerator.generate_parameter_table"><code class="docutils literal notranslate"><span class="pre">LatexCodeGenerator.generate_parameter_table()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.LatexCodeGenerator.generate_state_table"><code class="docutils literal notranslate"><span class="pre">LatexCodeGenerator.generate_state_table()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.LatexCodeGenerator.packages"><code class="docutils literal notranslate"><span class="pre">LatexCodeGenerator.packages</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.LatexCodeGenerator.print_settings"><code class="docutils literal notranslate"><span class="pre">LatexCodeGenerator.print_settings</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.LinearizedDerivativeComponent"><code class="docutils literal notranslate"><span class="pre">LinearizedDerivativeComponent</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator.args"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator.args()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator.closure_end"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator.closure_end</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator.closure_start"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator.closure_start</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator.code_dict"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator.code_dict()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator.comment"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator.comment</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator.default_parameters"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator.default_parameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator.function_code"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator.function_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator.indent"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator.indent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator.indent_str"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator.indent_str</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator.index"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator.index()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator.init_parameters_code"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator.init_parameters_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator.init_states_code"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator.init_states_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator.language"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator.language</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator.line_cont"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator.line_cont</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator.line_ending"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator.line_ending</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator.mass_matrix"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator.mass_matrix()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator.monitored_names_code"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator.monitored_names_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator.to_code"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator.to_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.MatlabCodeGenerator.wrap_body_with_function_prototype"><code class="docutils literal notranslate"><span class="pre">MatlabCodeGenerator.wrap_body_with_function_prototype()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.ODE"><code class="docutils literal notranslate"><span class="pre">ODE</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODE.component_names"><code class="docutils literal notranslate"><span class="pre">ODE.component_names</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODE.expanded_expression"><code class="docutils literal notranslate"><span class="pre">ODE.expanded_expression()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODE.extract_components"><code class="docutils literal notranslate"><span class="pre">ODE.extract_components()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODE.finalize"><code class="docutils literal notranslate"><span class="pre">ODE.finalize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODE.import_ode"><code class="docutils literal notranslate"><span class="pre">ODE.import_ode()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODE.intermediate_symbols"><code class="docutils literal notranslate"><span class="pre">ODE.intermediate_symbols</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODE.is_dae"><code class="docutils literal notranslate"><span class="pre">ODE.is_dae</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODE.mass_matrix"><code class="docutils literal notranslate"><span class="pre">ODE.mass_matrix</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODE.ns"><code class="docutils literal notranslate"><span class="pre">ODE.ns</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODE.parameter_symbols"><code class="docutils literal notranslate"><span class="pre">ODE.parameter_symbols</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODE.parameter_values"><code class="docutils literal notranslate"><span class="pre">ODE.parameter_values()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODE.present_component"><code class="docutils literal notranslate"><span class="pre">ODE.present_component</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODE.register_ode_object"><code class="docutils literal notranslate"><span class="pre">ODE.register_ode_object()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODE.save"><code class="docutils literal notranslate"><span class="pre">ODE.save()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODE.signature"><code class="docutils literal notranslate"><span class="pre">ODE.signature()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODE.state_symbols"><code class="docutils literal notranslate"><span class="pre">ODE.state_symbols</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODE.state_values"><code class="docutils literal notranslate"><span class="pre">ODE.state_values()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.ODEComponent"><code class="docutils literal notranslate"><span class="pre">ODEComponent</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.add_algebraic"><code class="docutils literal notranslate"><span class="pre">ODEComponent.add_algebraic()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.add_comment"><code class="docutils literal notranslate"><span class="pre">ODEComponent.add_comment()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.add_component"><code class="docutils literal notranslate"><span class="pre">ODEComponent.add_component()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.add_derivative"><code class="docutils literal notranslate"><span class="pre">ODEComponent.add_derivative()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.add_intermediate"><code class="docutils literal notranslate"><span class="pre">ODEComponent.add_intermediate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.add_parameter"><code class="docutils literal notranslate"><span class="pre">ODEComponent.add_parameter()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.add_parameters"><code class="docutils literal notranslate"><span class="pre">ODEComponent.add_parameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.add_solve_state"><code class="docutils literal notranslate"><span class="pre">ODEComponent.add_solve_state()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.add_state"><code class="docutils literal notranslate"><span class="pre">ODEComponent.add_state()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.add_state_solution"><code class="docutils literal notranslate"><span class="pre">ODEComponent.add_state_solution()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.add_states"><code class="docutils literal notranslate"><span class="pre">ODEComponent.add_states()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.comments"><code class="docutils literal notranslate"><span class="pre">ODEComponent.comments</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.components"><code class="docutils literal notranslate"><span class="pre">ODEComponent.components</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.finalize_component"><code class="docutils literal notranslate"><span class="pre">ODEComponent.finalize_component()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.full_state_vector"><code class="docutils literal notranslate"><span class="pre">ODEComponent.full_state_vector</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.full_states"><code class="docutils literal notranslate"><span class="pre">ODEComponent.full_states</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.get_object"><code class="docutils literal notranslate"><span class="pre">ODEComponent.get_object()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.intermediates"><code class="docutils literal notranslate"><span class="pre">ODEComponent.intermediates</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.is_complete"><code class="docutils literal notranslate"><span class="pre">ODEComponent.is_complete</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.is_finalized"><code class="docutils literal notranslate"><span class="pre">ODEComponent.is_finalized</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.is_locally_complete"><code class="docutils literal notranslate"><span class="pre">ODEComponent.is_locally_complete</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.num_components"><code class="docutils literal notranslate"><span class="pre">ODEComponent.num_components</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.num_full_states"><code class="docutils literal notranslate"><span class="pre">ODEComponent.num_full_states</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.num_intermediates"><code class="docutils literal notranslate"><span class="pre">ODEComponent.num_intermediates</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.num_parameters"><code class="docutils literal notranslate"><span class="pre">ODEComponent.num_parameters</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.num_rate_expressions"><code class="docutils literal notranslate"><span class="pre">ODEComponent.num_rate_expressions</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.num_state_expressions"><code class="docutils literal notranslate"><span class="pre">ODEComponent.num_state_expressions</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.num_states"><code class="docutils literal notranslate"><span class="pre">ODEComponent.num_states</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.parameters"><code class="docutils literal notranslate"><span class="pre">ODEComponent.parameters</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.parent"><code class="docutils literal notranslate"><span class="pre">ODEComponent.parent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.rate_expressions"><code class="docutils literal notranslate"><span class="pre">ODEComponent.rate_expressions</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.root"><code class="docutils literal notranslate"><span class="pre">ODEComponent.root</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.state_expressions"><code class="docutils literal notranslate"><span class="pre">ODEComponent.state_expressions</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.states"><code class="docutils literal notranslate"><span class="pre">ODEComponent.states</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.t"><code class="docutils literal notranslate"><span class="pre">ODEComponent.t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEComponent.time"><code class="docutils literal notranslate"><span class="pre">ODEComponent.time</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.ODEObject"><code class="docutils literal notranslate"><span class="pre">ODEObject</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEObject.name"><code class="docutils literal notranslate"><span class="pre">ODEObject.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEObject.rename"><code class="docutils literal notranslate"><span class="pre">ODEObject.rename()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.ODEValueObject"><code class="docutils literal notranslate"><span class="pre">ODEValueObject</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEValueObject.param"><code class="docutils literal notranslate"><span class="pre">ODEValueObject.param</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEValueObject.rename"><code class="docutils literal notranslate"><span class="pre">ODEValueObject.rename()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEValueObject.sym"><code class="docutils literal notranslate"><span class="pre">ODEValueObject.sym</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEValueObject.unit"><code class="docutils literal notranslate"><span class="pre">ODEValueObject.unit</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEValueObject.update"><code class="docutils literal notranslate"><span class="pre">ODEValueObject.update()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.ODEValueObject.value"><code class="docutils literal notranslate"><span class="pre">ODEValueObject.value</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.Parameter"><code class="docutils literal notranslate"><span class="pre">Parameter</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.Parameter.init"><code class="docutils literal notranslate"><span class="pre">Parameter.init</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.PythonCodeGenerator"><code class="docutils literal notranslate"><span class="pre">PythonCodeGenerator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.PythonCodeGenerator.args"><code class="docutils literal notranslate"><span class="pre">PythonCodeGenerator.args()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.PythonCodeGenerator.class_code"><code class="docutils literal notranslate"><span class="pre">PythonCodeGenerator.class_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.PythonCodeGenerator.componentwise_code"><code class="docutils literal notranslate"><span class="pre">PythonCodeGenerator.componentwise_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.PythonCodeGenerator.decorators"><code class="docutils literal notranslate"><span class="pre">PythonCodeGenerator.decorators()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.PythonCodeGenerator.float_types"><code class="docutils literal notranslate"><span class="pre">PythonCodeGenerator.float_types</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.PythonCodeGenerator.function_code"><code class="docutils literal notranslate"><span class="pre">PythonCodeGenerator.function_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.PythonCodeGenerator.init_parameters_code"><code class="docutils literal notranslate"><span class="pre">PythonCodeGenerator.init_parameters_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.PythonCodeGenerator.init_states_code"><code class="docutils literal notranslate"><span class="pre">PythonCodeGenerator.init_states_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.PythonCodeGenerator.language"><code class="docutils literal notranslate"><span class="pre">PythonCodeGenerator.language</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.PythonCodeGenerator.mass_matrix"><code class="docutils literal notranslate"><span class="pre">PythonCodeGenerator.mass_matrix()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.PythonCodeGenerator.module_code"><code class="docutils literal notranslate"><span class="pre">PythonCodeGenerator.module_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.PythonCodeGenerator.monitor_name_to_index_code"><code class="docutils literal notranslate"><span class="pre">PythonCodeGenerator.monitor_name_to_index_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.PythonCodeGenerator.param_name_to_index_code"><code class="docutils literal notranslate"><span class="pre">PythonCodeGenerator.param_name_to_index_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.PythonCodeGenerator.parameter_names_list_code"><code class="docutils literal notranslate"><span class="pre">PythonCodeGenerator.parameter_names_list_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.PythonCodeGenerator.state_name_to_index_code"><code class="docutils literal notranslate"><span class="pre">PythonCodeGenerator.state_name_to_index_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.PythonCodeGenerator.state_names_list_code"><code class="docutils literal notranslate"><span class="pre">PythonCodeGenerator.state_names_list_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.PythonCodeGenerator.to_code"><code class="docutils literal notranslate"><span class="pre">PythonCodeGenerator.to_code()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.PythonCodeGenerator.wrap_body_with_function_prototype"><code class="docutils literal notranslate"><span class="pre">PythonCodeGenerator.wrap_body_with_function_prototype()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.RateExpression"><code class="docutils literal notranslate"><span class="pre">RateExpression</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.RateExpression.states"><code class="docutils literal notranslate"><span class="pre">RateExpression.states</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.State"><code class="docutils literal notranslate"><span class="pre">State</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.State.init"><code class="docutils literal notranslate"><span class="pre">State.init</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.State.is_solved"><code class="docutils literal notranslate"><span class="pre">State.is_solved</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.State.sym"><code class="docutils literal notranslate"><span class="pre">State.sym</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.StateDerivative"><code class="docutils literal notranslate"><span class="pre">StateDerivative</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.StateDerivative.sym"><code class="docutils literal notranslate"><span class="pre">StateDerivative.sym</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.StateExpression"><code class="docutils literal notranslate"><span class="pre">StateExpression</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.StateExpression.state"><code class="docutils literal notranslate"><span class="pre">StateExpression.state</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.StateSolution"><code class="docutils literal notranslate"><span class="pre">StateSolution</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.StateSolution.state"><code class="docutils literal notranslate"><span class="pre">StateSolution.state</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.Time"><code class="docutils literal notranslate"><span class="pre">Time</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gotran.html#gotran.Time.update_unit"><code class="docutils literal notranslate"><span class="pre">Time.update_unit()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.cellml2ode"><code class="docutils literal notranslate"><span class="pre">cellml2ode()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.class_name"><code class="docutils literal notranslate"><span class="pre">class_name()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.cmp"><code class="docutils literal notranslate"><span class="pre">cmp()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.cmp_to_key"><code class="docutils literal notranslate"><span class="pre">cmp_to_key()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.componentwise_derivative"><code class="docutils literal notranslate"><span class="pre">componentwise_derivative()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.diagonal_jacobian_action_expressions"><code class="docutils literal notranslate"><span class="pre">diagonal_jacobian_action_expressions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.diagonal_jacobian_expressions"><code class="docutils literal notranslate"><span class="pre">diagonal_jacobian_expressions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.exec_ode"><code class="docutils literal notranslate"><span class="pre">exec_ode()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.factorized_jacobian_expressions"><code class="docutils literal notranslate"><span class="pre">factorized_jacobian_expressions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.forward_backward_subst_expressions"><code class="docutils literal notranslate"><span class="pre">forward_backward_subst_expressions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.jacobian_action_expressions"><code class="docutils literal notranslate"><span class="pre">jacobian_action_expressions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.jacobian_expressions"><code class="docutils literal notranslate"><span class="pre">jacobian_expressions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.linearized_derivatives"><code class="docutils literal notranslate"><span class="pre">linearized_derivatives()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.load_ode"><code class="docutils literal notranslate"><span class="pre">load_ode()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.monitored_expressions"><code class="docutils literal notranslate"><span class="pre">monitored_expressions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.recreate_expression"><code class="docutils literal notranslate"><span class="pre">recreate_expression()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.rhs_expressions"><code class="docutils literal notranslate"><span class="pre">rhs_expressions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gotran.html#gotran.set_log_level"><code class="docutils literal notranslate"><span class="pre">set_log_level()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
