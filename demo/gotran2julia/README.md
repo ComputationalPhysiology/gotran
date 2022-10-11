@@ -8,7 +8,7 @@ your ODE. To illustrate the usage we will use the
 To generate the relevant julia
 
 ```
-gotran2julia tentusscher_panfilov_2006_M_cell.ode
+python -m gotran gotran2julia tentusscher_panfilov_2006_M_cell.ode
 ```
 
 This will create a new file called
@@ -29,7 +29,7 @@ a plot of the membrane potential and the Kr current.
 
 Note that by typing
 ```
-gotran2py --help
+python -m gotran gotran2julia --help
 ```
 
 you can get all the options for codegeneration.

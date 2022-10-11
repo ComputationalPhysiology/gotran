@@ -8,7 +8,7 @@ To illustrate the usage we will use the
 To generate C code from the ode file, we use the following command:
 
 ```
-gotran2c tentusscher_panfilov_2006_M_cell.ode --solvers.explicit_euler.generate=1 --solvers.rush_larsen.generate=1 --code.body.use_enum=1
+python -m gotran gotran2c tentusscher_panfilov_2006_M_cell.ode --solvers.explicit_euler.generate=1 --solvers.rush_larsen.generate=1 --code.body.use_enum=1
 ```
 
 The first two arguments specify that we want to generate solver functions for the
