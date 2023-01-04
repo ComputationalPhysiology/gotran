@@ -1,33 +1,70 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
   <title>gotran.codegeneration.oderepresentation &mdash; gotran 2019.0.0 documentation</title>
-      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
   <!--[if lt IE 9]>
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-        <script src="../../../_static/jquery.js"></script>
-        <script src="../../../_static/underscore.js"></script>
-        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
         <script src="../../../_static/sphinx_highlight.js"></script>
-    <script src="../../../_static/js/theme.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
+
+   
   <div class="wy-grid-for-nav">
+    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
+          
+
+          
             <a href="../../../index.html" class="icon icon-home"> gotran
+          
+
+          
           </a>
+
+          
+            
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -35,36 +72,86 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
               <p class="caption" role="heading"><span class="caption-text">Programmers reference:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../gotran.html">gotran package</a></li>
 </ul>
 
+            
+          
         </div>
+        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../../index.html">gotran</a>
+        
       </nav>
 
+
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-      <li><a href="../../../index.html" class="icon icon-home"></a></li>
-          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
-      <li class="breadcrumb-item active">gotran.codegeneration.oderepresentation</li>
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>gotran.codegeneration.oderepresentation</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
+        
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+            
   <h1>Source code for gotran.codegeneration.oderepresentation</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Copyright (C) 2012 Johan Hake</span>
 <span class="c1">#</span>
@@ -114,7 +201,7 @@
 
 
 <span class="k">def</span> <span class="nf">_iszero</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Returns True if x is zero.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns True if x is zero.&quot;&quot;&quot;</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sympify</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">is_zero</span>
 
@@ -238,13 +325,13 @@
 
 
 <div class="viewcode-block" id="ODERepresentation"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.oderepresentation.ODERepresentation">[docs]</a><span class="k">class</span> <span class="nc">ODERepresentation</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Intermediate ODE representation where various optimizations</span>
 <span class="sd">    can be performed.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">optimization</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create an ODERepresentation</span>
 
 <span class="sd">        Arguments</span>
@@ -867,7 +954,7 @@
         <span class="p">)</span>
 
 <div class="viewcode-block" id="ODERepresentation.update_index"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.oderepresentation.ODERepresentation.update_index">[docs]</a>    <span class="k">def</span> <span class="nf">update_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Set index notation, specific for language syntax</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">index</span></div>
@@ -886,7 +973,7 @@
         <span class="p">)</span>
 
 <div class="viewcode-block" id="ODERepresentation.set_state_prefix"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.oderepresentation.ODERepresentation.set_state_prefix">[docs]</a>    <span class="k">def</span> <span class="nf">set_state_prefix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Register a prefix to a state name. Used if</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">check_arg</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
@@ -896,7 +983,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_symbol_subs</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 <div class="viewcode-block" id="ODERepresentation.set_parameter_prefix"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.oderepresentation.ODERepresentation.set_parameter_prefix">[docs]</a>    <span class="k">def</span> <span class="nf">set_parameter_prefix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Register a prefix to a parameter name. Used if</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">check_arg</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
@@ -906,7 +993,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_symbol_subs</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 <div class="viewcode-block" id="ODERepresentation.subs"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.oderepresentation.ODERepresentation.subs">[docs]</a>    <span class="k">def</span> <span class="nf">subs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Call subs on the passed expr using symbol_subs if the expr is</span>
 <span class="sd">        a SymPy Basic</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -916,7 +1003,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">symbol_subs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a subs dict for all ODE Objects (states, parameters)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_symbol_subs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -961,7 +1048,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_symbol_subs</span>
 
 <div class="viewcode-block" id="ODERepresentation.iter_derivative_expr"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.oderepresentation.ODERepresentation.iter_derivative_expr">[docs]</a>    <span class="k">def</span> <span class="nf">iter_derivative_expr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a list of derivatives and its expressions</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -993,7 +1080,7 @@
             <span class="p">)</span></div>
 
 <div class="viewcode-block" id="ODERepresentation.iter_dy_body"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.oderepresentation.ODERepresentation.iter_dy_body">[docs]</a>    <span class="k">def</span> <span class="nf">iter_dy_body</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return an interator over dy_body lines</span>
 
 <span class="sd">        If using intermediates it will define these,</span>
@@ -1018,7 +1105,7 @@
                     <span class="k">yield</span> <span class="n">expr</span><span class="p">,</span> <span class="n">name</span></div>
 
 <div class="viewcode-block" id="ODERepresentation.iter_jacobian_body"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.oderepresentation.ODERepresentation.iter_jacobian_body">[docs]</a>    <span class="k">def</span> <span class="nf">iter_jacobian_body</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Iterate over the body defining the jacobi expressions</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -1037,7 +1124,7 @@
                 <span class="k">yield</span> <span class="n">expr</span><span class="p">,</span> <span class="n">name</span></div>
 
 <div class="viewcode-block" id="ODERepresentation.iter_jacobian_expr"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.oderepresentation.ODERepresentation.iter_jacobian_expr">[docs]</a>    <span class="k">def</span> <span class="nf">iter_jacobian_expr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Iterate over the jacobi expressions</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -1058,7 +1145,7 @@
                 <span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="ODERepresentation.iter_jacobian_action_body"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.oderepresentation.ODERepresentation.iter_jacobian_action_body">[docs]</a>    <span class="k">def</span> <span class="nf">iter_jacobian_action_body</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Iterate over the body defining the jacobi expressions</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -1077,7 +1164,7 @@
                 <span class="k">yield</span> <span class="n">expr</span><span class="p">,</span> <span class="n">name</span></div>
 
 <div class="viewcode-block" id="ODERepresentation.iter_jacobian_action_expr"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.oderepresentation.ODERepresentation.iter_jacobian_action_expr">[docs]</a>    <span class="k">def</span> <span class="nf">iter_jacobian_action_expr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Iterate over the jacobi expressions</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -1093,7 +1180,7 @@
                 <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="ODERepresentation.iter_monitored_body"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.oderepresentation.ODERepresentation.iter_monitored_body">[docs]</a>    <span class="k">def</span> <span class="nf">iter_monitored_body</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Iterate over the body defining the monitored expressions</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -1111,7 +1198,7 @@
                 <span class="k">yield</span> <span class="n">expr</span><span class="p">,</span> <span class="n">name</span></div>
 
 <div class="viewcode-block" id="ODERepresentation.iter_monitored_expr"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.codegeneration.oderepresentation.ODERepresentation.iter_monitored_expr">[docs]</a>    <span class="k">def</span> <span class="nf">iter_monitored_expr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Iterate over the monitored expressions</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -1170,30 +1257,46 @@
 </pre></div>
 
            </div>
+           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
-  </div>
+    <p>
+        &#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
         </div>
       </div>
+
     </section>
+
   </div>
-  <script>
+  
+
+  <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

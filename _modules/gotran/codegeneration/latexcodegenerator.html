@@ -1,33 +1,70 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
   <title>gotran.codegeneration.latexcodegenerator &mdash; gotran 2019.0.0 documentation</title>
-      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
   <!--[if lt IE 9]>
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-        <script src="../../../_static/jquery.js"></script>
-        <script src="../../../_static/underscore.js"></script>
-        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
         <script src="../../../_static/sphinx_highlight.js"></script>
-    <script src="../../../_static/js/theme.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
+
+   
   <div class="wy-grid-for-nav">
+    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
+          
+
+          
             <a href="../../../index.html" class="icon icon-home"> gotran
+          
+
+          
           </a>
+
+          
+            
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -35,36 +72,86 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
               <p class="caption" role="heading"><span class="caption-text">Programmers reference:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../gotran.html">gotran package</a></li>
 </ul>
 
+            
+          
         </div>
+        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../../index.html">gotran</a>
+        
       </nav>
 
+
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-      <li><a href="../../../index.html" class="icon icon-home"></a></li>
-          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
-      <li class="breadcrumb-item active">gotran.codegeneration.latexcodegenerator</li>
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>gotran.codegeneration.latexcodegenerator</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
+        
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+            
   <h1>Source code for gotran.codegeneration.latexcodegenerator</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Copyright (C) 2014 George Bahij / Johan Hake</span>
 <span class="c1">#</span>
@@ -102,24 +189,24 @@
 <span class="si">{GLOBALOPTS}</span><span class="s2">&quot;&quot;&quot;</span>
 
 <span class="n">_latex_template</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span><span class="se">\\</span><span class="s2">documentclass[a4paper,</span><span class="si">{FONTSIZE}</span><span class="s2">pt]{{article}}</span>
-<span class="si">{PKGS}</span><span class="s2"></span>
-<span class="si">{PREOPTS}</span><span class="s2"></span>
+<span class="si">{PKGS}</span>
+<span class="si">{PREOPTS}</span>
 
 <span class="se">\\</span><span class="s2">begin{{document}}</span>
-<span class="si">{OPTS}</span><span class="s2"></span>
-<span class="si">{BODY}</span><span class="s2"></span>
-<span class="si">{ENDOPTS}</span><span class="s2"></span>
+<span class="si">{OPTS}</span>
+<span class="si">{BODY}</span>
+<span class="si">{ENDOPTS}</span>
 
 <span class="se">\\</span><span class="s2">end{{document}}&quot;&quot;&quot;</span>
 
 <span class="n">_param_table_template</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">% ---------------- BEGIN PARAMETERS ---------------- %</span>
 
-<span class="se">\\</span><span class="si">{SECTIONTYPE}</span><span class="s2">*{{Parameters}}</span><span class="se">\n</span><span class="s2"></span>
+<span class="se">\\</span><span class="si">{SECTIONTYPE}</span><span class="s2">*{{Parameters}}</span><span class="se">\n</span>
 <span class="se">\\</span><span class="s2">label{{sec:ODE_Parameters}}</span>
-<span class="si">{OPTS}</span><span class="s2"></span>
+<span class="si">{OPTS}</span>
 <span class="se">\\</span><span class="s2">begin{{longtabu}}{{| l l </span><span class="si">{PDESCCELLSTYLE}</span><span class="s2"> |}}</span>
-<span class="se">\\</span><span class="s2">caption[Parameter Table]{{</span><span class="se">\\</span><span class="s2">textbf{{Parameter Table}}}}</span><span class="se">\\\\</span><span class="s2"></span>
+<span class="se">\\</span><span class="s2">caption[Parameter Table]{{</span><span class="se">\\</span><span class="s2">textbf{{Parameter Table}}}}</span><span class="se">\\\\</span>
 <span class="se">\\</span><span class="s2">hline</span>
 <span class="se">\\</span><span class="s2">multicolumn{{1}}{{|c}}{{</span><span class="se">\\</span><span class="s2">textbf{{Parameter</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}} &amp;</span>
 <span class="se">\\</span><span class="s2">multicolumn{{1}}{{c}}{{</span><span class="se">\\</span><span class="s2">textbf{{Value</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}} &amp;</span>
@@ -137,10 +224,10 @@
 <span class="se">\\</span><span class="s2">endfoot</span>
 <span class="se">\\</span><span class="s2">hline </span><span class="se">\\</span><span class="s2">hline</span>
 <span class="se">\\</span><span class="s2">endlastfoot</span>
-<span class="si">{BODY}</span><span class="se">\\\\</span><span class="s2"></span>
+<span class="si">{BODY}</span><span class="se">\\\\</span>
 <span class="se">\\</span><span class="s2">hline</span>
 <span class="se">\\</span><span class="s2">end{{longtabu}}</span>
-<span class="si">{ENDOPTS}</span><span class="s2"></span>
+<span class="si">{ENDOPTS}</span>
 
 <span class="si">% ----------------- E</span><span class="s2">ND PARAMETERS ----------------- %</span>
 <span class="s2">&quot;&quot;&quot;</span>
@@ -148,11 +235,11 @@
 <span class="n">_state_table_template</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">% ---------------- BEGIN STATES ---------------- %</span>
 
-<span class="se">\\</span><span class="si">{SECTIONTYPE}</span><span class="s2">*{{Initial Values}}</span><span class="se">\n</span><span class="s2"></span>
+<span class="se">\\</span><span class="si">{SECTIONTYPE}</span><span class="s2">*{{Initial Values}}</span><span class="se">\n</span>
 <span class="se">\\</span><span class="s2">label{{sec:ODE_States}}</span>
-<span class="si">{OPTS}</span><span class="s2"></span>
+<span class="si">{OPTS}</span>
 <span class="se">\\</span><span class="s2">begin{{longtabu}}{{| l l </span><span class="si">{SDESCCELLSTYLE}</span><span class="s2"> |}}</span>
-<span class="se">\\</span><span class="s2">caption[State Table]{{</span><span class="se">\\</span><span class="s2">textbf{{State Table}}}}</span><span class="se">\\\\</span><span class="s2"></span>
+<span class="se">\\</span><span class="s2">caption[State Table]{{</span><span class="se">\\</span><span class="s2">textbf{{State Table}}}}</span><span class="se">\\\\</span>
 <span class="se">\\</span><span class="s2">hline</span>
 <span class="se">\\</span><span class="s2">multicolumn{{1}}{{|c}}{{</span><span class="se">\\</span><span class="s2">textbf{{State</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}} &amp;</span>
 <span class="se">\\</span><span class="s2">multicolumn{{1}}{{c}}{{</span><span class="se">\\</span><span class="s2">textbf{{Value</span><span class="se">\\</span><span class="s2">hspace{{0.5cm}}}}}} &amp;</span>
@@ -170,10 +257,10 @@
 <span class="se">\\</span><span class="s2">endfoot</span>
 <span class="se">\\</span><span class="s2">hline </span><span class="se">\\</span><span class="s2">hline</span>
 <span class="se">\\</span><span class="s2">endlastfoot</span>
-<span class="si">{BODY}</span><span class="se">\\\\</span><span class="s2"></span>
+<span class="si">{BODY}</span><span class="se">\\\\</span>
 <span class="se">\\</span><span class="s2">hline</span>
 <span class="se">\\</span><span class="s2">end{{longtabu}}</span>
-<span class="si">{ENDOPTS}</span><span class="s2"></span>
+<span class="si">{ENDOPTS}</span>
 
 <span class="si">% ----------------- E</span><span class="s2">ND STATES ----------------- %</span>
 <span class="s2">&quot;&quot;&quot;</span>
@@ -183,9 +270,9 @@
 
 <span class="se">\\</span><span class="si">{SECTIONTYPE}</span><span class="s2">*{{Components}}</span>
 <span class="se">\\</span><span class="s2">label{{sec:ODE_Components}}</span>
-<span class="si">{OPTS}</span><span class="s2"></span>
-<span class="si">{BODY}</span><span class="s2"></span>
-<span class="si">{ENDOPTS}</span><span class="s2"></span>
+<span class="si">{OPTS}</span>
+<span class="si">{BODY}</span>
+<span class="si">{ENDOPTS}</span>
 
 <span class="si">% ----------------- E</span><span class="s2">ND COMPONENTS ----------------- %</span>
 <span class="s2">&quot;&quot;&quot;</span>
@@ -207,7 +294,7 @@
 
 
 <span class="k">def</span> <span class="nf">_default_latex_params</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Initializes default parameters.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -371,7 +458,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">packages</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;geometry&quot;</span><span class="p">,</span> <span class="s2">&quot;[margin=&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">margins</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span><span class="p">))</span>
 
 <div class="viewcode-block" id="LatexCodeGenerator.generate"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.generate">[docs]</a>    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Generate a LaTeX-formatted document describing a Gotran ODE.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">params</span> <span class="o">=</span> <span class="n">params</span> <span class="k">if</span> <span class="n">params</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span>
@@ -403,7 +490,7 @@
         <span class="k">return</span> <span class="n">latex_output</span></div>
 
 <div class="viewcode-block" id="LatexCodeGenerator.generate_parameter_table"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.generate_parameter_table">[docs]</a>    <span class="k">def</span> <span class="nf">generate_parameter_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a LaTeX-formatted string for a longtable describing the ODE&#39;s</span>
 <span class="sd">        parameters.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -422,7 +509,7 @@
         <span class="k">return</span> <span class="n">param_table_output</span></div>
 
 <div class="viewcode-block" id="LatexCodeGenerator.generate_state_table"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.generate_state_table">[docs]</a>    <span class="k">def</span> <span class="nf">generate_state_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a LaTeX-formatted string for a longtable describing the ode&#39;s</span>
 <span class="sd">        states.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -441,7 +528,7 @@
         <span class="k">return</span> <span class="n">state_table_output</span></div>
 
 <div class="viewcode-block" id="LatexCodeGenerator.generate_components"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.generate_components">[docs]</a>    <span class="k">def</span> <span class="nf">generate_components</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a LaTeX-formatted string of the ODE&#39;s derivative components and</span>
 <span class="sd">        intermediate calculations.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -504,7 +591,7 @@
         <span class="k">return</span> <span class="n">components_output</span></div>
 
 <div class="viewcode-block" id="LatexCodeGenerator.format_param_table_row"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.format_param_table_row">[docs]</a>    <span class="k">def</span> <span class="nf">format_param_table_row</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a LaTeX-formatted string for a longtable row describing a</span>
 <span class="sd">        parameter.</span>
 <span class="sd">        E.g.:</span>
@@ -525,7 +612,7 @@
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="LatexCodeGenerator.format_state_table_row"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.format_state_table_row">[docs]</a>    <span class="k">def</span> <span class="nf">format_state_table_row</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a LaTeX-formatted string for a longtable row describing a</span>
 <span class="sd">        state&#39;s initial value.</span>
 <span class="sd">        E.g.:</span>
@@ -544,7 +631,7 @@
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="LatexCodeGenerator.format_component_label"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.format_component_label">[docs]</a>    <span class="k">def</span> <span class="nf">format_component_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a LaTeX-formatted string of an ODE component group label.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">label_opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_options</span><span class="p">(</span><span class="n">override</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;bold_equation_labels&quot;</span><span class="p">])</span>
@@ -555,7 +642,7 @@
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="LatexCodeGenerator.format_description"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.format_description">[docs]</a>    <span class="k">def</span> <span class="nf">format_description</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        If auto-format flag is set, attempt to automatically format description,</span>
 <span class="sd">        setting references to states and parameters in math mode.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -601,7 +688,7 @@
         <span class="k">return</span> <span class="n">formatted_description</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">hspace</span><span class="si">{0.5cm}</span><span class="s2">&quot;</span></div>
 
 <div class="viewcode-block" id="LatexCodeGenerator.format_options"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.format_options">[docs]</a>    <span class="k">def</span> <span class="nf">format_options</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">override</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Wrap options around a LaTeX string, excluding specified elements.</span>
 <span class="sd">        If override is not empty, only those elements will be used, ignoring</span>
 <span class="sd">        exclude.</span>
@@ -658,7 +745,7 @@
         <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;begin&quot;</span><span class="p">:</span> <span class="n">begin_str</span><span class="p">,</span> <span class="s2">&quot;end&quot;</span><span class="p">:</span> <span class="n">end_str</span><span class="p">}</span></div>
 
 <div class="viewcode-block" id="LatexCodeGenerator.format_global_options"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.format_global_options">[docs]</a>    <span class="k">def</span> <span class="nf">format_global_options</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">option_template</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Inject additional options into the global option template</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">opts</span> <span class="o">=</span> <span class="n">_default_latex_params</span><span class="p">()</span>
@@ -681,7 +768,7 @@
         <span class="k">return</span> <span class="n">global_options</span></div>
 
 <div class="viewcode-block" id="LatexCodeGenerator.format_expr"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.format_expr">[docs]</a>    <span class="k">def</span> <span class="nf">format_expr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a LaTeX-formatted string for a sympy expression.</span>
 <span class="sd">        E.g.:</span>
 <span class="sd">        &gt;&gt;&gt; LatexCodeGenerator.format_expr(&quot;exp(i*pi) + 1&quot;)</span>
@@ -690,7 +777,7 @@
         <span class="k">return</span> <span class="n">format_expr</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">print_settings</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="LatexCodeGenerator.format_unit"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.format_unit">[docs]</a>    <span class="k">def</span> <span class="nf">format_unit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return sympified and LaTeX-formatted string describing given unit.</span>
 <span class="sd">        E.g.:</span>
 <span class="sd">        &gt;&gt;&gt; LatexCodeGenerator.format_unit(&quot;m/s**2&quot;)</span>
@@ -702,7 +789,7 @@
         <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">mathrm{{</span><span class="si">{0}</span><span class="s2">}}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mp_latex</span><span class="p">(</span><span class="n">sympified_unit</span><span class="p">),</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">print_settings</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="LatexCodeGenerator.format_packages"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LatexCodeGenerator.format_packages">[docs]</a>    <span class="k">def</span> <span class="nf">format_packages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">package_list</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return list of packages and options as a LaTeX-formatted string.</span>
 <span class="sd">        Assumes package list is on the form ((&quot;package1&quot;, &quot;[options1]&quot;), ...).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -715,30 +802,46 @@
 </pre></div>
 
            </div>
+           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
-  </div>
+    <p>
+        &#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
         </div>
       </div>
+
     </section>
+
   </div>
-  <script>
+  
+
+  <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

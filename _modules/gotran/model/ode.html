@@ -1,33 +1,70 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
   <title>gotran.model.ode &mdash; gotran 2019.0.0 documentation</title>
-      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
   <!--[if lt IE 9]>
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-        <script src="../../../_static/jquery.js"></script>
-        <script src="../../../_static/underscore.js"></script>
-        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
         <script src="../../../_static/sphinx_highlight.js"></script>
-    <script src="../../../_static/js/theme.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
+
+   
   <div class="wy-grid-for-nav">
+    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
+          
+
+          
             <a href="../../../index.html" class="icon icon-home"> gotran
+          
+
+          
           </a>
+
+          
+            
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -35,36 +72,86 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
               <p class="caption" role="heading"><span class="caption-text">Programmers reference:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../gotran.html">gotran package</a></li>
 </ul>
 
+            
+          
         </div>
+        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../../index.html">gotran</a>
+        
       </nav>
 
+
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-      <li><a href="../../../index.html" class="icon icon-home"></a></li>
-          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
-      <li class="breadcrumb-item active">gotran.model.ode</li>
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>gotran.model.ode</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
+        
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+            
   <h1>Source code for gotran.model.ode</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Copyright (C) 2012-2014 Johan Hake</span>
 <span class="c1">#</span>
@@ -120,7 +207,7 @@
 
 
 <div class="viewcode-block" id="ODE"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODE">[docs]</a><span class="k">class</span> <span class="nc">ODE</span><span class="p">(</span><span class="n">ODEComponent</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Root ODEComponent</span>
 
 <span class="sd">    Arguments</span>
@@ -242,13 +329,13 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">present_component</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the present component</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_components</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_present_component</span><span class="p">]</span>
 
 <div class="viewcode-block" id="ODE.import_ode"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODE.import_ode">[docs]</a>    <span class="k">def</span> <span class="nf">import_ode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">arguments</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Import a Model into the present Model</span>
 
 <span class="sd">        Arguments</span>
@@ -486,7 +573,7 @@
                     <span class="n">added</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="ODE.save"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODE.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basename</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Save ODE to file</span>
 
 <span class="sd">        Arguments</span>
@@ -610,7 +697,7 @@
             <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">PythonCodeGenerator</span><span class="o">.</span><span class="n">indent_and_split_lines</span><span class="p">(</span><span class="n">lines</span><span class="p">)))</span></div>
 
 <div class="viewcode-block" id="ODE.register_ode_object"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODE.register_ode_object">[docs]</a>    <span class="k">def</span> <span class="nf">register_ode_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">comp</span><span class="p">,</span> <span class="n">dependent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Register an ODE object in the root ODEComponent</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -796,7 +883,7 @@
                 <span class="p">)</span></div>
 
 <div class="viewcode-block" id="ODE.expanded_expression"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODE.expanded_expression">[docs]</a>    <span class="k">def</span> <span class="nf">expanded_expression</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the expanded expression.</span>
 
 <span class="sd">        The returned expanded expression consists of the original</span>
@@ -832,7 +919,7 @@
         <span class="k">return</span> <span class="n">exp_expr</span></div>
 
 <div class="viewcode-block" id="ODE.extract_components"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODE.extract_components">[docs]</a>    <span class="k">def</span> <span class="nf">extract_components</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">components</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create an ODE from a number of components</span>
 
 <span class="sd">        Returns an ODE including the components</span>
@@ -982,7 +1069,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">mass_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the mass matrix as a sympy.Matrix</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -1005,7 +1092,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_dae</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return True if ODE is a DAE</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_complete</span><span class="p">:</span>
@@ -1016,7 +1103,7 @@
         <span class="p">)</span>
 
 <div class="viewcode-block" id="ODE.finalize"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODE.finalize">[docs]</a>    <span class="k">def</span> <span class="nf">finalize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Finalize the ODE</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">:</span>
@@ -1026,7 +1113,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_present_component</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span></div>
 
 <div class="viewcode-block" id="ODE.signature"><a class="viewcode-back" href="../../../gotran.model.html#gotran.ODE.signature">[docs]</a>    <span class="k">def</span> <span class="nf">signature</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a signature uniquely defining the ODE</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">import</span> <span class="nn">hashlib</span>
@@ -1056,7 +1143,7 @@
         <span class="k">return</span> <span class="n">h</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span></div>
 
     <span class="k">def</span> <span class="nf">_replace_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_obj</span><span class="p">,</span> <span class="n">replaced_obj</span><span class="p">,</span> <span class="n">replace_dicts</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Recursivley replace an expression by recreating the expression</span>
 <span class="sd">        using passed replace dicts</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1108,7 +1195,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">object_used_in</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">old_obj</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_handle_expr_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comp</span><span class="p">,</span> <span class="n">expr</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A help function to sort and add components in the ordered</span>
 <span class="sd">        the intermediate expressions are added to the ODE</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1142,7 +1229,7 @@
             <span class="n">expr</span><span class="o">.</span><span class="n">_recount</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_expand_single_derivative</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comp</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">der_expr</span><span class="p">,</span> <span class="n">replace_dict</span><span class="p">,</span> <span class="n">dependent</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Expand a single derivative and register it as new derivative expression</span>
 
 <span class="sd">        Returns True if an expression was actually added</span>
@@ -1230,30 +1317,46 @@
 </pre></div>
 
            </div>
+           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
-  </div>
+    <p>
+        &#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
         </div>
       </div>
+
     </section>
+
   </div>
-  <script>
+  
+
+  <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

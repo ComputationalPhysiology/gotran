@@ -1,33 +1,70 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
   <title>gotran.model.loadmodel &mdash; gotran 2019.0.0 documentation</title>
-      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
   <!--[if lt IE 9]>
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-        <script src="../../../_static/jquery.js"></script>
-        <script src="../../../_static/underscore.js"></script>
-        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
         <script src="../../../_static/sphinx_highlight.js"></script>
-    <script src="../../../_static/js/theme.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
+
+   
   <div class="wy-grid-for-nav">
+    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
+          
+
+          
             <a href="../../../index.html" class="icon icon-home"> gotran
+          
+
+          
           </a>
+
+          
+            
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -35,36 +72,86 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
               <p class="caption" role="heading"><span class="caption-text">Programmers reference:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../gotran.html">gotran package</a></li>
 </ul>
 
+            
+          
         </div>
+        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../../index.html">gotran</a>
+        
       </nav>
 
+
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-      <li><a href="../../../index.html" class="icon icon-home"></a></li>
-          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
-      <li class="breadcrumb-item active">gotran.model.loadmodel</li>
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>gotran.model.loadmodel</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
+        
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+            
   <h1>Source code for gotran.model.loadmodel</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Copyright (C) 2011-2012 Johan Hake</span>
 <span class="c1">#</span>
@@ -116,12 +203,12 @@
 
 
 <span class="k">class</span> <span class="nc">IntermediateDispatcher</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Dispatch intermediates to ODE attributes</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ode</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initalize with an ode</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">ode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -142,7 +229,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_ode</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">ref</span><span class="p">(</span><span class="n">ode</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This is only for expressions</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -213,7 +300,7 @@
 
 
 <span class="k">def</span> <span class="nf">_init_namespace</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">load_arguments</span><span class="p">,</span> <span class="n">namespace</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Create namespace and populate it</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -240,7 +327,7 @@
 
 
 <div class="viewcode-block" id="exec_ode"><a class="viewcode-back" href="../../../gotran.model.html#gotran.exec_ode">[docs]</a><span class="k">def</span> <span class="nf">exec_ode</span><span class="p">(</span><span class="n">ode_str</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">arguments</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Execute an ode given by a str</span>
 
 <span class="sd">    Arguments</span>
@@ -284,12 +371,12 @@
     <span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded ODE model &#39;</span><span class="si">{</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; with:&quot;</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">what</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;full_states&quot;</span><span class="p">,</span> <span class="s2">&quot;parameters&quot;</span><span class="p">]:</span>
         <span class="n">num</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;num_</span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="p">(</span><span class="s1">&#39;Num &#39;</span> <span class="o">+</span> <span class="n">what</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">))</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">num</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="p">(</span><span class="s1">&#39;Num &#39;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">what</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="p">))</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">num</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">ode</span></div>
 
 
 <div class="viewcode-block" id="load_ode"><a class="viewcode-back" href="../../../gotran.model.html#gotran.load_ode">[docs]</a><span class="k">def</span> <span class="nf">load_ode</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">arguments</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Load an ODE from file and return the instance</span>
 
 <span class="sd">    The method looks for a file with .ode extension.</span>
@@ -309,7 +396,7 @@
 
 
 <span class="k">def</span> <span class="nf">_load</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">arguments</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Load an ODE or Cell from file and return the instance</span>
 
 <span class="sd">    The method looks for a file with .ode extension.</span>
@@ -374,7 +461,7 @@
     <span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded ODE model &#39;</span><span class="si">{</span><span class="n">ode</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; with:&quot;</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">what</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;full_states&quot;</span><span class="p">,</span> <span class="s2">&quot;parameters&quot;</span><span class="p">]:</span>
         <span class="n">num</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;num_</span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="p">(</span><span class="s1">&#39;Num &#39;</span> <span class="o">+</span> <span class="n">what</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">))</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">num</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="p">(</span><span class="s1">&#39;Num &#39;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">what</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="p">))</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">num</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">copyfile</span><span class="p">:</span>
         <span class="n">os</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
 
@@ -382,12 +469,12 @@
 
 
 <span class="k">def</span> <span class="nf">_namespace_binder</span><span class="p">(</span><span class="n">namespace</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">load_arguments</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Add functions all bound to current ode, namespace and arguments</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">comment</span><span class="p">(</span><span class="n">comment</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Add a comment to the present ODE component</span>
 
 <span class="sd">        Arguments</span>
@@ -402,7 +489,7 @@
         <span class="n">comp</span><span class="o">.</span><span class="n">add_comment</span><span class="p">(</span><span class="n">comment</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">subode</span><span class="p">(</span><span class="n">subode</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Load an ODE and add it to the present ODE (deprecated)</span>
 
 <span class="sd">        Argument</span>
@@ -419,7 +506,7 @@
         <span class="n">import_ode</span><span class="p">(</span><span class="n">subode</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">components</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">import_ode</span><span class="p">(</span><span class="n">subode</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">arguments</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Import an ODE into the present ode</span>
 
 <span class="sd">        Argument</span>
@@ -442,7 +529,7 @@
         <span class="n">ode</span><span class="p">()</span><span class="o">.</span><span class="n">import_ode</span><span class="p">(</span><span class="n">subode</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="n">prefix</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="n">components</span><span class="p">,</span> <span class="o">**</span><span class="n">arguments</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">timeunit</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Update timeunit according to timeunit in file</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">comp</span> <span class="o">=</span> <span class="n">ode</span><span class="p">()</span>
@@ -452,7 +539,7 @@
             <span class="n">comp</span><span class="o">.</span><span class="n">_dt</span><span class="o">.</span><span class="n">update_unit</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
     <span class="k">def</span> <span class="nf">states</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Add a number of states to the current component or to the</span>
 <span class="sd">        chosed component</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -475,7 +562,7 @@
         <span class="n">comp</span><span class="o">.</span><span class="n">add_states</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">parameters</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Add a number of parameters to the current ODE or to the chosed component</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># If comp string is passed we get the component</span>
@@ -496,7 +583,7 @@
         <span class="n">comp</span><span class="o">.</span><span class="n">add_parameters</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">model_arguments</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Defines arguments that can be altered while the ODE is loaded</span>
 
 <span class="sd">        Example</span>
@@ -554,7 +641,7 @@
         <span class="n">namespace</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">ns</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">component</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Set the present component, deprecated</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Usage of &#39;component()&#39; is deprecated. &quot;</span> <span class="s2">&quot;Use &#39;expressions()&#39; instead.&quot;</span><span class="p">)</span>
@@ -596,30 +683,46 @@
 </pre></div>
 
            </div>
+           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
-  </div>
+    <p>
+        &#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
         </div>
       </div>
+
     </section>
+
   </div>
-  <script>
+  
+
+  <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

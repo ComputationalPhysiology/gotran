@@ -1,33 +1,70 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
   <title>gotran.codegeneration.algorithmcomponents &mdash; gotran 2019.0.0 documentation</title>
-      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
   <!--[if lt IE 9]>
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-        <script src="../../../_static/jquery.js"></script>
-        <script src="../../../_static/underscore.js"></script>
-        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
         <script src="../../../_static/sphinx_highlight.js"></script>
-    <script src="../../../_static/js/theme.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
+
+   
   <div class="wy-grid-for-nav">
+    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
+          
+
+          
             <a href="../../../index.html" class="icon icon-home"> gotran
+          
+
+          
           </a>
+
+          
+            
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -35,36 +72,86 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
               <p class="caption" role="heading"><span class="caption-text">Programmers reference:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../gotran.html">gotran package</a></li>
 </ul>
 
+            
+          
         </div>
+        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../../index.html">gotran</a>
+        
       </nav>
 
+
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-      <li><a href="../../../index.html" class="icon icon-home"></a></li>
-          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
-      <li class="breadcrumb-item active">gotran.codegeneration.algorithmcomponents</li>
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>gotran.codegeneration.algorithmcomponents</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
+        
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+            
   <h1>Source code for gotran.codegeneration.algorithmcomponents</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Copyright (C) 2013 Johan Hake</span>
 <span class="c1">#</span>
@@ -127,7 +214,7 @@
 
 
 <div class="viewcode-block" id="rhs_expressions"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.rhs_expressions">[docs]</a><span class="k">def</span> <span class="nf">rhs_expressions</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;rhs&quot;</span><span class="p">,</span> <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;dy&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return a code component with body expressions for the right hand side</span>
 
 <span class="sd">    Arguments</span>
@@ -167,7 +254,7 @@
     <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;monitored&quot;</span><span class="p">,</span>
     <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return a code component with body expressions to calculate monitored expressions</span>
 
 <span class="sd">    Arguments</span>
@@ -211,7 +298,7 @@
 
 
 <div class="viewcode-block" id="componentwise_derivative"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.componentwise_derivative">[docs]</a><span class="k">def</span> <span class="nf">componentwise_derivative</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;dy&quot;</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return an ODEComponent holding the expressions for the ith</span>
 <span class="sd">    state derivative</span>
 
@@ -255,7 +342,7 @@
     <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">result_name</span><span class="p">:</span> <span class="n">exprs</span><span class="p">}</span>
 
     <span class="k">return</span> <span class="n">CodeComponent</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;componentwise_derivatives_</span><span class="si">{</span><span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">exprs</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;componentwise_derivatives_</span><span class="si">{</span><span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">expr</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">exprs</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">ode</span><span class="p">,</span>
         <span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="s2">&quot;&quot;</span><span class="p">,</span>
@@ -273,7 +360,7 @@
     <span class="n">nonlinear_last</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return an ODEComponent holding the linearized derivative expressions</span>
 
 <span class="sd">    Arguments</span>
@@ -314,7 +401,7 @@
     <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;jac&quot;</span><span class="p">,</span>
     <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return an ODEComponent holding expressions for the jacobian</span>
 
 <span class="sd">    Arguments</span>
@@ -346,7 +433,7 @@
     <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;jac_action&quot;</span><span class="p">,</span>
     <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return an ODEComponent holding expressions for the jacobian action</span>
 
 <span class="sd">    Arguments</span>
@@ -379,7 +466,7 @@
     <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;diag_jac&quot;</span><span class="p">,</span>
     <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return an ODEComponent holding expressions for the diagonal jacobian</span>
 
 <span class="sd">    Arguments</span>
@@ -408,7 +495,7 @@
     <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;diag_jac_action&quot;</span><span class="p">,</span>
     <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return an ODEComponent holding expressions for the diagonal jacobian action</span>
 
 <span class="sd">    Arguments</span>
@@ -440,7 +527,7 @@
     <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;lu_factorize&quot;</span><span class="p">,</span>
     <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return an ODEComponent holding expressions for the factorized jacobian</span>
 
 <span class="sd">    Arguments</span>
@@ -461,7 +548,7 @@
     <span class="n">residual_name</span><span class="o">=</span><span class="s2">&quot;F&quot;</span><span class="p">,</span>
     <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return an ODEComponent holding expressions for the forward backward</span>
 <span class="sd">    substitions for a factorized jacobian</span>
 
@@ -489,7 +576,7 @@
 
 
 <div class="viewcode-block" id="JacobianComponent"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.JacobianComponent">[docs]</a><span class="k">class</span> <span class="nc">JacobianComponent</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    An ODEComponent which keeps all expressions for the Jacobian of the rhs</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -500,7 +587,7 @@
         <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;jac&quot;</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a JacobianComponent</span>
 
 <span class="sd">        Arguments</span>
@@ -588,7 +675,7 @@
 
 
 <span class="k">class</span> <span class="nc">DiagonalJacobianComponent</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    An ODEComponent which keeps all expressions for the Jacobian of the rhs</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -599,7 +686,7 @@
         <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;diag_jac&quot;</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a DiagonalJacobianComponent</span>
 
 <span class="sd">        Arguments</span>
@@ -654,7 +741,7 @@
 
 
 <div class="viewcode-block" id="JacobianActionComponent"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.JacobianActionComponent">[docs]</a><span class="k">class</span> <span class="nc">JacobianActionComponent</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Jacobian action component which returns the expressions for Jac*x</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -666,7 +753,7 @@
         <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;jac_action&quot;</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a JacobianActionComponent</span>
 
 <span class="sd">        Arguments</span>
@@ -722,7 +809,7 @@
 
 
 <span class="k">class</span> <span class="nc">DiagonalJacobianActionComponent</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Jacobian action component which returns the expressions for Jac*x</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -734,7 +821,7 @@
         <span class="n">result_name</span><span class="o">=</span><span class="s2">&quot;diag_jac_action&quot;</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a DiagonalJacobianActionComponent</span>
 
 <span class="sd">        Arguments</span>
@@ -788,12 +875,12 @@
 
 
 <div class="viewcode-block" id="FactorizedJacobianComponent"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.FactorizedJacobianComponent">[docs]</a><span class="k">class</span> <span class="nc">FactorizedJacobianComponent</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Class to generate expressions for symbolicaly factorizing a jacobian</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">jacobian</span><span class="p">,</span> <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;lu_factorize&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a FactorizedJacobianComponent</span>
 
 <span class="sd">        Arguments</span>
@@ -923,7 +1010,7 @@
 
 
 <div class="viewcode-block" id="ForwardBackwardSubstitutionComponent"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.ForwardBackwardSubstitutionComponent">[docs]</a><span class="k">class</span> <span class="nc">ForwardBackwardSubstitutionComponent</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Class to generate a forward backward substiution algorithm for</span>
 <span class="sd">    symbolically factorized jacobian</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -936,7 +1023,7 @@
         <span class="n">residual_name</span><span class="o">=</span><span class="s2">&quot;F&quot;</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a JacobianForwardBackwardSubstComponent</span>
 
 <span class="sd">        Arguments</span>
@@ -1042,7 +1129,7 @@
 
 
 <div class="viewcode-block" id="LinearizedDerivativeComponent"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.LinearizedDerivativeComponent">[docs]</a><span class="k">class</span> <span class="nc">LinearizedDerivativeComponent</span><span class="p">(</span><span class="n">CodeComponent</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A component for all linear and linearized derivatives</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -1056,7 +1143,7 @@
         <span class="n">nonlinear_last</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return an ODEComponent holding the linearized derivative expressions</span>
 
 <span class="sd">        Arguments</span>
@@ -1141,7 +1228,7 @@
 
 
 <div class="viewcode-block" id="CommonSubExpressionODE"><a class="viewcode-back" href="../../../gotran.codegeneration.html#gotran.CommonSubExpressionODE">[docs]</a><span class="k">class</span> <span class="nc">CommonSubExpressionODE</span><span class="p">(</span><span class="n">ODE</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Class which flattens the component structue of an ODE to just one.</span>
 <span class="sd">    It uses common sub expressions as intermediates to reduce complexity</span>
 <span class="sd">    of the derivative expressions.</span>
@@ -1216,30 +1303,46 @@
 </pre></div>
 
            </div>
+           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
-  </div>
+    <p>
+        &#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
         </div>
       </div>
+
     </section>
+
   </div>
-  <script>
+  
+
+  <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

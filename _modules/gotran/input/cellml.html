@@ -1,33 +1,70 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
   <title>gotran.input.cellml &mdash; gotran 2019.0.0 documentation</title>
-      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
   <!--[if lt IE 9]>
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-        <script src="../../../_static/jquery.js"></script>
-        <script src="../../../_static/underscore.js"></script>
-        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
         <script src="../../../_static/sphinx_highlight.js"></script>
-    <script src="../../../_static/js/theme.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
+
+   
   <div class="wy-grid-for-nav">
+    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
+          
+
+          
             <a href="../../../index.html" class="icon icon-home"> gotran
+          
+
+          
           </a>
+
+          
+            
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -35,36 +72,86 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
               <p class="caption" role="heading"><span class="caption-text">Programmers reference:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../gotran.html">gotran package</a></li>
 </ul>
 
+            
+          
         </div>
+        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../../index.html">gotran</a>
+        
       </nav>
 
+
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-      <li><a href="../../../index.html" class="icon icon-home"></a></li>
-          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
-      <li class="breadcrumb-item active">gotran.input.cellml</li>
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>gotran.input.cellml</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
+        
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+            
   <h1>Source code for gotran.input.cellml</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Copyright (C) 2011-2012 Johan Hake</span>
 <span class="c1">#</span>
@@ -177,7 +264,7 @@
 
 
 <span class="k">class</span> <span class="nc">Equation</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Class for holding information about an Equation</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -189,7 +276,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">component</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="nf">check_dependencies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">equation</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Check Equation dependencies</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">equation</span><span class="p">,</span> <span class="n">Equation</span><span class="p">)</span>
@@ -213,7 +300,7 @@
 
 
 <span class="k">class</span> <span class="nc">Component</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Class for holding information about a CellML Component</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -324,7 +411,7 @@
         <span class="k">return</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
 
     <span class="k">def</span> <span class="nf">check_dependencies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Check components dependencies</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">component</span><span class="p">,</span> <span class="n">Component</span><span class="p">)</span>
@@ -349,7 +436,7 @@
                         <span class="n">equation</span><span class="o">.</span><span class="n">dependent_equations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">other_equation</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">change_parameter_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">oldname</span><span class="p">,</span> <span class="n">newname</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Change the name of a parameter</span>
 <span class="sd">        Assume the name is only used locally within this component</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -378,7 +465,7 @@
         <span class="k">return</span> <span class="n">newname</span>
 
     <span class="k">def</span> <span class="nf">change_state_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">oldname</span><span class="p">,</span> <span class="n">newname</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Change the name of a state</span>
 <span class="sd">        Assume the name is only used locally within this component</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -476,7 +563,7 @@
 
 
 <div class="viewcode-block" id="CellMLParser"><a class="viewcode-back" href="../../../gotran.input.html#gotran.CellMLParser">[docs]</a><span class="k">class</span> <span class="nc">CellMLParser</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This module parses a CellML XML-file and converts it to PyCC code</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -486,7 +573,7 @@
         <span class="k">return</span> <span class="n">parameters</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">cellml</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_source</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">targets</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Arguments:</span>
 <span class="sd">        ----------</span>
 
@@ -528,7 +615,7 @@
         <span class="n">end_log</span><span class="p">()</span>
 
 <div class="viewcode-block" id="CellMLParser.parse_documentation"><a class="viewcode-back" href="../../../gotran.input.html#gotran.CellMLParser.parse_documentation">[docs]</a>    <span class="k">def</span> <span class="nf">parse_documentation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parse the documentation of the article</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">namespace</span> <span class="o">=</span> <span class="s2">&quot;{http://cellml.org/tmp-documentation}&quot;</span>
@@ -589,13 +676,13 @@
         <span class="k">return</span> <span class="s2">&quot;&quot;</span></div>
 
     <span class="k">def</span> <span class="nf">_gettag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Splits off the namespace part from name, and returns the rest, the tag</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;}&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:])</span>
 
 <div class="viewcode-block" id="CellMLParser.parse_units"><a class="viewcode-back" href="../../../gotran.input.html#gotran.CellMLParser.parse_units">[docs]</a>    <span class="k">def</span> <span class="nf">parse_units</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parse any declared units in the model</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">collected_units</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
@@ -681,7 +768,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">units_map</span> <span class="o">=</span> <span class="n">unit_map</span></div>
 
 <div class="viewcode-block" id="CellMLParser.get_iterator"><a class="viewcode-back" href="../../../gotran.input.html#gotran.CellMLParser.get_iterator">[docs]</a>    <span class="k">def</span> <span class="nf">get_iterator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">item</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return an element tree iterator</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -695,7 +782,7 @@
         <span class="n">collected_parameters</span><span class="p">,</span>
         <span class="n">collected_equations</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Check if component variables are allready collected</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -1007,7 +1094,7 @@
             <span class="n">collected_equations</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">comp</span></div>
 
 <div class="viewcode-block" id="CellMLParser.parse_imported_model"><a class="viewcode-back" href="../../../gotran.input.html#gotran.CellMLParser.parse_imported_model">[docs]</a>    <span class="k">def</span> <span class="nf">parse_imported_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parse any imported models</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -1050,7 +1137,7 @@
         <span class="k">return</span> <span class="n">components</span><span class="p">,</span> <span class="n">collected_states</span><span class="p">,</span> <span class="n">collected_parameters</span><span class="p">,</span> <span class="n">collected_equations</span></div>
 
 <div class="viewcode-block" id="CellMLParser.get_parents"><a class="viewcode-back" href="../../../gotran.input.html#gotran.CellMLParser.get_parents">[docs]</a>    <span class="k">def</span> <span class="nf">get_parents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grouping</span><span class="p">,</span> <span class="n">element</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        If group was used in the cellml use it to gather parent information</span>
 <span class="sd">        about the components</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1099,7 +1186,7 @@
         <span class="n">collected_parameters</span><span class="p">,</span>
         <span class="n">collected_equations</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parse a single component and create a Component object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">comp_name</span> <span class="o">=</span> <span class="n">comp</span><span class="o">.</span><span class="n">attrib</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
@@ -1480,7 +1567,7 @@
         <span class="k">return</span> <span class="n">components</span></div>
 
 <div class="viewcode-block" id="CellMLParser.parse_components"><a class="viewcode-back" href="../../../gotran.input.html#gotran.CellMLParser.parse_components">[docs]</a>    <span class="k">def</span> <span class="nf">parse_components</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">targets</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Build a dictionary containing dictionarys describing each</span>
 <span class="sd">        component of the cellml model</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1711,7 +1798,7 @@
         <span class="k">return</span> <span class="n">new_variable_names</span><span class="p">,</span> <span class="n">same_variable_names</span></div>
 
 <div class="viewcode-block" id="CellMLParser.to_gotran"><a class="viewcode-back" href="../../../gotran.input.html#gotran.CellMLParser.to_gotran">[docs]</a>    <span class="k">def</span> <span class="nf">to_gotran</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Generate a gotran file</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">gotran_lines</span> <span class="o">=</span> <span class="p">[]</span>
@@ -1810,7 +1897,7 @@
             <span class="k">if</span> <span class="n">comp</span><span class="o">.</span><span class="n">equations</span><span class="p">:</span>
                 <span class="n">equation_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
                 <span class="n">equation_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;expressions(</span><span class="si">{</span><span class="n">comp_name</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
-                <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">                for eq in comp.equations:</span>
 <span class="sd">                    expr = []</span>
 <span class="sd">                    for eqi in eq.expr:</span>
@@ -1849,7 +1936,7 @@
 
 
 <div class="viewcode-block" id="cellml2ode"><a class="viewcode-back" href="../../../gotran.input.html#gotran.cellml2ode">[docs]</a><span class="k">def</span> <span class="nf">cellml2ode</span><span class="p">(</span><span class="n">model_source</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Convert a CellML model into an ode</span>
 
 <span class="sd">    Arguments</span>
@@ -1869,30 +1956,46 @@
 </pre></div>
 
            </div>
+           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.</p>
-  </div>
+    <p>
+        &#169; Copyright 2019, Johan Hake, Henrik Finsberg, Kristian G. Hustad.
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
         </div>
       </div>
+
     </section>
+
   </div>
-  <script>
+  
+
+  <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>
