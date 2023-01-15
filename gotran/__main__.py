@@ -2,21 +2,37 @@ import sys
 
 from . import scripts
 
-__doc__ = """gotran (General Ode TRANslator)
-cellml2gotran
-gotran2c
-gotran2cpp
-gotran2cuda
-gotran2dolfin
-gotran2julia
-gotran2latex
-gotran2matlab
-gotran2opencl
-gotran2py
-gotranexport
-gotranprob
-gotranrun
-gotran2md
+__doc__ = """gotran (General ODE Translator)
+
+The following commands are available
+- cellml2gotran
+- gotran2c
+- gotran2cpp
+- gotran2cuda
+- gotran2dolfin
+- gotran2julia
+- gotran2latex
+- gotran2matlab
+- gotran2opencl
+- gotran2py
+- gotranexport
+- gotranprob
+- gotranrun
+- gotran2md
+
+Use
+
+    gotran <cmd> --help
+
+or simply
+
+    <cmd> --help
+
+e.g
+
+    gotran2c --help
+
+to see more options
 """
 
 
