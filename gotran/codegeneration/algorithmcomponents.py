@@ -229,15 +229,28 @@ def linearized_derivatives(
     if not ode.is_finalized:
         error("The ODE is not finalized")
 
-    return LinearizedDerivativeComponent(
-        ode,
-        function_name,
-        result_names,
-        only_linear,
-        include_rhs,
-        nonlinear_last,
-        params,
-    )
+    # This component is a bit flaky, but it usually works
+    # if we retry
+    for retry in range(5):
+        try:
+            comp = LinearizedDerivativeComponent(
+                ode,
+                function_name,
+                result_names,
+                only_linear,
+                include_rhs,
+                nonlinear_last,
+                params,
+            )
+        except KeyError:
+            continue
+        else:
+            break
+
+    else:
+        raise KeyError("Unable to create LinearizedDerivativeComponent")
+
+    return comp
 
 
 def jacobian_expressions(
@@ -1034,7 +1047,6 @@ class LinearizedDerivativeComponent(CodeComponent):
 
         nonlinear_exprs = []
         for ind, expr in enumerate(state_exprs):
-
             expr_diff = expr.expr.diff(expr.state.sym)
 
             if expr_diff and expr.state.sym not in expr_diff.args:
