@@ -1,0 +1,20 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: README
+parts:
+  - caption: Tutorials
+    chapters:
+    - file: docs/quickstart
+  - caption: Community
+    chapters:
+    - file: CONTRIBUTING
+  - caption: API documentation
+    chapters:
+    - file: docs/gotran.algorithms.rst
+    - file: docs/gotran.common.rst
+    - file: docs/gotran.model.rst
+    - file: docs/gotran.codegeneration.rst
+    - file: docs/gotran.input.rst
+    - file: docs/gotran.scripts.rst

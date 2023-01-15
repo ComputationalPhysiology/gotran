@@ -1,6 +1,6 @@
 [![CI](https://github.com/ComputationalPhysiology/gotran/actions/workflows/main.yml/badge.svg)](https://github.com/ComputationalPhysiology/gotran/actions/workflows/main.yml)
-[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/ComputationalPhysiology/gotran/master.svg)](https://results.pre-commit.ci/latest/github/ComputationalPhysiology/gotran/master)
-[![codecov](https://codecov.io/gh/ComputationalPhysiology/gotran/branch/master/graph/badge.svg?token=jfiLeIpkNa)](https://codecov.io/gh/ComputationalPhysiology/gotran)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/ComputationalPhysiology/gotran/main.svg)](https://results.pre-commit.ci/latest/github/ComputationalPhysiology/gotran/main)
+[![codecov](https://codecov.io/gh/ComputationalPhysiology/gotran/branch/main/graph/badge.svg?token=jfiLeIpkNa)](https://codecov.io/gh/ComputationalPhysiology/gotran)
 
 # Gotran - General ODE TRAnslator
 
@@ -8,9 +8,7 @@ Gotran:
 
 - provides a Python interface to declare arbitrary ODEs.
 
-- provides an interface for generating CUDA/C/C++/OpenCL/Julia/Python/Matlab code for
-  a number of functions including the right hand side and symbolic
-  generation of a Jacobian.
+- provides an interface for generating CUDA/C/C++/OpenCL/Julia/Python/Matlab code for a number of functions including the right hand side and symbolic generation of a Jacobian.
 
 - is intentionally lightweight, and could be interfaced by other
   Python libraries needing functionalities to abstract a general
@@ -29,19 +27,7 @@ You can install gotran through pip
 python -m pip install gotran
 ```
 
-or conda
-
-```
-conda install -c comphy gotran
-```
-
 or if you want to work with the latest version you can install the developement version by either cloning the repository and run
-
-```
-python -m pip install .
-```
-
-inside the root directory or run
 
 ```
 python -m pip install git+https://github.com/ComputationalPhysiology/gotran.git
@@ -67,7 +53,3 @@ You should have received a copy of the GNU Lesser General Public License along w
 
 Gotran is developed by Johan Hake.
 The version of gotran found in this repository is maintained by Henrik Finsberg and Kristian Hustad.
-
-```
-
-```
