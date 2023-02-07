@@ -245,7 +245,6 @@ class ODEValueObject(ODEObject):
         super(ODEValueObject, self).__init__(name, dependent)
 
         if isinstance(value, ScalarParam):
-
             # Re-create one with correct name
             value = value.copy(include_name=False)
             value.name = name

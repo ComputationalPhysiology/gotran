@@ -14,7 +14,6 @@ from gotran.model.ode import ODE
 
 
 def gotranexport(filename, params):
-
     if len(params.components) == 1 and params.components[0] == "":
         error("Expected at least 1 component.")
 

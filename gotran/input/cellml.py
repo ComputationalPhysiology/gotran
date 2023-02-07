@@ -204,7 +204,6 @@ class Component(object):
         self.used_variables.difference_update(name for name in self.state_variables)
 
     def sort_and_store_equations(self, equations):
-
         # Check if reserved name for state derivativeis is used as equation
         # name
         derivative_names = [f"d{der}_dt" for der in self.derivatives]
@@ -219,7 +218,6 @@ class Component(object):
 
         # Check internal dependencies
         for eq0 in equations:
-
             eq0.dependent_equations = []
 
             # Store component
@@ -357,7 +355,6 @@ class Component(object):
         return newname
 
     def change_equation_name(self, oldname, newname=None):
-
         assert (
             oldname in self.variable_info
             and self.variable_info[oldname].get("type") == "equation"
@@ -734,7 +731,6 @@ class CellMLParser(object):
 
         # Check parameters
         for name in list(comp.parameters.keys()):
-
             # Check parameter name vs collected state names
             if name in collected_states:
                 state_comp = collected_states[name]
@@ -958,7 +954,6 @@ class CellMLParser(object):
             import_comp_names = dict()
 
             for comp in self.get_iterator("component", model):
-
                 import_comp_names[comp.attrib["component_ref"]] = comp.attrib["name"]
 
             model_parser = CellMLParser(
@@ -971,7 +966,6 @@ class CellMLParser(object):
 
         # Extract states, parameters and equations
         for comp in list(components.values()):
-
             self.check_and_register_component_variables(
                 comp,
                 collected_states,
@@ -986,6 +980,7 @@ class CellMLParser(object):
         If group was used in the cellml use it to gather parent information
         about the components
         """
+
         # Collect component encapsulation
         def get_encapsulation(elements, all_parents, parent=None):
             children = {}
@@ -1011,7 +1006,6 @@ class CellMLParser(object):
         # If no group information in cellml extract potential parent information
         # from component names
         if not all_parents:
-
             # Iterate over the components
             comp_names = [
                 comp.attrib["name"] for comp in self.get_iterator("component", element)
@@ -1049,7 +1043,6 @@ class CellMLParser(object):
 
         # Get variable and initial values
         for var in self.get_iterator("variable", comp):
-
             var_name = var.attrib["name"]
             if var_name in _all_keywords:
                 var_name = var_name + "_"
@@ -1112,7 +1105,6 @@ class CellMLParser(object):
         return comp
 
     def sort_components(self, components, sorted_once=False):
-
         if not sorted_once:
             begin_log("Sorting components with respect to dependencies")
         else:
@@ -1188,7 +1180,6 @@ class CellMLParser(object):
                         and equation.name in comp.used_variables
                         and equation.dependent_equations[0] in zero_dep_equations
                     ):
-
                         equation_map[equation.name] = equation
                         one_dep_equations.add(equation)
                         one_dep_zero_dep[equation.name].add(
@@ -1261,10 +1252,8 @@ class CellMLParser(object):
                 dep_removal.update(one_dep_zero_dep[edge])
 
             for edge_remove in local_removal:
-
                 # Iterate over the different cycles
                 for i, local_breakers in enumerate(cycle_breakers):
-
                     # If the cycle is fixed
                     if cycles_fixed[i]:
                         continue
@@ -1277,7 +1266,6 @@ class CellMLParser(object):
                             key=cmp_to_key(lambda o0, o1: cmp(len(o0), len(o1))),
                         ),
                     ):
-
                         # If the removed edge is in the local edges
                         if edge_remove in local_edges:
                             local_edges.remove(edge_remove)
@@ -1309,7 +1297,6 @@ class CellMLParser(object):
         # Move the marked edges (equations) from the relevant components
         removed_equations = {}
         for edge in edge_removal:
-
             eq = equation_map[edge]
 
             old_comp = eq.component
@@ -1436,11 +1423,9 @@ class CellMLParser(object):
         encapsulations, all_parents = self.get_parents(self._params.grouping)
 
         if targets:
-
             # If the parent information was not of type encapsulation
             # regather parent information
             if self._params.grouping != "encapsulation":
-
                 encapsulations, dummy = self.get_parents("encapsulation")
 
             # Add any encapsulated components to the target list
@@ -1482,7 +1467,6 @@ class CellMLParser(object):
         # Add parent information
         all_component_names = list(components.keys())
         for name, comp in list(components.items()):
-
             if targets:
                 parent_name = target_parents.get(name)
             else:
@@ -1512,10 +1496,8 @@ class CellMLParser(object):
             begin_log("\nRenaming variables through connections")
 
         for comp, variables in list(self.new_variable_connections.items()):
-
             # Iterate over old and new names
             for oldname, newnames in list(variables.items()):
-
                 # Check that the direction of the connection is correct
                 # If no variable info is registered for this comp or its
                 # children it is the wrong direction
@@ -1558,7 +1540,6 @@ class CellMLParser(object):
                 # If there are only one newname we change the name of the
                 # original equation
                 if len(newnames) == 1:
-
                     # If not old name used or old name only used in children and
                     # we then assume it is private to the component relationship
                     # parent-child
@@ -1566,7 +1547,6 @@ class CellMLParser(object):
                         components[other_comp] in components[comp].children
                         for other_comp in old_name_used
                     ):
-
                         # Get new name
                         newname = list(newnames.keys())[0]
 
@@ -1658,7 +1638,6 @@ class CellMLParser(object):
         equation_lines = []
 
         def unders_score_replace(comp):
-
             new_name = comp.name.replace("_", " ")
 
             # If only 1 state it might be included in the name
@@ -1690,7 +1669,6 @@ class CellMLParser(object):
 
         # Iterate over components and collect stuff
         for comp in self.components:
-
             names = deque([unders_score_replace(comp)])
 
             parent = comp.parent

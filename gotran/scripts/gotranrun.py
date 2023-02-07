@@ -75,7 +75,6 @@ def gotranrun(filename, params):
         (model_arguments[i * 2], model_arguments[i * 2 + 1])
         for i in range(int(len(model_arguments) / 2))
     ]:
-
         arguments[arg_name] = arg_value
 
     ode = load_ode(filename, **arguments)
@@ -149,7 +148,6 @@ def gotranrun(filename, params):
         (parameter_values[i * 2], parameter_values[i * 2 + 1])
         for i in range(int(len(parameter_values) / 2))
     ]:
-
         user_params[param_name] = float(param_value)
 
     user_ic = dict()
@@ -157,7 +155,6 @@ def gotranrun(filename, params):
         (init_conditions[i * 2], init_conditions[i * 2 + 1])
         for i in range(int(len(init_conditions) / 2))
     ]:
-
         user_ic[state_name] = float(state_value)
 
     # Use scipy to integrate model
@@ -204,7 +201,6 @@ def gotranrun(filename, params):
         results = odeint(rhs, y0, tsteps, Dfun=jac, args=(model_params,))
 
     else:
-
         # Get generated forward method
         forward = getattr(module, "forward_" + params.solver)
 
@@ -213,7 +209,6 @@ def gotranrun(filename, params):
 
         # Integrate solution using generated forward method
         for ind, t in enumerate(tsteps[:-1]):
-
             # Step solver
             forward(states, t, dt, model_params)
             results.append(states.copy())
@@ -245,7 +240,6 @@ def gotranrun(filename, params):
     plot_values = np.zeros((len(plot_states) + len(monitored_plot), len(results)))
 
     for ind, (time, res) in enumerate(zip(tsteps, results)):
-
         if plot_states:
             plot_values[: len(plot_states), ind] = res[plot_inds]
         if monitored_plot or params.save_results:

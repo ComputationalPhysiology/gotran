@@ -47,7 +47,6 @@ for keep, use_cse, numerals, use_names in [
     (0, 1, 1, 1),
     (0, 1, 1, 0),
 ]:
-
     oderepr = ODERepresentation(
         ode,
         keep_intermediates=keep,

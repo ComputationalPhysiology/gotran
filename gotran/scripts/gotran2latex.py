@@ -45,7 +45,6 @@ def gotran2latex(filename, params):
 
 
 def main():
-
     params = _default_latex_params()
     params = ParameterDict(
         sympy_contraction=Param(

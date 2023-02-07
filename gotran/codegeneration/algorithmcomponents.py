@@ -483,7 +483,6 @@ class JacobianComponent(CodeComponent):
             sys.stdout.flush()
 
         for i, expr in enumerate(state_exprs):
-
             states_syms = sorted(
                 (state_dict[sym], sym)
                 for sym in ode_primitives(expr.expr, time_sym)
@@ -788,9 +787,7 @@ class FactorizedJacobianComponent(CodeComponent):
 
         # Do the factorization
         for j in range(n):
-
             for i in range(j):
-
                 # Get sympy expr of A_ij
                 jac_ij = jac[i, j]
 
@@ -803,7 +800,6 @@ class FactorizedJacobianComponent(CodeComponent):
             pivot = -1
 
             for i in range(j, n):
-
                 # Get sympy expr of A_ij
                 jac_ij = jac[i, j]
 
@@ -835,7 +831,6 @@ class FactorizedJacobianComponent(CodeComponent):
 
             scale = 1 / jac[j, j]
             for i in range(j + 1, n):
-
                 # Get sympy expr of A_ij
                 jac_ij = jac[i, j]
                 jac_ij *= scale
@@ -935,7 +930,6 @@ class ForwardBackwardSubstitutionComponent(CodeComponent):
         dx = []
         # forward substitution, all diag entries are scaled to 1
         for i in range(n):
-
             F.append(self.add_indexed_object(residual_name, i))
             dx.append(self.add_indexed_expression(result_name, i, F[i]))
 
@@ -1034,7 +1028,6 @@ class LinearizedDerivativeComponent(CodeComponent):
 
         nonlinear_exprs = []
         for ind, expr in enumerate(state_exprs):
-
             expr_diff = expr.expr.diff(expr.state.sym)
 
             if expr_diff and expr.state.sym not in expr_diff.args:
@@ -1115,7 +1108,6 @@ class CommonSubExpressionODE(ODE):
 
         # Register the common sub expressions as Intermediates
         for sub, expr in cse_exprs:
-
             # If the expression is just one of the atoms of the ODE we skip
             # the cse expressions but add a subs for the atom
             if expr in atoms:
@@ -1129,7 +1121,6 @@ class CommonSubExpressionODE(ODE):
 
         # Register the state expressions
         for org_state_expr, state_expr in zip(org_state_expressions, cse_state_exprs):
-
             exp_expr = state_expr.xreplace(cse_subs)
             state = self.get_object(org_state_expr.state.name)[1]
 

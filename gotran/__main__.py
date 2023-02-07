@@ -37,7 +37,6 @@ to see more options
 
 
 def main():
-
     if len(sys.argv) < 2:
         print(__doc__)
         return

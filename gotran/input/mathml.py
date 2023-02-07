@@ -155,7 +155,6 @@ class MathMLBaseParser(object):
             if len(root) == 1:
                 # Special case if operator is "minus"
                 if op == "minus":
-
                     # If an unary minus is infront of a cn or ci we skip
                     # parenthesize
                     if self._gettag(root[0]) in ["ci", "cn"]:
@@ -170,7 +169,6 @@ class MathMLBaseParser(object):
                     eq += ["-"]
 
                 else:
-
                     # Always use paranthesis for unary operators
                     use_parent = True
                     eq += [self._operators[op]]
@@ -182,7 +180,6 @@ class MathMLBaseParser(object):
                 )
                 return eq
             else:
-
                 # Binary operator
                 eq += ["("] * use_parent + self._parse_subtree(root[0], op)
                 for operand in root[1:]:
@@ -266,7 +263,6 @@ class MathMLBaseParser(object):
         value += exponent
 
         if self.use_sympy_integers:
-
             # Fix possible strangeness with integer division in Python...
             nums = [1.0, 2.0, 3.0, 4.0, 5.0, 10.0]
             num_strs = ["one", "two", "three", "four", "five", "ten"]
@@ -279,7 +275,6 @@ class MathMLBaseParser(object):
         return [value]
 
     def _parse_diff(self, operands, parent):
-
         # Store old used_variables so we can erase any collected state
         # variables
         used_variables_prior_parse = self.used_variables.copy()

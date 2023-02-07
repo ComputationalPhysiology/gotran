@@ -31,7 +31,6 @@ def generation():
 
 @require_cppyy
 def test_compile_rhs(ode, generation):
-
     # Compile ODE
     python_module = compile_module(ode, language="Python", generation_params=generation)
     c_module = compile_module(ode, language="C", generation_params=generation)

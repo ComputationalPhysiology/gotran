@@ -64,7 +64,6 @@ def ode_primitives(expr, time):
     pt = preorder_traversal(expr)
 
     for node in pt:
-
         # Collect AppliedUndefs which are functions of time
         if (
             isinstance(node, AppliedUndef)
@@ -146,7 +145,6 @@ class iter_objects(object):
         assert all(issubclass(T, ODEObject) for T in self._types)
 
     def _reverse_iter_objects(self, comp):
-
         # First all children components in reversed order
         for sub_comp in reversed(list(comp.children.values())):
             for sub_tree in self._reverse_iter_objects(sub_comp):
@@ -165,14 +163,12 @@ class iter_objects(object):
                 yield obj
 
     def _iter_objects(self, comp):
-
         # First return component
         if self._return_comp:
             yield comp
 
         # Secondly all objects
         if not self._only_return_comp:
-
             for obj in comp.ode_objects:
                 if isinstance(obj, self._types):
                     yield obj
@@ -301,7 +297,6 @@ class ODEObjectList(list):
         error("Cannot sort ODEObjectList.")
 
     def pop(self, index):
-
         check_arg(index, int)
         if index >= len(self):
             raise IndexError("pop index out of range")

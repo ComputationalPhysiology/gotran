@@ -69,7 +69,6 @@ class ODE(ODEComponent):
         return self
 
     def __init__(self, name, ns=None):
-
         # Call super class with itself as parent component
         super(ODE, self).__init__(name, self)
 
@@ -230,7 +229,6 @@ class ODE(ODEComponent):
 
             # Add states and parameters
             for obj in comp.ode_objects:
-
                 # Check if obj already excists as a ODE parameter
                 old_obj = self.present_ode_objects.get(str(obj))
 
@@ -243,24 +241,19 @@ class ODE(ODEComponent):
                     subs[obj.sym] = added.add_state(new_name, obj.param)
 
                 elif isinstance(obj, Parameter):
-
                     # If adding an ODE parameter
                     if comp == ode:
-
                         # And parameter name already excists in the present ODE
                         if str(obj) in self.present_ode_objects:
-
                             # Skip it and add the registered symbol for
                             # substitution
                             subs[obj.sym] = self.present_ode_objects[str(obj)].sym
 
                         else:
-
                             # If not already present just add unprefixed name
                             subs[obj.sym] = added.add_parameter(obj.name, obj.param)
 
                     else:
-
                         subs[obj.sym] = added.add_parameter(new_name, obj.param)
 
             # Add child components
@@ -277,7 +270,6 @@ class ODE(ODEComponent):
 
         # Iterate over all components to add expressions
         for comp_name in ode.all_expr_components_ordered:
-
             comp = ode.all_components[comp_name]
 
             comp_comment = f"Expressions for the {comp.name} component"
@@ -288,23 +280,19 @@ class ODE(ODEComponent):
             # Iterate over all objects of the component and save only expressions
             # and comments
             for obj in comp.ode_objects:
-
                 # If saving an expression
                 if isinstance(obj, Expression):
-
                     # The new sympy expression
                     new_expr = obj.expr.xreplace(subs)
 
                     # If the component is a Markov model
                     if comp.rates:
-
                         # Do not save State derivatives
                         if isinstance(obj, StateDerivative):
                             continue
 
                         # Save rate expressions slightly different
                         elif isinstance(obj, RateExpression):
-
                             states = obj.states
                             added._add_single_rate(
                                 subs[states[0].sym],
@@ -320,7 +308,6 @@ class ODE(ODEComponent):
                         subs[obj.sym] = added.ode_objects.get(obj.name).sym
 
                     elif isinstance(obj, (StateExpression, StateSolution)):
-
                         state = subs[obj.state.sym]
 
                         if isinstance(obj, AlgebraicExpression):
@@ -344,12 +331,10 @@ class ODE(ODEComponent):
                     # be registered with and without prefix, so we need to
                     # check that.
                     elif isinstance(obj, Derivatives):
-
                         # Get der_expr
                         der_expr = self.root.present_ode_objects.get(obj.der_expr.name)
 
                         if der_expr is None:
-
                             # If not found try prefixed version
                             der_expr = self.root.present_ode_objects.get(
                                 prefix + obj.der_expr.name,
@@ -376,7 +361,6 @@ class ODE(ODEComponent):
                             dep_var = self._time
 
                         elif dep_var is None:
-
                             # If not found try prefixed version
                             dep_var = self.root.present_ode_objects.get(
                                 prefix + obj.dep_var.name,
@@ -404,7 +388,6 @@ class ODE(ODEComponent):
                         )
 
                     elif isinstance(obj, Intermediate):
-
                         subs[obj.sym] = added.add_intermediate(
                             prefix + obj.name,
                             new_expr,
@@ -484,7 +467,6 @@ class ODE(ODEComponent):
 
         # Iterate over all components
         for comp_name in self.all_expr_components_ordered:
-
             comp = self.all_components[comp_name]
 
             comp_comment = f"Expressions for the {comp.name} component"
@@ -492,13 +474,10 @@ class ODE(ODEComponent):
             # Iterate over all objects of the component and save only expressions
             # and comments
             for obj in comp.ode_objects:
-
                 # If saving an expression
                 if isinstance(obj, Expression):
-
                     # If the component is a Markov model
                     if comp.rates:
-
                         # Do not save State derivatives
                         if isinstance(obj, StateDerivative):
                             continue
@@ -519,7 +498,6 @@ class ODE(ODEComponent):
 
                 # If saving a comment
                 elif isinstance(obj, Comment):
-
                     # If comment is component comment
                     if str(obj) == comp_comment:
                         lines.append("")
@@ -557,7 +535,6 @@ class ODE(ODEComponent):
         # If object with same name is already registered in the ode we
         # need to figure out what to do
         if dup_obj:
-
             try:
                 dup_comp = self.object_component[dup_obj]
             except KeyError:
@@ -575,7 +552,6 @@ class ODE(ODEComponent):
                 and comp != self
                 and isinstance(obj, (State, Parameter))
             ):
-
                 timer = Timer("Replace objects")  # noqa: F841
 
                 # Remove the object
@@ -649,7 +625,6 @@ class ODE(ODEComponent):
                     ),
                 )
             else:
-
                 # Sanity check that both obj and dup_obj are Expressions
                 assert all(isinstance(oo, (Expression)) for oo in [dup_obj, obj])
 
@@ -666,7 +641,6 @@ class ODE(ODEComponent):
 
         # If Expression
         if isinstance(obj, Expression):
-
             # Append the name to the list of all ordered components with
             # expressions. If the ODE is finalized we do not update components
             if not self._is_finalized_ode:
@@ -702,7 +676,6 @@ class ODE(ODEComponent):
 
             # Get expression dependencies
             for sym in symbols_from_expr(obj.expr, include_derivatives=True):
-
                 dep_obj = self.present_ode_objects[sympycode(sym)]
 
                 if dep_obj is None:
@@ -750,7 +723,6 @@ class ODE(ODEComponent):
         der_subs = {}
         subs = {}
         for obj in self.expression_dependencies[expr]:
-
             if isinstance(obj, Derivatives):
                 der_subs[obj.sym] = self.expanded_expression(obj)
 
@@ -788,10 +760,8 @@ class ODE(ODEComponent):
 
         # Collect components and check that the ODE has the components
         for original_component in self.components:
-
             # Collect components together with its children
             if original_component.name in components:
-
                 components.remove(original_component.name)
                 collected_components.update(original_component.components)
 
@@ -825,7 +795,6 @@ class ODE(ODEComponent):
         # Add dependencies as parameters to return ODE
         subs = dict()
         for dep in dependencies:
-
             # Skip time
             if str(dep) in ["t", "time", "dt"]:
                 continue
@@ -861,7 +830,6 @@ class ODE(ODEComponent):
 
         # Iterate over all components to add expressions
         for comp_name in self.all_expr_components_ordered:
-
             comp = self.all_components[comp_name]
 
             # If we should add component
@@ -876,23 +844,19 @@ class ODE(ODEComponent):
             # Iterate over all objects of the component and save only
             # expressions and comments
             for obj in comp.ode_objects:
-
                 # If saving an expression
                 if isinstance(obj, Expression):
-
                     # The new sympy expression
                     new_expr = obj.expr.xreplace(subs)
 
                     # If the component is a Markov model
                     if comp.rates:
-
                         # Do not save State derivatives
                         if isinstance(obj, StateDerivative):
                             continue
 
                         # Save rate expressions slightly different
                         elif isinstance(obj, RateExpression):
-
                             states = obj.states
                             added._add_single_rate(
                                 states[0].sym,
@@ -922,7 +886,6 @@ class ODE(ODEComponent):
             error("The ODE must be finalized")
 
         if not self._mass_matrix:
-
             state_exprs = self.state_expressions
             N = len(state_exprs)
             self._mass_matrix = sp.Matrix(
@@ -999,7 +962,6 @@ class ODE(ODEComponent):
         self.object_component[replaced_obj] = self.object_component.pop(old_obj)
 
         for old_expr in self.object_used_in[old_obj]:
-
             # Recreate expression
             replaced_expr = recreate_expression(old_expr, replace_dicts)
 
@@ -1057,7 +1019,6 @@ class ODE(ODEComponent):
 
         # We are shifting expression components
         elif self.all_expr_components_ordered[-1] != comp.name:
-
             # Finalize the last component we visited
             self.all_components[
                 self.all_expr_components_ordered[-1]

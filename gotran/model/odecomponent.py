@@ -124,7 +124,6 @@ class ODEComponent(ODEObject):
         return p
 
     def get_object(self, name, reversed=True, return_component=False):
-
         # First check self
         obj = self.ode_objects.get(name)
 
@@ -136,7 +135,6 @@ class ODEComponent(ODEObject):
 
         # If a name is registered
         if name in self.root.ns:
-
             for obj in iter_objects(self, True, False, reversed):
                 if isinstance(obj, ODEComponent):
                     comp = obj
@@ -438,7 +436,6 @@ class ODEComponent(ODEObject):
             obj = StateDerivative(der_expr, expr, dependent)
 
         else:
-
             # Create a DerivativeExpression in the present component
             obj = DerivativeExpression(der_expr, dep_var, expr, dependent)
 
@@ -668,7 +665,6 @@ class ODEComponent(ODEObject):
             self.add_intermediate(name, value)
 
         elif TYPE == DERIVATIVE_EXPRESSION:
-
             # Try getting corresponding ODEObjects
             expr_name, var_name = expr.groups()
             expr_obj = self.root.present_ode_objects.get(expr_name)
@@ -686,7 +682,6 @@ class ODEComponent(ODEObject):
             self.add_state_solution(expr, value)
 
         elif TYPE == ALGEBRAIC_EXPRESSION:
-
             # Try getting corresponding ODEObjects
             (var_name,) = expr.groups()
             var_obj = self.root.present_ode_objects.get(var_name)
@@ -770,7 +765,6 @@ class ODEComponent(ODEObject):
 
         # If registering a StateExpression
         if isinstance(obj, StateExpression):
-
             if self.rates and not self._is_finalizing:
                 error(
                     "A component cannot have both state expressions "
@@ -797,7 +791,6 @@ class ODEComponent(ODEObject):
         # If obj is Intermediate register it as an attribute so it can be used
         # later on.
         if isinstance(obj, (State, Parameter, IndexedObject, Expression)):
-
             # If indexed expression or object register the basename as a dict
             if isinstance(obj, (IndexedExpression, IndexedObject)):
                 if obj.basename in self.__dict__ and isinstance(
@@ -990,7 +983,6 @@ class ODEComponent(ODEObject):
         # symetric way
         used_states = [0] * self.num_states
         for rate in self.rate_expressions:
-
             # Get the states
             to_state, from_state = rate.states
 
@@ -1030,7 +1022,6 @@ class ODEComponent(ODEObject):
 
         # Add derivatives
         for state in states:
-
             # Skip solved states
             if not isinstance(state, State) or state.is_solved:
                 continue

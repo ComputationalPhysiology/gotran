@@ -21,7 +21,6 @@ check_nans = False
 
 
 def get_field_values(num_nodes, field_parameters={}, field_states=[], dtype=np.float_):
-
     if len(field_parameters) == 0:
         field_params = None
     else:
@@ -74,7 +73,6 @@ def run_goss(
     tstop=300,
     dt=0.1,
 ):
-
     # Create GOSS solver
     solver = ODESystemSolver(
         num_nodes,
