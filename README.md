@@ -1,6 +1,6 @@
 [![CI](https://github.com/ComputationalPhysiology/gotran/actions/workflows/main.yml/badge.svg)](https://github.com/ComputationalPhysiology/gotran/actions/workflows/main.yml)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/ComputationalPhysiology/gotran/main.svg)](https://results.pre-commit.ci/latest/github/ComputationalPhysiology/gotran/main)
-[![codecov](https://codecov.io/gh/ComputationalPhysiology/gotran/branch/main/graph/badge.svg?token=jfiLeIpkNa)](https://codecov.io/gh/ComputationalPhysiology/gotran)
+[![coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/finsberg/a7290de789564f03eb6b1ee122fce423/raw/gotran-badge.json)](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/finsberg/a7290de789564f03eb6b1ee122fce423/raw/gotran-badge.json)
 
 # Gotran - General ODE TRAnslator
 
