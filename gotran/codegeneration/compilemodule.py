@@ -268,7 +268,6 @@ def parse_jacobian_declarations(
     args_doc,
     params,
 ):
-
     jacobian_declaration = ""
     if not params.functions.jacobian.generate:
         return jacobian_declaration
@@ -303,7 +302,6 @@ def parse_monitor_declaration(ode, args, args_doc, params, monitored):
 
 
 def signature(ode, monitored, params, languange) -> str:
-
     return hashlib.sha1(
         str(
             ode.signature()

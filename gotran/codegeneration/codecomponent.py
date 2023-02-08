@@ -361,7 +361,6 @@ class CodeComponent(ODEComponent):
         # Add parameters
         parameters = param_state_map["parameters"]
         for ind, param in enumerate(self.root.parameters):
-
             if param.name in field_parameters:
                 basename = field_param_name
                 index = field_parameters.index(param.name)
@@ -429,7 +428,6 @@ class CodeComponent(ODEComponent):
             return self._body_from_dependencies(**results)
 
     def _expanded_result_expressions(self, **results):
-
         # Extract all result expressions
         orig_result_expressions = sum(list(results.values()), [])
 
@@ -453,7 +451,6 @@ class CodeComponent(ODEComponent):
         return orig_result_expressions, result_names, expanded_result_exprs
 
     def _only_result_expressions(self, **results):
-
         (
             orig_result_expressions,
             result_names,
@@ -461,7 +458,6 @@ class CodeComponent(ODEComponent):
         ) = self._expanded_result_expressions(**results)
 
     def _body_from_cse(self, **results):
-
         timer = Timer(f"Compute common sub expressions for {self.name}")  # noqa: F841
 
         (
@@ -520,7 +516,6 @@ class CodeComponent(ODEComponent):
         for ind, (orig_result_expr, result_expr) in enumerate(
             zip(orig_result_expressions, cse_result_exprs),
         ):
-
             # Collect information so that we can recreate the result
             # expression from
             result_expr_map[result_expr].append(
@@ -537,7 +532,6 @@ class CodeComponent(ODEComponent):
                 result_expr_without_cse_syms.append(result_expr)
 
             else:
-
                 # Get last cse_sym used in result expression
                 last_cse_sym = sorted(
                     (cse_sym for cse_sym in result_expr.atoms() if cse_sym in cse_syms),
@@ -571,7 +565,6 @@ class CodeComponent(ODEComponent):
 
         # Register the common sub expressions as Intermediates
         for cse_sym, expr in list(cse_exprs.items()):
-
             # print cse_sym, expr
 
             # If the expression is just one of the atoms of the ODE we
@@ -599,12 +592,9 @@ class CodeComponent(ODEComponent):
 
             # Check if we should add a result expressions
             if last_cse_expr_used_in_result_expr[cse_sym]:
-
                 # Iterate over all registered result expr for this cse_sym
                 for result_expr in last_cse_expr_used_in_result_expr.pop(cse_sym):
-
                     for result_name, indices in result_expr_map[result_expr]:
-
                         # Replace pure state and param expressions
                         # print cse_subs, result_expr
                         exp_expr = result_expr.xreplace(cse_subs)
@@ -638,7 +628,6 @@ class CodeComponent(ODEComponent):
         return new_results, body_expressions
 
     def _body_from_dependencies(self, **results):
-
         timer = Timer(f"Compute dependencies for {self.name}")  # noqa: F841
 
         # Extract all result expressions
@@ -812,7 +801,6 @@ class CodeComponent(ODEComponent):
 
         # The main iteration over all body_expressions
         for expr in body_expressions:
-
             # 1) Comments
             if isinstance(expr, Comment):
                 new_body_expressions.append(expr)
@@ -822,7 +810,6 @@ class CodeComponent(ODEComponent):
 
             # 2) Check for expression optimizations
             if not (optimize_exprs == "none" or expr in result_expressions):
-
                 timer_opt = Timer(  # noqa: F841
                     f"Handle expression optimization for {self.name}",
                 )  # noqa: F841
@@ -847,7 +834,6 @@ class CodeComponent(ODEComponent):
                     and isinstance(expr.expr.args[1], (sp.Symbol, AppliedUndef))
                     and expr.expr.args[0].is_number
                 ):
-
                     # Add a replace rule based on the stored sympy expression
                     sympy_expr = expr.expr.xreplace(der_replace_dict).xreplace(
                         replace_dict,
@@ -908,7 +894,6 @@ class CodeComponent(ODEComponent):
             # available with the expr (Only applies for the "reused" option for
             # body_repr.)
             if "reused" in body_repr:
-
                 # Check if any indices are available at this expression ind
                 available_indices.extend(index_available_at[expr])
 
@@ -920,7 +905,6 @@ class CodeComponent(ODEComponent):
 
             # 4) Handle result expression
             if expr in result_expressions:
-
                 timer_result = Timer(  # noqa: F841
                     f"Handle result expressions for {self.name}",
                 )  # noqa: F841
@@ -935,12 +919,10 @@ class CodeComponent(ODEComponent):
                     or isinstance(expr, StateIndexedExpression)
                     or isinstance(expr, ParameterIndexedExpression)
                 ) and result_name == expr.basename:
-
                     new_expr = recreate_expression(expr, der_replace_dict, replace_dict)
 
                 # Not an indexed expression
                 else:
-
                     # Get index based on the original ordering
                     index = (results[result_name].index(expr),)
                     # Create the IndexedExpression
@@ -980,7 +962,6 @@ class CodeComponent(ODEComponent):
             # All indexed expressions are just kept but recreated with updated
             # sympy expressions
             elif isinstance(expr, IndexedExpression):
-
                 timer_indexed = Timer(  # noqa: F841
                     f"Handle indexed expressions for {self.name}",
                 )  # noqa: F841
@@ -994,14 +975,12 @@ class CodeComponent(ODEComponent):
 
             # 5) If replacing all body exressions with an indexed expression
             elif "array" in body_repr:
-
                 timer_body = Timer(  # noqa: F841
                     f"Handle body expressions for {self.name}",
                 )  # noqa: F841
 
                 # 5a) If we reuse array indices
                 if "reused" in body_repr:
-
                     if available_indices:
                         ind = available_indices.popleft()
                     else:
@@ -1019,7 +998,6 @@ class CodeComponent(ODEComponent):
                 # 5b) No reuse of array indices. Here each index corresponds to
                 #     a distinct body expression
                 else:
-
                     ind = body_ind
 
                     # Increase body_ind
@@ -1049,7 +1027,6 @@ class CodeComponent(ODEComponent):
             # 6) If the expression is just an ordinary body expression and we
             #    are using named representation of body
             else:
-
                 timer_expr = Timer(f"Handle expressions for {self.name}")  # noqa: F841
                 # If the expression is a state derivative we need to add a
                 # replacement for the Derivative symbol
@@ -1069,14 +1046,12 @@ class CodeComponent(ODEComponent):
 
         # Store indices for any added arrays
         if "reused_array" == body_repr:
-
             if max_index > -1:
                 self.shapes[body_name] = (max_index + 1,)
             else:
                 self.shapes.pop(body_name)
 
         elif "array" == body_repr:
-
             if body_ind > 0:
                 self.shapes[body_name] = (body_ind,)
             else:

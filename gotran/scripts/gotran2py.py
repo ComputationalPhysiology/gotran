@@ -61,7 +61,6 @@ def gotran2py(filename, params):
 
 
 def main():
-
     generation_params = parameters.generation.copy()
 
     params = ParameterDict(

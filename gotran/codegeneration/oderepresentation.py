@@ -283,7 +283,6 @@ class ODERepresentation(object):
 
         for name, obj in list(ode.monitored_intermediates.items()):
             for sym in iter_symbol_params_from_expr(obj.expanded_expr):
-
                 if ode.has_state(sym):
                     self._used_in_monitoring["states"].add(sym.name)
                 elif ode.has_parameter(sym):
@@ -432,7 +431,6 @@ class ODERepresentation(object):
         info(" done")
 
     def _compute_jacobian_cse(self):
-
         self._compute_jacobian()
 
         if not self.optimization.use_cse or self._cse_jacobian_expr is not None:
@@ -472,7 +470,6 @@ class ODERepresentation(object):
         info(" done")
 
     def _compute_symbolic_factorization_of_jacobian(self):
-
         if self._jacobian_expr is None:
             self._compute_jacobian_cse()
 
@@ -626,7 +623,6 @@ class ODERepresentation(object):
         self._factorized_jacobian = A
 
     def _compute_symbolic_fb_substitution(self):
-
         if hasattr(self, "_jacobian_fb_substitution_operations"):
             return
 
@@ -780,7 +776,6 @@ class ODERepresentation(object):
 
             # Check for linear term
             if expr_diff and state_sym not in expr_diff.atoms():
-
                 linearized_exprs[i] = expr_diff
 
                 for sym in iter_symbol_params_from_expr(expr_diff):
@@ -852,7 +847,6 @@ class ODERepresentation(object):
         Return a subs dict for all ODE Objects (states, parameters)
         """
         if self._symbol_subs is None:
-
             subs = []
 
             # Deal with parameter subs first
@@ -900,7 +894,6 @@ class ODERepresentation(object):
         # Keep intermediates is the lowest form for optimization deal with
         # first
         if self.optimization.keep_intermediates:
-
             return (
                 (derivatives, self.subs(expr))
                 for derivatives, expr in self.ode.get_derivative_expr()
@@ -933,7 +926,6 @@ class ODERepresentation(object):
         """
 
         if self.optimization.keep_intermediates:
-
             # Iterate over the intermediates
             for intermediate in self.ode.intermediates:
                 if isinstance(intermediate, (Comment, ODEComponent)):
@@ -976,14 +968,12 @@ class ODERepresentation(object):
         self._compute_jacobian_cse()
 
         if self.optimization.use_cse:
-
-            for ((name, expr), cse_expr) in zip(
+            for (name, expr), cse_expr in zip(
                 list(self._jacobian_expr.items()),
                 self._cse_jacobian_expr,
             ):
                 yield list(map(int, re.findall(_jacobian_pattern, str(name)))), cse_expr
         else:
-
             for name, expr in list(self._jacobian_expr.items()):
                 yield list(
                     map(int, re.findall(_jacobian_pattern, str(name))),
@@ -1016,11 +1006,9 @@ class ODERepresentation(object):
         self._compute_jacobian_action_cse()
 
         if self.optimization.use_cse:
-
             for cse_expr in self._cse_jacobian_action_expr:
                 yield cse_expr
         else:
-
             for expr in self._jacobian_action_expr:
                 yield self.subs(expr)
 
@@ -1053,7 +1041,7 @@ class ODERepresentation(object):
 
         yield "COMMENT", "Monitored intermediates"
 
-        for (name, cse_expr) in zip(
+        for name, cse_expr in zip(
             self.ode.monitored_intermediates,
             self._cse_monitored_expr,
         ):
@@ -1071,7 +1059,6 @@ class ODERepresentation(object):
             yield expr, name
 
     def iter_linerized_expr(self):
-
         if self.optimization.use_cse:
             self._compute_linearized_dy_cse()
             for idx, cse_expr in zip(
@@ -1086,7 +1073,6 @@ class ODERepresentation(object):
                 yield idx, expr
 
     def iter_componentwise_dy(self):
-
         if self.optimization.use_cse:
             self._compute_linearized_dy_cse()
             for subs, expr in zip(

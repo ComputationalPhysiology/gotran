@@ -50,7 +50,6 @@ os.chdir(curdir)
 
 start = time.time()
 for command in commands:
-
     print(f"Test scripts {command}")
     if command == "cellml2gotran":
         infile = "tentusscher_noble_noble_panfilov_2004_a.cellml"

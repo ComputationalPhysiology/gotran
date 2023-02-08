@@ -39,7 +39,6 @@ def gotran2dolfin(filename, params):
 
 
 def main():
-
     params = ParameterDict(
         output=Param("", description="Specify output file name"),
         **DOLFINCodeGenerator.default_parameters()

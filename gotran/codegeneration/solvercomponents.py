@@ -373,7 +373,6 @@ class RushLarsen(CodeComponent):
 
         dt = self.root._dt.sym
         for i, expr in enumerate(state_exprs):
-
             dependent = expr if recount else None
 
             # Diagonal jacobian value
@@ -383,7 +382,6 @@ class RushLarsen(CodeComponent):
 
             # print expr.state.sym, expr_diff, expr_diff.args
             if expr_diff and expr.state.sym not in expr_diff.args:
-
                 linearized_name = expr.name + "_linearized"
                 linearized = self.add_intermediate(
                     linearized_name,
@@ -416,7 +414,6 @@ class RushLarsen(CodeComponent):
                 )
 
             else:
-
                 # Explicit Euler step
                 self.add_indexed_expression(
                     result_name,
@@ -494,7 +491,6 @@ class RushLarsenOneStep(CodeComponent):
 
         dt = self.root._dt.sym
         for i, expr in enumerate(state_exprs):
-
             prev = self.add_indexed_object(previous_name, (i,), offset_str)
 
             dependent = expr if recount else None
@@ -503,7 +499,6 @@ class RushLarsenOneStep(CodeComponent):
             expr_diff = expr.expr.diff(expr.state.sym)
 
             if expr_diff and expr.state.sym not in expr_diff:
-
                 linearized = self.add_intermediate(
                     expr.name + "_linearized",
                     expr_diff,
@@ -521,7 +516,6 @@ class RushLarsenOneStep(CodeComponent):
                 )
 
             else:
-
                 # Explicit Euler step
                 self.add_indexed_expression(
                     result_name,
@@ -600,7 +594,6 @@ class GeneralizedRushLarsen(CodeComponent):
 
         dt = self.root._dt.sym
         for i, expr in enumerate(state_exprs):
-
             expr_diff = expr.expr.diff(expr.state.sym)
             dependent = expr if recount else None
             if expr_diff.is_zero:
@@ -838,7 +831,6 @@ class SimplifiedImplicitEuler(CodeComponent):
 
         dt = self.root._dt.sym
         for i, expr in enumerate(state_exprs):
-
             dependent = expr if recount else None
 
             # Diagonal jacobian value

@@ -520,7 +520,6 @@ def runTestsStep(
     checkNaN=False,
     update_host_states=False,
 ):
-
     results = list()
 
     ntests = len(testcases)

@@ -18,7 +18,6 @@ from gotran.model.odeobjects import Comment
 
 
 def join_indent_and_split(code, baseindent=4):
-
     code = deque(code)
     output = [" " * baseindent + code.popleft()] if code else [""]
     while code:
@@ -31,7 +30,6 @@ def join_indent_and_split(code, baseindent=4):
 
 
 def gotranprobe(filename, params):
-
     set_log_level(WARNING)
     ode = load_ode(filename)
     set_log_level(INFO)
@@ -84,7 +82,6 @@ def gotranprobe(filename, params):
 
 
 def main():
-
     params = ParameterDict(
         flat_view=Param(True, description="List all objects in a flat view"),
     )

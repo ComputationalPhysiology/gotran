@@ -39,7 +39,6 @@ def gotran2matlab(filename, params):
 
 
 def main():
-
     generation_params = MatlabCodeGenerator.default_parameters()
 
     params = ParameterDict(

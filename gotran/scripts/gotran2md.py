@@ -38,7 +38,6 @@ def make_table(value_matrix, header_names=None):
 
 
 def gotran2md(filename):
-
     filename = Path(filename)
     ode = load_ode(filename)
 
@@ -67,7 +66,6 @@ def gotran2md(filename):
 
     mdname = filename.with_suffix(".md")
     with open(mdname, "w") as f:
-
         f.write(
             _template.format(
                 name=ode.name,

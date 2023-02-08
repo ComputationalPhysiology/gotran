@@ -92,7 +92,6 @@ def define_parser(change_state_names):
 
 
 def main():
-
     change_state_names = []
     parser = define_parser(change_state_names)
 

@@ -52,7 +52,6 @@ encapsulations = {}
 
 
 def get_encapsulation(elements):
-
     children = {}
     for encap in elements:
         name = encap.attrib["component"]
@@ -177,7 +176,6 @@ for units in parser.get_iterator("units"):
 
 
 def parse_component(comp):
-
     # Collect variables and equations
     component = dict()
     variables = OrderedDict()
@@ -186,7 +184,6 @@ def parse_component(comp):
 
     # Get variable and initial values
     for var in comp.getiterator(cellml_namespace + "variable"):
-
         var_name = var.attrib["name"]
         # if var_name in _all_keywords:
         #    var_name = var_name + "_"

@@ -100,7 +100,6 @@ def test_state():
 
 
 def test_param():
-
     with pytest.raises(TypeError) as cm:
         gotran.Parameter("jada", "bada")
 

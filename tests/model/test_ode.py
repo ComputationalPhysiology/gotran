@@ -17,7 +17,6 @@ _here = Path(__file__).absolute().parent
 
 
 def test_creation():
-
     # Adding a phoney ODE
     ode = gotran.ODE("test")
 
@@ -193,7 +192,6 @@ def test_creation():
 
 
 def test_extract_components():
-
     ode = gotran.load_ode(_here.joinpath("tentusscher_2004_mcell_updated.ode"))
 
     potassium = ode.extract_components(
@@ -365,7 +363,6 @@ def test_subode():
     ode.finalize()
 
     for name, obj in list(ode.present_ode_objects.items()):
-
         # If object in prefixed potassium components
         if ode.object_component[obj].name in pot_comps:
             loaded_obj = ode_from_file.present_ode_objects[name.replace("pot_", "")]

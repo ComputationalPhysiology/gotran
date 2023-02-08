@@ -102,7 +102,6 @@ def solve(t_start, t_end, dt, num_steps=None, method="fe"):
 
 
 def main():
-
     t_start = 0.0
     t_end = 400.0
     dt = 0.001

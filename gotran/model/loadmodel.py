@@ -63,7 +63,6 @@ class IntermediateDispatcher(dict):
 
     @property
     def ode(self):
-
         if self._ode is None:
             error("ode attr is not set")
 
@@ -90,7 +89,6 @@ class IntermediateDispatcher(dict):
             or isinstance(value, sp.Number)
             or (isinstance(value, sp.Basic) and symbols_from_expr(value))
         ):
-
             # Get source which triggers the insertion to the global namespace
             frame = inspect.currentframe().f_back
             lines, lnum = inspect.findsource(frame)
@@ -117,7 +115,6 @@ class IntermediateDispatcher(dict):
                 _no_intermediate_template,
                 code,
             ):
-
                 debug(f"Not registering '{name}' as an intermediate.")
 
                 # If so just add the value to the namespace without
@@ -125,7 +122,6 @@ class IntermediateDispatcher(dict):
                 dict.__setitem__(self, name, value)
 
             else:
-
                 del timer
 
                 # Add obj to the present component
@@ -470,7 +466,6 @@ def _namespace_binder(namespace, ode, load_arguments):
             else:
                 # Try to cast the passed load_arguments with the orginal type
                 if isinstance(value, Param):
-
                     # Cast value
                     new_value = value.value_type(load_arguments[key])
 
@@ -493,7 +488,6 @@ def _namespace_binder(namespace, ode, load_arguments):
         return expressions(*args)
 
     def expressions(*args):
-
         check_arg(args, tuple, 0, itemtypes=str)
 
         comp = ode()

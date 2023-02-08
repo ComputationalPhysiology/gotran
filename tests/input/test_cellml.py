@@ -90,6 +90,7 @@ generation.functions.jacobian.generate = False
 
 # self.assertEqual(self.ode.num_states, cellml_data[self.name]["num_states"])
 
+
 # Load reference data
 @require_cppyy
 @pytest.mark.parametrize("path", cellml_models)
@@ -98,7 +99,6 @@ def test_cellml(path):
     ode = cellml2ode(path)
     cpickle_path = path.parent.joinpath(ode.name).with_suffix(".cpickle")
     with open(cpickle_path, "rb") as f:
-
         u = pickle._Unpickler(f)
         u.encoding = "latin1"
         data = u.load()

@@ -150,7 +150,6 @@ class Expression(ODEValueObject):
 
         # Deal with Subs in sympy expression
         for sub_expr in expr.atoms(sp.Subs):
-
             # deal with one Subs at a time
             subs = dict(
                 (key, value) for key, value in zip(sub_expr.variables, sub_expr.point)
@@ -379,7 +378,6 @@ class RateExpression(Intermediate):
     """
 
     def __init__(self, to_state, from_state, expr, dependent=None):
-
         check_arg(to_state, (State, StateSolution), 0, RateExpression)
         check_arg(from_state, (State, StateSolution), 1, RateExpression)
 

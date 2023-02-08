@@ -25,7 +25,6 @@ def get_np_float_type(code_params):
 
 class ODECUDAHandler(object):
     def __init__(self, num_nodes, ode):
-
         self._num_nodes = num_nodes
         self._ode = ode
 
