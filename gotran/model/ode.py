@@ -149,10 +149,10 @@ class ODE(ODEComponent):
 
     @property
     def state_symbols(self):
-        return [s.name for s in self.states]
+        return [s.name for s in self.full_states]
 
     def state_values(self):
-        return [s.value for s in self.states]
+        return [s.value for s in self.full_states]
 
     @property
     def intermediate_symbols(self):
