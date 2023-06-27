@@ -648,7 +648,9 @@ class PythonCodeGenerator(BaseCodeGenerator):
                 # If all parameters are used
                 if len(used_parameters) == len(comp.root.parameters):
                     body_lines.append(
-                        ", ".join(param.name for i, param in enumerate(used_parameters))
+                        ", ".join(
+                            param.name for i, param in enumerate(comp.root.parameters)
+                        )
                         + " = "
                         + parameters_name,
                     )
@@ -4130,7 +4132,9 @@ class JuliaCodeGenerator(BaseCodeGenerator):
                 # If all parameters are used
                 if len(used_parameters) == len(comp.root.parameters):
                     body_lines.append(
-                        ", ".join(param.name for i, param in enumerate(used_parameters))
+                        ", ".join(
+                            param.name for i, param in enumerate(comp.root.parameters)
+                        )
                         + " = "
                         + parameters_name,
                     )
