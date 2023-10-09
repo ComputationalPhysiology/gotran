@@ -129,7 +129,7 @@ class iter_objects(object):
     """
 
     def __init__(
-        self, comp, return_comp=True, only_return_comp=False, reverse=False, *types
+        self, comp, return_comp=True, only_return_comp=False, reverse=False, *types,
     ):
         from .odecomponent import ODEComponent
 
