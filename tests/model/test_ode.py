@@ -187,7 +187,7 @@ def test_creation():
     # Check that all objects are the same and evaluates to same value
     for name, obj in list(ode.present_ode_objects.items()):
         loaded_obj = ode_loaded.present_ode_objects[name]
-        assert type(obj) == type(loaded_obj)
+        assert isinstance(obj, type(loaded_obj))
         assert loaded_obj.param.value == pytest.approx(obj.param.value)
 
 
@@ -369,5 +369,5 @@ def test_subode():
         else:
             loaded_obj = ode_from_file.present_ode_objects[name]
 
-        assert type(obj) == type(loaded_obj)
+        assert isinstance(obj, type(loaded_obj))
         assert loaded_obj.param.value == pytest.approx(obj.param.value)
