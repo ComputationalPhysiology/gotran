@@ -181,7 +181,7 @@ def runTestSuite(
     printTimings=True,
     saveDirectory=None,
     showProgress=True,
-    **kwargs
+    **kwargs,
 ):
     testcases, names = createTestCases(**kwargs)
 
@@ -222,7 +222,7 @@ def runTestSuites(
             saveDirectory=saveDirectory,
             # clear_stored_fstates=False,
             showProgress=showProgress,
-            **test_suite
+            **test_suite,
         )
 
     for title, result in results.items():
@@ -1101,7 +1101,7 @@ def plotResults(_file, plotTypes=None, get_stored_fstates=False):
         subsubnames = [s.split(",") for s in subnames]
         namekeys, namevalues = list(
             zip(
-                *[list(zip(*[s.split("=") for s in ssname])) for ssname in subsubnames]
+                *[list(zip(*[s.split("=") for s in ssname])) for ssname in subsubnames],
             ),
         )
 

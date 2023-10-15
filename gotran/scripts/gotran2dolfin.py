@@ -41,7 +41,7 @@ def gotran2dolfin(filename, params):
 def main():
     params = ParameterDict(
         output=Param("", description="Specify output file name"),
-        **DOLFINCodeGenerator.default_parameters()
+        **DOLFINCodeGenerator.default_parameters(),
     )
     params.parse_args(usage="usage: %prog FILE [options]")  # sys.argv[2:])
 
