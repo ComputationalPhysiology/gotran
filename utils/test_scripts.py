@@ -1,6 +1,7 @@
 """
 Run test for all scripts
 """
+
 import os
 import time
 

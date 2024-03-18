@@ -1736,9 +1736,11 @@ class CellMLParser(object):
                     "{0} = {1}{2}".format(
                         eq.name,
                         "".join(eq.expr),
-                        " # {0}".format(comp.variable_info[eq.name]["unit"])
-                        if comp.variable_info[eq.name]["unit"] != "1"
-                        else "",
+                        (
+                            " # {0}".format(comp.variable_info[eq.name]["unit"])
+                            if comp.variable_info[eq.name]["unit"] != "1"
+                            else ""
+                        ),
                     )
                     for eq in comp.equations
                 )

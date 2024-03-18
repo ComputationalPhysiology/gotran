@@ -770,10 +770,12 @@ class PythonCodeGenerator(BaseCodeGenerator):
             body_lines.append(
                 "return {0}".format(
                     ", ".join(
-                        result_name
-                        if len(comp.shapes[result_name]) >= 1
-                        and comp.shapes[result_name][0] > 1
-                        else result_name + "[0]"
+                        (
+                            result_name
+                            if len(comp.shapes[result_name]) >= 1
+                            and comp.shapes[result_name][0] > 1
+                            else result_name + "[0]"
+                        )
                         for result_name in comp.results
                     ),
                 ),
@@ -4220,10 +4222,12 @@ class JuliaCodeGenerator(BaseCodeGenerator):
             body_lines.append(
                 "return {0}".format(
                     ", ".join(
-                        result_name
-                        if len(comp.shapes[result_name]) >= 1
-                        and comp.shapes[result_name][0] > 1
-                        else result_name + "[0]"
+                        (
+                            result_name
+                            if len(comp.shapes[result_name]) >= 1
+                            and comp.shapes[result_name][0] > 1
+                            else result_name + "[0]"
+                        )
                         for result_name in comp.results
                     ),
                 ),

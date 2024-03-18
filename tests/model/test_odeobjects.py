@@ -1,4 +1,5 @@
 """test for odeobjects module"""
+
 import pytest
 from modelparameters.sympy import Symbol
 from modelparameters.sympytools import symbols_from_expr
