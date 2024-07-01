@@ -222,8 +222,7 @@ def testThreadsPerBlock(
 
 
 def testNumNodes(
-    num_nodes=[1024 * 2**n for n in range(3, 8)]
-    + [1000 * 2**n for n in range(3, 8)],
+    num_nodes=[1024 * 2**n for n in range(3, 8)] + [1000 * 2**n for n in range(3, 8)],
     dt=0.1,
     tstop=300.0,
     solver="rush_larsen",
