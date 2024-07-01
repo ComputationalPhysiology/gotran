@@ -891,9 +891,9 @@ class ODE(ODEComponent):
             self._mass_matrix = sp.Matrix(
                 N,
                 N,
-                lambda i, j: 1
-                if i == j and isinstance(state_exprs[i], StateDerivative)
-                else 0,
+                lambda i, j: (
+                    1 if i == j and isinstance(state_exprs[i], StateDerivative) else 0
+                ),
             )
 
         return self._mass_matrix

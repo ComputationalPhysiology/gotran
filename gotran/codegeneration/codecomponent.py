@@ -521,9 +521,11 @@ class CodeComponent(ODEComponent):
             result_expr_map[result_expr].append(
                 (
                     result_names[orig_result_expr],
-                    orig_result_expr.indices
-                    if isinstance(orig_result_expr, IndexedExpression)
-                    else ind,
+                    (
+                        orig_result_expr.indices
+                        if isinstance(orig_result_expr, IndexedExpression)
+                        else ind
+                    ),
                 ),
             )
 
